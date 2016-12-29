@@ -29,6 +29,8 @@ import android.net.Uri;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -55,6 +57,9 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   private Button mResPlus;
   private Button mResMinus;
   private int mRes = 3;
+
+  private ScaleGestureDetector mScaleDetector;
+  private float mZoom = 0;
 
   private boolean m3drRunning = true;
 
@@ -187,6 +192,26 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
     mGLView.setRenderer(mRenderer);
 
     refreshUi();
+
+    mScaleDetector = new ScaleGestureDetector(this, new ScaleGestureDetector.OnScaleGestureListener() {
+      @Override
+      public void onScaleEnd(ScaleGestureDetector detector) {
+      }
+      @Override
+      public boolean onScaleBegin(ScaleGestureDetector detector) {
+        return true;
+      }
+      @Override
+      public boolean onScale(ScaleGestureDetector detector) {
+        mZoom -= detector.getScaleFactor() - 1;
+        if(mZoom < 0)
+          mZoom = 0;
+        if(mZoom > 10)
+          mZoom = 10;
+        TangoJNINative.setZoom(mZoom);
+        return false;
+      }
+    });
   }
 
   @Override
@@ -273,5 +298,11 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
         break;
       }
     }
+  }
+
+  @Override
+  public boolean onTouchEvent(MotionEvent event) {
+    mScaleDetector.onTouchEvent(event);
+    return true;
   }
 }

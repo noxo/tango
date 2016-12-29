@@ -80,4 +80,7 @@ public class TangoJNINative {
 
   // Save current 3D model
   public static native void save(String name);
+
+  // Set zoom of view
+  public static native void setZoom(float value);
 }

@@ -56,6 +56,7 @@ namespace mesh_builder {
         void OnClearButtonClicked();
         void TangoSetup3DR(double res, double dmin, double dmax);
         void Save(std::string filename);
+        void SetZoom(float value) { zoom = value; }
 
     private:
         void TangoSetupConfig();
@@ -84,6 +85,7 @@ namespace mesh_builder {
         bool threadDone[THREAD_COUNT];
         pthread_t threadId[THREAD_COUNT];
         std::mutex threadMutex[THREAD_COUNT];
+        float zoom;
     };
 }  // namespace mesh_builder
 

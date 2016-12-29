@@ -88,6 +88,11 @@ Java_com_lvonasek_openconstructor_TangoJNINative_save(
   app.Save(str);
 }
 
+JNIEXPORT void JNICALL
+Java_com_lvonasek_openconstructor_TangoJNINative_setZoom(JNIEnv*, jobject, jfloat value) {
+  app.SetZoom(value);
+}
+
 #ifdef __cplusplus
 }
 #endif

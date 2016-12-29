@@ -161,7 +161,9 @@ namespace mesh_builder {
         binder_mutex_.unlock();
     }
 
-    MeshBuilderApp::MeshBuilderApp() {}
+    MeshBuilderApp::MeshBuilderApp() {
+        zoom = 0;
+    }
 
     MeshBuilderApp::~MeshBuilderApp() {
         if (tango_config_ != nullptr) {
@@ -348,6 +350,10 @@ namespace mesh_builder {
 
         render_mutex_.lock();
         main_scene_.camera_->SetTransformationMatrix(start_service_T_device_);
+        //zoom
+        glm::vec4 move = main_scene_.camera_->GetTransformationMatrix() * glm::vec4(0, 0, zoom, 0);
+        main_scene_.camera_->Translate(glm::vec3(move.x, move.y, move.z));
+        //render
         main_scene_.Render();
         render_mutex_.unlock();
     }
