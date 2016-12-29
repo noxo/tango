@@ -478,7 +478,7 @@ namespace mesh_builder {
                 unsigned int r = (c & 0x000000FF);
                 unsigned int g = (c & 0x0000FF00) >> 8;
                 unsigned int b = (c & 0x00FF0000) >> 16;
-                fprintf(file, "%f %f %f %d %d %d\n", v.x, v.z, v.y, r, g, b);
+                fprintf(file, "%f %f %f %d %d %d\n", -v.x, v.z, v.y, r, g, b);
             }
         }
         //write faces
