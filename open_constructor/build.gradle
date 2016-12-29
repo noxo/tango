@@ -8,8 +8,12 @@ buildscript {
         classpath 'com.android.tools.build:gradle:2.2.3'
     }
 }
+
 allprojects {
     repositories {
+        mavenLocal()
+        maven { url  "https://oss.sonatype.org/content/repositories/snapshots/" }
         jcenter()
     }
 }
+

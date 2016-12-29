@@ -16,6 +16,7 @@
 
 package com.lvonasek.openconstructor;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ComponentName;
@@ -23,6 +24,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
@@ -185,7 +187,6 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
     mGLView.setRenderer(mRenderer);
 
     refreshUi();
-    TangoJNINative.onCreate(this);
   }
 
   @Override
@@ -218,6 +219,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
     super.onResume();
     mGLView.onResume();
     TangoInitHelper.bindTangoService(this, mTangoServiceConnection);
+    setupPermission(Manifest.permission.CAMERA);
   }
 
   @Override
@@ -251,5 +253,25 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
     String text = getString(R.string.distance) + mRes + "m, ";
     text += getString(R.string.resolution)+ mRes + "cm";
     mResText.setText(text);
+  }
+
+  private void setupPermission(String permission) {
+    if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED)
+      requestPermissions(new String[]{permission}, 1987);
+    else
+      TangoJNINative.onCreate(this);
+  }
+
+  @Override
+  public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+    switch (requestCode) {
+      case 1987: {
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+          TangoJNINative.onCreate(this);
+        else
+          finish();
+        break;
+      }
+    }
   }
 }
