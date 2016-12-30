@@ -44,7 +44,6 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
 
   private static final String PLAY_STORE = "https://play.google.com/store/apps/details?id=";
   private static final String PLY_VIEWER = "net.chucknology.tango.scanview";
-  private static final String STORAGE_PATH = "/storage/emulated/0/";
 
   private static final int REQUEST_CODE_PERMISSION_CAMERA = 1987;
   private static final int REQUEST_CODE_PERMISSION_STORAGE = 1988;
@@ -272,7 +271,10 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
                 public void run()
                 {
                   //save
-                  final String filename = STORAGE_PATH + input.getText().toString() + ".ply";
+                  String dir = context.getExternalMediaDirs()[0].toString();
+                  dir = dir.substring(0, dir.indexOf("Android"));
+                  File file = new File(dir, input.getText().toString() + ".ply");
+                  final String filename = file.getAbsolutePath();
                   TangoJNINative.save(filename);
                   //open???
                   OpenConstructorActivity.this.runOnUiThread(new Runnable()
