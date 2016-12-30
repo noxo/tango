@@ -89,7 +89,6 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
 
     setContentView(R.layout.activity_mesh_builder);
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-    final Context context = this;
 
     // Setup UI elements and listeners.
     mClearButton = (Button) findViewById(R.id.clear_button);
@@ -304,9 +303,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
                 public void run()
                 {
                   //save
-                  String dir = context.getExternalMediaDirs()[0].toString();
-                  dir = dir.substring(0, dir.indexOf("Android"));
-                  File file = new File(dir, input.getText().toString() + ".ply");
+                  File file = new File(getPath(), input.getText().toString() + ".ply");
                   final String filename = file.getAbsolutePath();
                   TangoJNINative.save(filename);
                   //open???
@@ -354,5 +351,13 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   public boolean onTouchEvent(MotionEvent event) {
     mScaleDetector.onTouchEvent(event);
     return true;
+  }
+
+  private String getPath() {
+    String dir = OpenConstructorActivity.this.getExternalMediaDirs()[0].toString();
+    dir = dir.substring(0, dir.indexOf("Android"));
+    dir += "Models/";
+    new File(dir).mkdir();
+    return dir;
   }
 }
