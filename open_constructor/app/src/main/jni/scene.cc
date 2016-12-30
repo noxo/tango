@@ -84,6 +84,47 @@ namespace mesh_builder {
             tango_gl::Render(mesh->mesh, *dynamic_mesh_material_, tango_gl::Transform(), *camera_);
             mesh->mutex.unlock();
         }
+        if(!frustum_.vertices.empty())
+            tango_gl::Render(frustum_, *dynamic_mesh_material_, tango_gl::Transform(), *camera_);
+    }
+
+    void Scene::UpdateFrustum(glm::vec3 pos, float zoom) {
+        if(frustum_.colors.empty()) {
+            frustum_.render_mode = GL_TRIANGLES;
+            frustum_.colors.push_back(0xFFFFFF00);
+            frustum_.colors.push_back(0xFFFFFF00);
+            frustum_.colors.push_back(0xFFFFFF00);
+            frustum_.colors.push_back(0xFFFFFF00);
+            frustum_.colors.push_back(0xFFFFFF00);
+            frustum_.colors.push_back(0xFFFFFF00);
+            frustum_.indices.push_back(0);
+            frustum_.indices.push_back(1);
+            frustum_.indices.push_back(2);
+            frustum_.indices.push_back(0);
+            frustum_.indices.push_back(1);
+            frustum_.indices.push_back(3);
+            frustum_.indices.push_back(0);
+            frustum_.indices.push_back(1);
+            frustum_.indices.push_back(4);
+            frustum_.indices.push_back(0);
+            frustum_.indices.push_back(1);
+            frustum_.indices.push_back(5);
+            frustum_.indices.push_back(2);
+            frustum_.indices.push_back(3);
+            frustum_.indices.push_back(4);
+            frustum_.indices.push_back(2);
+            frustum_.indices.push_back(3);
+            frustum_.indices.push_back(5);
+        }
+        if(!frustum_.vertices.empty())
+            frustum_.vertices.clear();
+        float f = zoom * 0.005f;
+        frustum_.vertices.push_back(pos + glm::vec3(f, 0, 0));
+        frustum_.vertices.push_back(pos + glm::vec3(-f, 0, 0));
+        frustum_.vertices.push_back(pos + glm::vec3(0, 0, f));
+        frustum_.vertices.push_back(pos + glm::vec3(0, 0, -f));
+        frustum_.vertices.push_back(pos + glm::vec3(0, f, 0));
+        frustum_.vertices.push_back(pos + glm::vec3(0, -f, 0));
     }
 
     void Scene::AddDynamicMesh(SingleDynamicMesh *mesh) {

@@ -350,6 +350,7 @@ namespace mesh_builder {
 
         render_mutex_.lock();
         main_scene_.camera_->SetTransformationMatrix(start_service_T_device_);
+        main_scene_.UpdateFrustum(main_scene_.camera_->GetPosition(), zoom);
         //zoom
         glm::vec4 move = main_scene_.camera_->GetTransformationMatrix() * glm::vec4(0, 0, zoom, 0);
         main_scene_.camera_->Translate(glm::vec3(move.x, move.y, move.z));

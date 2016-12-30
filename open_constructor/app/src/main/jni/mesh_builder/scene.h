@@ -26,10 +26,12 @@ class Scene {
   void DeleteResources();
   void SetupViewPort(int w, int h);
   void Render();
+  void UpdateFrustum(glm::vec3 pos, float zoom);
   void AddDynamicMesh(SingleDynamicMesh* mesh);
   void ClearDynamicMeshes();
 
   tango_gl::Camera* camera_;
+  tango_gl::StaticMesh frustum_;
   std::vector<SingleDynamicMesh*> dynamic_meshes_;
   tango_gl::Material* dynamic_mesh_material_;
 };
