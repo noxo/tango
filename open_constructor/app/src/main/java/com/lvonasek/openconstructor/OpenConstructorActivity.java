@@ -25,6 +25,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.net.Uri;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
@@ -124,7 +125,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
         mRes++;
         if(mRes > 10)
           mRes = 10;
-        TangoJNINative.set3D(mRes * 0.01, Math.max(0.5, mRes * 0.1), mRes);
+        refresh3dr();
         refreshUi();
       }
     });
@@ -134,9 +135,9 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
       public void onClick(View view)
       {
         mRes--;
-        if(mRes <= 0)
-          mRes = 1;
-        TangoJNINative.set3D(mRes * 0.01, Math.max(0.5, mRes * 0.1), mRes);
+        if(mRes <= -1)
+          mRes = -1;
+        refresh3dr();
         refreshUi();
       }
     });
@@ -228,11 +229,43 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
     System.exit(0);
   }
 
+  private void refresh3dr()
+  {
+    if(mRes > 0)
+      TangoJNINative.set3D(mRes * 0.01, 0.6, mRes);
+    else if(mRes == 0)
+      TangoJNINative.set3D(0.005, 0.6, 0.85);
+    else if(mRes == -1)
+      TangoJNINative.set3D(0.0025, 0.6, 0.75);
+  }
+
   private void refreshUi() {
     int textId = m3drRunning ? R.string.pause : R.string.resume;
     mToggleButton.setText(textId);
-    String text = getString(R.string.distance) + mRes + "m, ";
-    text += getString(R.string.resolution)+ mRes + "cm";
+    //max distance
+    String text = getString(R.string.distance);
+    if(mRes > 0)
+      text += mRes + "m, ";
+    else if(mRes == 0)
+      text += "0.85m, ";
+    else if(mRes == -1)
+      text += "0.75m, ";
+    //3d resolution
+    text += getString(R.string.resolution);
+    if(mRes > 0)
+      text += mRes + "cm";
+    else if(mRes == 0)
+      text += "0.5cm";
+    else if(mRes == -1)
+      text += "0.25cm";
+    text += "\n";
+    //warning
+    if(mRes <= 0) {
+      text += getString(R.string.extreme);
+      mResText.setTextColor(Color.RED);
+    } else {
+      mResText.setTextColor(Color.WHITE);
+    }
     mResText.setText(text);
   }
 

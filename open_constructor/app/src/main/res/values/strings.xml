@@ -24,6 +24,7 @@
     <string name="view">Saved. Do you want to view 3D model?</string>
     <string name="external_app">For viewing you have to install external app.</string>
     <string name="distance">Max.distance:</string>
-    <string name="resolution">3D resolution:</string>
+    <string name="resolution">3D grid:</string>
     <string name="data_lost">Motion tracking control lost</string>
+    <string name="extreme">Warning, extreme settings!</string>
 </resources>
