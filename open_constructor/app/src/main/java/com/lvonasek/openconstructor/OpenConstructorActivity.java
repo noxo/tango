@@ -46,6 +46,9 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   private static final String PLY_VIEWER = "net.chucknology.tango.scanview";
   private static final String STORAGE_PATH = "/storage/emulated/0/";
 
+  private static final int REQUEST_CODE_PERMISSION_CAMERA = 1987;
+  private static final int REQUEST_CODE_PERMISSION_STORAGE = 1988;
+
   private OpenConstructorRenderer mRenderer;
   private GLSurfaceView mGLView;
 
@@ -64,8 +67,10 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   private boolean m3drRunning = true;
 
   // Tango Service connection.
+  boolean mInitialised = false;
   ServiceConnection mTangoServiceConnection = new ServiceConnection() {
       public void onServiceConnected(ComponentName name, IBinder service) {
+        TangoJNINative.onCreate(OpenConstructorActivity.this);
         TangoJNINative.onTangoServiceConnected(service);
       }
 
@@ -103,57 +108,8 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
         m3drRunning = false;
         TangoJNINative.onToggleButtonClicked(m3drRunning);
         refreshUi();
-        //filename dialog
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle(getString(R.string.enter_filename));
-        final EditText input = new EditText(context);
-        builder.setView(input);
-        builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
-          @Override
-          public void onClick(DialogInterface dialog, int which) {
-            new Thread(new Runnable(){
-              @Override
-              public void run()
-              {
-                //save
-                final String filename = STORAGE_PATH + input.getText().toString() + ".ply";
-                TangoJNINative.save(filename);
-                //open???
-                OpenConstructorActivity.this.runOnUiThread(new Runnable()
-                {
-                  @Override
-                  public void run()
-                  {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                    builder.setTitle(getString(R.string.view));
-                    builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
-                      @Override
-                      public void onClick(DialogInterface dialog, int which) {
-                        openModel(filename, context);
-                        dialog.cancel();
-                      }
-                    });
-                    builder.setNegativeButton(getString(android.R.string.cancel), new DialogInterface.OnClickListener() {
-                      @Override
-                      public void onClick(DialogInterface dialog, int which) {
-                        dialog.cancel();
-                      }
-                    });
-                    builder.create().show();
-                  }
-                });
-              }
-            }).start();
-            dialog.cancel();
-          }
-        });
-        builder.setNegativeButton(getString(android.R.string.cancel), new DialogInterface.OnClickListener() {
-          @Override
-          public void onClick(DialogInterface dialog, int which) {
-            dialog.cancel();
-          }
-        });
-        builder.create().show();
+        //save
+        setupPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, REQUEST_CODE_PERMISSION_STORAGE);
       }
     });
 
@@ -243,17 +199,18 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   protected void onResume() {
     super.onResume();
     mGLView.onResume();
-    TangoInitHelper.bindTangoService(this, mTangoServiceConnection);
-    setupPermission(Manifest.permission.CAMERA);
+    setupPermission(Manifest.permission.CAMERA, REQUEST_CODE_PERMISSION_CAMERA);
   }
 
   @Override
-  protected void onPause() {
+  protected synchronized void onPause() {
     super.onPause();
     mGLView.onPause();
-    TangoJNINative.onPause();
-    unbindService(mTangoServiceConnection);
-    Toast.makeText(this, R.string.data_lost, Toast.LENGTH_LONG).show();
+    if(mInitialised) {
+      TangoJNINative.onPause();
+      unbindService(mTangoServiceConnection);
+      Toast.makeText(this, R.string.data_lost, Toast.LENGTH_LONG).show();
+    }
   }
 
   private void openModel(String filename, Context context) {
@@ -269,7 +226,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
       Uri uri = Uri.parse(PLAY_STORE + PLY_VIEWER);
       startActivity(new Intent(Intent.ACTION_VIEW,uri));
     }
-    finish();
+    System.exit(0);
   }
 
   private void refreshUi() {
@@ -280,22 +237,80 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
     mResText.setText(text);
   }
 
-  private void setupPermission(String permission) {
+  private void setupPermission(String permission, int requestCode) {
     if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED)
-      requestPermissions(new String[]{permission}, 1987);
+      requestPermissions(new String[]{permission}, requestCode);
     else
-      TangoJNINative.onCreate(this);
+      onRequestPermissionsResult(requestCode, null, new int[]{PackageManager.PERMISSION_GRANTED});
   }
 
   @Override
-  public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+  public synchronized void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
     switch (requestCode) {
-      case 1987: {
+      case REQUEST_CODE_PERMISSION_CAMERA: {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
-          TangoJNINative.onCreate(this);
-        else
+        {
+          TangoInitHelper.bindTangoService(this, mTangoServiceConnection);
+          mInitialised = true;
+        } else
           finish();
         break;
+      }
+      case REQUEST_CODE_PERMISSION_STORAGE: {
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+          //filename dialog
+          final Context context = OpenConstructorActivity.this;
+          AlertDialog.Builder builder = new AlertDialog.Builder(context);
+          builder.setTitle(getString(R.string.enter_filename));
+          final EditText input = new EditText(context);
+          builder.setView(input);
+          builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+              new Thread(new Runnable(){
+                @Override
+                public void run()
+                {
+                  //save
+                  final String filename = STORAGE_PATH + input.getText().toString() + ".ply";
+                  TangoJNINative.save(filename);
+                  //open???
+                  OpenConstructorActivity.this.runOnUiThread(new Runnable()
+                  {
+                    @Override
+                    public void run()
+                    {
+                      AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                      builder.setTitle(getString(R.string.view));
+                      builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                          openModel(filename, context);
+                          dialog.cancel();
+                        }
+                      });
+                      builder.setNegativeButton(getString(android.R.string.cancel), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                          dialog.cancel();
+                        }
+                      });
+                      builder.create().show();
+                    }
+                  });
+                }
+              }).start();
+              dialog.cancel();
+            }
+          });
+          builder.setNegativeButton(getString(android.R.string.cancel), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+              dialog.cancel();
+            }
+          });
+          builder.create().show();
+        }
       }
     }
   }

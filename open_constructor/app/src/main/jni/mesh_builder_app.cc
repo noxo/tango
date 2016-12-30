@@ -319,11 +319,6 @@ namespace mesh_builder {
     void MeshBuilderApp::OnPause() {
         TangoDisconnect();
         DeleteResources();
-
-        // Since motion tracking is lost when disconnected from Tango, any
-        // existing 3D reconstruction state no longer is lined up with the
-        // real world. Best we can do is clear the state.
-        OnClearButtonClicked();
     }
 
     void MeshBuilderApp::OnSurfaceCreated() {
