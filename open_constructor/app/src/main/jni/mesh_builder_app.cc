@@ -401,11 +401,6 @@ namespace mesh_builder {
             dynamic_mesh->mutex.lock();
             app->add_mutex_.unlock();
 
-            dynamic_mesh->mesh.vertices.resize(dynamic_mesh->mesh.vertices.capacity());
-            dynamic_mesh->mesh.colors.resize(dynamic_mesh->mesh.colors.capacity());
-            dynamic_mesh->mesh.uv.resize(dynamic_mesh->mesh.uv.capacity());
-            dynamic_mesh->mesh.indices.resize(dynamic_mesh->mesh.indices.capacity());
-
             Tango3DR_Mesh tango_mesh = {
                     /* timestamp */ 0.0,
                     /* num_vertices */ 0u,
@@ -432,12 +427,10 @@ namespace mesh_builder {
                 dynamic_mesh->mesh.colors.resize(new_vertex_size);
                 dynamic_mesh->mesh.uv.resize(new_vertex_size);
                 dynamic_mesh->mesh.indices.resize(new_index_size);
-            } else
+            } else {
                 ++it;
-            dynamic_mesh->mesh.vertices.resize(tango_mesh.num_vertices);
-            dynamic_mesh->mesh.colors.resize(tango_mesh.num_vertices);
-            dynamic_mesh->mesh.uv.resize(tango_mesh.num_vertices);
-            dynamic_mesh->mesh.indices.resize(tango_mesh.num_faces * 3);
+                dynamic_mesh->size = tango_mesh.num_faces * 3;
+            }
             dynamic_mesh->mutex.unlock();
         }
         app->threadMutex[thread].unlock();

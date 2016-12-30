@@ -81,11 +81,11 @@ namespace mesh_builder {
 
         for (SingleDynamicMesh *mesh : dynamic_meshes_) {
             mesh->mutex.lock();
-            tango_gl::Render(mesh->mesh, *dynamic_mesh_material_, tango_gl::Transform(), *camera_);
+            tango_gl::Render(mesh->mesh, *dynamic_mesh_material_, tango_gl::Transform(), *camera_, mesh->size);
             mesh->mutex.unlock();
         }
         if(!frustum_.vertices.empty())
-            tango_gl::Render(frustum_, *dynamic_mesh_material_, tango_gl::Transform(), *camera_);
+            tango_gl::Render(frustum_, *dynamic_mesh_material_, tango_gl::Transform(), *camera_, frustum_.indices.size());
     }
 
     void Scene::UpdateFrustum(glm::vec3 pos, float zoom) {

@@ -173,7 +173,7 @@ class Material {
 
 // Draw a thing to the screen.
 void Render(const StaticMesh& mesh, const Material& material,
-            const Transform& transform, const Camera& camera);
+            const Transform& transform, const Camera& camera, const int size);
 
 }  // namespace tango_gl
 #endif  // TANGO_GL_TANGO_GL_H_

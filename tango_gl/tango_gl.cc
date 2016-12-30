@@ -50,7 +50,7 @@ namespace tango_gl {
 GLuint Material::fallback_shader_program_ = 0;
 
 void Render(const StaticMesh& mesh, const Material& material,
-            const Transform& transform, const Camera& camera) {
+            const Transform& transform, const Camera& camera, const int size) {
   glm::mat4 model_mat = transform.GetTransformationMatrix();
   glm::mat4 view_mat = camera.GetViewMatrix();
   glm::mat4 projection_mat = camera.GetProjectionMatrix();
@@ -111,8 +111,7 @@ void Render(const StaticMesh& mesh, const Material& material,
     glVertexAttribPointer(attrib_uv, 2, GL_FLOAT, GL_FALSE, 0, mesh.uv.data());
   }
 
-  glDrawElements(mesh.render_mode, mesh.indices.size(), GL_UNSIGNED_INT,
-                 mesh.indices.data());
+  glDrawElements(mesh.render_mode, size, GL_UNSIGNED_INT, mesh.indices.data());
 
   // Clean up state
   glDisableVertexAttribArray(attrib_vertices);

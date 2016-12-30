@@ -16,6 +16,7 @@ namespace mesh_builder {
 struct SingleDynamicMesh {
     tango_gl::StaticMesh mesh;
     std::mutex mutex;
+    int size;
 };
 
 class Scene {
