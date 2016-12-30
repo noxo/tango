@@ -36,6 +36,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -49,6 +50,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   private static final int REQUEST_CODE_PERMISSION_CAMERA = 1987;
   private static final int REQUEST_CODE_PERMISSION_STORAGE = 1988;
 
+  private ProgressBar mProgress;
   private OpenConstructorRenderer mRenderer;
   private GLSurfaceView mGLView;
 
@@ -145,6 +147,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
     mGLView = (GLSurfaceView) findViewById(R.id.gl_surface_view);
     mGLView.setEGLContextClientVersion(2);
     mGLView.setRenderer(mRenderer);
+    mProgress = (ProgressBar) findViewById(R.id.progressBar);
 
     refreshUi();
 
@@ -298,6 +301,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
           builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
+              mProgress.setVisibility(View.VISIBLE);
               new Thread(new Runnable(){
                 @Override
                 public void run()
@@ -312,6 +316,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
                     @Override
                     public void run()
                     {
+                      mProgress.setVisibility(View.GONE);
                       AlertDialog.Builder builder = new AlertDialog.Builder(context);
                       builder.setTitle(getString(R.string.view));
                       builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
