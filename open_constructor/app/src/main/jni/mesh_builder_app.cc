@@ -449,7 +449,7 @@ namespace mesh_builder {
         int faceCount = 0;
         for(unsigned int i = 0; i < main_scene_.dynamic_meshes_.size(); i++) {
             vertexCount += main_scene_.dynamic_meshes_[i]->mesh.vertices.size();
-            faceCount += main_scene_.dynamic_meshes_[i]->mesh.indices.size() / 3;
+            faceCount += main_scene_.dynamic_meshes_[i]->size / 3;
         }
 
         //file header
@@ -479,7 +479,7 @@ namespace mesh_builder {
         //write faces
         int offset = 0;
         for(unsigned int i = 0; i < main_scene_.dynamic_meshes_.size(); i++) {
-            for (unsigned int j = 0; j < main_scene_.dynamic_meshes_[i]->mesh.indices.size(); j+=3) {
+            for (unsigned int j = 0; j < main_scene_.dynamic_meshes_[i]->size; j+=3) {
                 unsigned int a = main_scene_.dynamic_meshes_[i]->mesh.indices[j + 0] + offset;
                 unsigned int b = main_scene_.dynamic_meshes_[i]->mesh.indices[j + 1] + offset;
                 unsigned int c = main_scene_.dynamic_meshes_[i]->mesh.indices[j + 2] + offset;
