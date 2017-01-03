@@ -61,9 +61,11 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   private int mRes = 3;
 
   private boolean mViewMode = false;
+  private RotationGestureDetector mRotationDetector;
   private ScaleGestureDetector mScaleDetector;
   private float mMoveX = 0;
   private float mMoveY = 0;
+  private float mYaw = 0;
   private float mZoom = 0;
   private int x_cord = 0;
   private int y_cord = 0;
@@ -150,8 +152,17 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
     mGLView.setEGLContextClientVersion(2);
     mGLView.setRenderer(mRenderer);
     mProgress = (ProgressBar) findViewById(R.id.progressBar);
-
     refreshUi();
+
+    mRotationDetector = new RotationGestureDetector(new RotationGestureDetector.OnRotationGestureListener()
+    {
+      @Override
+      public void OnRotation(RotationGestureDetector rotationDetector)
+      {
+        mYaw = -rotationDetector.getAngle() * (float)Math.PI / 180.0f;
+        TangoJNINative.setView(mYaw, -90, mMoveX, mMoveY, !mViewMode);
+      }
+    });
 
     mScaleDetector = new ScaleGestureDetector(this, new ScaleGestureDetector.OnScaleGestureListener() {
       @Override
@@ -312,9 +323,10 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
                           //TODO:Viewer mode
                           mMoveX = 0;
                           mMoveY = 0;
+                          mYaw = 0;
                           mZoom = 10;
                           mViewMode = true;
-                          TangoJNINative.setView(0, -90, mMoveX, mMoveY, !mViewMode);
+                          TangoJNINative.setView(mYaw, -90, mMoveX, mMoveY, !mViewMode);
                           dialog.cancel();
                         }
                       });
@@ -345,7 +357,14 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   }
 
   @Override
+  public void onBackPressed()
+  {
+    System.exit(0);
+  }
+
+  @Override
   public boolean onTouchEvent(MotionEvent event) {
+    mRotationDetector.onTouchEvent(event);
     mScaleDetector.onTouchEvent(event);
     if (event.getAction() == MotionEvent.ACTION_DOWN)
     {
@@ -354,10 +373,13 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
     }
     else if (event.getAction() == MotionEvent.ACTION_MOVE)
     {
+      double angle = -mYaw;
       float f = getMoveFactor();
-      mMoveX -= (event.getRawX() - x_cord) * f;
-      mMoveY -= (event.getRawY() - y_cord) * f;
-      TangoJNINative.setView(0, -90, mMoveX, mMoveY, !mViewMode);
+      float dx = (x_cord - event.getRawX());
+      float dy = (event.getRawY() - y_cord);
+      mMoveX += dx * f * Math.cos( angle ) + dy * f * Math.sin( angle );
+      mMoveY += dx * f * Math.sin( angle ) - dy * f * Math.cos( angle );
+      TangoJNINative.setView(mYaw, -90, mMoveX, mMoveY, !mViewMode);
       x_cord = (int)event.getRawX();
       y_cord = (int)event.getRawY();
     }

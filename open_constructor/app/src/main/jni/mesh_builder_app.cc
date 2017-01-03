@@ -52,6 +52,21 @@ namespace {
         pose->orientation[3] = rotation[3];
     }
 
+    glm::quat toQuaternion(double pitch, double roll, double yaw) {
+        glm::quat q;
+        double t0 = std::cos(yaw * 0.5f);
+        double t1 = std::sin(yaw * 0.5f);
+        double t2 = std::cos(roll * 0.5f);
+        double t3 = std::sin(roll * 0.5f);
+        double t4 = std::cos(pitch * 0.5f);
+        double t5 = std::sin(pitch * 0.5f);
+
+        q.w = t0 * t2 * t4 + t1 * t3 * t5;
+        q.x = t0 * t3 * t4 - t1 * t2 * t5;
+        q.y = t0 * t2 * t5 + t1 * t3 * t4;
+        q.z = t1 * t2 * t4 - t0 * t3 * t5;
+        return q;
+    }
 }  // namespace
 
 namespace mesh_builder {
@@ -345,12 +360,14 @@ namespace mesh_builder {
             start_service_T_device_ = glm::make_mat4(matrix_transform.matrix);
 
         render_mutex_.lock();
-        main_scene_.camera_->SetTransformationMatrix(start_service_T_device_);
-        main_scene_.UpdateFrustum(main_scene_.camera_->GetPosition(), zoom);
         //camera transformation
         if (!gyro) {
-            main_scene_.camera_->SetRotation(glm::quat(glm::vec3(yaw, pitch, 0)));
             main_scene_.camera_->SetPosition(glm::vec3(movex, 0, movey));
+            main_scene_.camera_->SetRotation(toQuaternion(pitch, yaw, 0));
+            main_scene_.camera_->SetScale(glm::vec3(1, 1, 1));
+        } else {
+            main_scene_.camera_->SetTransformationMatrix(start_service_T_device_);
+            main_scene_.UpdateFrustum(main_scene_.camera_->GetPosition(), zoom);
         }
         //zoom
         glm::vec4 move = main_scene_.camera_->GetTransformationMatrix() * glm::vec4(0, 0, zoom, 0);
