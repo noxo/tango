@@ -89,6 +89,12 @@ Java_com_lvonasek_openconstructor_TangoJNINative_save(
 }
 
 JNIEXPORT void JNICALL
+Java_com_lvonasek_openconstructor_TangoJNINative_setView(JNIEnv*, jobject, jfloat pitch, jfloat yaw,
+                                                         jfloat x, jfloat y, jboolean gyro) {
+  app.SetView(pitch, yaw, x, y, gyro);
+}
+
+JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_setZoom(JNIEnv*, jobject, jfloat value) {
   app.SetZoom(value);
 }

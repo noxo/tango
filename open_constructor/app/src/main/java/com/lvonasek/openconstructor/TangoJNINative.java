@@ -81,6 +81,9 @@ public class TangoJNINative {
   // Save current 3D model
   public static native void save(String name);
 
+  // Set view on 3D view
+  public static native void setView(float pitch, float yaw, float x, float y, boolean gyro);
+
   // Set zoom of view
   public static native void setZoom(float value);
 }

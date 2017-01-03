@@ -72,7 +72,7 @@ namespace mesh_builder {
         glViewport(0, 0, w, h);
     }
 
-    void Scene::Render() {
+    void Scene::Render(bool frustum) {
         glEnable(GL_DEPTH_TEST);
         glDisable(GL_CULL_FACE);
 
@@ -84,7 +84,7 @@ namespace mesh_builder {
             tango_gl::Render(mesh->mesh, *dynamic_mesh_material_, tango_gl::Transform(), *camera_, mesh->size);
             mesh->mutex.unlock();
         }
-        if(!frustum_.vertices.empty())
+        if(!frustum_.vertices.empty() && frustum)
             tango_gl::Render(frustum_, *dynamic_mesh_material_, tango_gl::Transform(), *camera_, frustum_.indices.size());
     }
 

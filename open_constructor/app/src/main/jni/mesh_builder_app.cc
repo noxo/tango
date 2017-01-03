@@ -162,6 +162,7 @@ namespace mesh_builder {
     }
 
     MeshBuilderApp::MeshBuilderApp() {
+        gyro = true;
         zoom = 0;
     }
 
@@ -346,11 +347,16 @@ namespace mesh_builder {
         render_mutex_.lock();
         main_scene_.camera_->SetTransformationMatrix(start_service_T_device_);
         main_scene_.UpdateFrustum(main_scene_.camera_->GetPosition(), zoom);
+        //camera transformation
+        if (!gyro) {
+            main_scene_.camera_->SetRotation(glm::quat(glm::vec3(yaw, pitch, 0)));
+            main_scene_.camera_->SetPosition(glm::vec3(movex, 0, movey));
+        }
         //zoom
         glm::vec4 move = main_scene_.camera_->GetTransformationMatrix() * glm::vec4(0, 0, zoom, 0);
         main_scene_.camera_->Translate(glm::vec3(move.x, move.y, move.z));
         //render
-        main_scene_.Render();
+        main_scene_.Render(gyro);
         render_mutex_.unlock();
     }
 

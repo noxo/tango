@@ -22,14 +22,14 @@ import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.net.Uri;
+import android.graphics.Point;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.view.Display;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
@@ -43,9 +43,6 @@ import android.widget.Toast;
 import java.io.File;
 
 public class OpenConstructorActivity extends Activity implements View.OnClickListener {
-
-  private static final String PLAY_STORE = "https://play.google.com/store/apps/details?id=";
-  private static final String PLY_VIEWER = "net.chucknology.tango.scanview";
 
   private static final int REQUEST_CODE_PERMISSION_CAMERA = 1987;
   private static final int REQUEST_CODE_PERMISSION_STORAGE = 1988;
@@ -63,8 +60,13 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   private Button mResMinus;
   private int mRes = 3;
 
+  private boolean mViewMode = false;
   private ScaleGestureDetector mScaleDetector;
+  private float mMoveX = 0;
+  private float mMoveY = 0;
   private float mZoom = 0;
+  private int x_cord = 0;
+  private int y_cord = 0;
 
   private boolean m3drRunning = true;
 
@@ -162,8 +164,9 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
       @Override
       public boolean onScale(ScaleGestureDetector detector) {
         mZoom -= detector.getScaleFactor() - 1;
-        if(mZoom < 0)
-          mZoom = 0;
+        int min = mViewMode ? 1 : 0;
+        if(mZoom < min)
+          mZoom = min;
         if(mZoom > 10)
           mZoom = 10;
         TangoJNINative.setZoom(mZoom);
@@ -213,22 +216,6 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
       unbindService(mTangoServiceConnection);
       Toast.makeText(this, R.string.data_lost, Toast.LENGTH_LONG).show();
     }
-  }
-
-  private void openModel(String filename, Context context) {
-    try {
-      //open viewer
-      Intent intent = new Intent(Intent.ACTION_VIEW);
-      intent.setDataAndType(Uri.fromFile(new File(filename)), "text/plain");
-      intent.setPackage(PLY_VIEWER);
-      startActivity(intent);
-    } catch (Exception e) {
-      //App not found
-      Toast.makeText(context, R.string.external_app, Toast.LENGTH_LONG).show();
-      Uri uri = Uri.parse(PLAY_STORE + PLY_VIEWER);
-      startActivity(new Intent(Intent.ACTION_VIEW,uri));
-    }
-    System.exit(0);
   }
 
   private void refresh3dr()
@@ -322,7 +309,12 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
                       builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                          openModel(filename, context);
+                          //TODO:Viewer mode
+                          mMoveX = 0;
+                          mMoveY = 0;
+                          mZoom = 10;
+                          mViewMode = true;
+                          TangoJNINative.setView(0, -90, mMoveX, mMoveY, !mViewMode);
                           dialog.cancel();
                         }
                       });
@@ -355,7 +347,29 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   @Override
   public boolean onTouchEvent(MotionEvent event) {
     mScaleDetector.onTouchEvent(event);
+    if (event.getAction() == MotionEvent.ACTION_DOWN)
+    {
+      x_cord = (int)event.getRawX();
+      y_cord = (int)event.getRawY();
+    }
+    else if (event.getAction() == MotionEvent.ACTION_MOVE)
+    {
+      float f = getMoveFactor();
+      mMoveX -= (event.getRawX() - x_cord) * f;
+      mMoveY -= (event.getRawY() - y_cord) * f;
+      TangoJNINative.setView(0, -90, mMoveX, mMoveY, !mViewMode);
+      x_cord = (int)event.getRawX();
+      y_cord = (int)event.getRawY();
+    }
     return true;
+  }
+
+  private float getMoveFactor()
+  {
+    Display display = getWindowManager().getDefaultDisplay();
+    Point size = new Point();
+    display.getSize(size);
+    return 2.0f / (size.x + size.y) * (float)Math.pow(mZoom, 0.5f) * 2.0f;
   }
 
   private String getPath() {

@@ -26,7 +26,7 @@ class Scene {
   void InitGLContent();
   void DeleteResources();
   void SetupViewPort(int w, int h);
-  void Render();
+  void Render(bool frustum);
   void UpdateFrustum(glm::vec3 pos, float zoom);
   void AddDynamicMesh(SingleDynamicMesh* mesh);
   void ClearDynamicMeshes();

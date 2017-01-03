@@ -56,6 +56,8 @@ namespace mesh_builder {
         void OnClearButtonClicked();
         void TangoSetup3DR(double res, double dmin, double dmax);
         void Save(std::string filename);
+        void SetView(float p, float y, float mx, float my, bool g) { pitch = p; yaw = y; gyro = g;
+                                                                            movex = mx; movey = my;}
         void SetZoom(float value) { zoom = value; }
 
     private:
@@ -85,6 +87,11 @@ namespace mesh_builder {
         bool threadDone[THREAD_COUNT];
         pthread_t threadId[THREAD_COUNT];
         std::mutex threadMutex[THREAD_COUNT];
+        bool gyro;
+        float movex;
+        float movey;
+        float pitch;
+        float yaw;
         float zoom;
     };
 }  // namespace mesh_builder
