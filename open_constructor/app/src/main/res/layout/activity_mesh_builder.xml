@@ -24,6 +24,7 @@
         android:layout_gravity="top" />
 
     <LinearLayout
+        android:id="@+id/layout_rec_top"
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -53,6 +54,7 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/layout_rec_bottom"
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -88,6 +90,14 @@
         android:layout_centerVertical="true"
         android:layout_centerHorizontal="true"
         android:id="@+id/progressBar"
+        android:visibility="gone" />
+
+    <SeekBar
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="90"
+        android:layout_alignParentTop="true"
+        android:id="@+id/seekBar"
         android:visibility="gone" />
 
 </RelativeLayout>
