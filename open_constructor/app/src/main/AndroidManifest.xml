@@ -21,7 +21,7 @@
             android:name="com.projecttango.libtango_device2"
             android:required="true" />
         <activity
-            android:name=".OpenConstructorActivity"
+            android:name=".FileActivity"
             android:label="@string/app_name"
             android:screenOrientation="portrait">
             <intent-filter>
@@ -29,6 +29,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".OpenConstructorActivity" android:screenOrientation="portrait" />
     </application>
 
 </manifest>
