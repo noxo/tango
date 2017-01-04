@@ -80,6 +80,15 @@ Java_com_lvonasek_openconstructor_TangoJNINative_set3D(
 }
 
 JNIEXPORT void JNICALL
+Java_com_lvonasek_openconstructor_TangoJNINative_load(
+        JNIEnv* env, jobject, jstring name) {
+  const char *s = env->GetStringUTFChars(name,NULL);
+  std::string str( s );
+  env->ReleaseStringUTFChars(name,s);
+  app.Load(str);
+}
+
+JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_save(
         JNIEnv* env, jobject, jstring name) {
   const char *s = env->GetStringUTFChars(name,NULL);

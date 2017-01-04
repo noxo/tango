@@ -23,6 +23,7 @@
 mesh_builder::MeshBuilderApp* app = 0;
 
 namespace {
+    const int kSubdivisionSize = 5000;
     const int kInitialVertexCount = 100;
     const int kInitialIndexCount = 99;
     const int kGrowthFactor = 5;
@@ -66,6 +67,27 @@ namespace {
         q.y = t0 * t2 * t5 + t1 * t3 * t4;
         q.z = t1 * t2 * t4 - t0 * t3 * t5;
         return q;
+    }
+
+    int scandec(char* line, int offset)
+    {
+        int number = 0;
+        for (int i = offset; i < 1024; i++) {
+            char c = line[i];
+            if (c != '\n')
+                number = number * 10 + c - '0';
+            else
+                return number;
+        }
+        return number;
+    }
+
+    bool startsWith(std::string s, std::string e)
+    {
+        if (s.size() >= e.size())
+            if (s.substr(0, e.size()).compare(e) == 0)
+                return true;
+        return false;
     }
 }  // namespace
 
@@ -462,11 +484,75 @@ namespace mesh_builder {
         return 0;
     }
 
+    void MeshBuilderApp::Load(std::string filename) {
+        binder_mutex_.lock();
+        process_mutex_.lock();
+        render_mutex_.lock();
+        LOGI("Loading from %s", filename.c_str());
+        FILE *file = fopen(filename.c_str(), "r");
+
+        //prepare objects
+        char buffer[1024];
+        int vertexCount = 0;
+        int faceCount = 0;
+        std::vector<std::pair<glm::vec3, int> > vertices;
+
+        //read header
+        while (true) {
+            if (!fgets(buffer, 1024, file))
+                break;
+            if (startsWith(buffer, "element vertex"))
+                vertexCount = scandec(buffer, 15);
+            else if (startsWith(buffer, "element face"))
+                faceCount = scandec(buffer, 13);
+            else if (startsWith(buffer, "end_header"))
+                break;
+        }
+        //read vertices
+        unsigned int t, a, b, c;
+        std::pair<glm::vec3, int> vec;
+        for (int i = 0; i < vertexCount; i++) {
+            fscanf(file, "%f %f %f %d %d %d", &vec.first.x, &vec.first.z, &vec.first.y, &a, &b, &c);
+            vec.first.x *= -1.0f;
+            vec.second = a + (b << 8) + (c << 16);
+            vertices.push_back(vec);
+        }
+        //parse faces
+        int parts = faceCount / kSubdivisionSize;
+        if(faceCount % kSubdivisionSize > 0)
+            parts++;
+        for (int j = 0; j < parts; j++)  {
+            tango_gl::StaticMesh static_mesh;
+            static_mesh.render_mode = GL_TRIANGLES;
+            int count = kSubdivisionSize;
+            if (j == parts - 1)
+                count = faceCount % kSubdivisionSize;
+            for (int i = 0; i < count; i++)  {
+                fscanf(file, "%d %d %d %d", &t, &a, &b, &c);
+                //unsupported format
+                if (t != 3)
+                    continue;
+                static_mesh.vertices.push_back(vertices[a].first);
+                static_mesh.colors.push_back(vertices[a].second);
+                static_mesh.vertices.push_back(vertices[b].first);
+                static_mesh.colors.push_back(vertices[b].second);
+                static_mesh.vertices.push_back(vertices[c].first);
+                static_mesh.colors.push_back(vertices[c].second);
+            }
+            main_scene_.static_meshes_.push_back(static_mesh);
+        }
+        fclose(file);
+        render_mutex_.unlock();
+        process_mutex_.unlock();
+        binder_mutex_.unlock();
+    }
+
     void MeshBuilderApp::Save(std::string filename)
     {
         binder_mutex_.lock();
         process_mutex_.lock();
         LOGI("Writing into %s", filename.c_str());
+
         //count vertices and faces
         int vertexCount = 0;
         int faceCount = 0;

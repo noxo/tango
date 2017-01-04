@@ -53,6 +53,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   private OpenConstructorRenderer mRenderer;
   private GLSurfaceView mGLView;
   private SeekBar mSeekbar;
+  private String mToLoad;
 
   private LinearLayout mLayoutRecBottom;
   private Button mToggleButton;
@@ -77,6 +78,25 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
       public void onServiceConnected(ComponentName name, IBinder service) {
         TangoJNINative.onCreate(OpenConstructorActivity.this);
         TangoJNINative.onTangoServiceConnected(service);
+        if (mToLoad != null)
+        {
+          new Thread(new Runnable()
+          {
+            @Override
+            public void run()
+            {
+              TangoJNINative.load(mToLoad);
+              OpenConstructorActivity.this.runOnUiThread(new Runnable()
+              {
+                @Override
+                public void run()
+                {
+                  mProgress.setVisibility(View.GONE);
+                }
+              });
+            }
+          }).start();
+        }
       }
 
       public void onServiceDisconnected(ComponentName name) {
@@ -165,6 +185,18 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
         TangoJNINative.setZoom(mZoom);
       }
     }, this);
+
+    //open file
+    mToLoad = null;
+    String filename = getIntent().getStringExtra(FileUtils.FILE_KEY);
+    if ((filename != null) && (filename.length() > 0))
+    {
+      m3drRunning = false;
+      TangoJNINative.onToggleButtonClicked(false);
+      setViewerMode();
+      mProgress.setVisibility(View.VISIBLE);
+      mToLoad = new File(FileUtils.getPath(), filename).toString();
+    }
   }
 
   @Override

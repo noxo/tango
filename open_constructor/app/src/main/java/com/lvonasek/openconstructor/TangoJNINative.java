@@ -78,6 +78,9 @@ public class TangoJNINative {
   // Set 3D scanning parameters
   public static native void set3D(double res, double min, double max);
 
+  // Load 3D model from file
+  public static native void load(String name);
+
   // Save current 3D model
   public static native void save(String name);
 

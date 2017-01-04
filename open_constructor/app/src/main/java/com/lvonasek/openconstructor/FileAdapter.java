@@ -1,6 +1,7 @@
 package com.lvonasek.openconstructor;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -39,7 +40,7 @@ class FileAdapter extends BaseAdapter
   }
 
   @Override
-  public View getView(int index, View view, ViewGroup viewGroup)
+  public View getView(final int index, View view, ViewGroup viewGroup)
   {
     LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     if (view == null)
@@ -51,7 +52,10 @@ class FileAdapter extends BaseAdapter
       @Override
       public void onClick(View view)
       {
-        //TODO:open
+        Intent intent = new Intent(mContext, OpenConstructorActivity.class);
+        intent.putExtra(FileUtils.FILE_KEY, mItems.get(index));
+        mContext.showProgress();
+        mContext.startActivity(intent);
       }
     });
     view.setOnLongClickListener(new View.OnLongClickListener()

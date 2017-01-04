@@ -79,6 +79,9 @@ namespace mesh_builder {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
+        for (tango_gl::StaticMesh mesh : static_meshes_) {
+            tango_gl::Render(mesh, *dynamic_mesh_material_, tango_gl::Transform(), *camera_, -1);
+        }
         for (SingleDynamicMesh *mesh : dynamic_meshes_) {
             mesh->mutex.lock();
             tango_gl::Render(mesh->mesh, *dynamic_mesh_material_, tango_gl::Transform(), *camera_, mesh->size);

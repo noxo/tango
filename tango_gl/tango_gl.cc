@@ -111,7 +111,10 @@ void Render(const StaticMesh& mesh, const Material& material,
     glVertexAttribPointer(attrib_uv, 2, GL_FLOAT, GL_FALSE, 0, mesh.uv.data());
   }
 
-  glDrawElements(mesh.render_mode, size, GL_UNSIGNED_INT, mesh.indices.data());
+  if (size >= 0)
+    glDrawElements(mesh.render_mode, size, GL_UNSIGNED_INT, mesh.indices.data());
+  else if (!mesh.vertices.empty())
+    glDrawArrays(mesh.render_mode, 0, mesh.vertices.size());
 
   // Clean up state
   glDisableVertexAttribArray(attrib_vertices);

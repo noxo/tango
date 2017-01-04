@@ -55,6 +55,7 @@ namespace mesh_builder {
         void OnToggleButtonClicked(bool t3dr_is_running);
         void OnClearButtonClicked();
         void TangoSetup3DR(double res, double dmin, double dmax);
+        void Load(std::string filename);
         void Save(std::string filename);
         void SetView(float p, float y, float mx, float my, bool g) { pitch = p; yaw = y; gyro = g;
                                                                             movex = mx; movey = my;}

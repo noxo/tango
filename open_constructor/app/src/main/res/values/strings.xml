@@ -27,4 +27,5 @@
     <string name="resolution">3D grid:</string>
     <string name="data_lost">Motion tracking control lost</string>
     <string name="extreme">Warning, extreme settings!</string>
+    <string name="no_data">No recorded meshes</string>
 </resources>
