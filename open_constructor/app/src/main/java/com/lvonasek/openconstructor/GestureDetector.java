@@ -1,36 +1,57 @@
 package com.lvonasek.openconstructor;
 
+import android.content.Context;
 import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 
-public class RotationGestureDetector
+public class GestureDetector
 {
   private static final int INVALID_ANGLE = 9999;
   private static final int INVALID_POINTER_ID = -1;
   private float fX, fY, sX, sY;
   private int ptrID1, ptrID2;
   private float mAngle = 0;
-  private float mLast = INVALID_ANGLE + 1;
+  private float mLastAngle = INVALID_ANGLE + 1;
+  private float mMoveX = 0;
+  private float mMoveY = 0;
+  private boolean mMoveValid = false;
 
-  private OnRotationGestureListener mListener;
+  private GestureListener mListener;
+  private ScaleGestureDetector mScaleDetector;
 
-  public float getAngle()
-  {
-    return mAngle;
-  }
-
-  public RotationGestureDetector(OnRotationGestureListener listener)
+  public GestureDetector(GestureListener listener, Context context)
   {
     mListener = listener;
     ptrID1 = INVALID_POINTER_ID;
     ptrID2 = INVALID_POINTER_ID;
+
+    mScaleDetector = new ScaleGestureDetector(context, new ScaleGestureDetector.OnScaleGestureListener() {
+      @Override
+      public void onScaleEnd(ScaleGestureDetector detector) {
+      }
+      @Override
+      public boolean onScaleBegin(ScaleGestureDetector detector) {
+        return true;
+      }
+      @Override
+      public boolean onScale(ScaleGestureDetector detector) {
+        if (mListener != null)
+          mListener.OnZoom(detector.getScaleFactor() - 1.0f);
+        return false;
+      }
+    });
   }
 
   public boolean onTouchEvent(MotionEvent event)
   {
+    mScaleDetector.onTouchEvent(event);
     switch (event.getActionMasked())
     {
       case MotionEvent.ACTION_DOWN:
         ptrID1 = event.getPointerId(event.getActionIndex());
+        mMoveX = event.getRawX();
+        mMoveY = event.getRawY();
+        mMoveValid = true;
         break;
       case MotionEvent.ACTION_POINTER_DOWN:
         ptrID2 = event.getPointerId(event.getActionIndex());
@@ -38,6 +59,7 @@ public class RotationGestureDetector
         sY = event.getY(event.findPointerIndex(ptrID1));
         fX = event.getX(event.findPointerIndex(ptrID2));
         fY = event.getY(event.findPointerIndex(ptrID2));
+        mMoveValid = false;
         break;
       case MotionEvent.ACTION_MOVE:
         if (ptrID1 != INVALID_POINTER_ID && ptrID2 != INVALID_POINTER_ID)
@@ -49,7 +71,7 @@ public class RotationGestureDetector
           nfY = event.getY(event.findPointerIndex(ptrID2));
 
           float angle = angleBetweenLines(fX, fY, sX, sY, nfX, nfY, nsX, nsY);
-          float gap = angle - mLast;
+          float gap = angle - mLastAngle;
           while(gap > 180)
           {
             gap -= 360.0f;
@@ -58,28 +80,36 @@ public class RotationGestureDetector
           {
             gap += 360.0f;
           }
-          if(mLast < INVALID_ANGLE)
+          if(mLastAngle < INVALID_ANGLE)
             mAngle += gap;
-          mLast = angle;
+          mLastAngle = angle;
 
           if (mListener != null)
-          {
-            mListener.OnRotation(this);
-          }
+            mListener.OnRotation(mAngle);
+        }
+        else if (mMoveValid)
+        {
+          if (mListener != null)
+            mListener.OnMove(mMoveX - event.getRawX(), event.getRawY() - mMoveY);
+          mMoveX = event.getRawX();
+          mMoveY = event.getRawY();
         }
         break;
       case MotionEvent.ACTION_UP:
         ptrID1 = INVALID_POINTER_ID;
-        mLast = INVALID_ANGLE + 1;
+        mLastAngle = INVALID_ANGLE + 1;
+        mMoveValid = false;
         break;
       case MotionEvent.ACTION_POINTER_UP:
         ptrID2 = INVALID_POINTER_ID;
-        mLast = INVALID_ANGLE + 1;
+        mLastAngle = INVALID_ANGLE + 1;
+        mMoveValid = false;
         break;
       case MotionEvent.ACTION_CANCEL:
         ptrID1 = INVALID_POINTER_ID;
         ptrID2 = INVALID_POINTER_ID;
-        mLast = INVALID_ANGLE + 1;
+        mLastAngle = INVALID_ANGLE + 1;
+        mMoveValid = false;
         break;
     }
     return true;
@@ -96,8 +126,12 @@ public class RotationGestureDetector
     return angle;
   }
 
-  public interface OnRotationGestureListener
+  public interface GestureListener
   {
-    void OnRotation(RotationGestureDetector rotationDetector);
+    void OnMove(float dx, float dy);
+
+    void OnRotation(float angle);
+
+    void OnZoom(float diff);
   }
 }
