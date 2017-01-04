@@ -4,7 +4,7 @@ import android.content.Context;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 
-public class GestureDetector
+class GestureDetector
 {
   private static final int INVALID_ANGLE = 9999;
   private static final int INVALID_POINTER_ID = -1;
@@ -19,7 +19,7 @@ public class GestureDetector
   private GestureListener mListener;
   private ScaleGestureDetector mScaleDetector;
 
-  public GestureDetector(GestureListener listener, Context context)
+  GestureDetector(GestureListener listener, Context context)
   {
     mListener = listener;
     ptrID1 = INVALID_POINTER_ID;
@@ -42,7 +42,7 @@ public class GestureDetector
     });
   }
 
-  public boolean onTouchEvent(MotionEvent event)
+  boolean onTouchEvent(MotionEvent event)
   {
     mScaleDetector.onTouchEvent(event);
     switch (event.getActionMasked())
@@ -126,7 +126,7 @@ public class GestureDetector
     return angle;
   }
 
-  public interface GestureListener
+  interface GestureListener
   {
     void OnMove(float dx, float dy);
 

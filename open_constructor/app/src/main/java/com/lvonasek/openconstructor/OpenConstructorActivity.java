@@ -29,7 +29,6 @@ import android.graphics.Point;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.IBinder;
 import android.view.Display;
 import android.view.MotionEvent;
@@ -47,7 +46,6 @@ import java.io.File;
 
 public class OpenConstructorActivity extends Activity implements View.OnClickListener {
 
-  private static final String MODEL_DIRECTORY = "/Models/";
   private static final int REQUEST_CODE_PERMISSION_CAMERA = 1987;
   private static final int REQUEST_CODE_PERMISSION_STORAGE = 1988;
 
@@ -57,14 +55,10 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   private SeekBar mSeekbar;
 
   private LinearLayout mLayoutRecBottom;
-  private Button mClearButton;
-  private Button mSaveButton;
   private Button mToggleButton;
 
   private LinearLayout mLayoutRecTop;
   private TextView mResText;
-  private Button mResPlus;
-  private Button mResMinus;
   private int mRes = 3;
 
   private boolean mViewMode = false;
@@ -103,19 +97,15 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
 
     // Setup UI elements and listeners.
     mLayoutRecBottom = (LinearLayout) findViewById(R.id.layout_rec_bottom);
-    mClearButton = (Button) findViewById(R.id.clear_button);
-    mClearButton.setOnClickListener(this);
+    findViewById(R.id.clear_button).setOnClickListener(this);
+    findViewById(R.id.save_button).setOnClickListener(this);
     mToggleButton = (Button) findViewById(R.id.toggle_button);
     mToggleButton.setOnClickListener(this);
-    mSaveButton = (Button) findViewById(R.id.save_button);
-    mSaveButton.setOnClickListener(this);
 
     mLayoutRecTop = (LinearLayout) findViewById(R.id.layout_rec_top);
     mResText = (TextView) findViewById(R.id.res_text);
-    mResPlus = (Button) findViewById(R.id.res_plus);
-    mResPlus.setOnClickListener(this);
-    mResMinus = (Button) findViewById(R.id.res_minus);
-    mResMinus.setOnClickListener(this);
+    findViewById(R.id.res_plus).setOnClickListener(this);
+    findViewById(R.id.res_minus).setOnClickListener(this);
 
     // OpenGL view where all of the graphics are drawn
     mGLView = (GLSurfaceView) findViewById(R.id.gl_surface_view);
@@ -322,7 +312,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
                 public void run()
                 {
                   //save
-                  File file = new File(getPath(), input.getText().toString() + ".ply");
+                  File file = new File(FileUtils.getPath(), input.getText().toString() + ".ply");
                   final String filename = file.getAbsolutePath();
                   TangoJNINative.save(filename);
                   //open???
@@ -385,12 +375,6 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
     Point size = new Point();
     display.getSize(size);
     return 2.0f / (size.x + size.y) * (float)Math.pow(mZoom, 0.5f) * 2.0f;
-  }
-
-  private String getPath() {
-    String dir = Environment.getExternalStorageDirectory().getPath() + MODEL_DIRECTORY;
-    new File(dir).mkdir();
-    return dir;
   }
 
   private void setViewerMode()

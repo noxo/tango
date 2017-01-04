@@ -23,7 +23,7 @@ import javax.microedition.khronos.opengles.GL10;
 /**
  * OpenConstructorRenderer renders graphic content.
  */
-public class OpenConstructorRenderer implements GLSurfaceView.Renderer {
+class OpenConstructorRenderer implements GLSurfaceView.Renderer {
   // Render loop of the Gl context.
   public void onDrawFrame(GL10 gl) {
     TangoJNINative.onGlSurfaceDrawFrame();

@@ -29,7 +29,7 @@ public class TangoJNINative {
     // the correct library first.
     if (TangoInitHelper.loadTangoSharedLibrary() ==
         TangoInitHelper.ARCH_ERROR) {
-      Log.e("TangoJNINative", "ERROR! Unable to load libtango_client_api.so!");
+      Log.e("TangoJNINative", "ERROR! Unable to load library!");
     }
     System.loadLibrary("openconstructor");
   }

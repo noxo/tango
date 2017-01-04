@@ -19,8 +19,6 @@ package com.lvonasek.openconstructor;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.os.Build;
-import android.os.IBinder;
 import android.util.Log;
 
 import java.io.File;
