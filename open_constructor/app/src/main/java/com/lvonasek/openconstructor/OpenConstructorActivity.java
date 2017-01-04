@@ -27,6 +27,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.opengl.GLSurfaceView;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.view.Display;
@@ -270,9 +271,13 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   }
 
   private void setupPermission(String permission, int requestCode) {
-    if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED)
-      requestPermissions(new String[]{permission}, requestCode);
-    else
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+    {
+      if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED)
+        requestPermissions(new String[]{permission}, requestCode);
+      else
+        onRequestPermissionsResult(requestCode, null, new int[]{PackageManager.PERMISSION_GRANTED});
+    } else
       onRequestPermissionsResult(requestCode, null, new int[]{PackageManager.PERMISSION_GRANTED});
   }
 
@@ -395,9 +400,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   }
 
   private String getPath() {
-    String dir = OpenConstructorActivity.this.getExternalMediaDirs()[0].toString();
-    dir = dir.substring(0, dir.indexOf("Android"));
-    dir += "Models/";
+    String dir = "/mnt/sdcard/Models/";
     new File(dir).mkdir();
     return dir;
   }
