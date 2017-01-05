@@ -54,6 +54,8 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   private GLSurfaceView mGLView;
   private SeekBar mSeekbar;
   private String mToLoad;
+  private boolean m3drRunning = true;
+  private boolean mViewMode = false;
 
   private LinearLayout mLayoutRecBottom;
   private Button mToggleButton;
@@ -62,7 +64,6 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   private TextView mResText;
   private int mRes = 3;
 
-  private boolean mViewMode = false;
   private GestureDetector mGestureDetector;
   private float mMoveX = 0;
   private float mMoveY = 0;
@@ -70,33 +71,14 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   private float mYaw = 0;
   private float mZoom = 0;
 
-  private boolean m3drRunning = true;
-
   // Tango Service connection.
   boolean mInitialised = false;
+  boolean mTangoBinded = false;
   ServiceConnection mTangoServiceConnection = new ServiceConnection() {
       public void onServiceConnected(ComponentName name, IBinder service) {
         TangoJNINative.onCreate(OpenConstructorActivity.this);
         TangoJNINative.onTangoServiceConnected(service);
-        if (mToLoad != null)
-        {
-          new Thread(new Runnable()
-          {
-            @Override
-            public void run()
-            {
-              TangoJNINative.load(mToLoad);
-              OpenConstructorActivity.this.runOnUiThread(new Runnable()
-              {
-                @Override
-                public void run()
-                {
-                  mProgress.setVisibility(View.GONE);
-                }
-              });
-            }
-          }).start();
-        }
+        mInitialised = true;
       }
 
       public void onServiceDisconnected(ComponentName name) {
@@ -250,15 +232,40 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   protected void onResume() {
     super.onResume();
     mGLView.onResume();
-    setupPermission(Manifest.permission.CAMERA, REQUEST_CODE_PERMISSION_CAMERA);
+    if (mViewMode) {
+      if (mToLoad != null) {
+        final String file = "" + mToLoad;
+        mToLoad = null;
+        new Thread(new Runnable()
+        {
+          @Override
+          public void run()
+          {
+            TangoJNINative.onCreate(OpenConstructorActivity.this);
+            TangoJNINative.load(file);
+            OpenConstructorActivity.this.runOnUiThread(new Runnable()
+            {
+              @Override
+              public void run()
+              {
+                mProgress.setVisibility(View.GONE);
+              }
+            });
+            mInitialised = true;
+          }
+        }).start();
+      }
+    } else
+      setupPermission(Manifest.permission.CAMERA, REQUEST_CODE_PERMISSION_CAMERA);
   }
 
   @Override
   protected synchronized void onPause() {
     super.onPause();
     mGLView.onPause();
-    if(mInitialised) {
+    if (mInitialised)
       TangoJNINative.onPause();
+    if (mTangoBinded) {
       unbindService(mTangoServiceConnection);
       Toast.makeText(this, R.string.data_lost, Toast.LENGTH_LONG).show();
     }
@@ -305,8 +312,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   }
 
   private void setupPermission(String permission, int requestCode) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-    {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED)
         requestPermissions(new String[]{permission}, requestCode);
       else
@@ -319,10 +325,9 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   public synchronized void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
     switch (requestCode) {
       case REQUEST_CODE_PERMISSION_CAMERA: {
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
-        {
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
           TangoInitHelper.bindTangoService(this, mTangoServiceConnection);
-          mInitialised = true;
+          mTangoBinded = true;
         } else
           finish();
         break;
