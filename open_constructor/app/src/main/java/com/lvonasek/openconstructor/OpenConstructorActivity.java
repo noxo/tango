@@ -385,12 +385,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
               dialog.cancel();
             }
           });
-          builder.setNegativeButton(getString(android.R.string.cancel), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-              dialog.cancel();
-            }
-          });
+          builder.setNegativeButton(getString(android.R.string.cancel), null);
           builder.create().show();
         }
       }

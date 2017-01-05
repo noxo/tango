@@ -46,7 +46,7 @@ public class FileActivity extends ListActivity
     mProgress.setVisibility(View.GONE);
   }
 
-  private void refreshList()
+  public void refreshList()
   {
     mAdapter = new FileAdapter(this);
     mAdapter.clearItems();

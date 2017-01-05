@@ -1,13 +1,18 @@
 package com.lvonasek.openconstructor;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import java.io.File;
 import java.util.ArrayList;
 
 class FileAdapter extends BaseAdapter
@@ -63,7 +68,55 @@ class FileAdapter extends BaseAdapter
       @Override
       public boolean onLongClick(View view)
       {
-        //TODO:menu - open, upload, rename, delete...
+        String[] operations = mContext.getResources().getStringArray(R.array.file_operations);
+        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+        builder.setTitle(mItems.get(index));
+        builder.setItems(operations, new DialogInterface.OnClickListener() {
+          @Override
+          public void onClick(DialogInterface dialog, int which)
+          {
+            switch(which) {
+              case 0://open
+                Intent intent = new Intent(mContext, OpenConstructorActivity.class);
+                intent.putExtra(FileUtils.FILE_KEY, mItems.get(index));
+                mContext.showProgress();
+                mContext.startActivity(intent);
+                break;
+              case 1://share
+                //TODO:
+                break;
+              case 2://rename
+                AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+                builder.setTitle(mContext.getString(R.string.enter_filename));
+                final EditText input = new EditText(mContext);
+                builder.setView(input);
+                builder.setPositiveButton(mContext.getString(android.R.string.ok), new DialogInterface.OnClickListener() {
+                  @Override
+                  public void onClick(DialogInterface dialog, int which) {
+                    File newFile = new File(FileUtils.getPath(), input.getText().toString() + ".ply");
+                    if(newFile.exists())
+                      Toast.makeText(mContext, R.string.name_exists, Toast.LENGTH_LONG).show();
+                    else {
+                      File oldFile = new File(FileUtils.getPath(), mItems.get(index));
+                      oldFile.renameTo(newFile);
+                      mContext.refreshList();
+                    }
+                  }
+                });
+                builder.setNegativeButton(mContext.getString(android.R.string.cancel), null);
+                builder.create().show();
+                break;
+              case 3://delete
+                try {
+                  new File(FileUtils.getPath(), mItems.get(index)).delete();
+                } catch(Exception e){}
+                mContext.refreshList();
+                break;
+            }
+          }
+        });
+        builder.setNegativeButton(mContext.getString(android.R.string.cancel), null);
+        builder.show();
         return true;
       }
     });
