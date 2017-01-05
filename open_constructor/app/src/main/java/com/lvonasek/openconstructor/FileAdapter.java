@@ -83,7 +83,9 @@ class FileAdapter extends BaseAdapter
                 mContext.startActivity(intent);
                 break;
               case 1://share
-                //TODO:
+                Intent i = new Intent(mContext, SketchfabActivity.class);
+                i.putExtra(FileUtils.FILE_KEY, mItems.get(index));
+                mContext.startActivity(i);
                 break;
               case 2://rename
                 AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
