@@ -46,9 +46,6 @@ import java.io.File;
 
 public class OpenConstructorActivity extends Activity implements View.OnClickListener {
 
-  private static final int REQUEST_CODE_PERMISSION_CAMERA = 1987;
-  private static final int REQUEST_CODE_PERMISSION_STORAGE = 1988;
-
   private ProgressBar mProgress;
   private OpenConstructorRenderer mRenderer;
   private GLSurfaceView mGLView;
@@ -207,7 +204,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
       TangoJNINative.onToggleButtonClicked(false);
       refreshUi();
       //save
-      setupPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, REQUEST_CODE_PERMISSION_STORAGE);
+      setupPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, FileUtils.REQUEST_CODE_PERMISSION_WRITE_STORAGE);
       break;
     case R.id.res_minus:
       mRes--;
@@ -259,7 +256,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
         }).start();
       }
     } else
-      setupPermission(Manifest.permission.CAMERA, REQUEST_CODE_PERMISSION_CAMERA);
+      setupPermission(Manifest.permission.CAMERA, FileUtils.REQUEST_CODE_PERMISSION_CAMERA);
   }
 
   @Override
@@ -327,7 +324,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   @Override
   public synchronized void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
     switch (requestCode) {
-      case REQUEST_CODE_PERMISSION_CAMERA: {
+      case FileUtils.REQUEST_CODE_PERMISSION_CAMERA: {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
           TangoInitHelper.bindTangoService(this, mTangoServiceConnection);
           mTangoBinded = true;
@@ -335,7 +332,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
           finish();
         break;
       }
-      case REQUEST_CODE_PERMISSION_STORAGE: {
+      case FileUtils.REQUEST_CODE_PERMISSION_WRITE_STORAGE: {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
           //filename dialog
           final Context context = OpenConstructorActivity.this;

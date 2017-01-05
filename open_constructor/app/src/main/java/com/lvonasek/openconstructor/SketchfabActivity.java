@@ -15,7 +15,6 @@ import android.webkit.WebViewClient;
 
 public class SketchfabActivity extends Activity
 {
-  private static final int REQUEST_CODE_PERMISSION_INTERNET = 1989;
   private static final String SKETCHFAB_UPLOAD = "https://sketchfab.com/upload";
 
   private WebView mWebView;
@@ -44,7 +43,7 @@ public class SketchfabActivity extends Activity
         return true;
       }
     });
-    setupPermission(Manifest.permission.INTERNET, REQUEST_CODE_PERMISSION_INTERNET);
+    setupPermission(Manifest.permission.INTERNET, FileUtils.REQUEST_CODE_PERMISSION_INTERNET);
   }
 
   private void setupPermission(String permission, int requestCode) {
@@ -62,7 +61,7 @@ public class SketchfabActivity extends Activity
   {
     switch (requestCode)
     {
-      case REQUEST_CODE_PERMISSION_INTERNET:
+      case FileUtils.REQUEST_CODE_PERMISSION_INTERNET:
       {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
           mWebView.loadUrl(SKETCHFAB_UPLOAD);

@@ -1,7 +1,10 @@
 package com.lvonasek.openconstructor;
 
+import android.Manifest;
 import android.app.ListActivity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
@@ -41,9 +44,9 @@ public class FileActivity extends ListActivity
   protected void onResume()
   {
     super.onResume();
-    refreshList();
     mButton.setVisibility(View.VISIBLE);
     mProgress.setVisibility(View.GONE);
+    setupPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, FileUtils.REQUEST_CODE_PERMISSION_WRITE_STORAGE);
   }
 
   public void refreshList()
@@ -63,5 +66,39 @@ public class FileActivity extends ListActivity
   {
     mButton.setVisibility(View.GONE);
     mProgress.setVisibility(View.VISIBLE);
+  }
+
+  private void setupPermission(String permission, int requestCode) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED)
+        requestPermissions(new String[]{permission}, requestCode);
+      else
+        onRequestPermissionsResult(requestCode, null, new int[]{PackageManager.PERMISSION_GRANTED});
+    } else
+      onRequestPermissionsResult(requestCode, null, new int[]{PackageManager.PERMISSION_GRANTED});
+  }
+
+  @Override
+  public synchronized void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults)
+  {
+    switch (requestCode)
+    {
+      case FileUtils.REQUEST_CODE_PERMISSION_READ_STORAGE:
+      {
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+          refreshList();
+        else
+          finish();
+        break;
+      }
+      case FileUtils.REQUEST_CODE_PERMISSION_WRITE_STORAGE:
+      {
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+          setupPermission(Manifest.permission.READ_EXTERNAL_STORAGE, FileUtils.REQUEST_CODE_PERMISSION_READ_STORAGE);
+        else
+          finish();
+        break;
+      }
+    }
   }
 }
