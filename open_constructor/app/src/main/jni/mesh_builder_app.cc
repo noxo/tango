@@ -530,6 +530,9 @@ namespace mesh_builder {
                 //unsupported format
                 if (t != 3)
                     continue;
+                //broken topology ignored
+                if ((a == b) || (a == c) || (b == c))
+                    continue;
                 static_mesh.vertices.push_back(vertices[a].first);
                 static_mesh.colors.push_back(vertices[a].second);
                 static_mesh.vertices.push_back(vertices[b].first);
