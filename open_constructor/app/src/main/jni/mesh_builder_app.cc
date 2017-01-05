@@ -598,4 +598,19 @@ namespace mesh_builder {
         process_mutex_.unlock();
         binder_mutex_.unlock();
     }
+
+    float MeshBuilderApp::CenterOfStaticModel(bool horizontal) {
+        float min = 99999999;
+        float max = -99999999;
+        for (tango_gl::StaticMesh mesh : main_scene_.static_meshes_) {
+            for (glm::vec3 vec : mesh.vertices) {
+                float value = horizontal ? vec.x : vec.z;
+                if (min > value)
+                    min = value;
+                if (max < value)
+                    max = value;
+            }
+        }
+        return (min + max) * 0.5f;
+    }
 }  // namespace mesh_builder
