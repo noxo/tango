@@ -26,13 +26,10 @@ namespace {
                     "\n"
                     "attribute vec4 vertex;\n"
                     "attribute vec4 color;\n"
-                    "attribute vec2 uv;\n"
                     "uniform mat4 mvp;\n"
                     "varying vec4 vs_color;\n"
-                    "varying vec2 f_textureCoords;\n"
                     "void main() {\n"
                     "  gl_Position = mvp * vertex;\n"
-                    "  f_textureCoords = uv;\n"
                     "  vs_color = color;\n"
                     "}\n";
 
@@ -40,9 +37,7 @@ namespace {
             "precision mediump float;\n"
                     "uniform sampler2D texture;\n"
                     "varying vec4 vs_color;\n"
-                    "varying vec2 f_textureCoords;\n"
                     "void main() {\n"
-                    //"  gl_FragColor = texture2D(texture, f_textureCoords);\n"
                     "  gl_FragColor = vs_color;\n"
                     "}\n";
 }  // namespace

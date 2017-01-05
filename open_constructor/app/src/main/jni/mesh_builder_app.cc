@@ -437,7 +437,6 @@ namespace mesh_builder {
                 dynamic_mesh->mesh.render_mode = GL_TRIANGLES;
                 dynamic_mesh->mesh.vertices.resize(kInitialVertexCount);
                 dynamic_mesh->mesh.colors.resize(kInitialVertexCount);
-                dynamic_mesh->mesh.uv.resize(kInitialVertexCount);
                 dynamic_mesh->mesh.indices.resize(kInitialIndexCount);
                 app->render_mutex_.lock();
                 app->main_scene_.AddDynamicMesh(dynamic_mesh.get());
@@ -458,7 +457,7 @@ namespace mesh_builder {
                     /* faces */ reinterpret_cast<Tango3DR_Face *>(dynamic_mesh->mesh.indices.data()),
                     /* normals */ nullptr,
                     /* colors */ reinterpret_cast<Tango3DR_Color *>(dynamic_mesh->mesh.colors.data()),
-                    /* texture_coords */ reinterpret_cast<Tango3DR_TexCoord *>(dynamic_mesh->mesh.uv.data()),
+                    /* texture_coords */ nullptr,
                     /* texture_ids */ nullptr,
                     /* textures */ nullptr};
 
@@ -470,7 +469,6 @@ namespace mesh_builder {
                 new_index_size -= new_index_size % 3;
                 dynamic_mesh->mesh.vertices.resize(new_vertex_size);
                 dynamic_mesh->mesh.colors.resize(new_vertex_size);
-                dynamic_mesh->mesh.uv.resize(new_vertex_size);
                 dynamic_mesh->mesh.indices.resize(new_index_size);
             } else {
                 ++it;
