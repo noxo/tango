@@ -641,8 +641,7 @@ namespace mesh_builder {
         }
 
         //read vertices
-        std::vector<int> component;
-        std::vector<std::map<int, bool> > connected;
+        std::vector<int> nodeLevel;
         std::map<int, std::string> index2key;
         std::map<std::string, int> key2index;
         std::pair<glm::vec3, glm::ivec3> vec;
@@ -664,9 +663,8 @@ namespace mesh_builder {
             index2key[i] = key;
             if (key2index.find(key) == key2index.end())
               key2index[key] = i;
+            nodeLevel.push_back(0);
             vertices.push_back(vec);
-            component.push_back(-1);
-            connected.push_back(std::map<int, bool>());
         }
 
         //parse indices
@@ -687,47 +685,34 @@ namespace mesh_builder {
             b = key2index[key];
             key = index2key[c];
             c = key2index[key];
-            //update topology info
-            connected[a][b] = true;
-            connected[a][c] = true;
-            connected[b][a] = true;
-            connected[b][c] = true;
-            connected[c][a] = true;
-            connected[c][b] = true;
+            //get node levels
+            nodeLevel[a]++;
+            nodeLevel[b]++;
+            nodeLevel[c]++;
             //store indices
             indices.push_back(glm::ivec3(a, b, c));
         }
 
-        //separate into components
-        int componentCurrent = 0;
-        std::vector<int> componentSize;
-        for (int i = 0; i < vertexCount; i++) {
-            //already parsed vertex
-            if (component[i] >= 0)
-                continue;
-            //DFS from every vertex which does not have component
-            int size = 0;
-            std::vector<int> toParse;
-            toParse.push_back(i);
-            while(!toParse.empty()) {
-                int k = toParse[0];
-                toParse.erase(toParse.begin());
-                if (component[k] == -1) {
-                    component[k] = componentCurrent;
-                    size++;
-                    for(std::pair<const int, bool> j : connected[k])
-                        if (component[j.first] == -1)
-                            toParse.push_back(j.first);
-                }
-            }
-            //get component size
-            componentSize.push_back(size);
-            componentCurrent++;
-        }
-
         //filter indices
+        glm::ivec3 ci;
         for (long i = indices.size() - 1; i >= 0; i--) {
-            if(componentSize[component[indices[i].x]] < 25)
+            ci = indices[i];
+            a = nodeLevel[ci.x];
+            if (a < 3) {
+                indices.erase(indices.begin() + i);
+                continue;
+            }
+            b = nodeLevel[ci.y];
+            if (a < 3) {
+                indices.erase(indices.begin() + i);
+                continue;
+            }
+            c = nodeLevel[ci.z];
+            if (a < 3) {
+                indices.erase(indices.begin() + i);
+                continue;
+            }
+            if (a + b + c < 9)
                 indices.erase(indices.begin() + i);
         }
         faceCount = indices.size();
@@ -750,7 +735,6 @@ namespace mesh_builder {
 
         //write vertices
         glm::vec3 vi;
-        glm::ivec3 ci;
         for (unsigned int i = 0; i < vertices.size(); i++) {
             vi = vertices[i].first;
             ci = vertices[i].second;
