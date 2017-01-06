@@ -82,12 +82,34 @@ class FileAdapter extends BaseAdapter
                 mContext.showProgress();
                 mContext.startActivity(intent);
                 break;
-              case 1://share
+              case 1://filter
+                mContext.showProgress();
+                new Thread(new Runnable()
+                {
+                  @Override
+                  public void run()
+                  {
+                    String oldName = new File(FileUtils.getPath(), mItems.get(index)).toString();
+                    String newName = oldName.replaceAll(FileUtils.FILE_EXT, "");
+                    newName += "-" + mContext.getString(R.string.filtered) + FileUtils.FILE_EXT;
+                    TangoJNINative.filter(oldName, newName);
+                    mContext.runOnUiThread(new Runnable()
+                    {
+                      @Override
+                      public void run()
+                      {
+                        mContext.refreshList();
+                      }
+                    });
+                  }
+                }).start();
+                break;
+              case 2://share
                 Intent i = new Intent(mContext, SketchfabActivity.class);
                 i.putExtra(FileUtils.FILE_KEY, mItems.get(index));
                 mContext.startActivity(i);
                 break;
-              case 2://rename
+              case 3://rename
                 AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
                 builder.setTitle(mContext.getString(R.string.enter_filename));
                 final EditText input = new EditText(mContext);
@@ -95,7 +117,7 @@ class FileAdapter extends BaseAdapter
                 builder.setPositiveButton(mContext.getString(android.R.string.ok), new DialogInterface.OnClickListener() {
                   @Override
                   public void onClick(DialogInterface dialog, int which) {
-                    File newFile = new File(FileUtils.getPath(), input.getText().toString() + ".ply");
+                    File newFile = new File(FileUtils.getPath(), input.getText().toString() + FileUtils.FILE_EXT);
                     if(newFile.exists())
                       Toast.makeText(mContext, R.string.name_exists, Toast.LENGTH_LONG).show();
                     else {
@@ -108,7 +130,7 @@ class FileAdapter extends BaseAdapter
                 builder.setNegativeButton(mContext.getString(android.R.string.cancel), null);
                 builder.create().show();
                 break;
-              case 3://delete
+              case 4://delete
                 try {
                   new File(FileUtils.getPath(), mItems.get(index)).delete();
                 } catch(Exception e){}

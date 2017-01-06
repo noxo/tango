@@ -6,6 +6,7 @@ import java.io.File;
 
 public class FileUtils
 {
+  public static final String FILE_EXT = ".ply";
   public static final String FILE_KEY = "FILE2OPEN";
   public static final String MODEL_DIRECTORY = "/Models/";
   public static final int REQUEST_CODE_PERMISSION_CAMERA = 1987;

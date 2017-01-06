@@ -20,9 +20,9 @@
     <string name="resume">Resume</string>
     <string name="clear">Clear</string>
     <string name="save">Save</string>
+    <string name="filtered">filtered</string>
     <string name="enter_filename">Enter file name</string>
     <string name="view">Saved. Do you want to view 3D model?</string>
-    <string name="external_app">For viewing you have to install external app.</string>
     <string name="distance">Max.distance:</string>
     <string name="resolution">3D grid:</string>
     <string name="data_lost">Motion tracking control lost</string>
@@ -33,6 +33,7 @@
 
     <string-array name="file_operations">
         <item>Open</item>
+        <item>Filter noise in 3D model</item>
         <item>Share on Sketchfab</item>
         <item>Rename</item>
         <item>Delete</item>

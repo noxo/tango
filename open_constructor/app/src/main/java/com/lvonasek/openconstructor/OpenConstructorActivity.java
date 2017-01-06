@@ -349,7 +349,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
                 public void run()
                 {
                   //save
-                  File file = new File(FileUtils.getPath(), input.getText().toString() + ".ply");
+                  File file = new File(FileUtils.getPath(), input.getText().toString() + FileUtils.FILE_EXT);
                   final String filename = file.getAbsolutePath();
                   TangoJNINative.save(filename);
                   //open???

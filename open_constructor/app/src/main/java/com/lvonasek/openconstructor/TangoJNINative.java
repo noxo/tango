@@ -92,4 +92,7 @@ public class TangoJNINative {
 
   // Get center of loaded 3D model
   public static native float centerOfStaticModel(boolean horizontal);
+
+  // Load 3D model, filter noise and save model in different name
+  public static native void filter(String oldname, String newname);
 }

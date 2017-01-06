@@ -56,10 +56,12 @@ public class FileActivity extends ListActivity
     String[] files = new File(FileUtils.getPath()).list();
     Arrays.sort(files);
     for(String s : files)
-      if(s.substring(s.length() - 4).contains(".ply"))
+      if(s.substring(s.length() - FileUtils.FILE_EXT.length()).contains(FileUtils.FILE_EXT))
         mAdapter.addItem(s);
     mText.setVisibility(mAdapter.getCount() == 0 ? View.VISIBLE : View.GONE);
     getListView().setAdapter(mAdapter);
+    mButton.setVisibility(View.VISIBLE);
+    mProgress.setVisibility(View.GONE);
   }
 
   public void showProgress()

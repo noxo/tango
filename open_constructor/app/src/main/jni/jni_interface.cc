@@ -24,6 +24,15 @@ static mesh_builder::MeshBuilderApp app;
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+std::string jstring2string(JNIEnv* env, jstring name)
+{
+  const char *s = env->GetStringUTFChars(name,NULL);
+  std::string str( s );
+  env->ReleaseStringUTFChars(name,s);
+  return str;
+}
+
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_activityCtor(jboolean t3dr_running) {
   app.ActivityCtor(t3dr_running);
@@ -80,21 +89,13 @@ Java_com_lvonasek_openconstructor_TangoJNINative_set3D(
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_load(
-        JNIEnv* env, jobject, jstring name) {
-  const char *s = env->GetStringUTFChars(name,NULL);
-  std::string str( s );
-  env->ReleaseStringUTFChars(name,s);
-  app.Load(str);
+Java_com_lvonasek_openconstructor_TangoJNINative_load(JNIEnv* env, jobject, jstring name) {
+  app.Load(jstring2string(env, name));
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_save(
-        JNIEnv* env, jobject, jstring name) {
-  const char *s = env->GetStringUTFChars(name,NULL);
-  std::string str( s );
-  env->ReleaseStringUTFChars(name,s);
-  app.Save(str);
+Java_com_lvonasek_openconstructor_TangoJNINative_save(JNIEnv* env, jobject, jstring name) {
+  app.Save(jstring2string(env, name));
 }
 
 JNIEXPORT void JNICALL
@@ -111,6 +112,12 @@ Java_com_lvonasek_openconstructor_TangoJNINative_setZoom(JNIEnv*, jobject, jfloa
 JNIEXPORT jfloat JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_centerOfStaticModel(JNIEnv*, jobject, jboolean horizontal) {
   return app.CenterOfStaticModel(horizontal);
+}
+
+JNIEXPORT void JNICALL
+Java_com_lvonasek_openconstructor_TangoJNINative_filter(JNIEnv* env, jobject, jstring oldname,
+                                                        jstring newname) {
+  mesh_builder::MeshBuilderApp::Filter(jstring2string(env, oldname), jstring2string(env, newname));
 }
 
 #ifdef __cplusplus

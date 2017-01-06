@@ -616,4 +616,81 @@ namespace mesh_builder {
         }
         return (min + max) * 0.5f;
     }
+
+    void MeshBuilderApp::Filter(std::string oldname, std::string newname) {
+        LOGI("Loading from %s", oldname.c_str());
+        FILE *file = fopen(oldname.c_str(), "r");
+
+        //prepare objects
+        char buffer[1024];
+        int vertexCount = 0;
+        int faceCount = 0;
+        std::vector<std::pair<glm::vec3, glm::ivec3> > vertices;
+
+        //read header
+        while (true) {
+            if (!fgets(buffer, 1024, file))
+                break;
+            if (startsWith(buffer, "element vertex"))
+                vertexCount = scandec(buffer, 15);
+            else if (startsWith(buffer, "element face"))
+                faceCount = scandec(buffer, 13);
+            else if (startsWith(buffer, "end_header"))
+                break;
+        }
+        //read vertices
+        std::pair<glm::vec3, glm::ivec3> vec;
+        for (int i = 0; i < vertexCount; i++) {
+            fscanf(file, "%f %f %f %d %d %d", &vec.first.x, &vec.first.y, &vec.first.z,
+                                              &vec.second.r, &vec.second.g, &vec.second.b);
+            vertices.push_back(vec);
+        }
+
+        std::vector<glm::ivec3> indices;
+        unsigned int t, a, b, c;
+        for (int i = 0; i < faceCount; i++)  {
+            fscanf(file, "%d %d %d %d", &t, &a, &b, &c);
+            //unsupported format
+            if (t != 3)
+                continue;
+            //broken topology ignored
+            if ((a == b) || (a == c) || (b == c))
+                continue;
+            //TODO:implement filtering
+            indices.push_back(glm::ivec3(a, b, c));
+        }
+        faceCount = indices.size();
+        fclose(file);
+
+        //file header
+        LOGI("Writing into %s", newname.c_str());
+        file = fopen(newname.c_str(), "w");
+        fprintf(file, "ply\nformat ascii 1.0\ncomment ---\n");
+        fprintf(file, "element vertex %d\n", vertexCount);
+        fprintf(file, "property float x\n");
+        fprintf(file, "property float y\n");
+        fprintf(file, "property float z\n");
+        fprintf(file, "property uchar red\n");
+        fprintf(file, "property uchar green\n");
+        fprintf(file, "property uchar blue\n");
+        fprintf(file, "element face %d\n", faceCount);
+        fprintf(file, "property list uchar uint vertex_indices\n");
+        fprintf(file, "end_header\n");
+
+        //write vertices
+        glm::vec3 vi;
+        glm::ivec3 ci;
+        for (unsigned int i = 0; i < vertices.size(); i++) {
+            vi = vertices[i].first;
+            ci = vertices[i].second;
+            fprintf(file, "%f %f %f %d %d %d\n", vi.x, vi.y, vi.z, ci.r, ci.g, ci.b);
+        }
+
+        //write faces
+        for (unsigned int i = 0; i < indices.size(); i++) {
+            ci = indices[i];
+            fprintf(file, "3 %d %d %d\n", ci.x, ci.y, ci.z);
+        }
+        fclose(file);
+    }
 }  // namespace mesh_builder
