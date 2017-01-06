@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -26,6 +27,8 @@ public class FileActivity extends ListActivity
   {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_files);
+    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
     mText = (TextView) findViewById(R.id.no_data);
     mProgress = (ProgressBar) findViewById(R.id.progressBar);
     mButton = (ImageButton) findViewById(R.id.add_button);

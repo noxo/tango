@@ -16,6 +16,7 @@
 
 #include <tango-gl/conversions.h>
 #include <tango-gl/util.h>
+#include <map>
 #include <unistd.h>
 
 #include "mesh_builder/mesh_builder_app.h"
@@ -69,9 +70,9 @@ namespace {
         return q;
     }
 
-    int scandec(char* line, int offset)
+    unsigned int scanDec(char *line, int offset)
     {
-        int number = 0;
+        unsigned int number = 0;
         for (int i = offset; i < 1024; i++) {
             char c = line[i];
             if (c != '\n')
@@ -491,24 +492,24 @@ namespace mesh_builder {
 
         //prepare objects
         char buffer[1024];
-        int vertexCount = 0;
-        int faceCount = 0;
-        std::vector<std::pair<glm::vec3, int> > vertices;
+        unsigned int vertexCount = 0;
+        unsigned int faceCount = 0;
+        std::vector<std::pair<glm::vec3, unsigned int> > vertices;
 
         //read header
         while (true) {
             if (!fgets(buffer, 1024, file))
                 break;
             if (startsWith(buffer, "element vertex"))
-                vertexCount = scandec(buffer, 15);
+                vertexCount = scanDec(buffer, 15);
             else if (startsWith(buffer, "element face"))
-                faceCount = scandec(buffer, 13);
+                faceCount = scanDec(buffer, 13);
             else if (startsWith(buffer, "end_header"))
                 break;
         }
         //read vertices
         unsigned int t, a, b, c;
-        std::pair<glm::vec3, int> vec;
+        std::pair<glm::vec3, unsigned int> vec;
         for (int i = 0; i < vertexCount; i++) {
             fscanf(file, "%f %f %f %d %d %d", &vec.first.x, &vec.first.z, &vec.first.y, &a, &b, &c);
             vec.first.x *= -1.0f;
@@ -555,8 +556,8 @@ namespace mesh_builder {
         LOGI("Writing into %s", filename.c_str());
 
         //count vertices and faces
-        int vertexCount = 0;
-        int faceCount = 0;
+        unsigned int vertexCount = 0;
+        unsigned int faceCount = 0;
         for(unsigned int i = 0; i < main_scene_.dynamic_meshes_.size(); i++) {
             vertexCount += main_scene_.dynamic_meshes_[i]->mesh.vertices.size();
             faceCount += main_scene_.dynamic_meshes_[i]->size / 3;
@@ -623,8 +624,8 @@ namespace mesh_builder {
 
         //prepare objects
         char buffer[1024];
-        int vertexCount = 0;
-        int faceCount = 0;
+        unsigned int vertexCount = 0;
+        unsigned int faceCount = 0;
         std::vector<std::pair<glm::vec3, glm::ivec3> > vertices;
 
         //read header
@@ -632,23 +633,28 @@ namespace mesh_builder {
             if (!fgets(buffer, 1024, file))
                 break;
             if (startsWith(buffer, "element vertex"))
-                vertexCount = scandec(buffer, 15);
+                vertexCount = scanDec(buffer, 15);
             else if (startsWith(buffer, "element face"))
-                faceCount = scandec(buffer, 13);
+                faceCount = scanDec(buffer, 13);
             else if (startsWith(buffer, "end_header"))
                 break;
         }
         //read vertices
+        std::vector< int > component;
+        std::vector< std::map<int, bool> > connected;
         std::pair<glm::vec3, glm::ivec3> vec;
         for (int i = 0; i < vertexCount; i++) {
             fscanf(file, "%f %f %f %d %d %d", &vec.first.x, &vec.first.y, &vec.first.z,
                                               &vec.second.r, &vec.second.g, &vec.second.b);
             vertices.push_back(vec);
+            component.push_back(-1);
+            connected.push_back(std::map<int, bool>());
         }
 
+        //parse indices
         std::vector<glm::ivec3> indices;
         unsigned int t, a, b, c;
-        for (int i = 0; i < faceCount; i++)  {
+        for (unsigned int i = 0; i < faceCount; i++)  {
             fscanf(file, "%d %d %d %d", &t, &a, &b, &c);
             //unsupported format
             if (t != 3)
@@ -656,8 +662,54 @@ namespace mesh_builder {
             //broken topology ignored
             if ((a == b) || (a == c) || (b == c))
                 continue;
-            //TODO:implement filtering
+            //update topology info
+            connected[a][b] = true;
+            connected[a][c] = true;
+            connected[b][a] = true;
+            connected[b][c] = true;
+            connected[c][a] = true;
+            connected[c][b] = true;
+            //store indices
             indices.push_back(glm::ivec3(a, b, c));
+        }
+
+        //TODO:join close vertices
+
+        //separate into components
+        int componentCurrent = 0;
+        std::vector<int> componentSize;
+        for (int i = 0; i < vertexCount; i++) {
+            //already parsed vertex
+            if (component[i] >= 0)
+                continue;
+            //DFS from every vertex which does not have component
+            int size = 0;
+            std::vector<int> toParse;
+            toParse.push_back(i);
+            while(!toParse.empty()) {
+                int k = toParse[0];
+                toParse.erase(toParse.begin());
+                if (component[k] == -1) {
+                    component[k] = componentCurrent;
+                    size++;
+                    for(std::pair<const int, bool> j : connected[k])
+                        if (component[j.first] == -1)
+                            toParse.push_back(j.first);
+                }
+            }
+            //get component size
+            componentSize.push_back(size);
+            componentCurrent++;
+        }
+
+        //filter indices
+        for (unsigned int i = 0; i < componentCurrent; i++) {
+            if (componentSize[i] <= 5)
+                componentSize[i] = 0;
+        }
+        for (long i = indices.size() - 1; i >= 0; i--) {
+            if(!componentSize[component[indices[i].x]])
+                indices.erase(indices.begin() + i);
         }
         faceCount = indices.size();
         fclose(file);
@@ -687,10 +739,8 @@ namespace mesh_builder {
         }
 
         //write faces
-        for (unsigned int i = 0; i < indices.size(); i++) {
-            ci = indices[i];
-            fprintf(file, "3 %d %d %d\n", ci.x, ci.y, ci.z);
-        }
+        for (glm::ivec3 i : indices)
+            fprintf(file, "3 %d %d %d\n", i.x, i.y, i.z);
         fclose(file);
     }
 }  // namespace mesh_builder
