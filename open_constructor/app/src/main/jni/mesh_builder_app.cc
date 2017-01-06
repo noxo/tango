@@ -639,13 +639,31 @@ namespace mesh_builder {
             else if (startsWith(buffer, "end_header"))
                 break;
         }
+
         //read vertices
-        std::vector< int > component;
-        std::vector< std::map<int, bool> > connected;
+        std::vector<int> component;
+        std::vector<std::map<int, bool> > connected;
+        std::map<int, std::string> index2key;
+        std::map<std::string, int> key2index;
         std::pair<glm::vec3, glm::ivec3> vec;
+        char key1[32];
+        char key2[32];
+        char key3[32];
+        std::string key;
         for (int i = 0; i < vertexCount; i++) {
-            fscanf(file, "%f %f %f %d %d %d", &vec.first.x, &vec.first.y, &vec.first.z,
-                                              &vec.second.r, &vec.second.g, &vec.second.b);
+            if (!fgets(buffer, 1024, file))
+                break;
+            sscanf(buffer, "%f %f %f %d %d %d", &vec.first.x, &vec.first.y, &vec.first.z,
+                                                &vec.second.r, &vec.second.g, &vec.second.b);
+            sscanf(buffer, "%f %f %f", key1, key2, key3);
+            key = key1;
+            key += ",";
+            key += key2;
+            key += ",";
+            key += key3;
+            index2key[i] = key;
+            if (key2index.find(key) == key2index.end())
+              key2index[key] = i;
             vertices.push_back(vec);
             component.push_back(-1);
             connected.push_back(std::map<int, bool>());
@@ -662,6 +680,13 @@ namespace mesh_builder {
             //broken topology ignored
             if ((a == b) || (a == c) || (b == c))
                 continue;
+            //reindex
+            key = index2key[a];
+            a = key2index[key];
+            key = index2key[b];
+            b = key2index[key];
+            key = index2key[c];
+            c = key2index[key];
             //update topology info
             connected[a][b] = true;
             connected[a][c] = true;
@@ -672,8 +697,6 @@ namespace mesh_builder {
             //store indices
             indices.push_back(glm::ivec3(a, b, c));
         }
-
-        //TODO:join close vertices
 
         //separate into components
         int componentCurrent = 0;
@@ -703,12 +726,8 @@ namespace mesh_builder {
         }
 
         //filter indices
-        for (unsigned int i = 0; i < componentCurrent; i++) {
-            if (componentSize[i] <= 5)
-                componentSize[i] = 0;
-        }
         for (long i = indices.size() - 1; i >= 0; i--) {
-            if(!componentSize[component[indices[i].x]])
+            if(componentSize[component[indices[i].x]] < 25)
                 indices.erase(indices.begin() + i);
         }
         faceCount = indices.size();
