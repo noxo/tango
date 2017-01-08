@@ -17,7 +17,6 @@
 package com.lvonasek.openconstructor;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
@@ -27,13 +26,11 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.opengl.GLSurfaceView;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -44,7 +41,7 @@ import android.widget.Toast;
 
 import java.io.File;
 
-public class OpenConstructorActivity extends Activity implements View.OnClickListener {
+public class OpenConstructorActivity extends AbstractActivity implements View.OnClickListener {
 
   private ProgressBar mProgress;
   private OpenConstructorRenderer mRenderer;
@@ -90,9 +87,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-
     setContentView(R.layout.activity_mesh_builder);
-    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
     // Setup UI elements and listeners.
     mLayoutRecBottom = (LinearLayout) findViewById(R.id.layout_rec_bottom);
@@ -167,14 +162,14 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
 
     //open file
     mToLoad = null;
-    String filename = getIntent().getStringExtra(FileUtils.FILE_KEY);
+    String filename = getIntent().getStringExtra(FILE_KEY);
     if ((filename != null) && (filename.length() > 0))
     {
       m3drRunning = false;
       TangoJNINative.onToggleButtonClicked(false);
       setViewerMode();
       mProgress.setVisibility(View.VISIBLE);
-      mToLoad = new File(FileUtils.getPath(), filename).toString();
+      mToLoad = new File(getPath(), filename).toString();
     }
   }
 
@@ -204,7 +199,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
       TangoJNINative.onToggleButtonClicked(false);
       refreshUi();
       //save
-      setupPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, FileUtils.REQUEST_CODE_PERMISSION_WRITE_STORAGE);
+      setupPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, REQUEST_CODE_PERMISSION_WRITE_STORAGE);
       break;
     case R.id.res_minus:
       mRes--;
@@ -256,7 +251,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
         }).start();
       }
     } else
-      setupPermission(Manifest.permission.CAMERA, FileUtils.REQUEST_CODE_PERMISSION_CAMERA);
+      setupPermission(Manifest.permission.CAMERA, REQUEST_CODE_PERMISSION_CAMERA);
   }
 
   @Override
@@ -311,20 +306,10 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
     mResText.setText(text);
   }
 
-  private void setupPermission(String permission, int requestCode) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED)
-        requestPermissions(new String[]{permission}, requestCode);
-      else
-        onRequestPermissionsResult(requestCode, null, new int[]{PackageManager.PERMISSION_GRANTED});
-    } else
-      onRequestPermissionsResult(requestCode, null, new int[]{PackageManager.PERMISSION_GRANTED});
-  }
-
   @Override
   public synchronized void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
     switch (requestCode) {
-      case FileUtils.REQUEST_CODE_PERMISSION_CAMERA: {
+      case REQUEST_CODE_PERMISSION_CAMERA: {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
           TangoInitHelper.bindTangoService(this, mTangoServiceConnection);
           mTangoBinded = true;
@@ -332,7 +317,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
           finish();
         break;
       }
-      case FileUtils.REQUEST_CODE_PERMISSION_WRITE_STORAGE: {
+      case REQUEST_CODE_PERMISSION_WRITE_STORAGE: {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
           //filename dialog
           final Context context = OpenConstructorActivity.this;
@@ -349,7 +334,7 @@ public class OpenConstructorActivity extends Activity implements View.OnClickLis
                 public void run()
                 {
                   //save
-                  File file = new File(FileUtils.getPath(), input.getText().toString() + FileUtils.FILE_EXT);
+                  File file = new File(getPath(), input.getText().toString() + FILE_EXT);
                   final String filename = file.getAbsolutePath();
                   TangoJNINative.save(filename);
                   //open???

@@ -1,19 +1,16 @@
 package com.lvonasek.openconstructor;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.view.WindowManager;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-public class SketchfabActivity extends Activity
+public class SketchfabActivity extends AbstractActivity
 {
   private static final String SKETCHFAB_UPLOAD = "https://sketchfab.com/upload";
 
@@ -22,11 +19,9 @@ public class SketchfabActivity extends Activity
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-
     setContentView(R.layout.activity_sketchfab);
-    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-    final Uri uri = FileUtils.filename2Uri(getIntent().getStringExtra(FileUtils.FILE_KEY));
+    final Uri uri = filename2Uri(getIntent().getStringExtra(FILE_KEY));
     mWebView = (WebView) findViewById(R.id.webview);
     WebSettings webSettings = mWebView.getSettings();
     webSettings.setJavaScriptEnabled(true);
@@ -43,17 +38,7 @@ public class SketchfabActivity extends Activity
         return true;
       }
     });
-    setupPermission(Manifest.permission.INTERNET, FileUtils.REQUEST_CODE_PERMISSION_INTERNET);
-  }
-
-  private void setupPermission(String permission, int requestCode) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED)
-        requestPermissions(new String[]{permission}, requestCode);
-      else
-        onRequestPermissionsResult(requestCode, null, new int[]{PackageManager.PERMISSION_GRANTED});
-    } else
-      onRequestPermissionsResult(requestCode, null, new int[]{PackageManager.PERMISSION_GRANTED});
+    setupPermission(Manifest.permission.INTERNET, REQUEST_CODE_PERMISSION_INTERNET);
   }
 
   @Override
@@ -61,7 +46,7 @@ public class SketchfabActivity extends Activity
   {
     switch (requestCode)
     {
-      case FileUtils.REQUEST_CODE_PERMISSION_INTERNET:
+      case REQUEST_CODE_PERMISSION_INTERNET:
       {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
           mWebView.loadUrl(SKETCHFAB_UPLOAD);

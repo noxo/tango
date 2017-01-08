@@ -58,7 +58,7 @@ class FileAdapter extends BaseAdapter
       public void onClick(View view)
       {
         Intent intent = new Intent(mContext, OpenConstructorActivity.class);
-        intent.putExtra(FileUtils.FILE_KEY, mItems.get(index));
+        intent.putExtra(AbstractActivity.FILE_KEY, mItems.get(index));
         mContext.showProgress();
         mContext.startActivity(intent);
       }
@@ -78,7 +78,7 @@ class FileAdapter extends BaseAdapter
             switch(which) {
               case 0://open
                 Intent intent = new Intent(mContext, OpenConstructorActivity.class);
-                intent.putExtra(FileUtils.FILE_KEY, mItems.get(index));
+                intent.putExtra(AbstractActivity.FILE_KEY, mItems.get(index));
                 mContext.showProgress();
                 mContext.startActivity(intent);
                 break;
@@ -89,9 +89,9 @@ class FileAdapter extends BaseAdapter
                   @Override
                   public void run()
                   {
-                    String oldName = new File(FileUtils.getPath(), mItems.get(index)).toString();
-                    String newName = oldName.replaceAll(FileUtils.FILE_EXT, "");
-                    newName += "-" + mContext.getString(R.string.filtered) + FileUtils.FILE_EXT;
+                    String oldName = new File(mContext.getPath(), mItems.get(index)).toString();
+                    String newName = oldName.replaceAll(AbstractActivity.FILE_EXT, "");
+                    newName += "-" + mContext.getString(R.string.filtered) + AbstractActivity.FILE_EXT;
                     TangoJNINative.filter(oldName, newName);
                     mContext.runOnUiThread(new Runnable()
                     {
@@ -106,7 +106,7 @@ class FileAdapter extends BaseAdapter
                 break;
               case 2://share
                 Intent i = new Intent(mContext, SketchfabActivity.class);
-                i.putExtra(FileUtils.FILE_KEY, mItems.get(index));
+                i.putExtra(AbstractActivity.FILE_KEY, mItems.get(index));
                 mContext.startActivity(i);
                 break;
               case 3://rename
@@ -117,11 +117,11 @@ class FileAdapter extends BaseAdapter
                 builder.setPositiveButton(mContext.getString(android.R.string.ok), new DialogInterface.OnClickListener() {
                   @Override
                   public void onClick(DialogInterface dialog, int which) {
-                    File newFile = new File(FileUtils.getPath(), input.getText().toString() + FileUtils.FILE_EXT);
+                    File newFile = new File(mContext.getPath(), input.getText().toString() + AbstractActivity.FILE_EXT);
                     if(newFile.exists())
                       Toast.makeText(mContext, R.string.name_exists, Toast.LENGTH_LONG).show();
                     else {
-                      File oldFile = new File(FileUtils.getPath(), mItems.get(index));
+                      File oldFile = new File(mContext.getPath(), mItems.get(index));
                       oldFile.renameTo(newFile);
                       mContext.refreshList();
                     }
@@ -132,7 +132,7 @@ class FileAdapter extends BaseAdapter
                 break;
               case 4://delete
                 try {
-                  new File(FileUtils.getPath(), mItems.get(index)).delete();
+                  new File(mContext.getPath(), mItems.get(index)).delete();
                 } catch(Exception e){}
                 mContext.refreshList();
                 break;
