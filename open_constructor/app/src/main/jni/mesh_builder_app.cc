@@ -642,19 +642,19 @@ namespace mesh_builder {
 
         //read vertices
         std::vector<int> nodeLevel;
-        std::map<int, std::string> index2key;
-        std::map<std::string, int> key2index;
+        std::map<unsigned int, std::string> index2key;
+        std::map<std::string, unsigned int> key2index;
         std::pair<glm::vec3, glm::ivec3> vec;
         char key1[32];
         char key2[32];
         char key3[32];
         std::string key;
-        for (int i = 0; i < vertexCount; i++) {
+        for (unsigned int i = 0; i < vertexCount; i++) {
             if (!fgets(buffer, 1024, file))
                 break;
             sscanf(buffer, "%f %f %f %d %d %d", &vec.first.x, &vec.first.y, &vec.first.z,
                                                 &vec.second.r, &vec.second.g, &vec.second.b);
-            sscanf(buffer, "%f %f %f", key1, key2, key3);
+            sscanf(buffer, "%s %s %s", key1, key2, key3);
             key = key1;
             key += ",";
             key += key2;
@@ -695,25 +695,21 @@ namespace mesh_builder {
 
         //filter indices
         glm::ivec3 ci;
-        for (long i = indices.size() - 1; i >= 0; i--) {
-            ci = indices[i];
-            a = nodeLevel[ci.x];
-            if (a < 3) {
-                indices.erase(indices.begin() + i);
-                continue;
+        std::vector<glm::ivec3> decrease;
+        for (int pass = 0; pass < 5; pass++) {
+            for (long i = indices.size() - 1; i >= 0; i--) {
+                ci = indices[i];
+                if ((nodeLevel[ci.x] < 3) || (nodeLevel[ci.y] < 3) || (nodeLevel[ci.z] < 3)) {
+                    indices.erase(indices.begin() + i);
+                    decrease.push_back(ci);
+                }
             }
-            b = nodeLevel[ci.y];
-            if (a < 3) {
-                indices.erase(indices.begin() + i);
-                continue;
+            for (glm::ivec3 i : decrease) {
+                nodeLevel[i.x]--;
+                nodeLevel[i.y]--;
+                nodeLevel[i.z]--;
             }
-            c = nodeLevel[ci.z];
-            if (a < 3) {
-                indices.erase(indices.begin() + i);
-                continue;
-            }
-            if (a + b + c < 9)
-                indices.erase(indices.begin() + i);
+            decrease.clear();
         }
         faceCount = indices.size();
         fclose(file);
