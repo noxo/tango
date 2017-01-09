@@ -9,15 +9,23 @@ import android.os.Build;
 import android.os.Environment;
 import android.view.WindowManager;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public abstract class AbstractActivity extends Activity
 {
+  protected static final int BUFFER_SIZE = 65536;
   protected static final String FILE_EXT = ".ply";
   protected static final String FILE_KEY = "FILE2OPEN";
   protected static final String MODEL_DIRECTORY = "/Models/";
   protected static final String PREF_ORIENTATION = "PREF_ORIENTATION";
   protected static final String PREF_TAG = "OPENCONSTRUCTOR";
+  protected static final String ZIP_TEMP = "upload.zip";
   protected static final int REQUEST_CODE_PERMISSION_CAMERA = 1987;
   protected static final int REQUEST_CODE_PERMISSION_READ_STORAGE = 1988;
   protected static final int REQUEST_CODE_PERMISSION_WRITE_STORAGE = 1989;
@@ -66,6 +74,33 @@ public abstract class AbstractActivity extends Activity
         onRequestPermissionsResult(requestCode, null, new int[]{PackageManager.PERMISSION_GRANTED});
     } else
       onRequestPermissionsResult(requestCode, null, new int[]{PackageManager.PERMISSION_GRANTED});
+  }
+
+  protected void zip(String[] files, String zipFile) throws Exception {
+    BufferedInputStream origin = null;
+    ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipFile)));
+    try {
+      byte data[] = new byte[BUFFER_SIZE];
+
+      for (int i = 0; i < files.length; i++) {
+        FileInputStream fi = new FileInputStream(files[i]);
+        origin = new BufferedInputStream(fi, BUFFER_SIZE);
+        try {
+          ZipEntry entry = new ZipEntry(files[i].substring(files[i].lastIndexOf("/") + 1));
+          out.putNextEntry(entry);
+          int count;
+          while ((count = origin.read(data, 0, BUFFER_SIZE)) != -1) {
+            out.write(data, 0, count);
+          }
+        }
+        finally {
+          origin.close();
+        }
+      }
+    }
+    finally {
+      out.close();
+    }
   }
 
   public abstract void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults);

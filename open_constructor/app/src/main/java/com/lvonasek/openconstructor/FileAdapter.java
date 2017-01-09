@@ -134,9 +134,31 @@ class FileAdapter extends BaseAdapter
                 filterDlg.create().show();
                 break;
               case 2://share
-                Intent i = new Intent(mContext, SketchfabActivity.class);
-                i.putExtra(AbstractActivity.FILE_KEY, mItems.get(index));
-                mContext.startActivity(i);
+                mContext.showProgress();
+                new Thread(new Runnable() {
+                  @Override
+                  public void run()
+                  {
+                    try
+                    {
+                      String zip = mContext.getPath() + AbstractActivity.ZIP_TEMP;
+                      mContext.zip(new String[]{mContext.getPath() + mItems.get(index)}, zip);
+                      mContext.runOnUiThread(new Runnable()
+                      {
+                        @Override
+                        public void run()
+                        {
+                          Intent i = new Intent(mContext, SketchfabActivity.class);
+                          i.putExtra(AbstractActivity.FILE_KEY, AbstractActivity.ZIP_TEMP);
+                          mContext.startActivity(i);
+                        }
+                      });
+                    } catch (Exception e)
+                    {
+                      e.printStackTrace();
+                    }
+                  }
+                }).start();
                 break;
               case 3://rename
                 AlertDialog.Builder renameDlg = new AlertDialog.Builder(mContext);
