@@ -26,6 +26,8 @@ public abstract class AbstractActivity extends Activity
   }
 
   public Uri filename2Uri(String filename) {
+    if(filename == null)
+      return null;
     return Uri.fromFile(new File(getPath(), filename));
   }
 

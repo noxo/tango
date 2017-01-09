@@ -12,8 +12,10 @@ import android.webkit.WebViewClient;
 
 public class SketchfabActivity extends AbstractActivity
 {
+  private static final String SKETCHFAB_HOME = "https://sketchfab.com";
   private static final String SKETCHFAB_UPLOAD = "https://sketchfab.com/upload";
 
+  private Uri mUri;
   private WebView mWebView;
 
   @Override
@@ -21,23 +23,25 @@ public class SketchfabActivity extends AbstractActivity
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_sketchfab);
 
-    final Uri uri = filename2Uri(getIntent().getStringExtra(FILE_KEY));
+    mUri = filename2Uri(getIntent().getStringExtra(FILE_KEY));
     mWebView = (WebView) findViewById(R.id.webview);
     WebSettings webSettings = mWebView.getSettings();
     webSettings.setJavaScriptEnabled(true);
     mWebView.setWebViewClient(new WebViewClient());
-    mWebView.setWebChromeClient(new WebChromeClient()
-    {
-      //For Android 4.1+
-      public void openFileChooser(ValueCallback<Uri> callback, String acceptType, String capture){
-        callback.onReceiveValue(uri);
-      }
-      //For Android 5.0+
-      public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> callback, WebChromeClient.FileChooserParams params){
-        callback.onReceiveValue(new Uri[]{uri});
-        return true;
-      }
-    });
+    if (mUri != null) {
+      mWebView.setWebChromeClient(new WebChromeClient()
+      {
+        //For Android 4.1+
+        public void openFileChooser(ValueCallback<Uri> callback, String acceptType, String capture){
+          callback.onReceiveValue(mUri);
+        }
+        //For Android 5.0+
+        public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> callback, WebChromeClient.FileChooserParams params){
+          callback.onReceiveValue(new Uri[]{mUri});
+          return true;
+        }
+      });
+    }
     setupPermission(Manifest.permission.INTERNET, REQUEST_CODE_PERMISSION_INTERNET);
   }
 
@@ -48,9 +52,12 @@ public class SketchfabActivity extends AbstractActivity
     {
       case REQUEST_CODE_PERMISSION_INTERNET:
       {
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
-          mWebView.loadUrl(SKETCHFAB_UPLOAD);
-        else
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+          if (mUri != null)
+            mWebView.loadUrl(SKETCHFAB_UPLOAD);
+          else
+            mWebView.loadUrl(SKETCHFAB_HOME);
+        }else
           finish();
         break;
       }

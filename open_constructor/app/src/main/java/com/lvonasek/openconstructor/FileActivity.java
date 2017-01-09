@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -13,13 +13,12 @@ import android.widget.TextView;
 import java.io.File;
 import java.util.Arrays;
 
-public class FileActivity extends AbstractActivity
-{
-  FileAdapter mAdapter;
-  ImageButton mButton;
-  ListView mList;
-  ProgressBar mProgress;
-  TextView mText;
+public class FileActivity extends AbstractActivity implements View.OnClickListener {
+  private FileAdapter mAdapter;
+  private ListView mList;
+  private LinearLayout mLayout;
+  private ProgressBar mProgress;
+  private TextView mText;
 
   @Override
   protected void onCreate(Bundle savedInstanceState)
@@ -27,26 +26,19 @@ public class FileActivity extends AbstractActivity
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_files);
 
+    mLayout = (LinearLayout) findViewById(R.id.layout_menu_action);
     mList = (ListView) findViewById(R.id.list);
     mText = (TextView) findViewById(R.id.no_data);
     mProgress = (ProgressBar) findViewById(R.id.progressBar);
-    mButton = (ImageButton) findViewById(R.id.add_button);
-    mButton.setOnClickListener(new View.OnClickListener()
-    {
-      @Override
-      public void onClick(View view)
-      {
-        showProgress();
-        startActivity(new Intent(FileActivity.this, OpenConstructorActivity.class));
-      }
-    });
+    findViewById(R.id.add_button).setOnClickListener(this);
+    findViewById(R.id.sketchfab).setOnClickListener(this);
   }
 
   @Override
   protected void onResume()
   {
     super.onResume();
-    mButton.setVisibility(View.VISIBLE);
+    mLayout.setVisibility(View.VISIBLE);
     mProgress.setVisibility(View.GONE);
     setupPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, REQUEST_CODE_PERMISSION_WRITE_STORAGE);
   }
@@ -62,13 +54,13 @@ public class FileActivity extends AbstractActivity
         mAdapter.addItem(s);
     mText.setVisibility(mAdapter.getCount() == 0 ? View.VISIBLE : View.GONE);
     mList.setAdapter(mAdapter);
-    mButton.setVisibility(View.VISIBLE);
+    mLayout.setVisibility(View.VISIBLE);
     mProgress.setVisibility(View.GONE);
   }
 
   public void showProgress()
   {
-    mButton.setVisibility(View.GONE);
+    mLayout.setVisibility(View.GONE);
     mProgress.setVisibility(View.VISIBLE);
   }
 
@@ -93,6 +85,21 @@ public class FileActivity extends AbstractActivity
           finish();
         break;
       }
+    }
+  }
+
+  @Override
+  public void onClick(View v)
+  {
+    switch (v.getId()) {
+      case R.id.add_button:
+        showProgress();
+        startActivity(new Intent(this, OpenConstructorActivity.class));
+        break;
+      case R.id.sketchfab:
+        showProgress();
+        startActivity(new Intent(this, SketchfabActivity.class));
+        break;
     }
   }
 }

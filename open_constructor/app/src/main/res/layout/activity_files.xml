@@ -25,7 +25,6 @@
         android:layout_centerVertical="true"/>
 
     <View
-        android:text="TextView"
         android:layout_width="match_parent"
         android:layout_height="1px"
         android:layout_below="@id/title"
@@ -46,13 +45,29 @@
         android:id="@+id/progressBar"
         android:visibility="gone" />
 
-    <ImageButton
-        android:id="@+id/add_button"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:layout_margin="20dp"
+    <LinearLayout
+        android:id="@+id/layout_menu_action"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
-        android:background="@drawable/ic_new"/>
+        android:layout_centerHorizontal="true"
+        android:background="@android:color/background_dark">
+
+        <Button
+            android:text="@string/sketchfab"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:id="@+id/sketchfab" />
+
+        <Button
+            android:text="@string/capture"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:id="@+id/add_button" />
+
+    </LinearLayout>
 
 </RelativeLayout>

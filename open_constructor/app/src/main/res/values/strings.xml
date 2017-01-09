@@ -20,6 +20,8 @@
     <string name="resume">Resume</string>
     <string name="clear">Clear</string>
     <string name="save">Save</string>
+    <string name="sketchfab">Sketchfab</string>
+    <string name="capture">Capture</string>
     <string name="filtered">filtered</string>
     <string name="enter_filename">Enter file name</string>
     <string name="view">Saved. Do you want to view 3D model?</string>
