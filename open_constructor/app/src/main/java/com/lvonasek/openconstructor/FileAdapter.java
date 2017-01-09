@@ -4,11 +4,15 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -83,26 +87,51 @@ class FileAdapter extends BaseAdapter
                 mContext.startActivity(intent);
                 break;
               case 1://filter
-                mContext.showProgress();
-                new Thread(new Runnable()
-                {
+                AlertDialog.Builder filterDlg = new AlertDialog.Builder(mContext);
+                String title = mContext.getString(R.string.passes_count) + "\n";
+                TextView textView = new TextView(mContext);
+                textView.setText(title + mContext.getString(R.string.warning_long));
+                filterDlg.setCustomTitle(textView);
+                final SeekBar seekBar = new SeekBar(mContext) {
+                  Paint p = new Paint();
                   @Override
-                  public void run()
-                  {
-                    String oldName = new File(mContext.getPath(), mItems.get(index)).toString();
-                    String newName = oldName.replaceAll(AbstractActivity.FILE_EXT, "");
-                    newName += "-" + mContext.getString(R.string.filtered) + AbstractActivity.FILE_EXT;
-                    TangoJNINative.filter(oldName, newName);
-                    mContext.runOnUiThread(new Runnable()
+                  protected void onDraw(Canvas c) {
+                    super.onDraw(c);
+                    p.setColor(Color.WHITE);
+                    p.setTextSize(getHeight() / 2);
+                    c.drawText((getProgress() + 1) + "x", getWidth() / 2, getHeight() * 3 / 4, p);
+                  }
+                };
+                seekBar.setMax(9);
+                seekBar.setProgress(4);
+                filterDlg.setView(seekBar);
+                filterDlg.setPositiveButton(mContext.getString(android.R.string.ok), new DialogInterface.OnClickListener() {
+                  @Override
+                  public void onClick(DialogInterface dialog, int which) {
+                    mContext.showProgress();
+                    new Thread(new Runnable()
                     {
                       @Override
                       public void run()
                       {
-                        mContext.refreshList();
+                        String oldName = new File(mContext.getPath(), mItems.get(index)).toString();
+                        String newName = oldName.replaceAll(AbstractActivity.FILE_EXT, "");
+                        newName += "-" + mContext.getString(R.string.filtered) + AbstractActivity.FILE_EXT;
+                        TangoJNINative.filter(oldName, newName, seekBar.getProgress() + 1);
+                        mContext.runOnUiThread(new Runnable()
+                        {
+                          @Override
+                          public void run()
+                          {
+                            mContext.refreshList();
+                          }
+                        });
                       }
-                    });
+                    }).start();
                   }
-                }).start();
+                });
+                filterDlg.setNegativeButton(mContext.getString(android.R.string.cancel), null);
+                filterDlg.create().show();
                 break;
               case 2://share
                 Intent i = new Intent(mContext, SketchfabActivity.class);
@@ -110,11 +139,11 @@ class FileAdapter extends BaseAdapter
                 mContext.startActivity(i);
                 break;
               case 3://rename
-                AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-                builder.setTitle(mContext.getString(R.string.enter_filename));
+                AlertDialog.Builder renameDlg = new AlertDialog.Builder(mContext);
+                renameDlg.setTitle(mContext.getString(R.string.enter_filename));
                 final EditText input = new EditText(mContext);
-                builder.setView(input);
-                builder.setPositiveButton(mContext.getString(android.R.string.ok), new DialogInterface.OnClickListener() {
+                renameDlg.setView(input);
+                renameDlg.setPositiveButton(mContext.getString(android.R.string.ok), new DialogInterface.OnClickListener() {
                   @Override
                   public void onClick(DialogInterface dialog, int which) {
                     File newFile = new File(mContext.getPath(), input.getText().toString() + AbstractActivity.FILE_EXT);
@@ -127,8 +156,8 @@ class FileAdapter extends BaseAdapter
                     }
                   }
                 });
-                builder.setNegativeButton(mContext.getString(android.R.string.cancel), null);
-                builder.create().show();
+                renameDlg.setNegativeButton(mContext.getString(android.R.string.cancel), null);
+                renameDlg.create().show();
                 break;
               case 4://delete
                 try {

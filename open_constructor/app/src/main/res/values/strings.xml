@@ -30,10 +30,12 @@
     <string name="no_data">No recorded meshes</string>
     <string name="new_name">Choose new name</string>
     <string name="name_exists">Model with entered name already exists</string>
+    <string name="passes_count">How many times would you like to apply the filter?</string>
+    <string name="warning_long">Warning, this operation can take very long.</string>
 
     <string-array name="file_operations">
         <item>Open</item>
-        <item>Filter noise in 3D model</item>
+        <item>Use noise filter</item>
         <item>Share on Sketchfab</item>
         <item>Rename</item>
         <item>Delete</item>

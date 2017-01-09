@@ -116,8 +116,9 @@ Java_com_lvonasek_openconstructor_TangoJNINative_centerOfStaticModel(JNIEnv*, jo
 
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_filter(JNIEnv* env, jobject, jstring oldname,
-                                                        jstring newname) {
-  mesh_builder::MeshBuilderApp::Filter(jstring2string(env, oldname), jstring2string(env, newname));
+                                                        jstring newname, jint passes) {
+  mesh_builder::MeshBuilderApp::Filter(jstring2string(env, oldname),
+                                       jstring2string(env, newname), passes);
 }
 
 #ifdef __cplusplus

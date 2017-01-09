@@ -618,7 +618,7 @@ namespace mesh_builder {
         return (min + max) * 0.5f;
     }
 
-    void MeshBuilderApp::Filter(std::string oldname, std::string newname) {
+    void MeshBuilderApp::Filter(std::string oldname, std::string newname, int passes) {
         LOGI("Loading from %s", oldname.c_str());
         FILE *file = fopen(oldname.c_str(), "r");
 
@@ -696,7 +696,8 @@ namespace mesh_builder {
         //filter indices
         glm::ivec3 ci;
         std::vector<glm::ivec3> decrease;
-        for (int pass = 0; pass < 5; pass++) {
+        for (int pass = 0; pass < passes; pass++) {
+            LOGI("Processing noise filter pass %d/%d", pass + 1, passes);
             for (long i = indices.size() - 1; i >= 0; i--) {
                 ci = indices[i];
                 if ((nodeLevel[ci.x] < 3) || (nodeLevel[ci.y] < 3) || (nodeLevel[ci.z] < 3)) {
