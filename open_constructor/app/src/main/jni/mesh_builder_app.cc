@@ -645,21 +645,14 @@ namespace mesh_builder {
         std::map<unsigned int, std::string> index2key;
         std::map<std::string, unsigned int> key2index;
         std::pair<glm::vec3, glm::ivec3> vec;
-        char key1[32];
-        char key2[32];
-        char key3[32];
         std::string key;
         for (unsigned int i = 0; i < vertexCount; i++) {
             if (!fgets(buffer, 1024, file))
                 break;
             sscanf(buffer, "%f %f %f %d %d %d", &vec.first.x, &vec.first.y, &vec.first.z,
                                                 &vec.second.r, &vec.second.g, &vec.second.b);
-            sscanf(buffer, "%s %s %s", key1, key2, key3);
-            key = key1;
-            key += ",";
-            key += key2;
-            key += ",";
-            key += key3;
+            sprintf(buffer, "%.3f,%.3f,%.3f", vec.first.x, vec.first.y, vec.first.z);
+            key = std::string(buffer);
             index2key[i] = key;
             if (key2index.find(key) == key2index.end())
               key2index[key] = i;
