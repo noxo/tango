@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <glm/gtx/transform.hpp>
 #include <tango-gl/conversions.h>
 #include <tango-gl/util.h>
 #include <map>
@@ -201,6 +202,7 @@ namespace mesh_builder {
 
     MeshBuilderApp::MeshBuilderApp() {
         gyro = true;
+        landscape = false;
         zoom = 0;
     }
 
@@ -389,6 +391,16 @@ namespace mesh_builder {
             main_scene_.camera_->SetRotation(toQuaternion(pitch, yaw, 0));
             main_scene_.camera_->SetScale(glm::vec3(1, 1, 1));
         } else {
+            if (landscape) {
+                double radian = -90 * M_PI / 180;
+                glm::mat4x4 rotation(
+                        cosf(radian),sinf(radian),0,0,
+                        -sinf(radian),cosf(radian),0,0,
+                        0,0,1,0,
+                        0,0,0,1
+                );
+                start_service_T_device_ *= rotation;
+            }
             main_scene_.camera_->SetTransformationMatrix(start_service_T_device_);
             main_scene_.UpdateFrustum(main_scene_.camera_->GetPosition(), zoom);
         }

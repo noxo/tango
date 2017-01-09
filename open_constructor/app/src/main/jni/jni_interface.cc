@@ -121,6 +121,11 @@ Java_com_lvonasek_openconstructor_TangoJNINative_filter(JNIEnv* env, jobject, js
                                        jstring2string(env, newname), passes);
 }
 
+JNIEXPORT void JNICALL
+Java_com_lvonasek_openconstructor_TangoJNINative_setLandscape(JNIEnv*, jobject, jboolean on) {
+  return app.SetLandscape(on);
+}
+
 #ifdef __cplusplus
 }
 #endif

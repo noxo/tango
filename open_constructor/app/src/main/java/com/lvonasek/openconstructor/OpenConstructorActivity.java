@@ -72,6 +72,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       public void onServiceConnected(ComponentName name, IBinder service) {
         TangoJNINative.onCreate(OpenConstructorActivity.this);
         TangoJNINative.onTangoServiceConnected(service);
+        TangoJNINative.setLandscape(!isPortrait());
         mInitialised = true;
       }
 

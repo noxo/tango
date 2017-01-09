@@ -20,6 +20,8 @@
     <string name="resume">Resume</string>
     <string name="clear">Clear</string>
     <string name="save">Save</string>
+    <string name="portrait">Set portrait</string>
+    <string name="landscape">Set landscape</string>
     <string name="sketchfab">Sketchfab</string>
     <string name="capture">Capture</string>
     <string name="filtered">filtered</string>

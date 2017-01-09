@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
@@ -17,6 +18,7 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
   private FileAdapter mAdapter;
   private ListView mList;
   private LinearLayout mLayout;
+  private Button mOrientation;
   private ProgressBar mProgress;
   private TextView mText;
 
@@ -30,6 +32,8 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
     mList = (ListView) findViewById(R.id.list);
     mText = (TextView) findViewById(R.id.no_data);
     mProgress = (ProgressBar) findViewById(R.id.progressBar);
+    mOrientation = (Button) findViewById(R.id.orientation);
+    mOrientation.setOnClickListener(this);
     findViewById(R.id.add_button).setOnClickListener(this);
     findViewById(R.id.sketchfab).setOnClickListener(this);
   }
@@ -43,7 +47,7 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
     setupPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, REQUEST_CODE_PERMISSION_WRITE_STORAGE);
   }
 
-  public void refreshList()
+  public void refreshUI()
   {
     mAdapter = new FileAdapter(this);
     mAdapter.clearItems();
@@ -56,6 +60,7 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
     mList.setAdapter(mAdapter);
     mLayout.setVisibility(View.VISIBLE);
     mProgress.setVisibility(View.GONE);
+    mOrientation.setText(isPortrait() ? R.string.landscape : R.string.portrait);
   }
 
   public void showProgress()
@@ -72,7 +77,7 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
       case REQUEST_CODE_PERMISSION_READ_STORAGE:
       {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
-          refreshList();
+          refreshUI();
         else
           finish();
         break;
@@ -95,6 +100,10 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
       case R.id.add_button:
         showProgress();
         startActivity(new Intent(this, OpenConstructorActivity.class));
+        break;
+      case R.id.orientation:
+        setOrientation(!isPortrait());
+        refreshUI();
         break;
       case R.id.sketchfab:
         showProgress();

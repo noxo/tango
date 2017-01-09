@@ -95,4 +95,7 @@ public class TangoJNINative {
 
   // Load 3D model, filter noise and save model in different name
   public static native void filter(String oldname, String newname, int passes);
+
+  // Set landscape mode during capturing
+  public static native void setLandscape(boolean on);
 }

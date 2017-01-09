@@ -123,7 +123,7 @@ class FileAdapter extends BaseAdapter
                           @Override
                           public void run()
                           {
-                            mContext.refreshList();
+                            mContext.refreshUI();
                           }
                         });
                       }
@@ -152,7 +152,7 @@ class FileAdapter extends BaseAdapter
                     else {
                       File oldFile = new File(mContext.getPath(), mItems.get(index));
                       oldFile.renameTo(newFile);
-                      mContext.refreshList();
+                      mContext.refreshUI();
                     }
                   }
                 });
@@ -163,7 +163,7 @@ class FileAdapter extends BaseAdapter
                 try {
                   new File(mContext.getPath(), mItems.get(index)).delete();
                 } catch(Exception e){}
-                mContext.refreshList();
+                mContext.refreshUI();
                 break;
             }
           }
