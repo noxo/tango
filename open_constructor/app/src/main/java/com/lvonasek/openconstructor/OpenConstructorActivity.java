@@ -178,12 +178,38 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     switch (v.getId()) {
     case R.id.toggle_button:
       m3drRunning = !m3drRunning;
-      if(mRes <= 0)
+      if(mRes <= 0) {
         m3drRunning = true;
+        mProgress.setVisibility(View.VISIBLE);
+      }
       mGLView.queueEvent(new Runnable() {
           @Override
           public void run() {
             TangoJNINative.onToggleButtonClicked(m3drRunning);
+            if(mRes <= 0) {
+              new Thread(new Runnable() {
+                @Override
+                public void run() {
+                  while(!TangoJNINative.isPhotoFinished()) {
+                    try
+                    {
+                      Thread.sleep(10);
+                    } catch (InterruptedException e)
+                    {
+                      e.printStackTrace();
+                    }
+                  }
+                  OpenConstructorActivity.this.runOnUiThread(new Runnable()
+                  {
+                    @Override
+                    public void run()
+                    {
+                      mProgress.setVisibility(View.GONE);
+                    }
+                  });
+                }
+              }).start();
+            }
           }
         });
       break;

@@ -199,7 +199,7 @@ namespace mesh_builder {
             usleep(10);
         }
         if (photoMode)
-            photoFinished = false;
+            photoFinished = true;
         process_mutex_.unlock();
         binder_mutex_.unlock();
     }
