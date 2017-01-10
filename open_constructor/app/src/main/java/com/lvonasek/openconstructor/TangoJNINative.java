@@ -98,4 +98,10 @@ public class TangoJNINative {
 
   // Set landscape mode during capturing
   public static native void setLandscape(boolean on);
+
+  // Set photo mode for recording
+  public static native void setPhotoMode(boolean on);
+
+  // Check if photo was finished
+  public static native boolean isPhotoFinished();
 }

@@ -174,10 +174,12 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   }
 
   @Override
-  public void onClick(View v) {
+  public synchronized void onClick(View v) {
     switch (v.getId()) {
     case R.id.toggle_button:
       m3drRunning = !m3drRunning;
+      if(mRes <= 0)
+        m3drRunning = true;
       mGLView.queueEvent(new Runnable() {
           @Override
           public void run() {
@@ -206,17 +208,14 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       if(mRes <= -1)
         mRes = -1;
       refresh3dr();
-      refreshUi();
       break;
     case R.id.res_plus:
       mRes++;
       if(mRes > 10)
         mRes = 10;
       refresh3dr();
-      refreshUi();
       break;
     }
-
     refreshUi();
   }
 
@@ -270,25 +269,33 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
 
   private void refresh3dr()
   {
-    if(mRes > 0)
-      TangoJNINative.set3D(mRes * 0.01, 0.6, mRes);
-    else if(mRes == 0)
-      TangoJNINative.set3D(0.005, 0.6, 0.85);
-    else if(mRes == -1)
-      TangoJNINative.set3D(0.0025, 0.6, 0.75);
+    if(mRes > 0) {
+      TangoJNINative.set3D(mRes * 0.01, 0.75, mRes);
+      TangoJNINative.setPhotoMode(false);
+    }
+    else if(mRes == 0) {
+      TangoJNINative.set3D(0.005, 0.75, 1.5);
+      TangoJNINative.setPhotoMode(true);
+    }
+    else if(mRes == -1) {
+      TangoJNINative.set3D(0.0033, 0.75, 1.25);
+      TangoJNINative.setPhotoMode(true);
+    }
   }
 
   private void refreshUi() {
     int textId = m3drRunning ? R.string.pause : R.string.resume;
+    if(mRes <= 0)
+      textId = R.string.capture;
     mToggleButton.setText(textId);
     //max distance
     String text = getString(R.string.distance);
     if(mRes > 0)
       text += mRes + "m, ";
     else if(mRes == 0)
-      text += "0.85m, ";
+      text += "1.5m, ";
     else if(mRes == -1)
-      text += "0.75m, ";
+      text += "1.25m, ";
     //3d resolution
     text += getString(R.string.resolution);
     if(mRes > 0)
@@ -296,7 +303,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     else if(mRes == 0)
       text += "0.5cm";
     else if(mRes == -1)
-      text += "0.25cm";
+      text += "0.33cm";
     text += "\n";
     //warning
     if(mRes <= 0) {

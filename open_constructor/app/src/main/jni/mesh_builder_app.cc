@@ -178,6 +178,8 @@ namespace mesh_builder {
 
         Tango3DR_GridIndexArray_destroy(t3dr_updated);
         point_cloud_available_ = false;
+        if (photoMode)
+            t3dr_is_running_ = false;
 
         app = this;
         for(long i = 0; i < THREAD_COUNT; i++) {
@@ -196,6 +198,8 @@ namespace mesh_builder {
             }
             usleep(10);
         }
+        if (photoMode)
+            photoFinished = false;
         process_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -203,6 +207,8 @@ namespace mesh_builder {
     MeshBuilderApp::MeshBuilderApp() {
         gyro = true;
         landscape = false;
+        photoFinished = false;
+        photoMode = false;
         zoom = 0;
     }
 
@@ -219,6 +225,13 @@ namespace mesh_builder {
 
     void MeshBuilderApp::ActivityCtor(bool t3dr_is_running) {
         t3dr_is_running_ = t3dr_is_running;
+    }
+
+    void MeshBuilderApp::SetPhotoMode(bool on) {
+        binder_mutex_.lock();
+        photoFinished = false;
+        photoMode = on;
+        binder_mutex_.unlock();
     }
 
     void MeshBuilderApp::OnCreate(JNIEnv *env, jobject activity) {
@@ -421,6 +434,7 @@ namespace mesh_builder {
     void MeshBuilderApp::OnToggleButtonClicked(bool t3dr_is_running) {
         binder_mutex_.lock();
         t3dr_is_running_ = t3dr_is_running;
+        photoFinished = false;
         binder_mutex_.unlock();
     }
 

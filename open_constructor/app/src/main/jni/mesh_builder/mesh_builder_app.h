@@ -59,7 +59,9 @@ namespace mesh_builder {
         void Save(std::string filename);
         float CenterOfStaticModel(bool horizontal);
         static void Filter(std::string oldname, std::string newname, int passes);
+        bool IsPhotoFinished() { return photoFinished; }
         void SetLandscape(bool on) {landscape = on;}
+        void SetPhotoMode(bool on);
         void SetView(float p, float y, float mx, float my, bool g) { pitch = p; yaw = y; gyro = g;
                                                                             movex = mx; movey = my;}
         void SetZoom(float value) { zoom = value; }
@@ -91,6 +93,8 @@ namespace mesh_builder {
         bool threadDone[THREAD_COUNT];
         pthread_t threadId[THREAD_COUNT];
         std::mutex threadMutex[THREAD_COUNT];
+        bool photoFinished;
+        bool photoMode;
         bool gyro;
         bool landscape;
         float movex;

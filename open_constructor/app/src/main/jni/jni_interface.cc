@@ -123,7 +123,17 @@ Java_com_lvonasek_openconstructor_TangoJNINative_filter(JNIEnv* env, jobject, js
 
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_setLandscape(JNIEnv*, jobject, jboolean on) {
-  return app.SetLandscape(on);
+  app.SetLandscape(on);
+}
+
+JNIEXPORT void JNICALL
+Java_com_lvonasek_openconstructor_TangoJNINative_setPhotoMode(JNIEnv*, jobject, jboolean on) {
+  app.SetPhotoMode(on);
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_lvonasek_openconstructor_TangoJNINative_isPhotoFinished(JNIEnv*, jobject) {
+  return app.IsPhotoFinished();
 }
 
 #ifdef __cplusplus
