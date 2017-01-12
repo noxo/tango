@@ -33,7 +33,7 @@ namespace {
 
     void onPointCloudAvailableRouter(void *context, const TangoPointCloud *point_cloud) {
         mesh_builder::MeshBuilderApp *app = static_cast<mesh_builder::MeshBuilderApp *>(context);
-        app->onPointCloudAvailable(point_cloud);
+        app->onPointCloudAvailable((TangoPointCloud*)point_cloud);
     }
 
     void onFrameAvailableRouter(void *context, TangoCameraId id, const TangoImageBuffer *buffer) {
@@ -100,7 +100,7 @@ namespace mesh_builder {
                indices[2] == other.indices[2];
     }
 
-    void MeshBuilderApp::onPointCloudAvailable(const TangoPointCloud *point_cloud) {
+    void MeshBuilderApp::onPointCloudAvailable(TangoPointCloud *point_cloud) {
         if (!t3dr_is_running_)
             return;
 
@@ -114,6 +114,37 @@ namespace mesh_builder {
 
         binder_mutex_.lock();
         point_cloud_matrix_ = glm::make_mat4(matrix_transform.matrix);
+        //point cloud hard edges filtering
+        if (point_cloud->num_points > 5) {
+            std::vector<glm::vec4> points;
+            float x, y, z, w;
+            glm::vec4 last, current, diff;
+            for (unsigned int i = 0; i < point_cloud->num_points; i++) {
+                x = point_cloud->points[i][0];
+                y = point_cloud->points[i][1];
+                z = point_cloud->points[i][2];
+                w = point_cloud->points[i][3];
+                current = glm::vec4(x, y, z, w);
+                if (i > 0) {
+                    diff = glm::abs(current - last);
+                    if ((diff.x < resolution * 2) && (diff.y < resolution * 2) && (diff.z < resolution * 2)) {
+                        points.push_back(current);
+                    } else if (!points.empty())
+                        points.erase(points.end() - 1);
+                }
+                last = current;
+            }
+            //copy result back
+            for (unsigned int i = 0; i < points.size(); i++) {
+                point_cloud->points[i][0] = points[i].x;
+                point_cloud->points[i][1] = points[i].y;
+                point_cloud->points[i][2] = points[i].z;
+                point_cloud->points[i][3] = points[i].w;
+            }
+            point_cloud->num_points = points.size();
+        }
+        else
+            point_cloud->num_points = 0;
         TangoSupport_updatePointCloud(point_cloud_manager_, point_cloud);
         point_cloud_available_ = true;
         binder_mutex_.unlock();
@@ -300,6 +331,7 @@ namespace mesh_builder {
             Tango3DR_destroy(t3dr_context_);
         Tango3DR_ConfigH t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_CONTEXT);
         Tango3DR_Status t3dr_err;
+        resolution = res;
         t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "resolution", res);
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);

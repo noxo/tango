@@ -47,7 +47,7 @@ namespace mesh_builder {
         void OnCreate(JNIEnv *env, jobject caller_activity);
         void OnPause();
         void OnTangoServiceConnected(JNIEnv *env, jobject binder);
-        void onPointCloudAvailable(const TangoPointCloud *point_cloud);
+        void onPointCloudAvailable(TangoPointCloud *point_cloud);
         void onFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer);
         void OnSurfaceCreated();
         void OnSurfaceChanged(int width, int height);
@@ -97,6 +97,7 @@ namespace mesh_builder {
         bool photoMode;
         bool gyro;
         bool landscape;
+        float resolution;
         float movex;
         float movey;
         float pitch;
