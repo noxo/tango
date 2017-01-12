@@ -78,6 +78,7 @@ namespace mesh_builder {
         Tango3DR_Context t3dr_context_;
         bool t3dr_is_running_;
         Tango3DR_CameraCalibration t3dr_intrinsics_;
+        Tango3DR_CameraCalibration t3dr_intrinsics_depth;
         bool point_cloud_available_;
         TangoSupportPointCloudManager *point_cloud_manager_;
         TangoPointCloud *front_cloud_;

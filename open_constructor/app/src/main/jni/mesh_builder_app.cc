@@ -352,11 +352,16 @@ namespace mesh_builder {
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
+        t3dr_err = Tango3DR_Config_setInt32(t3dr_config, "update_method", TANGO_3DR_PROJECTIVE_UPDATE);
+        if (t3dr_err != TANGO_3DR_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+
         t3dr_context_ = Tango3DR_create(t3dr_config);
         if (t3dr_context_ == nullptr)
             std::exit(EXIT_SUCCESS);
 
         Tango3DR_setColorCalibration(t3dr_context_, &t3dr_intrinsics_);
+        Tango3DR_setDepthCalibration(t3dr_context_, &t3dr_intrinsics_depth);
         Tango3DR_Config_destroy(t3dr_config);
         binder_mutex_.unlock();
     }
@@ -394,6 +399,22 @@ namespace mesh_builder {
         t3dr_intrinsics_.cy = intrinsics.cy;
         std::copy(std::begin(intrinsics.distortion), std::end(intrinsics.distortion),
                   std::begin(t3dr_intrinsics_.distortion));
+
+        // Update the depth intrinsics too.
+        intrinsics;
+        err = TangoService_getCameraIntrinsics(TANGO_CAMERA_DEPTH, &intrinsics);
+        if (err != TANGO_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+        t3dr_intrinsics_depth.calibration_type =
+                static_cast<Tango3DR_TangoCalibrationType>(intrinsics.calibration_type);
+        t3dr_intrinsics_depth.width = intrinsics.width;
+        t3dr_intrinsics_depth.height = intrinsics.height;
+        t3dr_intrinsics_depth.fx = intrinsics.fx;
+        t3dr_intrinsics_depth.fy = intrinsics.fy;
+        t3dr_intrinsics_depth.cx = intrinsics.cx;
+        t3dr_intrinsics_depth.cy = intrinsics.cy;
+        std::copy(std::begin(intrinsics.distortion), std::end(intrinsics.distortion),
+                  std::begin(t3dr_intrinsics_depth.distortion));
     }
 
     void MeshBuilderApp::TangoDisconnect() {
