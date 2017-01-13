@@ -72,6 +72,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       public void onServiceConnected(ComponentName name, IBinder service) {
         TangoJNINative.onCreate(OpenConstructorActivity.this);
         TangoJNINative.onTangoServiceConnected(service);
+        refresh3dr();
         mInitialised = true;
       }
 
@@ -98,8 +99,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
 
     mLayoutRecTop = (LinearLayout) findViewById(R.id.layout_rec_top);
     mResText = (TextView) findViewById(R.id.res_text);
-    findViewById(R.id.res_plus).setOnClickListener(this);
-    findViewById(R.id.res_minus).setOnClickListener(this);
 
     // OpenGL view where all of the graphics are drawn
     mGLView = (GLSurfaceView) findViewById(R.id.gl_surface_view);
@@ -126,7 +125,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       {
       }
     });
-    refreshUi();
 
     mGestureDetector = new GestureDetector(new GestureDetector.GestureListener()
     {
@@ -171,6 +169,9 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       mProgress.setVisibility(View.VISIBLE);
       mToLoad = new File(getPath(), filename).toString();
     }
+    else
+      mRes = getIntent().getIntExtra(RESOLUTION_KEY, 3);
+    refreshUi();
   }
 
   @Override
@@ -222,18 +223,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       refreshUi();
       //save
       setupPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, REQUEST_CODE_PERMISSION_WRITE_STORAGE);
-      break;
-    case R.id.res_minus:
-      mRes--;
-      if(mRes <= 0)
-        mRes = 0;
-      refresh3dr();
-      break;
-    case R.id.res_plus:
-      mRes++;
-      if(mRes > 10)
-        mRes = 10;
-      refresh3dr();
       break;
     }
     refreshUi();
@@ -315,7 +304,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       text += mRes + "cm";
     else if(mRes == 0)
       text += "0.5cm";
-    text += "\n";
+    text += " ";
     //warning
     if(mRes <= 0) {
       text += getString(R.string.extreme);

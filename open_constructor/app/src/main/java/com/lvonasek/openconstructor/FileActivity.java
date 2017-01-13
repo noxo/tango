@@ -1,6 +1,8 @@
 package com.lvonasek.openconstructor;
 
 import android.Manifest;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -15,7 +17,6 @@ import java.io.File;
 import java.util.Arrays;
 
 public class FileActivity extends AbstractActivity implements View.OnClickListener {
-  private FileAdapter mAdapter;
   private ListView mList;
   private LinearLayout mLayout;
   private Button mOrientation;
@@ -49,15 +50,15 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
 
   public void refreshUI()
   {
-    mAdapter = new FileAdapter(this);
-    mAdapter.clearItems();
+    FileAdapter adapter = new FileAdapter(this);
+    adapter.clearItems();
     String[] files = new File(getPath()).list();
     Arrays.sort(files);
     for(String s : files)
       if(s.substring(s.length() - FILE_EXT.length()).contains(FILE_EXT))
-        mAdapter.addItem(s);
-    mText.setVisibility(mAdapter.getCount() == 0 ? View.VISIBLE : View.GONE);
-    mList.setAdapter(mAdapter);
+        adapter.addItem(s);
+    mText.setVisibility(adapter.getCount() == 0 ? View.VISIBLE : View.GONE);
+    mList.setAdapter(adapter);
     mLayout.setVisibility(View.VISIBLE);
     mProgress.setVisibility(View.GONE);
     mOrientation.setText(isPortrait() ? R.string.landscape : R.string.portrait);
@@ -98,8 +99,21 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
   {
     switch (v.getId()) {
       case R.id.add_button:
-        showProgress();
-        startActivity(new Intent(this, OpenConstructorActivity.class));
+        String[] resolutions = getResources().getStringArray(R.array.resolutions);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(getString(R.string.scene_res));
+        builder.setItems(resolutions, new DialogInterface.OnClickListener()
+                {
+                  @Override
+                  public void onClick(DialogInterface dialog, int which)
+                  {
+                    showProgress();
+                    Intent intent = new Intent(FileActivity.this, OpenConstructorActivity.class);
+                    intent.putExtra(AbstractActivity.RESOLUTION_KEY, which);
+                    startActivity(intent);
+                  }
+                });
+        builder.create().show();
         break;
       case R.id.orientation:
         setOrientation(!isPortrait());

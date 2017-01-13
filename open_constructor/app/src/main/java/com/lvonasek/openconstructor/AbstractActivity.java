@@ -25,6 +25,7 @@ public abstract class AbstractActivity extends Activity
   protected static final String MODEL_DIRECTORY = "/Models/";
   protected static final String PREF_ORIENTATION = "PREF_ORIENTATION";
   protected static final String PREF_TAG = "OPENCONSTRUCTOR";
+  protected static final String RESOLUTION_KEY = "RESOLUTION";
   protected static final String ZIP_TEMP = "upload.zip";
   protected static final int REQUEST_CODE_PERMISSION_CAMERA = 1987;
   protected static final int REQUEST_CODE_PERMISSION_READ_STORAGE = 1988;

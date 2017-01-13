@@ -63,24 +63,12 @@
         android:background="@android:color/background_dark">
 
         <TextView
-            android:text="TextView"
-            android:layout_width="wrap_content"
+            android:text=""
+            android:textSize="20dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/res_text"
-            android:layout_weight="1"/>
+            android:id="@+id/res_text" />
 
-        <Button
-            android:text="+"
-            android:layout_width="100dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="35dp"
-            android:id="@+id/res_plus"/>
-
-        <Button
-            android:text="-"
-            android:layout_width="100dp"
-            android:layout_height="wrap_content"
-            android:id="@+id/res_minus"/>
     </LinearLayout>
 
     <ProgressBar

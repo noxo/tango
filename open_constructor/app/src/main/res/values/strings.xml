@@ -32,6 +32,7 @@
     <string name="data_lost">Motion tracking control lost</string>
     <string name="extreme">Warning, extreme settings!</string>
     <string name="no_data">No recorded meshes</string>
+    <string name="scene_res">Choose capturing resolution</string>
     <string name="new_name">Choose new name</string>
     <string name="name_exists">Model with entered name already exists</string>
     <string name="passes_count">How many times would you like to apply the filter?</string>
@@ -43,5 +44,14 @@
         <item>Share on Sketchfab</item>
         <item>Rename</item>
         <item>Delete</item>
+    </string-array>
+
+    <string-array name="resolutions">
+        <item>0.5cm - Objects only</item>
+        <item>1cm - Small room</item>
+        <item>2cm - Big room</item>
+        <item>3cm - Small interior</item>
+        <item>4cm - Big interior</item>
+        <item>5cm - Outside</item>
     </string-array>
 </resources>
