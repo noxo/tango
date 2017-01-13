@@ -113,7 +113,7 @@ namespace mesh_builder {
             return;
 
         binder_mutex_.lock();
-        point_cloud_matrix_ = glm::make_mat4(matrix_transform.matrix);
+        glm::mat4 point_cloud_matrix_ = glm::make_mat4(matrix_transform.matrix);
         point_cloud_matrix_[3][0] *= scale;
         point_cloud_matrix_[3][1] *= scale;
         point_cloud_matrix_[3][2] *= scale;
@@ -122,52 +122,12 @@ namespace mesh_builder {
             point_cloud->points[i][1] *= scale;
             point_cloud->points[i][2] *= scale;
         }
-        TangoSupport_updatePointCloud(point_cloud_manager_, point_cloud);
-        point_cloud_available_ = true;
-        binder_mutex_.unlock();
-    }
-
-    void MeshBuilderApp::onFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer) {
-        if (id != TANGO_CAMERA_COLOR || !t3dr_is_running_)
-            return;
-
-        binder_mutex_.lock();
-        if (!point_cloud_available_) {
-            binder_mutex_.unlock();
-            return;
-        }
-
-        // Get the camera color transform to OpenGL world frame in OpenGL convention.
-        TangoMatrixTransformData matrix_transform;
-        TangoSupport_getMatrixTransformAtTime(
-                buffer->timestamp, TANGO_COORDINATE_FRAME_START_OF_SERVICE,
-                TANGO_COORDINATE_FRAME_CAMERA_COLOR, TANGO_SUPPORT_ENGINE_OPENGL,
-                TANGO_SUPPORT_ENGINE_TANGO, ROTATION_0, &matrix_transform);
-        if (matrix_transform.status_code != TANGO_POSE_VALID) {
-            binder_mutex_.unlock();
-            return;
-        }
-
-        glm::mat4 image_matrix = glm::make_mat4(matrix_transform.matrix);
-        image_matrix[3][0] *= scale;
-        image_matrix[3][1] *= scale;
-        image_matrix[3][2] *= scale;
-        Tango3DR_ImageBuffer t3dr_image;
-        t3dr_image.width = buffer->width;
-        t3dr_image.height = buffer->height;
-        t3dr_image.stride = buffer->stride;
-        t3dr_image.timestamp = buffer->timestamp;
-        t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(buffer->format);
-        t3dr_image.data = buffer->data;
-
-        Tango3DR_Pose t3dr_image_pose;
-        extract3DRPose(image_matrix, &t3dr_image_pose);
 
         Tango3DR_PointCloud t3dr_depth;
-        TangoSupport_getLatestPointCloud(point_cloud_manager_, &front_cloud_);
-        t3dr_depth.timestamp = front_cloud_->timestamp;
-        t3dr_depth.num_points = front_cloud_->num_points;
-        t3dr_depth.points = front_cloud_->points;
+        t3dr_depth.num_points = point_cloud->num_points;
+        t3dr_depth.points = point_cloud->points;
+        t3dr_depth.timestamp = point_cloud->timestamp;
+        t3dr_image.timestamp = point_cloud->timestamp;
 
         Tango3DR_Pose t3dr_depth_pose;
         extract3DRPose(point_cloud_matrix_, &t3dr_depth_pose);
@@ -183,7 +143,6 @@ namespace mesh_builder {
         std::copy(&t3dr_updated->indices[0][0], &t3dr_updated->indices[t3dr_updated->num_indices][0],
                   reinterpret_cast<uint32_t *>(updated_indices_binder_thread_.data()));
         Tango3DR_GridIndexArray_destroy(t3dr_updated);
-        point_cloud_available_ = false;
         if (photoMode)
             t3dr_is_running_ = false;
 
@@ -199,7 +158,7 @@ namespace mesh_builder {
             for(int i = 0; i < THREAD_COUNT; i++) {
                 threadMutex[i].lock();
                 if(!threadDone[i])
-                  done = false;
+                    done = false;
                 threadMutex[i].unlock();
             }
             usleep(10);
@@ -207,6 +166,34 @@ namespace mesh_builder {
         if (photoMode)
             photoFinished = true;
         process_mutex_.unlock();
+        binder_mutex_.unlock();
+    }
+
+    void MeshBuilderApp::onFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer) {
+        if (id != TANGO_CAMERA_COLOR)
+            return;
+
+        // Get the camera color transform to OpenGL world frame in OpenGL convention.
+        TangoMatrixTransformData matrix_transform;
+        TangoSupport_getMatrixTransformAtTime(
+                buffer->timestamp, TANGO_COORDINATE_FRAME_START_OF_SERVICE,
+                TANGO_COORDINATE_FRAME_CAMERA_COLOR, TANGO_SUPPORT_ENGINE_OPENGL,
+                TANGO_SUPPORT_ENGINE_TANGO, ROTATION_0, &matrix_transform);
+        if (matrix_transform.status_code != TANGO_POSE_VALID)
+            return;
+
+        binder_mutex_.lock();
+        glm::mat4 image_matrix = glm::make_mat4(matrix_transform.matrix);
+        image_matrix[3][0] *= scale;
+        image_matrix[3][1] *= scale;
+        image_matrix[3][2] *= scale;
+        t3dr_image.width = buffer->width;
+        t3dr_image.height = buffer->height;
+        t3dr_image.stride = buffer->stride;
+        t3dr_image.timestamp = buffer->timestamp;
+        t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(buffer->format);
+        t3dr_image.data = buffer->data;
+        extract3DRPose(image_matrix, &t3dr_image_pose);
         binder_mutex_.unlock();
     }
 
@@ -223,10 +210,6 @@ namespace mesh_builder {
         if (tango_config_ != nullptr) {
             TangoConfig_free(tango_config_);
             tango_config_ = nullptr;
-        }
-        if (point_cloud_manager_ != nullptr) {
-            TangoSupport_freePointCloudManager(point_cloud_manager_);
-            point_cloud_manager_ = nullptr;
         }
     }
 
@@ -287,18 +270,6 @@ namespace mesh_builder {
         ret = TangoConfig_setBool(tango_config_, "config_enable_color_camera", true);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
-
-        if (point_cloud_manager_ == nullptr) {
-            int32_t max_point_cloud;
-            ret = TangoConfig_getInt32(tango_config_, "max_point_cloud_elements", &max_point_cloud);
-            if (ret != TANGO_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-
-            size_t max_point_cloud_elements = (size_t) max_point_cloud;
-            ret = TangoSupport_createPointCloudManager(max_point_cloud_elements, &point_cloud_manager_);
-            if (ret != TANGO_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-        }
     }
 
     void MeshBuilderApp::TangoSetup3DR(double res, double dmin, double dmax) {
@@ -308,7 +279,7 @@ namespace mesh_builder {
         Tango3DR_ConfigH t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_CONTEXT);
         Tango3DR_Status t3dr_err;
         if (res < 0.00999)
-            scale = 2;
+            scale = 4;
         else
             scale = 1;
         t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "resolution", res * scale);
