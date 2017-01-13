@@ -113,14 +113,20 @@ namespace mesh_builder {
             return;
 
         binder_mutex_.lock();
+        if (t3dr_image.timestamp == 0) {
+            binder_mutex_.unlock();
+            return;
+        }
         glm::mat4 point_cloud_matrix_ = glm::make_mat4(matrix_transform.matrix);
         point_cloud_matrix_[3][0] *= scale;
         point_cloud_matrix_[3][1] *= scale;
         point_cloud_matrix_[3][2] *= scale;
-        for (unsigned int i = 0; i < point_cloud->num_points; i++) {
-            point_cloud->points[i][0] *= scale;
-            point_cloud->points[i][1] *= scale;
-            point_cloud->points[i][2] *= scale;
+        if (fabs(1 - scale) > 0.005f) {
+            for (unsigned int i = 0; i < point_cloud->num_points; i++) {
+                point_cloud->points[i][0] *= scale;
+                point_cloud->points[i][1] *= scale;
+                point_cloud->points[i][2] *= scale;
+            }
         }
 
         Tango3DR_PointCloud t3dr_depth;
@@ -198,6 +204,7 @@ namespace mesh_builder {
     }
 
     MeshBuilderApp::MeshBuilderApp() {
+        t3dr_image.timestamp = 0;
         gyro = true;
         landscape = false;
         photoFinished = false;
@@ -279,7 +286,7 @@ namespace mesh_builder {
         Tango3DR_ConfigH t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_CONTEXT);
         Tango3DR_Status t3dr_err;
         if (res < 0.00999)
-            scale = 4;
+            scale = 10;
         else
             scale = 1;
         t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "resolution", res * scale);
@@ -299,10 +306,6 @@ namespace mesh_builder {
             std::exit(EXIT_SUCCESS);
 
         t3dr_err = Tango3DR_Config_setBool(t3dr_config, "use_parallel_integration", true);
-        if (t3dr_err != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-
-        t3dr_err = Tango3DR_Config_setBool(t3dr_config, "use_space_clearing", true);
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
 

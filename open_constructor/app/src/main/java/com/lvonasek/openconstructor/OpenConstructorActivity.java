@@ -178,38 +178,32 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     switch (v.getId()) {
     case R.id.toggle_button:
       m3drRunning = !m3drRunning;
-      if(mRes <= 0) {
-        m3drRunning = true;
-        mProgress.setVisibility(View.VISIBLE);
-      }
       mGLView.queueEvent(new Runnable() {
           @Override
           public void run() {
             TangoJNINative.onToggleButtonClicked(m3drRunning);
-            if(mRes <= 0) {
-              new Thread(new Runnable() {
-                @Override
-                public void run() {
-                  while(!TangoJNINative.isPhotoFinished()) {
-                    try
-                    {
-                      Thread.sleep(10);
-                    } catch (InterruptedException e)
-                    {
-                      e.printStackTrace();
-                    }
-                  }
-                  OpenConstructorActivity.this.runOnUiThread(new Runnable()
+            new Thread(new Runnable() {
+              @Override
+              public void run() {
+                while(!TangoJNINative.isPhotoFinished()) {
+                  try
                   {
-                    @Override
-                    public void run()
-                    {
-                      mProgress.setVisibility(View.GONE);
-                    }
-                  });
+                    Thread.sleep(10);
+                  } catch (InterruptedException e)
+                  {
+                    e.printStackTrace();
+                  }
                 }
-              }).start();
-            }
+                OpenConstructorActivity.this.runOnUiThread(new Runnable()
+                {
+                  @Override
+                  public void run()
+                  {
+                    mProgress.setVisibility(View.GONE);
+                  }
+                });
+              }
+            }).start();
           }
         });
       break;
@@ -231,8 +225,8 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       break;
     case R.id.res_minus:
       mRes--;
-      if(mRes <= -1)
-        mRes = -1;
+      if(mRes <= 0)
+        mRes = 0;
       refresh3dr();
       break;
     case R.id.res_plus:
@@ -296,40 +290,31 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private void refresh3dr()
   {
     if(mRes > 0) {
-      TangoJNINative.set3D(mRes * 0.01, 0.75, mRes);
+      TangoJNINative.set3D(mRes * 0.01, 0.6, mRes);
       TangoJNINative.setPhotoMode(false);
     }
     else if(mRes == 0) {
-      TangoJNINative.set3D(0.005, 0.75, 1.5);
-      TangoJNINative.setPhotoMode(true);
-    }
-    else if(mRes == -1) {
-      TangoJNINative.set3D(0.0033, 0.75, 1.25);
-      TangoJNINative.setPhotoMode(true);
+      TangoJNINative.set3D(0.005, 0.6, 1);
+      TangoJNINative.setPhotoMode(false);
     }
   }
 
   private void refreshUi() {
     int textId = m3drRunning ? R.string.pause : R.string.resume;
-    if(mRes <= 0)
-      textId = R.string.capture;
     mToggleButton.setText(textId);
+    mLayoutRecBottom.setVisibility(View.VISIBLE);
     //max distance
     String text = getString(R.string.distance);
     if(mRes > 0)
       text += mRes + "m, ";
     else if(mRes == 0)
-      text += "1.5m, ";
-    else if(mRes == -1)
-      text += "1.25m, ";
+      text += "1m, ";
     //3d resolution
     text += getString(R.string.resolution);
     if(mRes > 0)
       text += mRes + "cm";
     else if(mRes == 0)
       text += "0.5cm";
-    else if(mRes == -1)
-      text += "0.33cm";
     text += "\n";
     //warning
     if(mRes <= 0) {
