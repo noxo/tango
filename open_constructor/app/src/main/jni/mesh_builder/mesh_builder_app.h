@@ -98,7 +98,7 @@ namespace mesh_builder {
         bool photoMode;
         bool gyro;
         bool landscape;
-        float resolution;
+        float scale;
         float movex;
         float movey;
         float pitch;

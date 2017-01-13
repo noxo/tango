@@ -114,6 +114,14 @@ namespace mesh_builder {
 
         binder_mutex_.lock();
         point_cloud_matrix_ = glm::make_mat4(matrix_transform.matrix);
+        point_cloud_matrix_[3][0] *= scale;
+        point_cloud_matrix_[3][1] *= scale;
+        point_cloud_matrix_[3][2] *= scale;
+        for (unsigned int i = 0; i < point_cloud->num_points; i++) {
+            point_cloud->points[i][0] *= scale;
+            point_cloud->points[i][1] *= scale;
+            point_cloud->points[i][2] *= scale;
+        }
         TangoSupport_updatePointCloud(point_cloud_manager_, point_cloud);
         point_cloud_available_ = true;
         binder_mutex_.unlock();
@@ -140,11 +148,10 @@ namespace mesh_builder {
             return;
         }
 
-        if(!process_mutex_.try_lock()) {
-            binder_mutex_.unlock();
-            return;
-        }
         glm::mat4 image_matrix = glm::make_mat4(matrix_transform.matrix);
+        image_matrix[3][0] *= scale;
+        image_matrix[3][1] *= scale;
+        image_matrix[3][2] *= scale;
         Tango3DR_ImageBuffer t3dr_image;
         t3dr_image.width = buffer->width;
         t3dr_image.height = buffer->height;
@@ -175,7 +182,6 @@ namespace mesh_builder {
         updated_indices_binder_thread_.resize(t3dr_updated->num_indices);
         std::copy(&t3dr_updated->indices[0][0], &t3dr_updated->indices[t3dr_updated->num_indices][0],
                   reinterpret_cast<uint32_t *>(updated_indices_binder_thread_.data()));
-
         Tango3DR_GridIndexArray_destroy(t3dr_updated);
         point_cloud_available_ = false;
         if (photoMode)
@@ -209,6 +215,7 @@ namespace mesh_builder {
         landscape = false;
         photoFinished = false;
         photoMode = false;
+        scale = 1;
         zoom = 0;
     }
 
@@ -300,8 +307,11 @@ namespace mesh_builder {
             Tango3DR_destroy(t3dr_context_);
         Tango3DR_ConfigH t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_CONTEXT);
         Tango3DR_Status t3dr_err;
-        resolution = res;
-        t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "resolution", res);
+        if (res < 0.00999)
+            scale = 2;
+        else
+            scale = 1;
+        t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "resolution", res * scale);
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
@@ -309,7 +319,7 @@ namespace mesh_builder {
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
-        t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "max_depth", dmax);
+        t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "max_depth", dmax * scale);
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
@@ -325,10 +335,7 @@ namespace mesh_builder {
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
-        t3dr_err = Tango3DR_Config_setInt32(t3dr_config, "update_method", TANGO_3DR_PROJECTIVE_UPDATE);
-        if (t3dr_err != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-
+        Tango3DR_Config_setInt32(t3dr_config, "update_method", TANGO_3DR_PROJECTIVE_UPDATE);
         t3dr_context_ = Tango3DR_create(t3dr_config);
         if (t3dr_context_ == nullptr)
             std::exit(EXIT_SUCCESS);
@@ -422,6 +429,9 @@ namespace mesh_builder {
                 &matrix_transform);
         if (matrix_transform.status_code == TANGO_POSE_VALID)
             start_service_T_device_ = glm::make_mat4(matrix_transform.matrix);
+        start_service_T_device_[3][0] *= scale;
+        start_service_T_device_[3][1] *= scale;
+        start_service_T_device_[3][2] *= scale;
 
         render_mutex_.lock();
         //camera transformation
@@ -431,7 +441,7 @@ namespace mesh_builder {
             main_scene_.camera_->SetScale(glm::vec3(1, 1, 1));
         } else {
             if (landscape) {
-                double radian = -90 * M_PI / 180;
+                float radian = (float) (-90 * M_PI / 180);
                 glm::mat4x4 rotation(
                         cosf(radian),sinf(radian),0,0,
                         -sinf(radian),cosf(radian),0,0,
