@@ -666,7 +666,8 @@ namespace mesh_builder {
         char buffer[1024];
         unsigned int vertexCount = 0;
         unsigned int faceCount = 0;
-        std::vector<std::pair<glm::vec3, glm::ivec3> > vertices;
+        std::vector<glm::ivec3> indices;
+        std::pair<glm::vec3, glm::ivec3> vec;
 
         //read header
         while (true) {
@@ -680,72 +681,94 @@ namespace mesh_builder {
                 break;
         }
 
-        //read vertices
-        std::vector<int> nodeLevel;
-        std::map<unsigned int, std::string> index2key;
-        std::map<std::string, unsigned int> key2index;
-        std::pair<glm::vec3, glm::ivec3> vec;
-        std::string key;
+        {
+            std::map<unsigned int, unsigned int> index2index;
+            std::string key;
+            {
+                //prepare reindexing of vertices
+                std::map<std::string, unsigned int> key2index;
+                for (unsigned int i = 0; i < vertexCount; i++) {
+                    if (!fgets(buffer, 1024, file))
+                        break;
+                    sscanf(buffer, "%f %f %f %d %d %d", &vec.first.x, &vec.first.y, &vec.first.z,
+                           &vec.second.r, &vec.second.g, &vec.second.b);
+                    sprintf(buffer, "%.3f,%.3f,%.3f", vec.first.x, vec.first.y, vec.first.z);
+                    key = std::string(buffer);
+                    if (key2index.find(key) == key2index.end())
+                        key2index[key] = i;
+                    else
+                        index2index[i] = key2index[key];
+                }
+            }
+
+            //parse indices
+            unsigned int t, a, b, c;
+            std::vector<int> nodeLevel;
+            for (unsigned int i = 0; i < vertexCount; i++)
+              nodeLevel.push_back(0);
+            for (unsigned int i = 0; i < faceCount; i++)  {
+                fscanf(file, "%d %d %d %d", &t, &a, &b, &c);
+                //unsupported format
+                if (t != 3)
+                    continue;
+                //broken topology ignored
+                if ((a == b) || (a == c) || (b == c))
+                    continue;
+                //reindex
+                if (index2index.find(a) != index2index.end())
+                    a = index2index[a];
+                if (index2index.find(b) != index2index.end())
+                    b = index2index[b];
+                if (index2index.find(c) != index2index.end())
+                    c = index2index[c];
+                //get node levels
+                nodeLevel[a]++;
+                nodeLevel[b]++;
+                nodeLevel[c]++;
+                //store indices
+                indices.push_back(glm::ivec3(a, b, c));
+            }
+
+            //filter indices
+            glm::ivec3 ci;
+            std::vector<glm::ivec3> decrease;
+            for (int pass = 0; pass < passes; pass++) {
+                LOGI("Processing noise filter pass %d/%d", pass + 1, passes);
+                for (long i = indices.size() - 1; i >= 0; i--) {
+                    ci = indices[i];
+                    if ((nodeLevel[ci.x] < 3) || (nodeLevel[ci.y] < 3) || (nodeLevel[ci.z] < 3)) {
+                        indices.erase(indices.begin() + i);
+                        decrease.push_back(ci);
+                    }
+                }
+                for (glm::ivec3 i : decrease) {
+                    nodeLevel[i.x]--;
+                    nodeLevel[i.y]--;
+                    nodeLevel[i.z]--;
+                }
+                decrease.clear();
+            }
+            faceCount = indices.size();
+            fclose(file);
+        }
+
+        //reload vertices into memory
+        LOGI("Reloading vertices from %s", oldname.c_str());
+        file = fopen(oldname.c_str(), "r");
+        while (true) {
+            if (!fgets(buffer, 1024, file))
+                break;
+            else if (startsWith(buffer, "end_header"))
+                break;
+        }
+        std::vector<std::pair<glm::vec3, glm::ivec3> > vertices;
         for (unsigned int i = 0; i < vertexCount; i++) {
             if (!fgets(buffer, 1024, file))
                 break;
             sscanf(buffer, "%f %f %f %d %d %d", &vec.first.x, &vec.first.y, &vec.first.z,
-                                                &vec.second.r, &vec.second.g, &vec.second.b);
-            sprintf(buffer, "%.3f,%.3f,%.3f", vec.first.x, vec.first.y, vec.first.z);
-            key = std::string(buffer);
-            index2key[i] = key;
-            if (key2index.find(key) == key2index.end())
-              key2index[key] = i;
-            nodeLevel.push_back(0);
+                   &vec.second.r, &vec.second.g, &vec.second.b);
             vertices.push_back(vec);
         }
-
-        //parse indices
-        std::vector<glm::ivec3> indices;
-        unsigned int t, a, b, c;
-        for (unsigned int i = 0; i < faceCount; i++)  {
-            fscanf(file, "%d %d %d %d", &t, &a, &b, &c);
-            //unsupported format
-            if (t != 3)
-                continue;
-            //broken topology ignored
-            if ((a == b) || (a == c) || (b == c))
-                continue;
-            //reindex
-            key = index2key[a];
-            a = key2index[key];
-            key = index2key[b];
-            b = key2index[key];
-            key = index2key[c];
-            c = key2index[key];
-            //get node levels
-            nodeLevel[a]++;
-            nodeLevel[b]++;
-            nodeLevel[c]++;
-            //store indices
-            indices.push_back(glm::ivec3(a, b, c));
-        }
-
-        //filter indices
-        glm::ivec3 ci;
-        std::vector<glm::ivec3> decrease;
-        for (int pass = 0; pass < passes; pass++) {
-            LOGI("Processing noise filter pass %d/%d", pass + 1, passes);
-            for (long i = indices.size() - 1; i >= 0; i--) {
-                ci = indices[i];
-                if ((nodeLevel[ci.x] < 3) || (nodeLevel[ci.y] < 3) || (nodeLevel[ci.z] < 3)) {
-                    indices.erase(indices.begin() + i);
-                    decrease.push_back(ci);
-                }
-            }
-            for (glm::ivec3 i : decrease) {
-                nodeLevel[i.x]--;
-                nodeLevel[i.y]--;
-                nodeLevel[i.z]--;
-            }
-            decrease.clear();
-        }
-        faceCount = indices.size();
         fclose(file);
 
         //file header
@@ -765,6 +788,7 @@ namespace mesh_builder {
 
         //write vertices
         glm::vec3 vi;
+        glm::ivec3 ci;
         for (unsigned int i = 0; i < vertices.size(); i++) {
             vi = vertices[i].first;
             ci = vertices[i].second;
