@@ -55,10 +55,11 @@
         android:background="@android:color/background_dark">
 
         <Button
+            android:text="@string/settings"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:id="@+id/orientation" />
+            android:id="@+id/settings" />
 
         <Button
             android:text="@string/sketchfab"

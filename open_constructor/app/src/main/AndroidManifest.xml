@@ -30,6 +30,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".OpenConstructorActivity"/>
+        <activity android:name=".SettingsActivity"/>
         <activity android:name=".SketchfabActivity"/>
     </application>
 

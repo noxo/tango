@@ -1,0 +1,31 @@
+package com.lvonasek.openconstructor;
+
+import android.os.Bundle;
+import android.preference.Preference;
+import android.preference.PreferenceActivity;
+import android.view.WindowManager;
+
+public class SettingsActivity extends PreferenceActivity implements Preference.OnPreferenceChangeListener {
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    addPreferencesFromResource(R.xml.settings);
+    findPreference(getString(R.string.pref_landscape)).setOnPreferenceChangeListener(this);
+  }
+
+  @Override
+  public boolean onPreferenceChange(Preference preference, Object value)
+  {
+    if (preference.getKey() == getString(R.string.pref_landscape))
+      AbstractActivity.setOrientation(!((boolean)value), this);
+    return true;
+  }
+
+
+  @Override
+  protected void onResume() {
+    super.onResume();
+    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    AbstractActivity.setOrientation(AbstractActivity.isPortrait(this), this);
+  }
+}

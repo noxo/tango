@@ -232,7 +232,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   protected void onResume() {
     super.onResume();
     mGLView.onResume();
-    TangoJNINative.setLandscape(!isPortrait());
+    TangoJNINative.setLandscape(!isPortrait(this));
 
     if (mViewMode) {
       if (mToLoad != null) {

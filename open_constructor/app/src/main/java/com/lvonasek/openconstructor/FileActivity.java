@@ -19,7 +19,6 @@ import java.util.Arrays;
 public class FileActivity extends AbstractActivity implements View.OnClickListener {
   private ListView mList;
   private LinearLayout mLayout;
-  private Button mOrientation;
   private ProgressBar mProgress;
   private TextView mText;
 
@@ -33,8 +32,7 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
     mList = (ListView) findViewById(R.id.list);
     mText = (TextView) findViewById(R.id.no_data);
     mProgress = (ProgressBar) findViewById(R.id.progressBar);
-    mOrientation = (Button) findViewById(R.id.orientation);
-    mOrientation.setOnClickListener(this);
+    findViewById(R.id.settings).setOnClickListener(this);
     findViewById(R.id.add_button).setOnClickListener(this);
     findViewById(R.id.sketchfab).setOnClickListener(this);
   }
@@ -61,7 +59,6 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
     mList.setAdapter(adapter);
     mLayout.setVisibility(View.VISIBLE);
     mProgress.setVisibility(View.GONE);
-    mOrientation.setText(isPortrait() ? R.string.landscape : R.string.portrait);
   }
 
   public void showProgress()
@@ -115,9 +112,8 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
                 });
         builder.create().show();
         break;
-      case R.id.orientation:
-        setOrientation(!isPortrait());
-        refreshUI();
+      case R.id.settings:
+        startActivity(new Intent(this, SettingsActivity.class));
         break;
       case R.id.sketchfab:
         showProgress();

@@ -1,12 +1,14 @@
 package com.lvonasek.openconstructor;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.view.WindowManager;
 
 import java.io.BufferedInputStream;
@@ -23,8 +25,6 @@ public abstract class AbstractActivity extends Activity
   protected static final String FILE_EXT = ".ply";
   protected static final String FILE_KEY = "FILE2OPEN";
   protected static final String MODEL_DIRECTORY = "/Models/";
-  protected static final String PREF_ORIENTATION = "PREF_ORIENTATION";
-  protected static final String PREF_TAG = "OPENCONSTRUCTOR";
   protected static final String RESOLUTION_KEY = "RESOLUTION";
   protected static final String ZIP_TEMP = "upload.zip";
   protected static final int REQUEST_CODE_PERMISSION_CAMERA = 1987;
@@ -32,27 +32,24 @@ public abstract class AbstractActivity extends Activity
   protected static final int REQUEST_CODE_PERMISSION_WRITE_STORAGE = 1989;
   protected static final int REQUEST_CODE_PERMISSION_INTERNET = 1990;
 
-  public boolean isPortrait() {
-    SharedPreferences pref = getSharedPreferences(PREF_TAG, MODE_PRIVATE);
-    int value = pref.getInt(PREF_ORIENTATION, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-    return value == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+  public static boolean isPortrait(Context context) {
+    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
+    String key = context.getString(R.string.pref_landscape);
+    return !pref.getBoolean(key, false);
   }
 
-  public void setOrientation(boolean portrait) {
-    SharedPreferences.Editor edit = getSharedPreferences(PREF_TAG, MODE_PRIVATE).edit();
+  public static void setOrientation(boolean portrait, Activity activity) {
     int value = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
     if (!portrait)
       value = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
-    edit.putInt(PREF_ORIENTATION, value);
-    edit.apply();
-    setRequestedOrientation(value);
+    activity.setRequestedOrientation(value);
   }
 
   @Override
   protected void onResume() {
     super.onResume();
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-    setOrientation(isPortrait());
+    setOrientation(isPortrait(this), this);
   }
 
   public Uri filename2Uri(String filename) {
@@ -78,14 +75,13 @@ public abstract class AbstractActivity extends Activity
   }
 
   protected void zip(String[] files, String zipFile) throws Exception {
-    BufferedInputStream origin = null;
     ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipFile)));
     try {
       byte data[] = new byte[BUFFER_SIZE];
 
       for (int i = 0; i < files.length; i++) {
         FileInputStream fi = new FileInputStream(files[i]);
-        origin = new BufferedInputStream(fi, BUFFER_SIZE);
+        BufferedInputStream origin = new BufferedInputStream(fi, BUFFER_SIZE);
         try {
           ZipEntry entry = new ZipEntry(files[i].substring(files[i].lastIndexOf("/") + 1));
           out.putNextEntry(entry);
