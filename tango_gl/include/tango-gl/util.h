@@ -35,9 +35,9 @@
 #include "glm/gtx/matrix_decompose.hpp"
 
 #define LOGI(...) \
-  __android_log_print(ANDROID_LOG_INFO, "tango_jni_example", __VA_ARGS__)
+  __android_log_print(ANDROID_LOG_INFO, "tango_app", __VA_ARGS__)
 #define LOGE(...) \
-  __android_log_print(ANDROID_LOG_ERROR, "tango_jni_example", __VA_ARGS__)
+  __android_log_print(ANDROID_LOG_ERROR, "tango_app", __VA_ARGS__)
 
 #ifndef M_PI
 #define M_PI 3.1415926f
