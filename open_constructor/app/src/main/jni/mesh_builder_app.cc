@@ -310,6 +310,11 @@ namespace mesh_builder {
             std::exit(EXIT_SUCCESS);
 
         Tango3DR_Config_setInt32(t3dr_config, "update_method", TANGO_3DR_PROJECTIVE_UPDATE);
+
+        TangoConfig_setBool(t3dr_config, "config_color_mode_auto", false);
+        TangoConfig_setInt32(t3dr_config, "config_color_iso", 800);
+        TangoConfig_setInt32(t3dr_config, "config_color_exp", (int32_t) floor(11.1 * 2.0));
+
         t3dr_context_ = Tango3DR_create(t3dr_config);
         if (t3dr_context_ == nullptr)
             std::exit(EXIT_SUCCESS);
@@ -355,7 +360,6 @@ namespace mesh_builder {
                   std::begin(t3dr_intrinsics_.distortion));
 
         // Update the depth intrinsics too.
-        intrinsics;
         err = TangoService_getCameraIntrinsics(TANGO_CAMERA_DEPTH, &intrinsics);
         if (err != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
