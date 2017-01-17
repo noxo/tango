@@ -331,7 +331,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       text += "0.5cm";
     text += " ";
     //warning
-    if(mRes <= 0) {
+    if ((mRes <= 0) || ((mRes == 1) && isPhotoModeOn())) {
       text += getString(R.string.extreme);
       mResText.setTextColor(Color.RED);
     } else {
