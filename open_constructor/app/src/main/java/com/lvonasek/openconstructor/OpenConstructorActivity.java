@@ -22,12 +22,14 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
@@ -48,7 +50,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private GLSurfaceView mGLView;
   private SeekBar mSeekbar;
   private String mToLoad;
-  private boolean m3drRunning = true;
+  private boolean m3drRunning = false;
   private boolean mViewMode = false;
 
   private LinearLayout mLayoutRecBottom;
@@ -81,7 +83,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     };
 
   public OpenConstructorActivity() {
-    TangoJNINative.activityCtor(m3drRunning);
+    TangoJNINative.activityCtor(false);
     mRenderer = new OpenConstructorRenderer();
   }
 
@@ -89,6 +91,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_mesh_builder);
+    TangoJNINative.onToggleButtonClicked(false);
 
     // Setup UI elements and listeners.
     mLayoutRecBottom = (LinearLayout) findViewById(R.id.layout_rec_bottom);
@@ -164,7 +167,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     if ((filename != null) && (filename.length() > 0))
     {
       m3drRunning = false;
-      TangoJNINative.onToggleButtonClicked(false);
       setViewerMode();
       mProgress.setVisibility(View.VISIBLE);
       mToLoad = new File(getPath(), filename).toString();
@@ -178,7 +180,12 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   public synchronized void onClick(View v) {
     switch (v.getId()) {
     case R.id.toggle_button:
-      m3drRunning = !m3drRunning;
+      if (isPhotoModeOn()) {
+        m3drRunning = true;
+        mProgress.setVisibility(View.VISIBLE);
+      }
+      else
+        m3drRunning = !m3drRunning;
       mGLView.queueEvent(new Runnable() {
           @Override
           public void run() {
@@ -186,23 +193,25 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
             new Thread(new Runnable() {
               @Override
               public void run() {
-                while(!TangoJNINative.isPhotoFinished()) {
-                  try
-                  {
-                    Thread.sleep(10);
-                  } catch (InterruptedException e)
-                  {
-                    e.printStackTrace();
+                if (isPhotoModeOn()) {
+                  while(!TangoJNINative.isPhotoFinished()) {
+                    try
+                    {
+                      Thread.sleep(10);
+                    } catch (InterruptedException e)
+                    {
+                      e.printStackTrace();
+                    }
                   }
+                  OpenConstructorActivity.this.runOnUiThread(new Runnable()
+                  {
+                    @Override
+                    public void run()
+                    {
+                      mProgress.setVisibility(View.GONE);
+                    }
+                  });
                 }
-                OpenConstructorActivity.this.runOnUiThread(new Runnable()
-                {
-                  @Override
-                  public void run()
-                  {
-                    mProgress.setVisibility(View.GONE);
-                  }
-                });
               }
             }).start();
           }
@@ -278,26 +287,42 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
 
   private void refresh3dr()
   {
-    if(mRes > 0) {
-      TangoJNINative.set3D(mRes * 0.01, 0.6, mRes);
-      TangoJNINative.setPhotoMode(false);
+    if (isPhotoModeOn()) {
+      if(mRes > 0)
+        TangoJNINative.set3D(mRes * 0.01, 0.6, 5.0);
+      else if(mRes == 0)
+        TangoJNINative.set3D(0.005, 0.6, 2.0);
+    } else {
+      if(mRes > 0)
+        TangoJNINative.set3D(mRes * 0.01, 0.6, mRes);
+      else if(mRes == 0)
+        TangoJNINative.set3D(0.005, 0.6, 1);
     }
-    else if(mRes == 0) {
-      TangoJNINative.set3D(0.005, 0.6, 1);
-      TangoJNINative.setPhotoMode(false);
-    }
+
+    m3drRunning = !isPhotoModeOn();
+    TangoJNINative.onToggleButtonClicked(m3drRunning);
+    TangoJNINative.setPhotoMode(isPhotoModeOn());
   }
 
   private void refreshUi() {
     int textId = m3drRunning ? R.string.pause : R.string.resume;
+    if (isPhotoModeOn())
+      textId = R.string.capture;
     mToggleButton.setText(textId);
     mLayoutRecBottom.setVisibility(View.VISIBLE);
     //max distance
     String text = getString(R.string.distance);
-    if(mRes > 0)
-      text += mRes + "m, ";
-    else if(mRes == 0)
-      text += "1m, ";
+    if (isPhotoModeOn()) {
+      if(mRes > 0)
+        text += "5m, ";
+      else if(mRes == 0)
+        text += "2m, ";
+    } else {
+      if(mRes > 0)
+        text += mRes + "m, ";
+      else if(mRes == 0)
+        text += "1m, ";
+    }
     //3d resolution
     text += getString(R.string.resolution);
     if(mRes > 0)
@@ -401,6 +426,13 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     Point size = new Point();
     display.getSize(size);
     return 2.0f / (size.x + size.y) * (float)Math.pow(mZoom, 0.5f) * 2.0f;
+  }
+
+  private boolean isPhotoModeOn()
+  {
+    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+    String key = getString(R.string.pref_photomode);
+    return pref.getBoolean(key, false);
   }
 
   private void setViewerMode()

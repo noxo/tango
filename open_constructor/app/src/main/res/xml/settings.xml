@@ -8,7 +8,15 @@
         <CheckBoxPreference
             android:defaultValue="false"
             android:key="@string/pref_landscape"
+            android:summary="@string/landscape_summary"
             android:title="@string/landscape">
+        </CheckBoxPreference>
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="@string/pref_photomode"
+            android:summary="@string/photomode_summary"
+            android:title="@string/photomode">
         </CheckBoxPreference>
 
     </PreferenceCategory>
