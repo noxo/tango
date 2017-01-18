@@ -132,7 +132,8 @@ namespace mesh_builder {
         Tango3DR_PointCloud t3dr_depth;
         t3dr_depth.num_points = point_cloud->num_points;
         t3dr_depth.points = point_cloud->points;
-        t3dr_depth.timestamp = point_cloud->timestamp;
+        //For Tango3DR_update process there must be swapped timestamps(but the same gap!)
+        t3dr_depth.timestamp = t3dr_image.timestamp;
         t3dr_image.timestamp = point_cloud->timestamp;
 
         Tango3DR_Pose t3dr_depth_pose;

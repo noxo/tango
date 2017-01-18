@@ -21,10 +21,6 @@
 
 static mesh_builder::MeshBuilderApp app;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 std::string jstring2string(JNIEnv* env, jstring name)
 {
   const char *s = env->GetStringUTFChars(name,NULL);
@@ -32,6 +28,10 @@ std::string jstring2string(JNIEnv* env, jstring name)
   env->ReleaseStringUTFChars(name,s);
   return str;
 }
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_activityCtor(jboolean t3dr_running) {
