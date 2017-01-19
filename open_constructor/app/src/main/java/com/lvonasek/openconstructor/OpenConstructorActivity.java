@@ -75,6 +75,14 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         TangoJNINative.onCreate(OpenConstructorActivity.this);
         TangoJNINative.onTangoServiceConnected(service);
         refresh3dr();
+        OpenConstructorActivity.this.runOnUiThread(new Runnable()
+        {
+          @Override
+          public void run()
+          {
+            refreshUi();
+          }
+        });
         mInitialised = true;
       }
 
