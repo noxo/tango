@@ -278,6 +278,10 @@ namespace mesh_builder {
         ret = TangoConfig_setBool(tango_config_, "config_enable_color_camera", true);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
+
+        /*TangoConfig_setBool(tango_config_, "config_color_mode_auto", false);
+        TangoConfig_setInt32(tango_config_, "config_color_iso", 800);
+        TangoConfig_setInt32(tango_config_, "config_color_exp", (int32_t) floor(11.1 * 2.0));*/
     }
 
     void MeshBuilderApp::TangoSetup3DR(double res, double dmin, double dmax) {
@@ -311,10 +315,6 @@ namespace mesh_builder {
             std::exit(EXIT_SUCCESS);
 
         Tango3DR_Config_setInt32(t3dr_config, "update_method", TANGO_3DR_PROJECTIVE_UPDATE);
-
-        TangoConfig_setBool(t3dr_config, "config_color_mode_auto", false);
-        TangoConfig_setInt32(t3dr_config, "config_color_iso", 800);
-        TangoConfig_setInt32(t3dr_config, "config_color_exp", (int32_t) floor(11.1 * 2.0));
 
         t3dr_context_ = Tango3DR_create(t3dr_config);
         if (t3dr_context_ == nullptr)
