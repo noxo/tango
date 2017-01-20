@@ -25,7 +25,7 @@ private:
     unsigned int scanDec(char *line, int offset);
     bool startsWith(std::string s, std::string e);
     void writeHeader();
-    void writeColorMesh(SingleDynamicMesh* mesh);
+    void writeColorMesh(SingleDynamicMesh* mesh, int size);
     void writeColorVertex(glm::vec3 v, glm::ivec3 c);
     void writeFace(glm::ivec3 i);
     void writeFaces(SingleDynamicMesh* mesh, int offset);

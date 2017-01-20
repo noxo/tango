@@ -160,20 +160,30 @@ namespace mesh_builder {
     void ModelIO::writeModel(std::vector<SingleDynamicMesh*> model) {
         assert(writeMode);
         //count vertices and faces
-        vertexCount = 0;
         faceCount = 0;
+        vertexCount = 0;
+        std::vector<unsigned int> vectorSize;
         for(unsigned int i = 0; i < model.size(); i++) {
-            vertexCount += model[i]->mesh.vertices.size();
+            int max = 0;
+            int value = 0;
+            for(unsigned int j = 0; j < model[i]->size; j++) {
+                value = model[i]->mesh.indices[j];
+                if(max < value)
+                   max = value;
+            }
+            max++;
             faceCount += model[i]->size / 3;
+            vertexCount += max;
+            vectorSize.push_back(max);
         }
         //write
         writeHeader();
         for(unsigned int i = 0; i < model.size(); i++)
-            writeColorMesh(model[i]);
+            writeColorMesh(model[i], vectorSize[i]);
         int offset = 0;
         for(unsigned int i = 0; i < model.size(); i++) {
             writeFaces(model[i], offset);
-            offset += model[i]->mesh.vertices.size();
+            offset += vectorSize[i];
         }
     }
 
@@ -218,10 +228,10 @@ namespace mesh_builder {
         fprintf(file, "end_header\n");
     }
 
-    void ModelIO::writeColorMesh(SingleDynamicMesh* mesh) {
+    void ModelIO::writeColorMesh(SingleDynamicMesh* mesh, int size) {
         glm::vec3 v;
         glm::ivec3 c;
-        for(unsigned int j = 0; j < mesh->mesh.vertices.size(); j++) {
+        for(unsigned int j = 0; j < size; j++) {
             v = mesh->mesh.vertices[j];
             c = decodeColor(mesh->mesh.colors[j]);
             writeColorVertex(v, c);

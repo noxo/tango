@@ -29,7 +29,7 @@ namespace {
     const int kSubdivisionSize = 5000;
     const int kInitialVertexCount = 100;
     const int kInitialIndexCount = 99;
-    const int kGrowthFactor = 5;
+    const int kGrowthFactor = 2;
     constexpr int kTangoCoreMinimumVersion = 9377;
 
     void onPointCloudAvailableRouter(void *context, const TangoPointCloud *point_cloud) {
