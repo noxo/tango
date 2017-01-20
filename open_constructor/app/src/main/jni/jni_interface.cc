@@ -17,7 +17,7 @@
 #define GLM_FORCE_RADIANS
 
 #include <jni.h>
-#include "mesh_builder/mesh_builder_app.h"
+#include "mesh_builder_app.h"
 
 static mesh_builder::MeshBuilderApp app;
 

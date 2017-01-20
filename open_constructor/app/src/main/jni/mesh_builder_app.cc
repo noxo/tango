@@ -20,7 +20,7 @@
 #include <map>
 #include <unistd.h>
 
-#include "mesh_builder/mesh_builder_app.h"
+#include "mesh_builder_app.h"
 
 mesh_builder::MeshBuilderApp* app = 0;
 
@@ -41,34 +41,20 @@ namespace {
         app->onFrameAvailable(id, buffer);
     }
 
-    void extract3DRPose(const glm::mat4 &mat, Tango3DR_Pose *pose) {
+    Tango3DR_Pose extract3DRPose(const glm::mat4 &mat) {
+        Tango3DR_Pose pose;
         glm::vec3 translation;
         glm::quat rotation;
         glm::vec3 scale;
         tango_gl::util::DecomposeMatrix(mat, translation, rotation, scale);
-        pose->translation[0] = translation[0];
-        pose->translation[1] = translation[1];
-        pose->translation[2] = translation[2];
-        pose->orientation[0] = rotation[0];
-        pose->orientation[1] = rotation[1];
-        pose->orientation[2] = rotation[2];
-        pose->orientation[3] = rotation[3];
-    }
-
-    glm::quat toQuaternion(double pitch, double roll, double yaw) {
-        glm::quat q;
-        double t0 = std::cos(yaw * 0.5f);
-        double t1 = std::sin(yaw * 0.5f);
-        double t2 = std::cos(roll * 0.5f);
-        double t3 = std::sin(roll * 0.5f);
-        double t4 = std::cos(pitch * 0.5f);
-        double t5 = std::sin(pitch * 0.5f);
-
-        q.w = t0 * t2 * t4 + t1 * t3 * t5;
-        q.x = t0 * t3 * t4 - t1 * t2 * t5;
-        q.y = t0 * t2 * t5 + t1 * t3 * t4;
-        q.z = t1 * t2 * t4 - t0 * t3 * t5;
-        return q;
+        pose.translation[0] = translation[0];
+        pose.translation[1] = translation[1];
+        pose.translation[2] = translation[2];
+        pose.orientation[0] = rotation[0];
+        pose.orientation[1] = rotation[1];
+        pose.orientation[2] = rotation[2];
+        pose.orientation[3] = rotation[3];
+        return pose;
     }
 
     unsigned int scanDec(char *line, int offset)
@@ -136,9 +122,7 @@ namespace mesh_builder {
         t3dr_depth.timestamp = t3dr_image.timestamp;
         t3dr_image.timestamp = point_cloud->timestamp;
 
-        Tango3DR_Pose t3dr_depth_pose;
-        extract3DRPose(point_cloud_matrix_, &t3dr_depth_pose);
-
+        Tango3DR_Pose t3dr_depth_pose = extract3DRPose(point_cloud_matrix_);
         Tango3DR_GridIndexArray *t3dr_updated;
         Tango3DR_Status t3dr_err =
                 Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image,
@@ -200,7 +184,7 @@ namespace mesh_builder {
         t3dr_image.timestamp = buffer->timestamp;
         t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(buffer->format);
         t3dr_image.data = buffer->data;
-        extract3DRPose(image_matrix, &t3dr_image_pose);
+        t3dr_image_pose = extract3DRPose(image_matrix);
         binder_mutex_.unlock();
     }
 
@@ -416,7 +400,7 @@ namespace mesh_builder {
         //camera transformation
         if (!gyro) {
             main_scene_.camera_->SetPosition(glm::vec3(movex, 0, movey));
-            main_scene_.camera_->SetRotation(toQuaternion(pitch, yaw, 0));
+            main_scene_.camera_->SetRotation(glm::quat(glm::vec3(yaw, pitch, 0)));
             main_scene_.camera_->SetScale(glm::vec3(1, 1, 1));
         } else {
             if (landscape) {

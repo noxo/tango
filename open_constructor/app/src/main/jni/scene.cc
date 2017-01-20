@@ -15,32 +15,10 @@
  */
 
 #include <tango-gl/conversions.h>
+#include <tango-gl/shaders.h>
 #include <tango-gl/tango-gl.h>
 
-#include "mesh_builder/scene.h"
-
-namespace {
-    const char *kPerVertexColorVS =
-            "precision mediump float;\n"
-                    "precision mediump int;\n"
-                    "\n"
-                    "attribute vec4 vertex;\n"
-                    "attribute vec4 color;\n"
-                    "uniform mat4 mvp;\n"
-                    "varying vec4 vs_color;\n"
-                    "void main() {\n"
-                    "  gl_Position = mvp * vertex;\n"
-                    "  vs_color = color;\n"
-                    "}\n";
-
-    const char *kPerVertexColorPS =
-            "precision mediump float;\n"
-                    "uniform sampler2D texture;\n"
-                    "varying vec4 vs_color;\n"
-                    "void main() {\n"
-                    "  gl_FragColor = vs_color;\n"
-                    "}\n";
-}  // namespace
+#include "scene.h"
 
 namespace mesh_builder {
 
@@ -49,9 +27,11 @@ namespace mesh_builder {
     Scene::~Scene() { }
 
     void Scene::InitGLContent() {
+
         camera_ = new tango_gl::Camera();
         dynamic_mesh_material_ = new tango_gl::Material();
-        dynamic_mesh_material_->SetShader(kPerVertexColorVS, kPerVertexColorPS);
+        dynamic_mesh_material_->SetShader(tango_gl::shaders::GetColorVertexShader().c_str(),
+                                          tango_gl::shaders::GetBasicFragmentShader().c_str());
     }
 
     void Scene::DeleteResources() {

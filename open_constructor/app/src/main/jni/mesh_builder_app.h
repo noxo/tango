@@ -14,7 +14,7 @@
 #include <tango_3d_reconstruction_api.h>
 #include <tango_support_api.h>
 
-#include "mesh_builder/scene.h"
+#include "scene.h"
 
 #define THREAD_COUNT 8
 
