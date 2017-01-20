@@ -30,6 +30,7 @@ LOCAL_C_INCLUDES := $(PROJECT_ROOT)/tango-service-sdk/include/ \
 
 LOCAL_SRC_FILES := jni_interface.cc \
                    mesh_builder_app.cc \
+                   model_io.cc \
                    scene.cc \
                    $(PROJECT_ROOT_FROM_JNI)/tango_gl/camera.cc \
                    $(PROJECT_ROOT_FROM_JNI)/tango_gl/conversions.cc \

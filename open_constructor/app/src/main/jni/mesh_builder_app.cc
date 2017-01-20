@@ -21,6 +21,7 @@
 #include <unistd.h>
 
 #include "mesh_builder_app.h"
+#include "model_io.h"
 
 mesh_builder::MeshBuilderApp* app = 0;
 
@@ -55,27 +56,6 @@ namespace {
         pose.orientation[2] = rotation[2];
         pose.orientation[3] = rotation[3];
         return pose;
-    }
-
-    unsigned int scanDec(char *line, int offset)
-    {
-        unsigned int number = 0;
-        for (int i = offset; i < 1024; i++) {
-            char c = line[i];
-            if (c != '\n')
-                number = number * 10 + c - '0';
-            else
-                return number;
-        }
-        return number;
-    }
-
-    bool startsWith(std::string s, std::string e)
-    {
-        if (s.size() >= e.size())
-            if (s.substr(0, e.size()).compare(e) == 0)
-                return true;
-        return false;
     }
 }  // namespace
 
@@ -512,63 +492,11 @@ namespace mesh_builder {
         binder_mutex_.lock();
         process_mutex_.lock();
         render_mutex_.lock();
-        LOGI("Loading from %s", filename.c_str());
-        FILE *file = fopen(filename.c_str(), "r");
 
-        //prepare objects
-        char buffer[1024];
-        unsigned int vertexCount = 0;
-        unsigned int faceCount = 0;
-        std::vector<std::pair<glm::vec3, unsigned int> > vertices;
+        ModelIO io(filename, false);
+        io.readVertices();
+        io.parseFaces(kSubdivisionSize, main_scene_.static_meshes_);
 
-        //read header
-        while (true) {
-            if (!fgets(buffer, 1024, file))
-                break;
-            if (startsWith(buffer, "element vertex"))
-                vertexCount = scanDec(buffer, 15);
-            else if (startsWith(buffer, "element face"))
-                faceCount = scanDec(buffer, 13);
-            else if (startsWith(buffer, "end_header"))
-                break;
-        }
-        //read vertices
-        unsigned int t, a, b, c;
-        std::pair<glm::vec3, unsigned int> vec;
-        for (int i = 0; i < vertexCount; i++) {
-            fscanf(file, "%f %f %f %d %d %d", &vec.first.x, &vec.first.z, &vec.first.y, &a, &b, &c);
-            vec.first.x *= -1.0f;
-            vec.second = a + (b << 8) + (c << 16);
-            vertices.push_back(vec);
-        }
-        //parse faces
-        int parts = faceCount / kSubdivisionSize;
-        if(faceCount % kSubdivisionSize > 0)
-            parts++;
-        for (int j = 0; j < parts; j++)  {
-            tango_gl::StaticMesh static_mesh;
-            static_mesh.render_mode = GL_TRIANGLES;
-            int count = kSubdivisionSize;
-            if (j == parts - 1)
-                count = faceCount % kSubdivisionSize;
-            for (int i = 0; i < count; i++)  {
-                fscanf(file, "%d %d %d %d", &t, &a, &b, &c);
-                //unsupported format
-                if (t != 3)
-                    continue;
-                //broken topology ignored
-                if ((a == b) || (a == c) || (b == c))
-                    continue;
-                static_mesh.vertices.push_back(vertices[a].first);
-                static_mesh.colors.push_back(vertices[a].second);
-                static_mesh.vertices.push_back(vertices[b].first);
-                static_mesh.colors.push_back(vertices[b].second);
-                static_mesh.vertices.push_back(vertices[c].first);
-                static_mesh.colors.push_back(vertices[c].second);
-            }
-            main_scene_.static_meshes_.push_back(static_mesh);
-        }
-        fclose(file);
         render_mutex_.unlock();
         process_mutex_.unlock();
         binder_mutex_.unlock();
@@ -578,52 +506,10 @@ namespace mesh_builder {
     {
         binder_mutex_.lock();
         process_mutex_.lock();
-        LOGI("Writing into %s", filename.c_str());
 
-        //count vertices and faces
-        unsigned int vertexCount = 0;
-        unsigned int faceCount = 0;
-        for(unsigned int i = 0; i < main_scene_.dynamic_meshes_.size(); i++) {
-            vertexCount += main_scene_.dynamic_meshes_[i]->mesh.vertices.size();
-            faceCount += main_scene_.dynamic_meshes_[i]->size / 3;
-        }
+        ModelIO io(filename, true);
+        io.writeModel(main_scene_.dynamic_meshes_);
 
-        //file header
-        FILE* file = fopen(filename.c_str(), "w");
-        fprintf(file, "ply\nformat ascii 1.0\ncomment ---\n");
-        fprintf(file, "element vertex %d\n", vertexCount);
-        fprintf(file, "property float x\n");
-        fprintf(file, "property float y\n");
-        fprintf(file, "property float z\n");
-        fprintf(file, "property uchar red\n");
-        fprintf(file, "property uchar green\n");
-        fprintf(file, "property uchar blue\n");
-        fprintf(file, "element face %d\n", faceCount);
-        fprintf(file, "property list uchar uint vertex_indices\n");
-        fprintf(file, "end_header\n");
-        //write vertices
-        for(unsigned int i = 0; i < main_scene_.dynamic_meshes_.size(); i++) {
-            for(unsigned int j = 0; j < main_scene_.dynamic_meshes_[i]->mesh.vertices.size(); j++) {
-                glm::vec3 v = main_scene_.dynamic_meshes_[i]->mesh.vertices[j];
-                unsigned int c = main_scene_.dynamic_meshes_[i]->mesh.colors[j];
-                unsigned int r = (c & 0x000000FF);
-                unsigned int g = (c & 0x0000FF00) >> 8;
-                unsigned int b = (c & 0x00FF0000) >> 16;
-                fprintf(file, "%f %f %f %d %d %d\n", -v.x, v.z, v.y, r, g, b);
-            }
-        }
-        //write faces
-        int offset = 0;
-        for(unsigned int i = 0; i < main_scene_.dynamic_meshes_.size(); i++) {
-            for (unsigned int j = 0; j < main_scene_.dynamic_meshes_[i]->size; j+=3) {
-                unsigned int a = main_scene_.dynamic_meshes_[i]->mesh.indices[j + 0] + offset;
-                unsigned int b = main_scene_.dynamic_meshes_[i]->mesh.indices[j + 1] + offset;
-                unsigned int c = main_scene_.dynamic_meshes_[i]->mesh.indices[j + 2] + offset;
-                fprintf(file, "3 %d %d %d\n", a, b, c);
-            }
-            offset += main_scene_.dynamic_meshes_[i]->mesh.vertices.size();
-        }
-        fclose(file);
         process_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -644,145 +530,17 @@ namespace mesh_builder {
     }
 
     void MeshBuilderApp::Filter(std::string oldname, std::string newname, int passes) {
-        LOGI("Loading from %s", oldname.c_str());
-        FILE *file = fopen(oldname.c_str(), "r");
-
-        //prepare objects
-        char buffer[1024];
-        unsigned int vertexCount = 0;
-        unsigned int faceCount = 0;
         std::vector<glm::ivec3> indices;
-        std::pair<glm::vec3, glm::ivec3> vec;
-
-        //read header
-        while (true) {
-            if (!fgets(buffer, 1024, file))
-                break;
-            if (startsWith(buffer, "element vertex"))
-                vertexCount = scanDec(buffer, 15);
-            else if (startsWith(buffer, "element face"))
-                faceCount = scanDec(buffer, 13);
-            else if (startsWith(buffer, "end_header"))
-                break;
-        }
-
         {
-            std::map<unsigned int, unsigned int> index2index;
-            std::string key;
-            {
-                //prepare reindexing of vertices
-                std::map<std::string, unsigned int> key2index;
-                for (unsigned int i = 0; i < vertexCount; i++) {
-                    if (!fgets(buffer, 1024, file))
-                        break;
-                    sscanf(buffer, "%f %f %f %d %d %d", &vec.first.x, &vec.first.y, &vec.first.z,
-                           &vec.second.r, &vec.second.g, &vec.second.b);
-                    sprintf(buffer, "%.3f,%.3f,%.3f", vec.first.x, vec.first.y, vec.first.z);
-                    key = std::string(buffer);
-                    if (key2index.find(key) == key2index.end())
-                        key2index[key] = i;
-                    else
-                        index2index[i] = key2index[key];
-                }
-            }
-
-            //parse indices
-            unsigned int t, a, b, c;
-            std::vector<int> nodeLevel;
-            for (unsigned int i = 0; i < vertexCount; i++)
-              nodeLevel.push_back(0);
-            for (unsigned int i = 0; i < faceCount; i++)  {
-                fscanf(file, "%d %d %d %d", &t, &a, &b, &c);
-                //unsupported format
-                if (t != 3)
-                    continue;
-                //broken topology ignored
-                if ((a == b) || (a == c) || (b == c))
-                    continue;
-                //reindex
-                if (index2index.find(a) != index2index.end())
-                    a = index2index[a];
-                if (index2index.find(b) != index2index.end())
-                    b = index2index[b];
-                if (index2index.find(c) != index2index.end())
-                    c = index2index[c];
-                //get node levels
-                nodeLevel[a]++;
-                nodeLevel[b]++;
-                nodeLevel[c]++;
-                //store indices
-                indices.push_back(glm::ivec3(a, b, c));
-            }
-
-            //filter indices
-            glm::ivec3 ci;
-            std::vector<glm::ivec3> decrease;
-            for (int pass = 0; pass < passes; pass++) {
-                LOGI("Processing noise filter pass %d/%d", pass + 1, passes);
-                for (long i = indices.size() - 1; i >= 0; i--) {
-                    ci = indices[i];
-                    if ((nodeLevel[ci.x] < 3) || (nodeLevel[ci.y] < 3) || (nodeLevel[ci.z] < 3)) {
-                        indices.erase(indices.begin() + i);
-                        decrease.push_back(ci);
-                    }
-                }
-                for (glm::ivec3 i : decrease) {
-                    nodeLevel[i.x]--;
-                    nodeLevel[i.y]--;
-                    nodeLevel[i.z]--;
-                }
-                decrease.clear();
-            }
-            faceCount = indices.size();
-            fclose(file);
+            ModelIO io(oldname, false);
+            io.readVerticesAsIndexTable();
+            io.parseFacesFiltered(passes, indices);
         }
-
         //reload vertices into memory
-        LOGI("Reloading vertices from %s", oldname.c_str());
-        file = fopen(oldname.c_str(), "r");
-        while (true) {
-            if (!fgets(buffer, 1024, file))
-                break;
-            else if (startsWith(buffer, "end_header"))
-                break;
-        }
-        std::vector<std::pair<glm::vec3, glm::ivec3> > vertices;
-        for (unsigned int i = 0; i < vertexCount; i++) {
-            if (!fgets(buffer, 1024, file))
-                break;
-            sscanf(buffer, "%f %f %f %d %d %d", &vec.first.x, &vec.first.y, &vec.first.z,
-                   &vec.second.r, &vec.second.g, &vec.second.b);
-            vertices.push_back(vec);
-        }
-        fclose(file);
-
-        //file header
-        LOGI("Writing into %s", newname.c_str());
-        file = fopen(newname.c_str(), "w");
-        fprintf(file, "ply\nformat ascii 1.0\ncomment ---\n");
-        fprintf(file, "element vertex %d\n", vertexCount);
-        fprintf(file, "property float x\n");
-        fprintf(file, "property float y\n");
-        fprintf(file, "property float z\n");
-        fprintf(file, "property uchar red\n");
-        fprintf(file, "property uchar green\n");
-        fprintf(file, "property uchar blue\n");
-        fprintf(file, "element face %d\n", faceCount);
-        fprintf(file, "property list uchar uint vertex_indices\n");
-        fprintf(file, "end_header\n");
-
-        //write vertices
-        glm::vec3 vi;
-        glm::ivec3 ci;
-        for (unsigned int i = 0; i < vertices.size(); i++) {
-            vi = vertices[i].first;
-            ci = vertices[i].second;
-            fprintf(file, "%f %f %f %d %d %d\n", vi.x, vi.y, vi.z, ci.r, ci.g, ci.b);
-        }
-
-        //write faces
-        for (glm::ivec3 i : indices)
-            fprintf(file, "3 %d %d %d\n", i.x, i.y, i.z);
-        fclose(file);
+        ModelIO io(oldname, false);
+        io.readVertices();
+        //write output
+        ModelIO out(newname, true);
+        out.writeModel(io, indices);
     }
 }  // namespace mesh_builder
