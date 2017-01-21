@@ -17,10 +17,12 @@
 package com.lvonasek.openconstructor;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -39,6 +41,8 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.atap.tangoservice.Tango;
+
 import java.io.File;
 
 public class OpenConstructorActivity extends AbstractActivity implements View.OnClickListener {
@@ -48,6 +52,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private GLSurfaceView mGLView;
   private SeekBar mSeekbar;
   private String mToLoad;
+  private boolean mDatasetPermissionAsked = false;
   private boolean m3drRunning = false;
   private boolean mViewMode = false;
 
@@ -87,7 +92,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         m3drRunning = !photo;
         TangoJNINative.onCreate(OpenConstructorActivity.this);
         TangoJNINative.onToggleButtonClicked(m3drRunning);
-        TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, photo, texture);
+        TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, photo, texture, getPath());
         OpenConstructorActivity.this.runOnUiThread(new Runnable()
         {
           @Override
@@ -289,8 +294,22 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
           }
         }).start();
       }
-    } else
+    } else if(!mDatasetPermissionAsked)
+    {
+      mDatasetPermissionAsked = true;
+      startActivityForResult(Tango.getRequestPermissionIntent(Tango.PERMISSIONTYPE_DATASET),
+              Tango.TANGO_INTENT_ACTIVITYCODE);
+    }
+  }
+
+  @Override
+  protected void onActivityResult(int requestCode, int resultCode, Intent data)
+  {
+    super.onActivityResult(requestCode, resultCode, data);
+    if(resultCode == Activity.RESULT_OK)
       setupPermission(Manifest.permission.CAMERA, REQUEST_CODE_PERMISSION_CAMERA);
+    else
+      finish();
   }
 
   @Override

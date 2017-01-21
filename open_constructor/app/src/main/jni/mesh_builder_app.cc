@@ -197,7 +197,9 @@ namespace mesh_builder {
     }
 
     void MeshBuilderApp::OnTangoServiceConnected(JNIEnv *env, jobject binder, double res,
-                         double dmin, double dmax, int noise, bool land, bool photo, bool texture) {
+                         double dmin, double dmax, int noise, bool land, bool photo, bool texture,
+                                                                            std::string dataset) {
+        dataset_ = dataset;
         landscape = land;
         photoFinished = false;
         photoMode = photo;
@@ -241,12 +243,13 @@ namespace mesh_builder {
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
-        char buffer[1024];
-        ret = TangoConfig_getString(tango_config_, "config_datasets_path", buffer, 1024);
-        if (ret == TANGO_SUCCESS) {
-            dataset_ = std::string(buffer);
-            LOGI("Datasets found in %s", dataset_.c_str());
-        }
+        // Set datasets
+        ret = TangoConfig_setString(tango_config_, "config_datasets_path", dataset_.c_str());
+        if (ret != TANGO_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+        ret = TangoConfig_setBool(tango_config_, "config_enable_dataset_recording", true);
+        if (ret != TANGO_SUCCESS)
+            std::exit(EXIT_SUCCESS);
 
         /*TangoConfig_setBool(tango_config_, "config_color_mode_auto", false);
         TangoConfig_setInt32(tango_config_, "config_color_iso", 800);

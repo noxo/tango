@@ -47,8 +47,9 @@ JNIEnv* env, jobject, jobject activity) {
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_onTangoServiceConnected(JNIEnv* env, jobject,
           jobject iBinder, jdouble res, jdouble dmin, jdouble dmax, jint noise, jboolean land,
-                                                             jboolean photo, jboolean texture) {
-  app.OnTangoServiceConnected(env, iBinder, res, dmin, dmax, noise, land, photo, texture);
+                                            jboolean photo, jboolean texture, jstring dataset) {
+  app.OnTangoServiceConnected(env, iBinder, res, dmin, dmax, noise, land, photo, texture,
+                                                            jstring2string(env, dataset));
 }
 
 JNIEXPORT void JNICALL
