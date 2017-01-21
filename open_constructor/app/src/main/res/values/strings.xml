@@ -12,7 +12,7 @@
     <string name="realtime_noise_filter_summary">Noise filter can improve quality of result a lot but it makes capturing slower</string>
     <string name="photomode">Photo mode</string>
     <string name="photomode_summary">This disables continuous scene capturing and increases record distance</string>
-    <string name="texture">Texture captured model</string>
+    <string name="texture">Texture during capturing</string>
     <string name="texture_summary">Texturing model improves visual quality and reduces model size</string>
     <string name="sketchfab">Sketchfab</string>
     <string name="capture">Capture</string>
