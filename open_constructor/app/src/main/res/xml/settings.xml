@@ -19,6 +19,20 @@
             android:title="@string/photomode">
         </CheckBoxPreference>
 
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="@string/pref_noisefilter"
+            android:summary="@string/realtime_noise_filter_summary"
+            android:title="@string/realtime_noise_filter">
+        </CheckBoxPreference>
+
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="@string/pref_texture"
+            android:summary="@string/texture_summary"
+            android:title="@string/texture">
+        </CheckBoxPreference>
+
     </PreferenceCategory>
 
 </PreferenceScreen>
