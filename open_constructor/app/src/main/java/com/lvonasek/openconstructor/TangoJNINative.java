@@ -23,7 +23,7 @@ import android.util.Log;
 /**
  * Interfaces between native C++ code and Java code.
  */
-public class TangoJNINative {
+class TangoJNINative {
   static {
     // This project depends on tango_client_api, so we need to make sure we load
     // the correct library first.
@@ -53,7 +53,8 @@ public class TangoJNINative {
    *
    * @param nativeTangoServiceBinder The native binder object.
    */
-  public static native void onTangoServiceConnected(IBinder nativeTangoServiceBinder);
+  public static native void onTangoServiceConnected(IBinder nativeTangoServiceBinder, double res,
+              double dmin, double dmax, int noise, boolean land, boolean photo, boolean texture);
 
   /**
    * Interfaces to native OnPause function.
@@ -95,12 +96,6 @@ public class TangoJNINative {
 
   // Load 3D model, filter noise and save model in different name
   public static native void filter(String oldname, String newname, int passes);
-
-  // Set landscape mode during capturing
-  public static native void setLandscape(boolean on);
-
-  // Set photo mode for recording
-  public static native void setPhotoMode(boolean on);
 
   // Check if photo was finished
   public static native boolean isPhotoFinished();

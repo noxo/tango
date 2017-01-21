@@ -46,7 +46,8 @@ namespace mesh_builder {
         void ActivityCtor(bool t3dr_is_running);
         void OnCreate(JNIEnv *env, jobject caller_activity);
         void OnPause();
-        void OnTangoServiceConnected(JNIEnv *env, jobject binder);
+        void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin,
+                                     double dmax, int noise, bool land, bool photo, bool texture);
         void onPointCloudAvailable(TangoPointCloud *point_cloud);
         void onFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer);
         void OnSurfaceCreated();
@@ -54,20 +55,18 @@ namespace mesh_builder {
         void OnDrawFrame();
         void OnToggleButtonClicked(bool t3dr_is_running);
         void OnClearButtonClicked();
-        void TangoSetup3DR(double res, double dmin, double dmax);
         void Load(std::string filename);
         void Save(std::string filename);
         float CenterOfStaticModel(bool horizontal);
         static void Filter(std::string oldname, std::string newname, int passes);
         bool IsPhotoFinished() { return photoFinished; }
-        void SetLandscape(bool on) {landscape = on;}
-        void SetPhotoMode(bool on);
         void SetView(float p, float y, float mx, float my, bool g) { pitch = p; yaw = y; gyro = g;
                                                                             movex = mx; movey = my;}
         void SetZoom(float value) { zoom = value; }
 
     private:
         void TangoSetupConfig();
+        void TangoSetup3DR(double res, double dmin, double dmax, int noise);
         void TangoConnectCallbacks();
         void TangoConnect();
         void TangoDisconnect();
@@ -92,10 +91,11 @@ namespace mesh_builder {
         bool threadDone[THREAD_COUNT];
         pthread_t threadId[THREAD_COUNT];
         std::mutex threadMutex[THREAD_COUNT];
-        bool photoFinished;
-        bool photoMode;
         bool gyro;
         bool landscape;
+        bool photoFinished;
+        bool photoMode;
+        bool textured;
         float scale;
         float movex;
         float movey;

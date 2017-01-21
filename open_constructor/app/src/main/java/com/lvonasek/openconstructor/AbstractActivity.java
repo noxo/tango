@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.WindowManager;
 
 import java.io.BufferedInputStream;
@@ -26,6 +27,7 @@ public abstract class AbstractActivity extends Activity
   protected static final String FILE_KEY = "FILE2OPEN";
   protected static final String MODEL_DIRECTORY = "/Models/";
   protected static final String RESOLUTION_KEY = "RESOLUTION";
+  protected static final String TAG = "tango_app";
   protected static final String ZIP_TEMP = "upload.zip";
   protected static final int REQUEST_CODE_PERMISSION_CAMERA = 1987;
   protected static final int REQUEST_CODE_PERMISSION_READ_STORAGE = 1988;
@@ -36,6 +38,27 @@ public abstract class AbstractActivity extends Activity
     SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
     String key = context.getString(R.string.pref_landscape);
     return !pref.getBoolean(key, false);
+  }
+
+  public boolean isNoiseFilterOn()
+  {
+    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+    String key = getString(R.string.pref_noisefilter);
+    return pref.getBoolean(key, false);
+  }
+
+  public boolean isPhotoModeOn()
+  {
+    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+    String key = getString(R.string.pref_photomode);
+    return pref.getBoolean(key, false);
+  }
+
+  public boolean isTexturingOn()
+  {
+    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+    String key = getString(R.string.pref_texture);
+    return pref.getBoolean(key, true);
   }
 
   public static void setOrientation(boolean portrait, Activity activity) {
@@ -60,7 +83,8 @@ public abstract class AbstractActivity extends Activity
 
   public String getPath() {
     String dir = Environment.getExternalStorageDirectory().getPath() + MODEL_DIRECTORY;
-    new File(dir).mkdir();
+    if (new File(dir).mkdir())
+      Log.d(TAG, "Directory " + dir + "created");
     return dir;
   }
 
@@ -74,29 +98,24 @@ public abstract class AbstractActivity extends Activity
       onRequestPermissionsResult(requestCode, null, new int[]{PackageManager.PERMISSION_GRANTED});
   }
 
-  protected void zip(String[] files, String zipFile) throws Exception {
-    ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipFile)));
-    try {
+  protected void zip(String[] files, String zip) throws Exception {
+    try (ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip))))
+    {
       byte data[] = new byte[BUFFER_SIZE];
-
-      for (int i = 0; i < files.length; i++) {
-        FileInputStream fi = new FileInputStream(files[i]);
-        BufferedInputStream origin = new BufferedInputStream(fi, BUFFER_SIZE);
-        try {
-          ZipEntry entry = new ZipEntry(files[i].substring(files[i].lastIndexOf("/") + 1));
+      for (String file : files)
+      {
+        FileInputStream fi = new FileInputStream(file);
+        try (BufferedInputStream origin = new BufferedInputStream(fi, BUFFER_SIZE))
+        {
+          ZipEntry entry = new ZipEntry(file.substring(file.lastIndexOf("/") + 1));
           out.putNextEntry(entry);
           int count;
-          while ((count = origin.read(data, 0, BUFFER_SIZE)) != -1) {
+          while ((count = origin.read(data, 0, BUFFER_SIZE)) != -1)
+          {
             out.write(data, 0, count);
           }
         }
-        finally {
-          origin.close();
-        }
       }
-    }
-    finally {
-      out.close();
     }
   }
 

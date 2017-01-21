@@ -45,9 +45,10 @@ JNIEnv* env, jobject, jobject activity) {
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_onTangoServiceConnected(
-    JNIEnv* env, jobject, jobject iBinder) {
-  app.OnTangoServiceConnected(env, iBinder);
+Java_com_lvonasek_openconstructor_TangoJNINative_onTangoServiceConnected(JNIEnv* env, jobject,
+          jobject iBinder, jdouble res, jdouble dmin, jdouble dmax, jint noise, jboolean land,
+                                                             jboolean photo, jboolean texture) {
+  app.OnTangoServiceConnected(env, iBinder, res, dmin, dmax, noise, land, photo, texture);
 }
 
 JNIEXPORT void JNICALL
@@ -83,12 +84,6 @@ Java_com_lvonasek_openconstructor_TangoJNINative_onClearButtonClicked(JNIEnv*, j
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_set3D(
-        JNIEnv*, jobject, jdouble res, jdouble min, jdouble max) {
-  app.TangoSetup3DR(res, min, max);
-}
-
-JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_load(JNIEnv* env, jobject, jstring name) {
   app.Load(jstring2string(env, name));
 }
@@ -121,19 +116,9 @@ Java_com_lvonasek_openconstructor_TangoJNINative_filter(JNIEnv* env, jobject, js
                                        jstring2string(env, newname), passes);
 }
 
-JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_setLandscape(JNIEnv*, jobject, jboolean on) {
-  app.SetLandscape(on);
-}
-
-JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_setPhotoMode(JNIEnv*, jobject, jboolean on) {
-  app.SetPhotoMode(on);
-}
-
 JNIEXPORT jboolean JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_isPhotoFinished(JNIEnv*, jobject) {
-  return app.IsPhotoFinished();
+  return (jboolean) app.IsPhotoFinished();
 }
 
 #ifdef __cplusplus

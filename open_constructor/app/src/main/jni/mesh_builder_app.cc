@@ -189,13 +189,6 @@ namespace mesh_builder {
         t3dr_is_running_ = t3dr_is_running;
     }
 
-    void MeshBuilderApp::SetPhotoMode(bool on) {
-        binder_mutex_.lock();
-        photoFinished = false;
-        photoMode = on;
-        binder_mutex_.unlock();
-    }
-
     void MeshBuilderApp::OnCreate(JNIEnv *env, jobject activity) {
         int version;
         TangoErrorType err = TangoSupport_GetTangoVersion(env, activity, &version);
@@ -203,12 +196,17 @@ namespace mesh_builder {
             std::exit(EXIT_SUCCESS);
     }
 
-    void MeshBuilderApp::OnTangoServiceConnected(JNIEnv *env, jobject binder) {
+    void MeshBuilderApp::OnTangoServiceConnected(JNIEnv *env, jobject binder, double res,
+                         double dmin, double dmax, int noise, bool land, bool photo, bool texture) {
+        landscape = land;
+        photoFinished = false;
+        photoMode = photo;
+        textured = texture;
         TangoService_setBinder(env, binder);
         TangoSetupConfig();
         TangoConnectCallbacks();
         TangoConnect();
-        TangoSetup3DR(0.03, 0.5, 3);
+        TangoSetup3DR(res, dmin, dmax, noise);
     }
 
     void MeshBuilderApp::TangoSetupConfig() {
@@ -248,7 +246,7 @@ namespace mesh_builder {
         TangoConfig_setInt32(tango_config_, "config_color_exp", (int32_t) floor(11.1 * 2.0));*/
     }
 
-    void MeshBuilderApp::TangoSetup3DR(double res, double dmin, double dmax) {
+    void MeshBuilderApp::TangoSetup3DR(double res, double dmin, double dmax, int noise) {
         binder_mutex_.lock();
         if(t3dr_context_ != nullptr)
             Tango3DR_destroy(t3dr_context_);
@@ -278,7 +276,7 @@ namespace mesh_builder {
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
-        Tango3DR_Config_setInt32(t3dr_config, "min_num_vertices", 9);
+        Tango3DR_Config_setInt32(t3dr_config, "min_num_vertices", noise);
         Tango3DR_Config_setInt32(t3dr_config, "update_method", TANGO_3DR_PROJECTIVE_UPDATE);
 
         t3dr_context_ = Tango3DR_create(t3dr_config);

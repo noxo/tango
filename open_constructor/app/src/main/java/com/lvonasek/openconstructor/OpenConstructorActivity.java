@@ -22,14 +22,12 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.preference.PreferenceManager;
 import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
@@ -55,7 +53,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
 
   private LinearLayout mLayoutRecBottom;
   private Button mToggleButton;
-
   private LinearLayout mLayoutRecTop;
   private TextView mResText;
   private int mRes = 3;
@@ -71,10 +68,26 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   boolean mInitialised = false;
   boolean mTangoBinded = false;
   ServiceConnection mTangoServiceConnection = new ServiceConnection() {
-      public void onServiceConnected(ComponentName name, IBinder service) {
+      public void onServiceConnected(ComponentName name, IBinder srv) {
+        double res      = mRes * 0.01;
+        double dmin     = 0.6f;
+        double dmax     = mRes;
+        int noise       = isNoiseFilterOn() ? 9 : 1;
+        boolean land    = !isPortrait(OpenConstructorActivity.this);
+        boolean photo   = isPhotoModeOn();
+        boolean texture = isTexturingOn();
+
+        if (photo && (mRes > 0))
+            dmax = 5.0;
+        if(mRes == 0) {
+            res = 0.005;
+            dmax = photo ? 2.0 : 1.0;
+        }
+
+        m3drRunning = !photo;
         TangoJNINative.onCreate(OpenConstructorActivity.this);
-        TangoJNINative.onTangoServiceConnected(service);
-        refresh3dr();
+        TangoJNINative.onToggleButtonClicked(m3drRunning);
+        TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, photo, texture);
         OpenConstructorActivity.this.runOnUiThread(new Runnable()
         {
           @Override
@@ -249,7 +262,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   protected void onResume() {
     super.onResume();
     mGLView.onResume();
-    TangoJNINative.setLandscape(!isPortrait(this));
 
     if (mViewMode) {
       if (mToLoad != null) {
@@ -291,25 +303,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       unbindService(mTangoServiceConnection);
       Toast.makeText(this, R.string.data_lost, Toast.LENGTH_LONG).show();
     }
-  }
-
-  private void refresh3dr()
-  {
-    if (isPhotoModeOn()) {
-      if(mRes > 0)
-        TangoJNINative.set3D(mRes * 0.01, 0.6, 5.0);
-      else if(mRes == 0)
-        TangoJNINative.set3D(0.005, 0.6, 2.0);
-    } else {
-      if(mRes > 0)
-        TangoJNINative.set3D(mRes * 0.01, 0.6, mRes);
-      else if(mRes == 0)
-        TangoJNINative.set3D(0.005, 0.6, 1);
-    }
-
-    m3drRunning = !isPhotoModeOn();
-    TangoJNINative.onToggleButtonClicked(m3drRunning);
-    TangoJNINative.setPhotoMode(isPhotoModeOn());
   }
 
   private void refreshUi() {
@@ -434,13 +427,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     Point size = new Point();
     display.getSize(size);
     return 2.0f / (size.x + size.y) * (float)Math.pow(mZoom, 0.5f) * 2.0f;
-  }
-
-  private boolean isPhotoModeOn()
-  {
-    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
-    String key = getString(R.string.pref_photomode);
-    return pref.getBoolean(key, false);
   }
 
   private void setViewerMode()
