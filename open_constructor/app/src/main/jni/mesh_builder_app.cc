@@ -278,6 +278,7 @@ namespace mesh_builder {
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
+        Tango3DR_Config_setInt32(t3dr_config, "min_num_vertices", 9);
         Tango3DR_Config_setInt32(t3dr_config, "update_method", TANGO_3DR_PROJECTIVE_UPDATE);
 
         t3dr_context_ = Tango3DR_create(t3dr_config);
