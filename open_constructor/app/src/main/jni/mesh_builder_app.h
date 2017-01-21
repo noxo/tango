@@ -73,6 +73,7 @@ namespace mesh_builder {
         void DeleteResources();
         static void* Process(void *ptr);
 
+        std::string dataset_;
         glm::mat4 start_service_T_device_;
         bool t3dr_is_running_;
         Tango3DR_Context t3dr_context_;

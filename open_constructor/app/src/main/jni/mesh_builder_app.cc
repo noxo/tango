@@ -241,6 +241,13 @@ namespace mesh_builder {
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
+        char buffer[1024];
+        ret = TangoConfig_getString(tango_config_, "config_datasets_path", buffer, 1024);
+        if (ret == TANGO_SUCCESS) {
+            dataset_ = std::string(buffer);
+            LOGI("Datasets found in %s", dataset_.c_str());
+        }
+
         /*TangoConfig_setBool(tango_config_, "config_color_mode_auto", false);
         TangoConfig_setInt32(tango_config_, "config_color_iso", 800);
         TangoConfig_setInt32(tango_config_, "config_color_exp", (int32_t) floor(11.1 * 2.0));*/
