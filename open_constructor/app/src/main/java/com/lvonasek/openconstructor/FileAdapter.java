@@ -14,7 +14,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 class FileAdapter extends BaseAdapter
 {
@@ -92,7 +95,13 @@ class FileAdapter extends BaseAdapter
                     try
                     {
                       String zip = mContext.getPath() + AbstractActivity.ZIP_TEMP;
-                      mContext.zip(new String[]{mContext.getPath() + mItems.get(index)}, zip);
+                      File model2share = new File(mContext.getPath(), mItems.get(index));
+                      ArrayList<String> list = new ArrayList<>();
+                      if (AbstractActivity.getModelType(mItems.get(index)) == 0) //OBJ
+                        for (String s : getObjResources(model2share))
+                        list.add(new File(mContext.getPath(), s).getAbsolutePath());
+                      list.add(model2share.getAbsolutePath());
+                      mContext.zip(list.toArray(new String[list.size()]), zip);
                       mContext.runOnUiThread(new Runnable()
                       {
                         @Override
@@ -135,8 +144,13 @@ class FileAdapter extends BaseAdapter
                 break;
               case 3://delete
                 try {
-                  //TODO:delete all obj resources
-                  if (new File(mContext.getPath(), mItems.get(index)).delete())
+                  File file = new File(mContext.getPath(), mItems.get(index));
+                  if (AbstractActivity.getModelType(mItems.get(index)) == 0) { //OBJ
+                    for(String s : getObjResources(file))
+                      if (new File(mContext.getPath(), s).delete())
+                        Log.d(AbstractActivity.TAG, "File " + s + " deleted");
+                  }
+                  if (file.delete())
                     Log.d(AbstractActivity.TAG, "File " + mItems.get(index) + " deleted");
                 } catch(Exception e){
                   e.printStackTrace();
@@ -162,5 +176,24 @@ class FileAdapter extends BaseAdapter
   void clearItems()
   {
     mItems.clear();
+  }
+
+  private ArrayList<String> getObjResources(File file) throws FileNotFoundException
+  {
+    Scanner sc = new Scanner(new FileInputStream(file.getAbsolutePath()));
+    String filter = "xxx" + System.currentTimeMillis(); //not possible filter
+    while(sc.hasNext()) {
+      String line = sc.nextLine();
+      if (line.startsWith("usemtl")) {
+        filter = line.substring(7, line.indexOf('_'));
+        break;
+      }
+    }
+    sc.close();
+    ArrayList<String> output = new ArrayList<>();
+    for(String s : new File(mContext.getPath()).list())
+      if(s.startsWith(filter))
+        output.add(s);
+    return output;
   }
 }

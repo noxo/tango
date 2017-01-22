@@ -31,6 +31,7 @@ import android.graphics.Point;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
@@ -45,7 +46,6 @@ import android.widget.Toast;
 import com.google.atap.tangoservice.Tango;
 
 import java.io.File;
-
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
@@ -411,8 +411,14 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                   int type = isTexturingOn() ? 0 : 1;
                   File file = new File(getPath(), input.getText().toString() + FILE_EXT[type]);
                   final String filename = file.getAbsolutePath();
-                  TangoJNINative.save(filename);
-                  //TODO:rename all textures and make mtl file unique
+                  if (isTexturingOn()) {
+                    long timestamp = System.currentTimeMillis();
+                    File obj = new File(getPath(), timestamp + FILE_EXT[type]);
+                    TangoJNINative.save(obj.getAbsolutePath());
+                    if (obj.renameTo(file))
+                      Log.d(TAG, "Obj file " + file.toString() + " saved.");
+                  } else
+                    TangoJNINative.save(filename);
                   //open???
                   OpenConstructorActivity.this.runOnUiThread(new Runnable()
                   {
