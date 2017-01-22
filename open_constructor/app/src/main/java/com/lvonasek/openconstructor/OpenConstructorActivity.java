@@ -433,7 +433,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                         public void onClick(DialogInterface dialog, int which) {
                           setViewerMode();
                           if (isTexturingOn()) {
-                            //TODO:obj rendering
+                            //TODO:reload obj
                           }
                           dialog.cancel();
                         }
@@ -442,6 +442,8 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                           dialog.cancel();
+                          if (isTexturingOn())
+                            System.exit(0);
                         }
                       });
                       builder.create().show();

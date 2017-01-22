@@ -42,10 +42,6 @@ namespace {
         app->onFrameAvailable(id, buffer);
     }
 
-    void onProgressRouter(int progress, void* pass) {
-        LOGI("%ld Save progress %d", (long)pass, progress);
-    }
-
     Tango3DR_Pose extract3DRPose(const glm::mat4 &mat) {
         Tango3DR_Pose pose;
         glm::vec3 translation;
@@ -541,68 +537,14 @@ namespace mesh_builder {
     {
         binder_mutex_.lock();
         process_mutex_.lock();
-
+        render_mutex_.lock();
+        ModelIO io(filename, true);
         if (textured) {
             TangoDisconnect();
-            Tango3DR_TrajectoryH tr;
-            Tango3DR_Status ret;
-            ret = Tango3DR_createTrajectoryFromDataset(dataset_.c_str(), &tr, onProgressRouter, (void*)1);
-            if (ret != TANGO_3DR_SUCCESS)
-                return;
-
-            tango_gl::StaticMesh fullMesh{};
-            unsigned int offset = 0;
-            for(SingleDynamicMesh* mesh : main_scene_.dynamic_meshes_) {
-                mesh->mutex.lock();
-                //indices
-                unsigned int max = 0;
-                unsigned int value = 0;
-                for(unsigned int i = 0; i < mesh->size; i++) {
-                    value = mesh->mesh.indices[i];
-                    if(max < value)
-                        max = value;
-                    fullMesh.indices.push_back(value + offset);
-                }
-                max++;
-                offset += max;
-                mesh->mesh.indices.clear();
-                //vertices and colors
-                for(unsigned int i = 0; i < max; i++)
-                    fullMesh.vertices.push_back(mesh->mesh.vertices[i]);
-                mesh->mesh.vertices.clear();
-                for(unsigned int i = 0; i < max; i++)
-                    fullMesh.colors.push_back(mesh->mesh.colors[i]);
-                mesh->mesh.colors.clear();
-                fullMesh.render_mode = mesh->mesh.render_mode;
-                mesh->mutex.unlock();
-            }
-            Tango3DR_Mesh meshIn = {
-                    /* timestamp */ 0.0,
-                    /* num_vertices */ static_cast<uint32_t>(fullMesh.vertices.size()),
-                    /* num_faces */ static_cast<uint32_t>(fullMesh.indices.size() / 3),
-                    /* num_textures */ 0u,
-                    /* max_num_vertices */ static_cast<uint32_t>(fullMesh.vertices.size()),
-                    /* max_num_faces */ static_cast<uint32_t>(fullMesh.indices.size() / 3),
-                    /* max_num_textures */ 0u,
-                    /* vertices */ reinterpret_cast<Tango3DR_Vector3 *>(fullMesh.vertices.data()),
-                    /* faces */ reinterpret_cast<Tango3DR_Face *>(fullMesh.indices.data()),
-                    /* normals */ nullptr,
-                    /* colors */ reinterpret_cast<Tango3DR_Color *>(fullMesh.colors.data()),
-                    /* texture_coords */ nullptr,
-                    /* texture_ids */ nullptr,
-                    /* textures */ nullptr};
-
-            Tango3DR_Mesh* meshOut = nullptr;
-            ret = Tango3DR_textureMeshFromDataset(textureConfig, dataset_.c_str(), tr, &meshIn,
-                                                         &meshOut, onProgressRouter, (void*)2);
-            if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-            Tango3DR_Mesh_saveToObj(meshOut, filename.c_str());
-        } else {
-            ModelIO io(filename, true);
-            io.writeModel(main_scene_.dynamic_meshes_);
+            io.setTangoObjects(dataset_, textureConfig);
         }
-
+        io.writeModel(main_scene_.dynamic_meshes_);
+        render_mutex_.unlock();
         process_mutex_.unlock();
         binder_mutex_.unlock();
     }
