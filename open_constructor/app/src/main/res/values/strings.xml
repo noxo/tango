@@ -36,11 +36,11 @@
     </string-array>
 
     <string-array name="resolutions">
-        <item>0.5cm - Objects only</item>
-        <item>1cm - Small room</item>
-        <item>2cm - Big room</item>
-        <item>3cm - Small interior</item>
-        <item>4cm - Big interior</item>
-        <item>5cm - Outside</item>
+        <item>0.5 cm - Objects only</item>
+        <item>1 cm - Small room</item>
+        <item>2 cm - Big room</item>
+        <item>3 cm - Small interior</item>
+        <item>4 cm - Big interior</item>
+        <item>5 cm - Outside</item>
     </string-array>
 </resources>
