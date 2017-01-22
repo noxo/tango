@@ -52,8 +52,9 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
     String[] files = new File(getPath()).list();
     Arrays.sort(files);
     for(String s : files)
-      if(s.substring(s.length() - FILE_EXT.length()).contains(FILE_EXT))
-        adapter.addItem(s);
+      for(String e : FILE_EXT)
+        if(s.substring(s.length() - e.length()).contains(e))
+          adapter.addItem(s);
     mText.setVisibility(adapter.getCount() == 0 ? View.VISIBLE : View.GONE);
     mList.setAdapter(adapter);
     mLayout.setVisibility(View.VISIBLE);

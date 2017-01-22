@@ -408,7 +408,8 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                 public void run()
                 {
                   //save
-                  File file = new File(getPath(), input.getText().toString() + FILE_EXT);
+                  int type = isTexturingOn() ? 0 : 1;
+                  File file = new File(getPath(), input.getText().toString() + FILE_EXT[type]);
                   final String filename = file.getAbsolutePath();
                   TangoJNINative.save(filename);
                   //open???
@@ -424,6 +425,9 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                           setViewerMode();
+                          if (isTexturingOn()) {
+                            //TODO:obj rendering
+                          }
                           dialog.cancel();
                         }
                       });

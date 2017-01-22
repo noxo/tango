@@ -42,6 +42,10 @@ namespace {
         app->onFrameAvailable(id, buffer);
     }
 
+    void onProgressRouter(int progress, void* pass) {
+        LOGI("%ld Save progress %d", (long)pass, progress);
+    }
+
     Tango3DR_Pose extract3DRPose(const glm::mat4 &mat) {
         Tango3DR_Pose pose;
         glm::vec3 translation;
@@ -104,10 +108,10 @@ namespace mesh_builder {
 
         Tango3DR_Pose t3dr_depth_pose = extract3DRPose(point_cloud_matrix_);
         Tango3DR_GridIndexArray *t3dr_updated;
-        Tango3DR_Status t3dr_err =
+        Tango3DR_Status ret =
                 Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image,
                                 &t3dr_image_pose, &t3dr_updated);
-        if (t3dr_err != TANGO_3DR_SUCCESS)
+        if (ret != TANGO_3DR_SUCCESS)
             return;
 
         updated_indices_binder_thread_.resize(t3dr_updated->num_indices);
@@ -262,25 +266,17 @@ namespace mesh_builder {
     void MeshBuilderApp::TangoSetupTextureConfig(std::string d) {
         binder_mutex_.lock();
         dataset_ = d;
-        Tango3DR_ConfigH t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
+        textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
 
-        // Set textures count
-        int ret = Tango3DR_Config_setInt32(t3dr_config, "max_num_textures", 1);
-        if (ret != TANGO_SUCCESS)
+        Tango3DR_Status t3dr_err = Tango3DR_Mesh_createEmpty(&t3dr_mesh);
+        if (t3dr_err != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
-
-        // Set texture resolution
-        ret = Tango3DR_Config_setInt32(t3dr_config, "texture_size", 4096);
-        if (ret != TANGO_SUCCESS)
+        t3dr_err = Tango3DR_Config_setDouble(textureConfig, "min_resolution", 0.005);
+        if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
-
-        ret = Tango3DR_Mesh_createEmpty(&t3dr_mesh);
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-        t3dr_texture_context_ = Tango3DR_createTexturingContext(t3dr_config, d.c_str(), &t3dr_mesh);
+        t3dr_texture_context_ = Tango3DR_createTexturingContext(textureConfig, d.c_str(), &t3dr_mesh);
         if (t3dr_texture_context_ == nullptr)
             std::exit(EXIT_SUCCESS);
-        Tango3DR_Config_destroy(t3dr_config);
         binder_mutex_.unlock();
     }
 
@@ -496,7 +492,7 @@ namespace mesh_builder {
                     /* num_faces */ 0u,
                     /* num_textures */ 0u,
                     /* max_num_vertices */ static_cast<uint32_t>(dynamic_mesh->mesh.vertices.capacity()),
-                    /* max_num_faces */static_cast<uint32_t>(dynamic_mesh->mesh.indices.capacity() / 3),
+                    /* max_num_faces */ static_cast<uint32_t>(dynamic_mesh->mesh.indices.capacity() / 3),
                     /* max_num_textures */ 0u,
                     /* vertices */ reinterpret_cast<Tango3DR_Vector3 *>(dynamic_mesh->mesh.vertices.data()),
                     /* faces */ reinterpret_cast<Tango3DR_Face *>(dynamic_mesh->mesh.indices.data()),
@@ -516,9 +512,6 @@ namespace mesh_builder {
                 dynamic_mesh->mesh.colors.resize(new_vertex_size);
                 dynamic_mesh->mesh.indices.resize(new_index_size);
             } else {
-                if (app->textured) {
-                    //TODO:implement texturing
-                }
                 ++it;
                 dynamic_mesh->size = tango_mesh.num_faces * 3;
             }
@@ -549,8 +542,66 @@ namespace mesh_builder {
         binder_mutex_.lock();
         process_mutex_.lock();
 
-        ModelIO io(filename, true);
-        io.writeModel(main_scene_.dynamic_meshes_);
+        if (textured) {
+            TangoDisconnect();
+            Tango3DR_TrajectoryH tr;
+            Tango3DR_Status ret;
+            ret = Tango3DR_createTrajectoryFromDataset(dataset_.c_str(), &tr, onProgressRouter, (void*)1);
+            if (ret != TANGO_3DR_SUCCESS)
+                return;
+
+            tango_gl::StaticMesh fullMesh{};
+            unsigned int offset = 0;
+            for(SingleDynamicMesh* mesh : main_scene_.dynamic_meshes_) {
+                mesh->mutex.lock();
+                //indices
+                unsigned int max = 0;
+                unsigned int value = 0;
+                for(unsigned int i = 0; i < mesh->size; i++) {
+                    value = mesh->mesh.indices[i];
+                    if(max < value)
+                        max = value;
+                    fullMesh.indices.push_back(value + offset);
+                }
+                max++;
+                offset += max;
+                mesh->mesh.indices.clear();
+                //vertices and colors
+                for(unsigned int i = 0; i < max; i++)
+                    fullMesh.vertices.push_back(mesh->mesh.vertices[i]);
+                mesh->mesh.vertices.clear();
+                for(unsigned int i = 0; i < max; i++)
+                    fullMesh.colors.push_back(mesh->mesh.colors[i]);
+                mesh->mesh.colors.clear();
+                fullMesh.render_mode = mesh->mesh.render_mode;
+                mesh->mutex.unlock();
+            }
+            Tango3DR_Mesh meshIn = {
+                    /* timestamp */ 0.0,
+                    /* num_vertices */ static_cast<uint32_t>(fullMesh.vertices.size()),
+                    /* num_faces */ static_cast<uint32_t>(fullMesh.indices.size() / 3),
+                    /* num_textures */ 0u,
+                    /* max_num_vertices */ static_cast<uint32_t>(fullMesh.vertices.size()),
+                    /* max_num_faces */ static_cast<uint32_t>(fullMesh.indices.size() / 3),
+                    /* max_num_textures */ 0u,
+                    /* vertices */ reinterpret_cast<Tango3DR_Vector3 *>(fullMesh.vertices.data()),
+                    /* faces */ reinterpret_cast<Tango3DR_Face *>(fullMesh.indices.data()),
+                    /* normals */ nullptr,
+                    /* colors */ reinterpret_cast<Tango3DR_Color *>(fullMesh.colors.data()),
+                    /* texture_coords */ nullptr,
+                    /* texture_ids */ nullptr,
+                    /* textures */ nullptr};
+
+            Tango3DR_Mesh* meshOut = nullptr;
+            ret = Tango3DR_textureMeshFromDataset(textureConfig, dataset_.c_str(), tr, &meshIn,
+                                                         &meshOut, onProgressRouter, (void*)2);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+            Tango3DR_Mesh_saveToObj(meshOut, filename.c_str());
+        } else {
+            ModelIO io(filename, true);
+            io.writeModel(main_scene_.dynamic_meshes_);
+        }
 
         process_mutex_.unlock();
         binder_mutex_.unlock();

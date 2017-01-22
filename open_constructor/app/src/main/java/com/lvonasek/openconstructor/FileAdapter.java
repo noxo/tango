@@ -118,7 +118,8 @@ class FileAdapter extends BaseAdapter
                 renameDlg.setPositiveButton(mContext.getString(android.R.string.ok), new DialogInterface.OnClickListener() {
                   @Override
                   public void onClick(DialogInterface dialog, int which) {
-                    File newFile = new File(mContext.getPath(), input.getText().toString() + AbstractActivity.FILE_EXT);
+                    //TODO:extension
+                    File newFile = new File(mContext.getPath(), input.getText().toString() + AbstractActivity.FILE_EXT[1]);
                     if(newFile.exists())
                       Toast.makeText(mContext, R.string.name_exists, Toast.LENGTH_LONG).show();
                     else {
