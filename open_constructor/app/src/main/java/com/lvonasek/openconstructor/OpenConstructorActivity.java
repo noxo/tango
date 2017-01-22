@@ -52,7 +52,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private GLSurfaceView mGLView;
   private SeekBar mSeekbar;
   private String mToLoad;
-  private boolean mDatasetPermissionAsked = false;
   private boolean m3drRunning = false;
   private boolean mViewMode = false;
 
@@ -80,7 +79,8 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         int noise       = isNoiseFilterOn() ? 9 : 1;
         boolean land    = !isPortrait(OpenConstructorActivity.this);
         boolean photo   = isPhotoModeOn();
-        boolean texture = isTexturingOn();
+        boolean txtr    = isTexturingOn();
+        String tmp      = getTempPath().toString();
 
         if (photo && (mRes > 0))
             dmax = 5.0;
@@ -92,13 +92,14 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         m3drRunning = !photo;
         TangoJNINative.onCreate(OpenConstructorActivity.this);
         TangoJNINative.onToggleButtonClicked(m3drRunning);
-        TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, photo, texture, getPath());
+        TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, photo, txtr, tmp);
         OpenConstructorActivity.this.runOnUiThread(new Runnable()
         {
           @Override
           public void run()
           {
             refreshUi();
+            mProgress.setVisibility(View.GONE);
           }
         });
         mInitialised = true;
@@ -194,12 +195,12 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     {
       m3drRunning = false;
       setViewerMode();
-      mProgress.setVisibility(View.VISIBLE);
       mToLoad = new File(getPath(), filename).toString();
     }
     else
       mRes = getIntent().getIntExtra(RESOLUTION_KEY, 3);
     refreshUi();
+    mProgress.setVisibility(View.VISIBLE);
   }
 
   @Override
@@ -294,12 +295,11 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
           }
         }).start();
       }
-    } else if(!mDatasetPermissionAsked)
-    {
-      mDatasetPermissionAsked = true;
+    } else if(!mInitialised && !mTangoBinded)
       startActivityForResult(Tango.getRequestPermissionIntent(Tango.PERMISSIONTYPE_DATASET),
               Tango.TANGO_INTENT_ACTIVITYCODE);
-    }
+    else
+      setupPermission(Manifest.permission.CAMERA, REQUEST_CODE_PERMISSION_CAMERA);
   }
 
   @Override

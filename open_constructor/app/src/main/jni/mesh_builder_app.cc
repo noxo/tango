@@ -250,6 +250,9 @@ namespace mesh_builder {
         ret = TangoConfig_setBool(tango_config_, "config_enable_dataset_recording", true);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
+        ret = TangoConfig_setInt32(tango_config_, "config_dataset_recording_mode", TANGO_RECORDING_MODE_ALL);
+        if (ret != TANGO_SUCCESS)
+            std::exit(EXIT_SUCCESS);
 
         /*TangoConfig_setBool(tango_config_, "config_color_mode_auto", false);
         TangoConfig_setInt32(tango_config_, "config_color_iso", 800);

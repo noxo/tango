@@ -74,8 +74,10 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
       case REQUEST_CODE_PERMISSION_READ_STORAGE:
       {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+        {
+          deleteRecursive(getTempPath());
           refreshUI();
-        else
+        } else
           finish();
         break;
       }
