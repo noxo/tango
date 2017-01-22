@@ -143,6 +143,8 @@ namespace mesh_builder {
     void MeshBuilderApp::onFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer) {
         if (id != TANGO_CAMERA_COLOR)
             return;
+        if (!t3dr_is_running_)
+            return;
 
         // Get the camera color transform to OpenGL world frame in OpenGL convention.
         TangoMatrixTransformData matrix_transform;
@@ -170,7 +172,9 @@ namespace mesh_builder {
 
     MeshBuilderApp::MeshBuilderApp() {
         t3dr_image.timestamp = 0;
-        gyro = true;
+        t3dr_mesh.max_num_vertices = 0;
+        t3dr_is_running_ = false;
+        gyro = false;
         landscape = false;
         photoFinished = false;
         photoMode = false;
@@ -183,10 +187,6 @@ namespace mesh_builder {
             TangoConfig_free(tango_config_);
             tango_config_ = nullptr;
         }
-    }
-
-    void MeshBuilderApp::ActivityCtor(bool t3dr_is_running) {
-        t3dr_is_running_ = t3dr_is_running;
     }
 
     void MeshBuilderApp::OnCreate(JNIEnv *env, jobject activity) {
@@ -257,6 +257,21 @@ namespace mesh_builder {
         /*TangoConfig_setBool(tango_config_, "config_color_mode_auto", false);
         TangoConfig_setInt32(tango_config_, "config_color_iso", 800);
         TangoConfig_setInt32(tango_config_, "config_color_exp", (int32_t) floor(11.1 * 2.0));*/
+    }
+
+    void MeshBuilderApp::TangoSetupTextureConfig(std::string d) {
+        binder_mutex_.lock();
+        dataset_ = d;
+        Tango3DR_ConfigH t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
+
+        int ret = Tango3DR_Mesh_createEmpty(&t3dr_mesh);
+        if (ret != TANGO_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+        t3dr_texture_context_ = Tango3DR_createTexturingContext(t3dr_config, d.c_str(), &t3dr_mesh);
+        if (t3dr_texture_context_ == nullptr)
+            std::exit(EXIT_SUCCESS);
+        Tango3DR_Config_destroy(t3dr_config);
+        binder_mutex_.unlock();
     }
 
     void MeshBuilderApp::TangoSetup3DR(double res, double dmin, double dmax, int noise) {
@@ -377,16 +392,18 @@ namespace mesh_builder {
 
     void MeshBuilderApp::OnDrawFrame() {
 
-        TangoMatrixTransformData matrix_transform;
-        TangoSupport_getMatrixTransformAtTime(
-                0, TANGO_COORDINATE_FRAME_START_OF_SERVICE, TANGO_COORDINATE_FRAME_DEVICE,
-                TANGO_SUPPORT_ENGINE_OPENGL, TANGO_SUPPORT_ENGINE_OPENGL, ROTATION_0,
-                &matrix_transform);
-        if (matrix_transform.status_code == TANGO_POSE_VALID)
-            start_service_T_device_ = glm::make_mat4(matrix_transform.matrix);
-        start_service_T_device_[3][0] *= scale;
-        start_service_T_device_[3][1] *= scale;
-        start_service_T_device_[3][2] *= scale;
+        if (gyro) {
+            TangoMatrixTransformData matrix_transform;
+            TangoSupport_getMatrixTransformAtTime(
+                    0, TANGO_COORDINATE_FRAME_START_OF_SERVICE, TANGO_COORDINATE_FRAME_DEVICE,
+                    TANGO_SUPPORT_ENGINE_OPENGL, TANGO_SUPPORT_ENGINE_OPENGL, ROTATION_0,
+                    &matrix_transform);
+            if (matrix_transform.status_code == TANGO_POSE_VALID)
+                start_service_T_device_ = glm::make_mat4(matrix_transform.matrix);
+            start_service_T_device_[3][0] *= scale;
+            start_service_T_device_[3][1] *= scale;
+            start_service_T_device_[3][2] *= scale;
+        }
 
         render_mutex_.lock();
         //camera transformation

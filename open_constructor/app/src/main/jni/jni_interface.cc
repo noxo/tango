@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#define GLM_FORCE_RADIANS
-
 #include <jni.h>
 #include "mesh_builder_app.h"
 
@@ -32,11 +30,6 @@ std::string jstring2string(JNIEnv* env, jstring name)
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_activityCtor(jboolean t3dr_running) {
-  app.ActivityCtor(t3dr_running);
-}
 
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_onCreate(
@@ -106,13 +99,18 @@ Java_com_lvonasek_openconstructor_TangoJNINative_setZoom(JNIEnv*, jobject, jfloa
 }
 
 JNIEXPORT jfloat JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_centerOfStaticModel(JNIEnv*, jobject, jboolean horizontal) {
-  return app.CenterOfStaticModel(horizontal);
+Java_com_lvonasek_openconstructor_TangoJNINative_centerOfStaticModel(JNIEnv*, jobject, jboolean h) {
+  return app.CenterOfStaticModel(h);
 }
 
 JNIEXPORT jboolean JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_isPhotoFinished(JNIEnv*, jobject) {
   return (jboolean) app.IsPhotoFinished();
+}
+
+JNIEXPORT void JNICALL
+Java_com_lvonasek_openconstructor_TangoJNINative_initTextures(JNIEnv *env, jobject, jstring path) {
+  app.TangoSetupTextureConfig(jstring2string(env, path));
 }
 
 #ifdef __cplusplus

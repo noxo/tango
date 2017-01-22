@@ -45,10 +45,13 @@ import com.google.atap.tangoservice.Tango;
 
 import java.io.File;
 
-public class OpenConstructorActivity extends AbstractActivity implements View.OnClickListener {
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
+
+public class OpenConstructorActivity extends AbstractActivity implements View.OnClickListener,
+        GLSurfaceView.Renderer {
 
   private ProgressBar mProgress;
-  private OpenConstructorRenderer mRenderer;
   private GLSurfaceView mGLView;
   private SeekBar mSeekbar;
   private String mToLoad;
@@ -91,8 +94,19 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
 
         m3drRunning = !photo;
         TangoJNINative.onCreate(OpenConstructorActivity.this);
-        TangoJNINative.onToggleButtonClicked(m3drRunning);
         TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, photo, txtr, tmp);
+        if (isTexturingOn()) {
+          for (File f : getTempPath().listFiles())
+            if (f.isDirectory()) {
+              TangoJNINative.initTextures(f.toString());
+              break;
+            }
+        }
+        File dataset = getDataset();
+        if ((dataset != null) && isTexturingOn())
+          TangoJNINative.initTextures(dataset.toString());
+        TangoJNINative.onToggleButtonClicked(m3drRunning);
+        TangoJNINative.setView(0, 0, 0, 0, true);
         OpenConstructorActivity.this.runOnUiThread(new Runnable()
         {
           @Override
@@ -108,11 +122,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       public void onServiceDisconnected(ComponentName name) {
       }
     };
-
-  public OpenConstructorActivity() {
-    TangoJNINative.activityCtor(false);
-    mRenderer = new OpenConstructorRenderer();
-  }
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -133,7 +142,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     // OpenGL view where all of the graphics are drawn
     mGLView = (GLSurfaceView) findViewById(R.id.gl_surface_view);
     mGLView.setEGLContextClientVersion(2);
-    mGLView.setRenderer(mRenderer);
+    mGLView.setRenderer(this);
     mProgress = (ProgressBar) findViewById(R.id.progressBar);
     mSeekbar = (SeekBar) findViewById(R.id.seekBar);
     mSeekbar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener()
@@ -460,5 +469,20 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     mViewMode = true;
     mSeekbar.setProgress(90);
     TangoJNINative.setZoom(mZoom);
+  }
+
+  // Render loop of the Gl context.
+  public void onDrawFrame(GL10 gl) {
+    TangoJNINative.onGlSurfaceDrawFrame();
+  }
+
+  // Called when the surface size changes.
+  public void onSurfaceChanged(GL10 gl, int width, int height) {
+    TangoJNINative.onGlSurfaceChanged(width, height);
+  }
+
+  // Called when the surface is created or recreated.
+  public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+    TangoJNINative.onGlSurfaceCreated();
   }
 }

@@ -35,13 +35,6 @@ class TangoJNINative {
   }
 
   /**
-   * Interfaces to native ActivityCtor function.
-   *
-   * @param reconstructionRunning the initial state of reconstruction.
-   */
-  public static native void activityCtor(boolean reconstructionRunning);
-
-  /**
    * Interfaces to native OnCreate function.
    *
    * @param callerActivity the caller activity of this function.
@@ -94,4 +87,7 @@ class TangoJNINative {
 
   // Check if photo was finished
   public static native boolean isPhotoFinished();
+
+  // Init texture processing
+  public static native void initTextures(String dataset);
 }

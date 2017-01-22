@@ -63,6 +63,7 @@ namespace mesh_builder {
         void SetView(float p, float y, float mx, float my, bool g) { pitch = p; yaw = y; gyro = g;
                                                                             movex = mx; movey = my;}
         void SetZoom(float value) { zoom = value; }
+        void TangoSetupTextureConfig(std::string d);
 
     private:
         void TangoSetupConfig();
@@ -77,10 +78,12 @@ namespace mesh_builder {
         glm::mat4 start_service_T_device_;
         bool t3dr_is_running_;
         Tango3DR_Context t3dr_context_;
+        Tango3DR_TexturingContext t3dr_texture_context_;
         Tango3DR_CameraCalibration t3dr_intrinsics_;
         Tango3DR_CameraCalibration t3dr_intrinsics_depth;
         Tango3DR_ImageBuffer t3dr_image;
         Tango3DR_Pose t3dr_image_pose;
+        Tango3DR_Mesh t3dr_mesh;
         std::mutex add_mutex_;
         std::mutex binder_mutex_;
         std::mutex process_mutex_;
