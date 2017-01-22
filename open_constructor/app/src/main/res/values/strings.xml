@@ -16,7 +16,6 @@
     <string name="texture_summary">Texturing model improves visual quality and reduces model size</string>
     <string name="sketchfab">Sketchfab</string>
     <string name="capture">Capture</string>
-    <string name="filtered">filtered</string>
     <string name="enter_filename">Enter file name</string>
     <string name="view">Saved. Do you want to view 3D model?</string>
     <string name="distance">Max.distance:</string>
@@ -27,12 +26,9 @@
     <string name="scene_res">Choose capturing resolution</string>
     <string name="new_name">Choose new name</string>
     <string name="name_exists">Model with entered name already exists</string>
-    <string name="passes_count">How many times would you like to apply the filter?</string>
-    <string name="warning_long">Warning, this operation is very slow. It can take up to 15 minutes.</string>
 
     <string-array name="file_operations">
         <item>Open</item>
-        <item>Use noise filter</item>
         <item>Share on Sketchfab</item>
         <item>Rename</item>
         <item>Delete</item>

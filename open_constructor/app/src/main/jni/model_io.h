@@ -14,10 +14,7 @@ public:
     ModelIO(std::string filename, bool writeAccess);
     ~ModelIO();
     void parseFaces(int subdivision, std::vector<tango_gl::StaticMesh>& output);
-    void parseFacesFiltered(int passes, std::vector<glm::ivec3>& indices);
     void readVertices();
-    void readVerticesAsIndexTable();
-    void writeModel(ModelIO& model, std::vector<glm::ivec3>& indices);
     void writeModel(std::vector<SingleDynamicMesh*> model);
 
 private:
@@ -34,7 +31,6 @@ private:
     unsigned int vertexCount;
     unsigned int faceCount;
     FILE* file;
-    std::map<unsigned int, unsigned int> index2index;
     tango_gl::StaticMesh data;
 };
 } // namespace mesh_builder

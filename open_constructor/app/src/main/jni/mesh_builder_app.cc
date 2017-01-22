@@ -537,19 +537,4 @@ namespace mesh_builder {
         }
         return (min + max) * 0.5f;
     }
-
-    void MeshBuilderApp::Filter(std::string oldname, std::string newname, int passes) {
-        std::vector<glm::ivec3> indices;
-        {
-            ModelIO io(oldname, false);
-            io.readVerticesAsIndexTable();
-            io.parseFacesFiltered(passes, indices);
-        }
-        //reload vertices into memory
-        ModelIO io(oldname, false);
-        io.readVertices();
-        //write output
-        ModelIO out(newname, true);
-        out.writeModel(io, indices);
-    }
 }  // namespace mesh_builder

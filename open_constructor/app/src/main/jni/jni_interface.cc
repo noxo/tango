@@ -110,13 +110,6 @@ Java_com_lvonasek_openconstructor_TangoJNINative_centerOfStaticModel(JNIEnv*, jo
   return app.CenterOfStaticModel(horizontal);
 }
 
-JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_filter(JNIEnv* env, jobject, jstring oldname,
-                                                        jstring newname, jint passes) {
-  mesh_builder::MeshBuilderApp::Filter(jstring2string(env, oldname),
-                                       jstring2string(env, newname), passes);
-}
-
 JNIEXPORT jboolean JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_isPhotoFinished(JNIEnv*, jobject) {
   return (jboolean) app.IsPhotoFinished();

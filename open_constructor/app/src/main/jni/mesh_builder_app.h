@@ -59,7 +59,6 @@ namespace mesh_builder {
         void Load(std::string filename);
         void Save(std::string filename);
         float CenterOfStaticModel(bool horizontal);
-        static void Filter(std::string oldname, std::string newname, int passes);
         bool IsPhotoFinished() { return photoFinished; }
         void SetView(float p, float y, float mx, float my, bool g) { pitch = p; yaw = y; gyro = g;
                                                                             movex = mx; movey = my;}

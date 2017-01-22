@@ -4,15 +4,12 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
-import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -86,54 +83,7 @@ class FileAdapter extends BaseAdapter
                 mContext.showProgress();
                 mContext.startActivity(intent);
                 break;
-              case 1://filter
-                AlertDialog.Builder filterDlg = new AlertDialog.Builder(mContext);
-                String title = mContext.getString(R.string.passes_count) + "\n";
-                TextView textView = new TextView(mContext);
-                textView.setText(title + mContext.getString(R.string.warning_long));
-                filterDlg.setCustomTitle(textView);
-                final SeekBar seekBar = new SeekBar(mContext) {
-                  Paint p = new Paint();
-                  @Override
-                  protected void onDraw(Canvas c) {
-                    super.onDraw(c);
-                    p.setColor(Color.WHITE);
-                    p.setTextSize(getHeight() / 2);
-                    c.drawText((getProgress() + 1) + "x", getWidth() / 2, getHeight() * 3 / 4, p);
-                  }
-                };
-                seekBar.setMax(9);
-                seekBar.setProgress(4);
-                filterDlg.setView(seekBar);
-                filterDlg.setPositiveButton(mContext.getString(android.R.string.ok), new DialogInterface.OnClickListener() {
-                  @Override
-                  public void onClick(DialogInterface dialog, int which) {
-                    mContext.showProgress();
-                    new Thread(new Runnable()
-                    {
-                      @Override
-                      public void run()
-                      {
-                        String oldName = new File(mContext.getPath(), mItems.get(index)).toString();
-                        String newName = oldName.replaceAll(AbstractActivity.FILE_EXT, "");
-                        newName += "-" + mContext.getString(R.string.filtered) + AbstractActivity.FILE_EXT;
-                        TangoJNINative.filter(oldName, newName, seekBar.getProgress() + 1);
-                        mContext.runOnUiThread(new Runnable()
-                        {
-                          @Override
-                          public void run()
-                          {
-                            mContext.refreshUI();
-                          }
-                        });
-                      }
-                    }).start();
-                  }
-                });
-                filterDlg.setNegativeButton(mContext.getString(android.R.string.cancel), null);
-                filterDlg.create().show();
-                break;
-              case 2://share
+              case 1://share
                 mContext.showProgress();
                 new Thread(new Runnable() {
                   @Override
@@ -160,7 +110,7 @@ class FileAdapter extends BaseAdapter
                   }
                 }).start();
                 break;
-              case 3://rename
+              case 2://rename
                 AlertDialog.Builder renameDlg = new AlertDialog.Builder(mContext);
                 renameDlg.setTitle(mContext.getString(R.string.enter_filename));
                 final EditText input = new EditText(mContext);
@@ -173,7 +123,8 @@ class FileAdapter extends BaseAdapter
                       Toast.makeText(mContext, R.string.name_exists, Toast.LENGTH_LONG).show();
                     else {
                       File oldFile = new File(mContext.getPath(), mItems.get(index));
-                      oldFile.renameTo(newFile);
+                      if (oldFile.renameTo(newFile))
+                        Log.d(AbstractActivity.TAG, "File " + oldFile + " renamed to " + newFile);
                       mContext.refreshUI();
                     }
                   }
@@ -181,10 +132,13 @@ class FileAdapter extends BaseAdapter
                 renameDlg.setNegativeButton(mContext.getString(android.R.string.cancel), null);
                 renameDlg.create().show();
                 break;
-              case 4://delete
+              case 3://delete
                 try {
-                  new File(mContext.getPath(), mItems.get(index)).delete();
-                } catch(Exception e){}
+                  if (new File(mContext.getPath(), mItems.get(index)).delete())
+                    Log.d(AbstractActivity.TAG, "File " + mItems.get(index) + " deleted");
+                } catch(Exception e){
+                  e.printStackTrace();
+                }
                 mContext.refreshUI();
                 break;
             }

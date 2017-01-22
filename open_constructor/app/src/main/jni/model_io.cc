@@ -63,56 +63,6 @@ namespace mesh_builder {
         }
     }
 
-    void ModelIO::parseFacesFiltered(int passes, std::vector<glm::ivec3>& indices) {
-        //parse indices
-        unsigned int t, a, b, c;
-        std::vector<int> nodeLevel;
-        for (unsigned int i = 0; i < vertexCount; i++)
-            nodeLevel.push_back(0);
-        for (unsigned int i = 0; i < faceCount; i++)  {
-            fscanf(file, "%d %d %d %d", &t, &a, &b, &c);
-            //unsupported format
-            if (t != 3)
-                continue;
-            //broken topology ignored
-            if ((a == b) || (a == c) || (b == c))
-                continue;
-            //reindex
-            if (index2index.find(a) != index2index.end())
-                a = index2index[a];
-            if (index2index.find(b) != index2index.end())
-                b = index2index[b];
-            if (index2index.find(c) != index2index.end())
-                c = index2index[c];
-            //get node levels
-            nodeLevel[a]++;
-            nodeLevel[b]++;
-            nodeLevel[c]++;
-            //store indices
-            indices.push_back(glm::ivec3(a, b, c));
-        }
-
-        //filter indices
-        glm::ivec3 ci;
-        std::vector<glm::ivec3> decrease;
-        for (int pass = 0; pass < passes; pass++) {
-            LOGI("Processing noise filter pass %d/%d", pass + 1, passes);
-            for (long i = indices.size() - 1; i >= 0; i--) {
-                ci = indices[i];
-                if ((nodeLevel[ci.x] < 3) || (nodeLevel[ci.y] < 3) || (nodeLevel[ci.z] < 3)) {
-                    indices.erase(indices.begin() + i);
-                    decrease.push_back(ci);
-                }
-            }
-            for (glm::ivec3 i : decrease) {
-                nodeLevel[i.x]--;
-                nodeLevel[i.y]--;
-                nodeLevel[i.z]--;
-            }
-            decrease.clear();
-        }
-    }
-
     void ModelIO::readVertices() {
         assert(!writeMode);
         unsigned int a, b, c;
@@ -125,38 +75,6 @@ namespace mesh_builder {
         }
     }
 
-    void ModelIO::readVerticesAsIndexTable() {
-        assert(!writeMode);
-        char buffer[1024];
-        std::string key;
-        glm::vec3 v;
-        glm::ivec3 c;
-        std::map<std::string, unsigned int> key2index;
-        for (unsigned int i = 0; i < vertexCount; i++) {
-            if (!fgets(buffer, 1024, file))
-                break;
-            sscanf(buffer, "%f %f %f %d %d %d", &v.x, &v.y, &v.z, &c.r, &c.g, &c.b);
-            sprintf(buffer, "%.3f,%.3f,%.3f", v.x, v.y, v.z);
-            key = std::string(buffer);
-            if (key2index.find(key) == key2index.end())
-                key2index[key] = i;
-            else
-                index2index[i] = key2index[key];
-        }
-    }
-
-    void ModelIO::writeModel(ModelIO& model, std::vector<glm::ivec3>& indices) {
-        assert(writeMode);
-        faceCount = (unsigned int) indices.size();
-        vertexCount = (unsigned int) model.data.vertices.size();
-        //write
-        writeHeader();
-        for(unsigned int i = 0; i < model.data.vertices.size(); i++)
-            writeColorVertex(model.data.vertices[i], decodeColor(model.data.colors[i]));
-        for(unsigned int i = 0; i < indices.size(); i++)
-            writeFace(indices[i]);
-    }
-
     void ModelIO::writeModel(std::vector<SingleDynamicMesh*> model) {
         assert(writeMode);
         //count vertices and faces
@@ -164,8 +82,8 @@ namespace mesh_builder {
         vertexCount = 0;
         std::vector<unsigned int> vectorSize;
         for(unsigned int i = 0; i < model.size(); i++) {
-            int max = 0;
-            int value = 0;
+            unsigned int max = 0;
+            unsigned int value = 0;
             for(unsigned int j = 0; j < model[i]->size; j++) {
                 value = model[i]->mesh.indices[j];
                 if(max < value)
