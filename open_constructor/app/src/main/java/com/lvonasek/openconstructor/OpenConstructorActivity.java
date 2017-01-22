@@ -18,6 +18,7 @@ package com.lvonasek.openconstructor;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
@@ -51,12 +52,15 @@ import javax.microedition.khronos.opengles.GL10;
 public class OpenConstructorActivity extends AbstractActivity implements View.OnClickListener,
         GLSurfaceView.Renderer {
 
+  private ActivityManager mActivityManager;
+  private ActivityManager.MemoryInfo mMemoryInfo;
   private ProgressBar mProgress;
   private GLSurfaceView mGLView;
   private SeekBar mSeekbar;
   private String mToLoad;
   private boolean m3drRunning = false;
   private boolean mViewMode = false;
+  private long mTimestamp = 0;
 
   private LinearLayout mLayoutRecBottom;
   private Button mToggleButton;
@@ -127,6 +131,8 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_mesh_builder);
+    mActivityManager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+    mMemoryInfo = new ActivityManager.MemoryInfo();
     TangoJNINative.onToggleButtonClicked(false);
 
     // Setup UI elements and listeners.
@@ -339,8 +345,12 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       textId = R.string.capture;
     mToggleButton.setText(textId);
     mLayoutRecBottom.setVisibility(View.VISIBLE);
+    //memory info
+    mActivityManager.getMemoryInfo(mMemoryInfo);
+    long freeMBs = mMemoryInfo.availMem / 1048576L;
+    String text = freeMBs + getString(R.string.mb_free) + ", ";
     //max distance
-    String text = getString(R.string.distance);
+    text += getString(R.string.distance);
     if (isPhotoModeOn()) {
       if(mRes > 0)
         text += "5m, ";
@@ -363,9 +373,10 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     if ((mRes <= 0) || ((mRes == 1) && isPhotoModeOn())) {
       text += getString(R.string.extreme);
       mResText.setTextColor(Color.RED);
-    } else {
+    } else if (freeMBs < 250)
+      mResText.setTextColor(Color.RED);
+    else
       mResText.setTextColor(Color.WHITE);
-    }
     mResText.setText(text);
   }
 
@@ -474,6 +485,17 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   // Render loop of the Gl context.
   public void onDrawFrame(GL10 gl) {
     TangoJNINative.onGlSurfaceDrawFrame();
+    if (System.currentTimeMillis() - mTimestamp > 1000) {
+      mTimestamp = System.currentTimeMillis();
+      runOnUiThread(new Runnable()
+      {
+        @Override
+        public void run()
+        {
+          refreshUi();
+        }
+      });
+    }
   }
 
   // Called when the surface size changes.
