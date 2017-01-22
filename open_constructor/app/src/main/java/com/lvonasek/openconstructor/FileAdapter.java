@@ -118,8 +118,8 @@ class FileAdapter extends BaseAdapter
                 renameDlg.setPositiveButton(mContext.getString(android.R.string.ok), new DialogInterface.OnClickListener() {
                   @Override
                   public void onClick(DialogInterface dialog, int which) {
-                    //TODO:extension
-                    File newFile = new File(mContext.getPath(), input.getText().toString() + AbstractActivity.FILE_EXT[1]);
+                    int type = AbstractActivity.getModelType(mItems.get(index));
+                    File newFile = new File(mContext.getPath(), input.getText().toString() + AbstractActivity.FILE_EXT[type]);
                     if(newFile.exists())
                       Toast.makeText(mContext, R.string.name_exists, Toast.LENGTH_LONG).show();
                     else {
@@ -135,6 +135,7 @@ class FileAdapter extends BaseAdapter
                 break;
               case 3://delete
                 try {
+                  //TODO:delete all obj resources
                   if (new File(mContext.getPath(), mItems.get(index)).delete())
                     Log.d(AbstractActivity.TAG, "File " + mItems.get(index) + " deleted");
                 } catch(Exception e){

@@ -62,6 +62,13 @@ public abstract class AbstractActivity extends Activity
     return pref.getBoolean(key, true);
   }
 
+  public static int getModelType(String filename) {
+    for(int i = 0; i < FILE_EXT.length; i++)
+      if(filename.substring(filename.length() - FILE_EXT[i].length()).contains(FILE_EXT[i]))
+        return i;
+    return -1;
+  }
+
   public static void setOrientation(boolean portrait, Activity activity) {
     int value = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
     if (!portrait)

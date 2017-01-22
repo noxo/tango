@@ -412,6 +412,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                   File file = new File(getPath(), input.getText().toString() + FILE_EXT[type]);
                   final String filename = file.getAbsolutePath();
                   TangoJNINative.save(filename);
+                  //TODO:rename all textures and make mtl file unique
                   //open???
                   OpenConstructorActivity.this.runOnUiThread(new Runnable()
                   {
