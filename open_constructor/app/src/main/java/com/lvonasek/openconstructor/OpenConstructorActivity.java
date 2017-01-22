@@ -350,7 +350,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     long freeMBs = mMemoryInfo.availMem / 1048576L;
     String text = freeMBs + " " + getString(R.string.mb_free) + ", ";
     //max distance
-    text += getString(R.string.distance);
+    text += getString(R.string.distance) + " ";
     if (isPhotoModeOn()) {
       if(mRes > 0)
         text += "5 m, ";
@@ -363,7 +363,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         text += "1 m, ";
     }
     //3d resolution
-    text += getString(R.string.resolution);
+    text += getString(R.string.resolution) + " ";
     if(mRes > 0)
       text += mRes + " cm";
     else if(mRes == 0)
