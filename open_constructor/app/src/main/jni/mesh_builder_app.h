@@ -43,7 +43,6 @@ namespace mesh_builder {
     public:
         MeshBuilderApp();
         ~MeshBuilderApp();
-        void ActivityCtor(bool t3dr_is_running);
         void OnCreate(JNIEnv *env, jobject caller_activity);
         void OnPause();
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin,

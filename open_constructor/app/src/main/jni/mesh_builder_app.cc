@@ -264,7 +264,17 @@ namespace mesh_builder {
         dataset_ = d;
         Tango3DR_ConfigH t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
 
-        int ret = Tango3DR_Mesh_createEmpty(&t3dr_mesh);
+        // Set textures count
+        int ret = Tango3DR_Config_setInt32(t3dr_config, "max_num_textures", 1);
+        if (ret != TANGO_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+
+        // Set texture resolution
+        ret = Tango3DR_Config_setInt32(t3dr_config, "texture_size", 4096);
+        if (ret != TANGO_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+
+        ret = Tango3DR_Mesh_createEmpty(&t3dr_mesh);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
         t3dr_texture_context_ = Tango3DR_createTexturingContext(t3dr_config, d.c_str(), &t3dr_mesh);
@@ -506,6 +516,9 @@ namespace mesh_builder {
                 dynamic_mesh->mesh.colors.resize(new_vertex_size);
                 dynamic_mesh->mesh.indices.resize(new_index_size);
             } else {
+                if (app->textured) {
+                    //TODO:implement texturing
+                }
                 ++it;
                 dynamic_mesh->size = tango_mesh.num_faces * 3;
             }
