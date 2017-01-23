@@ -12,7 +12,6 @@ namespace mesh_builder {
         writeMode = writeAccess;
         vertexCount = 0;
         faceCount = 0;
-        tango_mesh = nullptr;
 
         if (writeMode)
             LOGI("Writing into %s", filename.c_str());
@@ -130,8 +129,9 @@ namespace mesh_builder {
             assert(false);
     }
 
-    void ModelIO::setTangoObjects(std::string dataset, Tango3DR_ConfigH config) {
+    void ModelIO::setTangoObjects(std::string dataset, Tango3DR_ConfigH config, Tango3DR_Mesh* m) {
         dataset_ = dataset;
+        tango_mesh = m;
         textureConfig = config;
     }
 
@@ -175,23 +175,19 @@ namespace mesh_builder {
             unsigned int offset = 0;
             for (unsigned int j = 0; j < model.size(); j++) {
                 SingleDynamicMesh* mesh = model[j];
-                mesh->mutex.lock();
                 for (unsigned int i = 0; i < mesh->size; i+=3) {
                     fullMesh.indices.push_back(mesh->mesh.indices[i + 0] + offset);
                     fullMesh.indices.push_back(mesh->mesh.indices[i + 1] + offset);
                     fullMesh.indices.push_back(mesh->mesh.indices[i + 2] + offset);
                 }
                 offset += vectorSize[j];
-                std::vector<uint32_t>().swap(mesh->mesh.indices);
                 //vertices and colors
                 for(unsigned int i = 0; i < vectorSize[j]; i++)
                     fullMesh.vertices.push_back(mesh->mesh.vertices[i]);
-                std::vector<glm::vec3>().swap(mesh->mesh.vertices);
                 for(unsigned int i = 0; i < vectorSize[j]; i++)
                     fullMesh.colors.push_back(mesh->mesh.colors[i]);
-                std::vector<uint32_t>().swap(mesh->mesh.colors);
                 fullMesh.render_mode = mesh->mesh.render_mode;
-                mesh->mutex.unlock();
+                delete mesh;
             }
             Tango3DR_Mesh meshIn = {
                     /* timestamp */ 0.0,

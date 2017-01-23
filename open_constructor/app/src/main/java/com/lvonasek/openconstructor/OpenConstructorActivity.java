@@ -50,7 +50,7 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 public class OpenConstructorActivity extends AbstractActivity implements View.OnClickListener,
-        GLSurfaceView.Renderer {
+        GLSurfaceView.Renderer, Runnable {
 
   private ActivityManager mActivityManager;
   private ActivityManager.MemoryInfo mMemoryInfo;
@@ -59,6 +59,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private SeekBar mSeekbar;
   private String mToLoad;
   private boolean m3drRunning = false;
+  private boolean mUpdateRunning = true;
   private boolean mViewMode = false;
   private long mTimestamp = 0;
 
@@ -86,7 +87,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         int noise       = isNoiseFilterOn() ? 9 : 1;
         boolean land    = !isPortrait(OpenConstructorActivity.this);
         boolean photo   = isPhotoModeOn();
-        boolean txtr    = isTexturingOn();
         String tmp      = getTempPath().toString();
 
         if (photo && (mRes > 0))
@@ -98,17 +98,16 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
 
         m3drRunning = !photo;
         TangoJNINative.onCreate(OpenConstructorActivity.this);
-        TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, photo, txtr, tmp);
+        TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, photo, tmp);
         if (isTexturingOn()) {
           for (File f : getTempPath().listFiles())
             if (f.isDirectory()) {
               TangoJNINative.initTextures(f.toString());
+              new Thread(OpenConstructorActivity.this).start();
               break;
             }
         }
-        File dataset = getDataset();
-        if ((dataset != null) && isTexturingOn())
-          TangoJNINative.initTextures(dataset.toString());
+
         TangoJNINative.onToggleButtonClicked(m3drRunning);
         TangoJNINative.setView(0, 0, 0, 0, true);
         OpenConstructorActivity.this.runOnUiThread(new Runnable()
@@ -407,11 +406,23 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                 @Override
                 public void run()
                 {
-                  //save
+                  //delete old during overwrite
                   int type = isTexturingOn() ? 0 : 1;
                   File file = new File(getPath(), input.getText().toString() + FILE_EXT[type]);
+                  if (isTexturingOn()) {
+                    try {
+                      if (file.exists())
+                        for(String s : getObjResources(file))
+                          if (new File(getPath(), s).delete())
+                            Log.d(AbstractActivity.TAG, "File " + s + " deleted");
+                    } catch(Exception e) {
+                      e.printStackTrace();
+                    }
+                  }
+                  //save
                   final String filename = file.getAbsolutePath();
                   if (isTexturingOn()) {
+                    mUpdateRunning = false;
                     long timestamp = System.currentTimeMillis();
                     File obj = new File(getPath(), timestamp + FILE_EXT[type]);
                     TangoJNINative.save(obj.getAbsolutePath());
@@ -434,6 +445,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                           setViewerMode();
                           if (isTexturingOn()) {
                             //TODO:reload obj
+                            System.exit(0);
                           }
                           dialog.cancel();
                         }
@@ -462,7 +474,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   }
 
   @Override
-  public void onBackPressed()
+  public synchronized void onBackPressed()
   {
     System.exit(0);
   }
@@ -496,7 +508,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   }
 
   // Render loop of the Gl context.
-  public void onDrawFrame(GL10 gl) {
+  public synchronized void onDrawFrame(GL10 gl) {
     TangoJNINative.onGlSurfaceDrawFrame();
     if (System.currentTimeMillis() - mTimestamp > 1000) {
       mTimestamp = System.currentTimeMillis();
@@ -512,12 +524,27 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   }
 
   // Called when the surface size changes.
-  public void onSurfaceChanged(GL10 gl, int width, int height) {
+  public synchronized void onSurfaceChanged(GL10 gl, int width, int height) {
     TangoJNINative.onGlSurfaceChanged(width, height);
   }
 
   // Called when the surface is created or recreated.
-  public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+  public synchronized void onSurfaceCreated(GL10 gl, EGLConfig config) {
     TangoJNINative.onGlSurfaceCreated();
+  }
+
+  @Override
+  public void run()
+  {
+    while(mUpdateRunning) {
+      TangoJNINative.updateTexture();
+      try
+      {
+        Thread.sleep(5);
+      } catch (InterruptedException e)
+      {
+        e.printStackTrace();
+      }
+    }
   }
 }

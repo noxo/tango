@@ -47,8 +47,7 @@ class TangoJNINative {
    * @param nativeTangoServiceBinder The native binder object.
    */
   public static native void onTangoServiceConnected(IBinder nativeTangoServiceBinder, double res,
-              double dmin, double dmax, int noise, boolean land, boolean photo, boolean texture,
-                                                                                  String dataset);
+              double dmin, double dmax, int noise, boolean land, boolean photo, String dataset);
 
   /**
    * Interfaces to native OnPause function.
@@ -90,4 +89,7 @@ class TangoJNINative {
 
   // Init texture processing
   public static native void initTextures(String dataset);
+
+  // Update buffers for mesh texturing
+  public static native void updateTexture();
 }

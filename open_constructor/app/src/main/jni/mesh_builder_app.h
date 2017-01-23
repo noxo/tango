@@ -46,8 +46,7 @@ namespace mesh_builder {
         void OnCreate(JNIEnv *env, jobject caller_activity);
         void OnPause();
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin,
-                                     double dmax, int noise, bool land, bool photo, bool texture,
-                                     std::string dataset);
+                                     double dmax, int noise, bool land, bool photo, std::string dataset);
         void onPointCloudAvailable(TangoPointCloud *point_cloud);
         void onFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer);
         void OnSurfaceCreated();
@@ -63,6 +62,7 @@ namespace mesh_builder {
                                                                             movex = mx; movey = my;}
         void SetZoom(float value) { zoom = value; }
         void TangoSetupTextureConfig(std::string d);
+        void TangoTextureUpdate();
 
     private:
         void TangoSetupConfig();
@@ -75,6 +75,7 @@ namespace mesh_builder {
 
         std::string dataset_;
         glm::mat4 start_service_T_device_;
+        bool point_cloud_available_;
         bool t3dr_is_running_;
         Tango3DR_ConfigH textureConfig;
         Tango3DR_Context t3dr_context_;
@@ -83,6 +84,9 @@ namespace mesh_builder {
         Tango3DR_CameraCalibration t3dr_intrinsics_depth;
         Tango3DR_ImageBuffer t3dr_image;
         Tango3DR_Pose t3dr_image_pose;
+        TangoSupportPointCloudManager *point_cloud_manager_;
+        TangoPointCloud *front_cloud_;
+        glm::mat4 point_cloud_matrix_;
         Tango3DR_Mesh t3dr_mesh;
         std::mutex add_mutex_;
         std::mutex binder_mutex_;
@@ -95,6 +99,8 @@ namespace mesh_builder {
         bool threadDone[THREAD_COUNT];
         pthread_t threadId[THREAD_COUNT];
         std::mutex threadMutex[THREAD_COUNT];
+        bool hasNewFrame;
+        bool initTexturing;
         bool gyro;
         bool landscape;
         bool photoFinished;

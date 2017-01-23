@@ -16,7 +16,10 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
+import java.util.Scanner;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -69,6 +72,26 @@ public abstract class AbstractActivity extends Activity
     return -1;
   }
 
+
+  public static ArrayList<String> getObjResources(File file) throws FileNotFoundException
+  {
+    Scanner sc = new Scanner(new FileInputStream(file.getAbsolutePath()));
+    String filter = "xxx" + System.currentTimeMillis(); //not possible filter
+    while(sc.hasNext()) {
+      String line = sc.nextLine();
+      if (line.startsWith("usemtl")) {
+        filter = line.substring(7, line.indexOf('_'));
+        break;
+      }
+    }
+    sc.close();
+    ArrayList<String> output = new ArrayList<>();
+    for(String s : new File(getPath()).list())
+      if(s.startsWith(filter))
+        output.add(s);
+    return output;
+  }
+
   public static void setOrientation(boolean portrait, Activity activity) {
     int value = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
     if (!portrait)
@@ -105,14 +128,14 @@ public abstract class AbstractActivity extends Activity
     return null;
   }
 
-  public String getPath() {
+  public static String getPath() {
     String dir = Environment.getExternalStorageDirectory().getPath() + MODEL_DIRECTORY;
     if (new File(dir).mkdir())
       Log.d(TAG, "Directory " + dir + "created");
     return dir;
   }
 
-  public File getTempPath() {
+  public static File getTempPath() {
     File dir = new File(getPath(), TEMP_DIRECTORY);
     if (dir.mkdir())
       Log.d(TAG, "Directory " + dir + "created");
