@@ -27,6 +27,7 @@
     <string name="new_name">Choose new name</string>
     <string name="name_exists">Model with entered name already exists</string>
     <string name="mb_free">MB RAM free</string>
+    <string name="invalid_name">Invalid file name!</string>
 
     <string-array name="file_operations">
         <item>Open</item>

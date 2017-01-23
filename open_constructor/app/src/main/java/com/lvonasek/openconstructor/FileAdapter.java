@@ -84,6 +84,10 @@ class FileAdapter extends BaseAdapter
                 mContext.startActivity(intent);
                 break;
               case 1://share
+                if (mItems.get(index).length() <= 4) {
+                  Toast.makeText(mContext, R.string.invalid_name, Toast.LENGTH_LONG).show();
+                  break;
+                }
                 mContext.showProgress();
                 new Thread(new Runnable() {
                   @Override
@@ -96,7 +100,7 @@ class FileAdapter extends BaseAdapter
                       ArrayList<String> list = new ArrayList<>();
                       if (AbstractActivity.getModelType(mItems.get(index)) == 0) //OBJ
                         for (String s : AbstractActivity.getObjResources(model2share))
-                        list.add(new File(AbstractActivity.getPath(), s).getAbsolutePath());
+                          list.add(new File(AbstractActivity.getPath(), s).getAbsolutePath());
                       list.add(model2share.getAbsolutePath());
                       mContext.zip(list.toArray(new String[list.size()]), zip);
                       mContext.runOnUiThread(new Runnable()
@@ -125,11 +129,12 @@ class FileAdapter extends BaseAdapter
                   @Override
                   public void onClick(DialogInterface dialog, int which) {
                     int type = AbstractActivity.getModelType(mItems.get(index));
-                    File newFile = new File(mContext.getPath(), input.getText().toString() + AbstractActivity.FILE_EXT[type]);
+                    String name = input.getText().toString() + AbstractActivity.FILE_EXT[type];
+                    File newFile = new File(AbstractActivity.getPath(), name);
                     if(newFile.exists())
                       Toast.makeText(mContext, R.string.name_exists, Toast.LENGTH_LONG).show();
                     else {
-                      File oldFile = new File(mContext.getPath(), mItems.get(index));
+                      File oldFile = new File(AbstractActivity.getPath(), mItems.get(index));
                       if (oldFile.renameTo(newFile))
                         Log.d(AbstractActivity.TAG, "File " + oldFile + " renamed to " + newFile);
                       mContext.refreshUI();

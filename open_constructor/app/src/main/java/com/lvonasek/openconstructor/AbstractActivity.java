@@ -121,13 +121,6 @@ public abstract class AbstractActivity extends Activity
     return Uri.fromFile(new File(getPath(), filename));
   }
 
-  public File getDataset() {
-    for (File f : getTempPath().listFiles())
-      if (f.isDirectory())
-        return f;
-    return null;
-  }
-
   public static String getPath() {
     String dir = Environment.getExternalStorageDirectory().getPath() + MODEL_DIRECTORY;
     if (new File(dir).mkdir())
