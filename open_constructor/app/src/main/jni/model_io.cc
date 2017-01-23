@@ -214,13 +214,11 @@ namespace mesh_builder {
                     fullMesh.indices.push_back(mesh->mesh.indices[i + 2] + offset);
                 }
                 offset += vectorSize[j];
-                //vertices, "normals" and colors
-                for(unsigned int i = 0; i < vectorSize[j]; i++)
+                //vertices and colors
+                for(unsigned int i = 0; i < vectorSize[j]; i++) {
                     fullMesh.vertices.push_back(mesh->mesh.vertices[i]);
-                for(unsigned int i = 0; i < vectorSize[j]; i++)
-                    fullMesh.normals.push_back(decodeColorF(mesh->mesh.colors[i]));
-                for(unsigned int i = 0; i < vectorSize[j]; i++)
-                    fullMesh.colors.push_back(mesh->mesh.colors[i]);
+                    fullMesh.colors.push_back(0);
+                }
                 fullMesh.render_mode = mesh->mesh.render_mode;
                 delete mesh;
             }
@@ -256,11 +254,6 @@ namespace mesh_builder {
         output.g = (c & 0x0000FF00) >> 8;
         output.b = (c & 0x00FF0000) >> 16;
         return output;
-    }
-
-    glm::vec3 ModelIO::decodeColorF(unsigned int c) {
-        glm::ivec3 i = decodeColor(c);
-        return glm::vec3(i.r, i.g, i.b) / 255.0f;
     }
 
     unsigned int ModelIO::scanDec(char *line, int offset) {

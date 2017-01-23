@@ -75,7 +75,7 @@ namespace mesh_builder {
 
         std::string dataset_;
         glm::mat4 start_service_T_device_;
-        bool point_cloud_available_;
+        bool t3dr_image_stored;
         bool t3dr_is_running_;
         Tango3DR_ConfigH textureConfig;
         Tango3DR_Context t3dr_context_;
@@ -84,8 +84,6 @@ namespace mesh_builder {
         Tango3DR_CameraCalibration t3dr_intrinsics_depth;
         Tango3DR_ImageBuffer t3dr_image;
         Tango3DR_Pose t3dr_image_pose;
-        TangoSupportPointCloudManager *point_cloud_manager_;
-        TangoPointCloud *front_cloud_;
         glm::mat4 point_cloud_matrix_;
         Tango3DR_Mesh t3dr_mesh;
         std::mutex add_mutex_;

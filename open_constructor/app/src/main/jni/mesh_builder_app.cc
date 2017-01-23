@@ -68,28 +68,28 @@ namespace mesh_builder {
 
     void MeshBuilderApp::TangoTextureUpdate() {
         binder_mutex_.lock();
-        if (hasNewFrame) {
-            Tango3DR_Status ret;
-            if (initTexturing) {
-                textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
-                ret = Tango3DR_Mesh_createEmpty(&t3dr_mesh);
-                if (ret != TANGO_SUCCESS)
-                    std::exit(EXIT_SUCCESS);
-                ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", 0.001);
-                if (ret != TANGO_3DR_SUCCESS)
-                    std::exit(EXIT_SUCCESS);
-                t3dr_texture_context_ = Tango3DR_createTexturingContext(textureConfig, dataset_.c_str(), &t3dr_mesh);
-                if (t3dr_texture_context_ == nullptr)
-                    std::exit(EXIT_SUCCESS);
-                initTexturing = false;
-                textured = true;
-            }
-            if (textured) {
-                ret = Tango3DR_updateTexture(t3dr_texture_context_, &t3dr_image, &t3dr_image_pose);
-                if (ret != TANGO_3DR_SUCCESS)
-                    LOGE("Problem with updating texture");
-            }
-            hasNewFrame = false;
+        Tango3DR_Status ret;
+        if (initTexturing) {
+            textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
+            ret = Tango3DR_Mesh_createEmpty(&t3dr_mesh);
+            if (ret != TANGO_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+            ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", 0.001);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+            t3dr_texture_context_ = Tango3DR_createTexturingContext(textureConfig, dataset_.c_str(), &t3dr_mesh);
+            if (t3dr_texture_context_ == nullptr)
+                std::exit(EXIT_SUCCESS);
+            initTexturing = false;
+            textured = true;
+        }
+        if (textured && hasNewFrame) {
+            ret = Tango3DR_updateTexture(t3dr_texture_context_, &t3dr_image, &t3dr_image_pose);
+            if (ret != TANGO_3DR_SUCCESS)
+                LOGE("Problem with updating texture");
+            else
+                LOGI("Stored pose %lf", t3dr_image.timestamp);
+            t3dr_image_stored = true;
         }
         binder_mutex_.unlock();
     }
@@ -107,6 +107,14 @@ namespace mesh_builder {
             return;
 
         binder_mutex_.lock();
+        if (t3dr_image.data == nullptr) {
+            binder_mutex_.unlock();
+            return;
+        }
+        if (textured && !t3dr_image_stored) {
+            binder_mutex_.unlock();
+            return;
+        }
         point_cloud_matrix_ = glm::make_mat4(matrix_transform.matrix);
         point_cloud_matrix_[3][0] *= scale;
         point_cloud_matrix_[3][1] *= scale;
@@ -118,52 +126,10 @@ namespace mesh_builder {
                 point_cloud->points[i][2] *= scale;
             }
         }
-        TangoSupport_updatePointCloud(point_cloud_manager_, point_cloud);
-        point_cloud_available_ = true;
-        binder_mutex_.unlock();
-    }
-
-    void MeshBuilderApp::onFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer) {
-        if (id != TANGO_CAMERA_COLOR || !t3dr_is_running_)
-            return;
-
-        // Get the camera color transform to OpenGL world frame in OpenGL convention.
-        TangoMatrixTransformData matrix_transform;
-        TangoSupport_getMatrixTransformAtTime(
-                        buffer->timestamp, TANGO_COORDINATE_FRAME_START_OF_SERVICE,
-                        TANGO_COORDINATE_FRAME_CAMERA_COLOR, TANGO_SUPPORT_ENGINE_OPENGL,
-                        TANGO_SUPPORT_ENGINE_TANGO, ROTATION_0, &matrix_transform);
-        if (matrix_transform.status_code != TANGO_POSE_VALID)
-            return;
-
-        binder_mutex_.lock();
-        if (!point_cloud_available_) {
-            binder_mutex_.unlock();
-            return;
-        }
-
-        glm::mat4 image_matrix = glm::make_mat4(matrix_transform.matrix);
-        image_matrix[3][0] *= scale;
-        image_matrix[3][1] *= scale;
-        image_matrix[3][2] *= scale;
-        t3dr_image.width = buffer->width;
-        t3dr_image.height = buffer->height;
-        t3dr_image.stride = buffer->stride;
-        t3dr_image.timestamp = buffer->timestamp;
-        t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(buffer->format);
-        t3dr_image.data = buffer->data;
-        t3dr_image_pose = extract3DRPose(image_matrix);
-
         Tango3DR_PointCloud t3dr_depth;
-        TangoSupport_getLatestPointCloud(point_cloud_manager_, &front_cloud_);
-        t3dr_depth.timestamp = front_cloud_->timestamp;
-        t3dr_depth.num_points = front_cloud_->num_points;
-        t3dr_depth.points = front_cloud_->points;
-        hasNewFrame = true;
-        if (initTexturing) {
-            binder_mutex_.unlock();
-            return;
-        }
+        t3dr_depth.timestamp = point_cloud->timestamp;
+        t3dr_depth.num_points = point_cloud->num_points;
+        t3dr_depth.points = point_cloud->points;
 
         Tango3DR_Pose t3dr_depth_pose = extract3DRPose(point_cloud_matrix_);
         Tango3DR_GridIndexArray *t3dr_updated;
@@ -201,12 +167,53 @@ namespace mesh_builder {
         }
         if (photoMode)
             photoFinished = true;
-        process_mutex_.unlock();
+        hasNewFrame = false;
+        t3dr_image_stored = false;
+        binder_mutex_.unlock();
+    }
+
+    void MeshBuilderApp::onFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer) {
+        if (id != TANGO_CAMERA_COLOR || !t3dr_is_running_)
+            return;
+
+        // Get the camera color transform to OpenGL world frame in OpenGL convention.
+        TangoMatrixTransformData matrix_transform;
+        TangoSupport_getMatrixTransformAtTime(
+                        buffer->timestamp, TANGO_COORDINATE_FRAME_START_OF_SERVICE,
+                        TANGO_COORDINATE_FRAME_CAMERA_COLOR, TANGO_SUPPORT_ENGINE_OPENGL,
+                        TANGO_SUPPORT_ENGINE_TANGO, ROTATION_0, &matrix_transform);
+        if (matrix_transform.status_code != TANGO_POSE_VALID)
+            return;
+
+        binder_mutex_.lock();
+        if (hasNewFrame) {
+            binder_mutex_.unlock();
+            return;
+        }
+
+        glm::mat4 image_matrix = glm::make_mat4(matrix_transform.matrix);
+        image_matrix[3][0] *= scale;
+        image_matrix[3][1] *= scale;
+        image_matrix[3][2] *= scale;
+        t3dr_image.width = buffer->width;
+        t3dr_image.height = buffer->height;
+        t3dr_image.stride = buffer->stride;
+        t3dr_image.timestamp = buffer->timestamp;
+        t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(buffer->format);
+        t3dr_image.data = buffer->data;
+        t3dr_image_pose = extract3DRPose(image_matrix);
+
+        if (initTexturing) {
+            binder_mutex_.unlock();
+            return;
+        }
+        hasNewFrame = true;
         binder_mutex_.unlock();
     }
 
     MeshBuilderApp::MeshBuilderApp() {
         t3dr_mesh.max_num_vertices = 0;
+        t3dr_image_stored = false;
         t3dr_is_running_ = false;
         dataset_ = "";
         gyro = false;
@@ -224,10 +231,6 @@ namespace mesh_builder {
         if (tango_config_ != nullptr) {
             TangoConfig_free(tango_config_);
             tango_config_ = nullptr;
-        }
-        if (point_cloud_manager_ != nullptr) {
-            TangoSupport_freePointCloudManager(point_cloud_manager_);
-            point_cloud_manager_ = nullptr;
         }
     }
 
@@ -258,20 +261,6 @@ namespace mesh_builder {
         // This enables basic motion tracking capabilities.
         if (tango_config_ == nullptr)
             std::exit(EXIT_SUCCESS);
-
-        // Setup point cloud
-        if (point_cloud_manager_ == nullptr) {
-            int32_t max_point_cloud;
-            int ret;
-            ret = TangoConfig_getInt32(tango_config_, "max_point_cloud_elements", &max_point_cloud);
-            if (ret != TANGO_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-
-            size_t max_point_cloud_size = (size_t) max_point_cloud;
-            ret = TangoSupport_createPointCloudManager(max_point_cloud_size, &point_cloud_manager_);
-            if (ret != TANGO_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-        }
 
         // Set auto-recovery for motion tracking as requested by the user.
         int ret = TangoConfig_setBool(tango_config_, "config_enable_auto_recovery", true);
