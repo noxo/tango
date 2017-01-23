@@ -58,6 +58,7 @@ namespace mesh_builder {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
+        unsigned int lastTexture = INT_MAX;
         for (tango_gl::StaticMesh mesh : static_meshes_) {
             if (mesh.texture == -1)
                 tango_gl::Render(mesh, *color_vertex_shader, tango_gl::Transform(), *camera_, -1);
@@ -78,7 +79,11 @@ namespace mesh_builder {
                         textureMap.push_back(textureID);
                     }
                 }
-                glBindTexture(GL_TEXTURE_2D, textureMap[mesh.texture]);
+                unsigned int texture = textureMap[mesh.texture];
+                if (lastTexture != texture) {
+                    lastTexture = texture;
+                    glBindTexture(GL_TEXTURE_2D, texture);
+                }
                 tango_gl::Render(mesh, *textured_shader, tango_gl::Transform(), *camera_, -1);
             }
         }
