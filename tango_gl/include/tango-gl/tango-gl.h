@@ -22,6 +22,7 @@
 #include <GLES2/gl2.h>
 
 #include <tango-gl/texture.h>
+#include <tango_3d_reconstruction_api.h>
 
 #include "glm/glm.hpp"
 
@@ -57,6 +58,12 @@ class StaticMesh {
 
   // UV coords for texture
   std::vector<glm::vec2> uv;
+
+  // Texture index
+  int32_t texture;
+
+  /// Array of texture images.
+  Tango3DR_ImageBuffer* textures;
 };
 
 // Describes how to draw a mesh.

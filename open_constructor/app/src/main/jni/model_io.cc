@@ -54,58 +54,93 @@ namespace mesh_builder {
         if(faceCount % subdivision > 0)
             parts++;
         unsigned int t, a, b, c;
+        glm::vec2 uv;
         glm::vec3 vec;
+
+        //subdivision cycle
         for (int j = 0; j < parts; j++)  {
-            tango_gl::StaticMesh static_mesh;
-            static_mesh.render_mode = GL_TRIANGLES;
             int count = subdivision;
             if (j == parts - 1)
                 count = faceCount % subdivision;
-            for (int i = 0; i < count; i++)  {
+
+            int textureCount = 0;
+            if (type == PLY)
+                textureCount = 1;
+            else if (type == OBJ)
+                textureCount = tango_mesh->num_textures;
+            else
+                assert(false);
+
+            //texture cycle
+            for (int k = 0; k < textureCount; k++) {
+                output.push_back(tango_gl::StaticMesh());
+                unsigned long meshIndex = output.size() - 1;
+                output[meshIndex].render_mode = GL_TRIANGLES;
                 if (type == PLY)
-                    fscanf(file, "%d %d %d %d", &t, &a, &b, &c);
+                    output[meshIndex].texture = -1;
                 else if (type == OBJ) {
-                    t = 3;
-                    a = tango_mesh->faces[index][0];
-                    b = tango_mesh->faces[index][1];
-                    c = tango_mesh->faces[index][2];
-                    index++;
+                    output[meshIndex].texture = k;
+                    output[meshIndex].textures = tango_mesh->textures;
                 } else
                     assert(false);
-                //unsupported format
-                if (t != 3)
-                    continue;
-                //broken topology ignored
-                if ((a == b) || (a == c) || (b == c))
-                    continue;
-                if (type == PLY) {
-                    static_mesh.vertices.push_back(data.vertices[a]);
-                    static_mesh.colors.push_back(data.colors[a]);
-                    static_mesh.vertices.push_back(data.vertices[b]);
-                    static_mesh.colors.push_back(data.colors[b]);
-                    static_mesh.vertices.push_back(data.vertices[c]);
-                    static_mesh.colors.push_back(data.colors[c]);
-                } else if (type == OBJ) {
-                    vec.x = tango_mesh->vertices[a][0];
-                    vec.y = tango_mesh->vertices[a][1];
-                    vec.z = tango_mesh->vertices[a][2];
-                    static_mesh.vertices.push_back(vec);
-                    vec.x = tango_mesh->vertices[b][0];
-                    vec.y = tango_mesh->vertices[b][1];
-                    vec.z = tango_mesh->vertices[b][2];
-                    static_mesh.vertices.push_back(vec);
-                    vec.x = tango_mesh->vertices[c][0];
-                    vec.y = tango_mesh->vertices[c][1];
-                    vec.z = tango_mesh->vertices[c][2];
-                    static_mesh.vertices.push_back(vec);
-                    //TODO: load and render UVs and textures
-                    static_mesh.colors.push_back(0xFFFFFFFF);
-                    static_mesh.colors.push_back(0xFFFFFFFF);
-                    static_mesh.colors.push_back(0xFFFFFFFF);
-                } else
-                    assert(false);
+
+                //face cycle
+                for (int i = 0; i < count; i++)  {
+                    if (type == PLY)
+                        fscanf(file, "%d %d %d %d", &t, &a, &b, &c);
+                    else if (type == OBJ) {
+                        t = 3;
+                        a = tango_mesh->faces[index][0];
+                        b = tango_mesh->faces[index][1];
+                        c = tango_mesh->faces[index][2];
+                        index++;
+                    } else
+                        assert(false);
+                    //unsupported format
+                    if (t != 3)
+                        continue;
+                    //broken topology ignored
+                    if ((a == b) || (a == c) || (b == c))
+                        continue;
+                    if (type == PLY) {
+                        output[meshIndex].vertices.push_back(data.vertices[a]);
+                        output[meshIndex].colors.push_back(data.colors[a]);
+                        output[meshIndex].vertices.push_back(data.vertices[b]);
+                        output[meshIndex].colors.push_back(data.colors[b]);
+                        output[meshIndex].vertices.push_back(data.vertices[c]);
+                        output[meshIndex].colors.push_back(data.colors[c]);
+                    } else if (type == OBJ) {
+                        if(tango_mesh->texture_ids[a] != k)
+                            continue;
+                        if(tango_mesh->texture_ids[b] != k)
+                            continue;
+                        if(tango_mesh->texture_ids[c] != k)
+                            continue;
+                        vec.x = tango_mesh->vertices[a][0];
+                        vec.y = tango_mesh->vertices[a][1];
+                        vec.z = tango_mesh->vertices[a][2];
+                        output[meshIndex].vertices.push_back(vec);
+                        vec.x = tango_mesh->vertices[b][0];
+                        vec.y = tango_mesh->vertices[b][1];
+                        vec.z = tango_mesh->vertices[b][2];
+                        output[meshIndex].vertices.push_back(vec);
+                        vec.x = tango_mesh->vertices[c][0];
+                        vec.y = tango_mesh->vertices[c][1];
+                        vec.z = tango_mesh->vertices[c][2];
+                        output[meshIndex].vertices.push_back(vec);
+                        uv.s = tango_mesh->texture_coords[a][0];
+                        uv.t = tango_mesh->texture_coords[a][1];
+                        output[meshIndex].uv.push_back(uv);
+                        uv.s = tango_mesh->texture_coords[b][0];
+                        uv.t = tango_mesh->texture_coords[b][1];
+                        output[meshIndex].uv.push_back(uv);
+                        uv.s = tango_mesh->texture_coords[c][0];
+                        uv.t = tango_mesh->texture_coords[c][1];
+                        output[meshIndex].uv.push_back(uv);
+                    } else
+                        assert(false);
+                }
             }
-            output.push_back(static_mesh);
         }
     }
 

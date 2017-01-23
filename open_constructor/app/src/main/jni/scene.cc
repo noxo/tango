@@ -27,16 +27,20 @@ namespace mesh_builder {
     Scene::~Scene() { }
 
     void Scene::InitGLContent() {
-
         camera_ = new tango_gl::Camera();
-        dynamic_mesh_material_ = new tango_gl::Material();
-        dynamic_mesh_material_->SetShader(tango_gl::shaders::GetColorVertexShader().c_str(),
+        color_vertex_shader = new tango_gl::Material();
+        color_vertex_shader->SetShader(tango_gl::shaders::GetColorVertexShader().c_str(),
                                           tango_gl::shaders::GetBasicFragmentShader().c_str());
+        textured_shader = new tango_gl::Material();
+        textured_shader->SetShader(tango_gl::shaders::GetTexturedVertexShader().c_str(),
+                                       tango_gl::shaders::GetTexturedVertexShader().c_str());
     }
 
     void Scene::DeleteResources() {
-        delete dynamic_mesh_material_;
-        dynamic_mesh_material_ = nullptr;
+        delete color_vertex_shader;
+        color_vertex_shader = nullptr;
+        delete textured_shader;
+        textured_shader = nullptr;
     }
 
     void Scene::SetupViewPort(int w, int h) {
@@ -55,15 +59,19 @@ namespace mesh_builder {
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
         for (tango_gl::StaticMesh mesh : static_meshes_) {
-            tango_gl::Render(mesh, *dynamic_mesh_material_, tango_gl::Transform(), *camera_, -1);
+            if (mesh.texture == -1)
+                tango_gl::Render(mesh, *color_vertex_shader, tango_gl::Transform(), *camera_, -1);
+            else {
+                //TODO:render textured meshes
+            }
         }
         for (SingleDynamicMesh *mesh : dynamic_meshes_) {
             mesh->mutex.lock();
-            tango_gl::Render(mesh->mesh, *dynamic_mesh_material_, tango_gl::Transform(), *camera_, mesh->size);
+            tango_gl::Render(mesh->mesh, *color_vertex_shader, tango_gl::Transform(), *camera_, mesh->size);
             mesh->mutex.unlock();
         }
         if(!frustum_.vertices.empty() && frustum)
-            tango_gl::Render(frustum_, *dynamic_mesh_material_, tango_gl::Transform(), *camera_, frustum_.indices.size());
+            tango_gl::Render(frustum_, *color_vertex_shader, tango_gl::Transform(), *camera_, frustum_.indices.size());
     }
 
     void Scene::UpdateFrustum(glm::vec3 pos, float zoom) {

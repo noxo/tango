@@ -35,7 +35,8 @@ class Scene {
   tango_gl::StaticMesh frustum_;
   std::vector<tango_gl::StaticMesh> static_meshes_;
   std::vector<SingleDynamicMesh*> dynamic_meshes_;
-  tango_gl::Material* dynamic_mesh_material_;
+  tango_gl::Material* color_vertex_shader;
+  tango_gl::Material* textured_shader;
 };
 }  // namespace mesh_builder
 
