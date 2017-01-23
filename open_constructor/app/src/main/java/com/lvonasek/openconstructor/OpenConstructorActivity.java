@@ -408,7 +408,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                 {
                   //delete old during overwrite
                   int type = isTexturingOn() ? 0 : 1;
-                  File file = new File(getPath(), input.getText().toString() + FILE_EXT[type]);
+                  final File file = new File(getPath(), input.getText().toString() + FILE_EXT[type]);
                   if (isTexturingOn()) {
                     try {
                       if (file.exists())
@@ -444,8 +444,23 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                         public void onClick(DialogInterface dialog, int which) {
                           setViewerMode();
                           if (isTexturingOn()) {
-                            //TODO:reload obj
-                            System.exit(0);
+                            mProgress.setVisibility(View.VISIBLE);
+                            new Thread(new Runnable()
+                            {
+                              @Override
+                              public void run()
+                              {
+                                TangoJNINative.load(file.getAbsolutePath());
+                                OpenConstructorActivity.this.runOnUiThread(new Runnable()
+                                {
+                                  @Override
+                                  public void run()
+                                  {
+                                    mProgress.setVisibility(View.GONE);
+                                  }
+                                });
+                              }
+                            }).start();
                           }
                           dialog.cancel();
                         }
