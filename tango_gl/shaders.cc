@@ -46,7 +46,8 @@ std::string GetTexturedVertexShader() {
          "varying vec2 f_textureCoords;\n"
          "uniform mat4 mvp;\n"
          "void main() {\n"
-         "  f_textureCoords = uv;\n"
+         "  f_textureCoords.x = uv.x;\n"
+         "  f_textureCoords.y = 1.0 - uv.y;\n"
          "  gl_Position = mvp * vertex;\n"
          "}\n";
 }

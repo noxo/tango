@@ -33,7 +33,7 @@ namespace mesh_builder {
                                           tango_gl::shaders::GetBasicFragmentShader().c_str());
         textured_shader = new tango_gl::Material();
         textured_shader->SetShader(tango_gl::shaders::GetTexturedVertexShader().c_str(),
-                                       tango_gl::shaders::GetTexturedVertexShader().c_str());
+                                       tango_gl::shaders::GetTexturedFragmentShader().c_str());
     }
 
     void Scene::DeleteResources() {
@@ -62,7 +62,24 @@ namespace mesh_builder {
             if (mesh.texture == -1)
                 tango_gl::Render(mesh, *color_vertex_shader, tango_gl::Transform(), *camera_, -1);
             else {
-                //TODO:render textured meshes
+                if (textureMap.empty()) {
+                    for(unsigned int i = 0; i < mesh.textureCount; i++) {
+                        int w = mesh.textures[i].width;
+                        int h = mesh.textures[i].height;
+                        unsigned char* d = mesh.textures[i].data;
+                        GLuint textureID;
+                        glGenTextures(1, &textureID);
+                        glBindTexture(GL_TEXTURE_2D, textureID);
+                        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, d);
+                        textureMap.push_back(textureID);
+                    }
+                }
+                glBindTexture(GL_TEXTURE_2D, textureMap[mesh.texture]);
+                tango_gl::Render(mesh, *textured_shader, tango_gl::Transform(), *camera_, -1);
             }
         }
         for (SingleDynamicMesh *mesh : dynamic_meshes_) {
@@ -71,7 +88,8 @@ namespace mesh_builder {
             mesh->mutex.unlock();
         }
         if(!frustum_.vertices.empty() && frustum)
-            tango_gl::Render(frustum_, *color_vertex_shader, tango_gl::Transform(), *camera_, frustum_.indices.size());
+            tango_gl::Render(frustum_, *color_vertex_shader, tango_gl::Transform(), *camera_,
+                             (const int) frustum_.indices.size());
     }
 
     void Scene::UpdateFrustum(glm::vec3 pos, float zoom) {

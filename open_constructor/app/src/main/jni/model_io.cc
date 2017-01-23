@@ -49,7 +49,7 @@ namespace mesh_builder {
     }
 
     void ModelIO::parseFaces(int subdivision, std::vector<tango_gl::StaticMesh>& output) {
-        unsigned int index = 0;
+        unsigned int offset = 0;
         int parts = faceCount / subdivision;
         if(faceCount % subdivision > 0)
             parts++;
@@ -72,10 +72,12 @@ namespace mesh_builder {
                 assert(false);
 
             //texture cycle
-            for (int k = 0; k < textureCount; k++) {
+            for (int k = 0; k < textureCount; k++)
+            {
                 output.push_back(tango_gl::StaticMesh());
                 unsigned long meshIndex = output.size() - 1;
                 output[meshIndex].render_mode = GL_TRIANGLES;
+                output[meshIndex].textureCount = textureCount;
                 if (type == PLY)
                     output[meshIndex].texture = -1;
                 else if (type == OBJ) {
@@ -90,10 +92,9 @@ namespace mesh_builder {
                         fscanf(file, "%d %d %d %d", &t, &a, &b, &c);
                     else if (type == OBJ) {
                         t = 3;
-                        a = tango_mesh->faces[index][0];
-                        b = tango_mesh->faces[index][1];
-                        c = tango_mesh->faces[index][2];
-                        index++;
+                        a = tango_mesh->faces[i + offset][0];
+                        b = tango_mesh->faces[i + offset][1];
+                        c = tango_mesh->faces[i + offset][2];
                     } else
                         assert(false);
                     //unsupported format
@@ -110,11 +111,7 @@ namespace mesh_builder {
                         output[meshIndex].vertices.push_back(data.vertices[c]);
                         output[meshIndex].colors.push_back(data.colors[c]);
                     } else if (type == OBJ) {
-                        if(tango_mesh->texture_ids[a] != k)
-                            continue;
-                        if(tango_mesh->texture_ids[b] != k)
-                            continue;
-                        if(tango_mesh->texture_ids[c] != k)
+                        if(tango_mesh->texture_ids[i + offset] != k)
                             continue;
                         vec.x = tango_mesh->vertices[a][0];
                         vec.y = tango_mesh->vertices[a][1];
@@ -141,6 +138,7 @@ namespace mesh_builder {
                         assert(false);
                 }
             }
+            offset += count;
         }
     }
 
@@ -216,9 +214,11 @@ namespace mesh_builder {
                     fullMesh.indices.push_back(mesh->mesh.indices[i + 2] + offset);
                 }
                 offset += vectorSize[j];
-                //vertices and colors
+                //vertices, "normals" and colors
                 for(unsigned int i = 0; i < vectorSize[j]; i++)
                     fullMesh.vertices.push_back(mesh->mesh.vertices[i]);
+                for(unsigned int i = 0; i < vectorSize[j]; i++)
+                    fullMesh.normals.push_back(decodeColorF(mesh->mesh.colors[i]));
                 for(unsigned int i = 0; i < vectorSize[j]; i++)
                     fullMesh.colors.push_back(mesh->mesh.colors[i]);
                 fullMesh.render_mode = mesh->mesh.render_mode;
@@ -256,6 +256,11 @@ namespace mesh_builder {
         output.g = (c & 0x0000FF00) >> 8;
         output.b = (c & 0x00FF0000) >> 16;
         return output;
+    }
+
+    glm::vec3 ModelIO::decodeColorF(unsigned int c) {
+        glm::ivec3 i = decodeColor(c);
+        return glm::vec3(i.r, i.g, i.b) / 255.0f;
     }
 
     unsigned int ModelIO::scanDec(char *line, int offset) {

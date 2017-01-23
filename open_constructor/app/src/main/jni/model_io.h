@@ -22,6 +22,7 @@ public:
 
 private:
     glm::ivec3 decodeColor(unsigned int c);
+    glm::vec3 decodeColorF(unsigned int c);
     unsigned int scanDec(char *line, int offset);
     bool startsWith(std::string s, std::string e);
     void writePLYHeader();

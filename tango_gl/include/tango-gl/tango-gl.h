@@ -62,7 +62,10 @@ class StaticMesh {
   // Texture index
   int32_t texture;
 
-  /// Array of texture images.
+  // Amount of textures
+  int32_t textureCount;
+
+  // Array of texture images.
   Tango3DR_ImageBuffer* textures;
 };
 

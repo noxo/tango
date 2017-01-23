@@ -33,6 +33,7 @@ class Scene {
 
   tango_gl::Camera* camera_;
   tango_gl::StaticMesh frustum_;
+  std::vector<unsigned int> textureMap;
   std::vector<tango_gl::StaticMesh> static_meshes_;
   std::vector<SingleDynamicMesh*> dynamic_meshes_;
   tango_gl::Material* color_vertex_shader;
