@@ -20,34 +20,8 @@
 #include "tango-gl/transform.h"
 #include "tango-gl/util.h"
 
-namespace {
-
-// Fallback vertex shader.  This shader will be used if a valid shader
-// program is not set on a material.
-const char* kFallbackVS =
-    "precision mediump float;\n"
-    "precision mediump int;\n"
-    "attribute vec4 vertex;\n"
-    "\n"
-    "uniform mat4 mvp;\n"
-    "\n"
-    "void main() {\n"
-    "  gl_Position = mvp * vertex;\n"
-    "}\n";
-
-// Fallback pixel shader.  This shader will be used if a valid shader
-// program is not set on a material.
-const char* kFallbackPS =
-    "precision mediump float;\n"
-    "\n"
-    "void main() {\n"
-    "  gl_FragColor = vec4(1, 0, 1, 1);\n"
-    "}\n";
-}  // namespace
-
 namespace tango_gl {
 
-GLuint Material::fallback_shader_program_ = 0;
 GLuint last_shader_program = INT_MAX;
 GLint attrib_vertices;
 GLint attrib_normal;
@@ -138,13 +112,10 @@ void Render(const StaticMesh& mesh, const Material& material,
 }
 
 Material::Material() {
-  SetFallbackShader();
-  util::CheckGlError("Material::ctor");
 }
 
 Material::~Material() {
   shader_program_ = 0;
-  fallback_shader_program_ = 0;
 }
 
 bool Material::SetShader(const char* vertex_shader, const char* pixel_shader) {
@@ -152,38 +123,7 @@ bool Material::SetShader(const char* vertex_shader, const char* pixel_shader) {
   params_vec4_.clear();
 
   GLuint program = util::CreateProgram(vertex_shader, pixel_shader);
-  if (!program) {
-    SetFallbackShader();
-    return false;
-  }
-
-  bool result = SetShaderInternal(program);
-  if (!result) {
-    SetFallbackShader();
-  }
-  return result;
-}
-
-void Material::SetFallbackShader() {
-  params_float_.clear();
-  params_vec4_.clear();
-
-  if (!fallback_shader_program_) {
-    fallback_shader_program_ = util::CreateProgram(kFallbackVS, kFallbackPS);
-    if (!fallback_shader_program_) {
-      LOGE("%s -- Critical error shader would not load.", __func__);
-      abort();
-    }
-  }
-
-  bool result = SetShaderInternal(fallback_shader_program_);
-  if (!result) {
-    LOGE(
-        "%s -- Critical error, could not get required uniforms and/or "
-        "attributes.",
-        __func__);
-    abort();
-  }
+  return SetShaderInternal(program);
 }
 
 bool Material::SetShaderInternal(GLuint program) {
@@ -212,12 +152,6 @@ bool Material::SetShaderInternal(GLuint program) {
 }
 
 bool Material::SetParam(const char* uniform_name, float val) {
-  if (shader_program_ == fallback_shader_program_) {
-    // The fallback shader ignores all parameters to avoid cluttering
-    // up the log.
-    return true;
-  }
-
   GLint location = glGetUniformLocation(shader_program_, uniform_name);
   if (location == -1) {
     LOGE("%s -- Unable to find parameter %s", __func__, uniform_name);
@@ -229,12 +163,6 @@ bool Material::SetParam(const char* uniform_name, float val) {
 }
 
 bool Material::SetParam(const char* uniform_name, const glm::vec4& vals) {
-  if (shader_program_ == fallback_shader_program_) {
-    // The fallback shader ignores all parameters to avoid cluttering
-    // up the log.
-    return true;
-  }
-
   GLint location = glGetUniformLocation(shader_program_, uniform_name);
   if (location == -1) {
     LOGE("%s -- Unable to find parameter %s", __func__, uniform_name);
@@ -246,12 +174,6 @@ bool Material::SetParam(const char* uniform_name, const glm::vec4& vals) {
 }
 
 bool Material::SetParam(const char* uniform_name, Texture* texture) {
-  if (shader_program_ == fallback_shader_program_) {
-    // The fallback shader ignores all parameters to avoid cluttering
-    // up the log.
-    return true;
-  }
-
   GLint location = glGetUniformLocation(shader_program_, uniform_name);
   if (location == -1) {
     LOGE("%s -- Unable to find parameter %s", __func__, uniform_name);

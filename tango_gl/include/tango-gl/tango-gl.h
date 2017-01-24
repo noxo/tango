@@ -76,7 +76,7 @@ class StaticMesh {
 // runtime.
 class Material {
  public:
-  // Create a new material using the fallback shader.
+  // Create a new empty material
   Material();
 
   // Destroy a material, destroying the underlying shader as well.
@@ -131,17 +131,10 @@ class Material {
   GLint GetUniformNormalMatrix() const { return uniform_normal_mat_; }
 
  private:
-  // Set the shader for this material to the fallback shader.  This
-  // will never fail.
-  void SetFallbackShader();
-
   // Set the shader for this material to the specified GL shader
   // program.  This will fail if required attributes and uniforms can
   // not be found.
   bool SetShaderInternal(GLuint program);
-
-  // The fallback shader program.  Never cleaned up.
-  static GLuint fallback_shader_program_;
 
   // Current shader program.
   GLuint shader_program_;
