@@ -92,6 +92,7 @@ namespace mesh_builder {
         bool photoFinished;
         bool photoMode;
         bool textured;
+        int textureId;
         float scale;
         float movex;
         float movey;

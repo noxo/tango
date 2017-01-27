@@ -59,13 +59,13 @@ class StaticMesh {
   // UV coords for texture
   std::vector<glm::vec2> uv;
 
-  // Texture index
+  // Texture index for dynamic mesh
+  std::vector<int32_t> textureIds;
+
+  // Texture index for static mesh
   int32_t texture;
 
-  // Amount of textures
-  int32_t textureCount;
-
-  // Array of texture images.
+  // Array of texture images for static mesh
   Tango3DR_ImageBuffer* textures;
 };
 

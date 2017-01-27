@@ -73,7 +73,6 @@ namespace mesh_builder {
                 output.push_back(tango_gl::StaticMesh());
                 unsigned long meshIndex = output.size() - 1;
                 output[meshIndex].render_mode = GL_TRIANGLES;
-                output[meshIndex].textureCount = textureCount;
                 if (type == PLY)
                     output[meshIndex].texture = -1;
                 else if (type == OBJ) {

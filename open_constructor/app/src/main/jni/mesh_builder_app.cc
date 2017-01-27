@@ -138,6 +138,36 @@ namespace mesh_builder {
         t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(buffer->format);
         t3dr_image.data = buffer->data;
         t3dr_image_pose = extract3DRPose(image_matrix);
+        if (t3dr_image.format != TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP)
+            std::exit(EXIT_SUCCESS);
+        if (textured) {
+            int frameSize = t3dr_image.width * t3dr_image.height;
+            int yIndex = 0;
+            int uvIndex = frameSize;
+            int R, G, B, Y, U, V;
+            int index = 0;
+            for (unsigned int y = 0; y < t3dr_image.height; y++) {
+                for (unsigned int x = 0; x < t3dr_image.width; x++) {
+
+                    R = 255;
+                    G = x * 255 / t3dr_image.width;
+                    B = y * 255 / t3dr_image.height;
+
+                    //RGB to YUV algorithm
+                    Y = ( (  66 * R + 129 * G +  25 * B + 128) >> 8) +  16;
+                    V = ( ( -38 * R -  74 * G + 112 * B + 128) >> 8) + 128; // Previously U
+                    U = ( ( 112 * R -  94 * G -  18 * B + 128) >> 8) + 128; // Previously V
+
+                    t3dr_image.data[yIndex++] = (uint8_t) ((Y < 0) ? 0 : ((Y > 255) ? 255 : Y));
+                    if (y % 2 == 0 && index % 2 == 0) {
+                        t3dr_image.data[uvIndex++] = (uint8_t)((V<0) ? 0 : ((V > 255) ? 255 : V));
+                        t3dr_image.data[uvIndex++] = (uint8_t)((U<0) ? 0 : ((U > 255) ? 255 : U));
+                    }
+                    index++;
+                }
+            }
+            textureId++;
+        }
         hasNewFrame = true;
         binder_mutex_.unlock();
     }
@@ -152,6 +182,7 @@ namespace mesh_builder {
         photoMode = false;
         pointCloudAvailable = false;
         textured = false;
+        textureId = 0;
         scale = 1;
         zoom = 0;
     }
@@ -513,6 +544,25 @@ namespace mesh_builder {
                     dynamic_mesh->tango_mesh.faces = reinterpret_cast<Tango3DR_Face *>(dynamic_mesh->mesh.indices.data());
                 } else
                     break;
+            }
+            if (textured) {
+                int color, x, y, z;
+                dynamic_mesh->mesh.uv.resize(dynamic_mesh->mesh.colors.size());
+                dynamic_mesh->mesh.textureIds.resize(dynamic_mesh->mesh.colors.size());
+                for (unsigned int i = 0; i < dynamic_mesh->mesh.colors.size(); i++) {
+                    color = dynamic_mesh->mesh.colors[i];
+                    x = color & 255;
+                    y = (color >> 8) & 255;
+                    z = (color >> 16) & 255;
+                    if (z > 250)
+                    {
+                        dynamic_mesh->mesh.uv[i].x = x / 255.0f;
+                        dynamic_mesh->mesh.uv[i].y = y / 255.0f;
+                        dynamic_mesh->mesh.colors[i] = 0;
+                        dynamic_mesh->mesh.textureIds[i] = textureId;
+                    }
+                }
+                dynamic_mesh->tango_mesh.colors = reinterpret_cast<Tango3DR_Color *>(dynamic_mesh->mesh.colors.data());
             }
             dynamic_mesh->size = dynamic_mesh->tango_mesh.num_faces * 3;
             dynamic_mesh->mutex.unlock();

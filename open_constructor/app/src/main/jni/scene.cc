@@ -63,8 +63,8 @@ namespace mesh_builder {
             if (mesh.texture == -1)
                 tango_gl::Render(mesh, *color_vertex_shader, tango_gl::Transform(), *camera_, -1);
             else {
-                if (textureMap.empty()) {
-                    for(unsigned int i = 0; i < mesh.textureCount; i++) {
+                if (textureMap.size() <= mesh.texture) {
+                    for(unsigned long i = textureMap.size(); i <= mesh.texture; i++) {
                         int w = mesh.textures[i].width;
                         int h = mesh.textures[i].height;
                         unsigned char* d = mesh.textures[i].data;
