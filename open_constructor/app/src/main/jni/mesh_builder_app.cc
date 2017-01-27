@@ -126,30 +126,30 @@ namespace mesh_builder {
                 dynamic_mesh->mesh.vertices.resize(kInitialVertexCount);
                 dynamic_mesh->mesh.colors.resize(kInitialVertexCount);
                 dynamic_mesh->mesh.indices.resize(kInitialIndexCount);
+                dynamic_mesh->tango_mesh = {
+                        /* timestamp */ 0.0,
+                        /* num_vertices */ 0u,
+                        /* num_faces */ 0u,
+                        /* num_textures */ 0u,
+                        /* max_num_vertices */ static_cast<uint32_t>(dynamic_mesh->mesh.vertices.capacity()),
+                        /* max_num_faces */ static_cast<uint32_t>(dynamic_mesh->mesh.indices.capacity() / 3),
+                        /* max_num_textures */ 0u,
+                        /* vertices */ reinterpret_cast<Tango3DR_Vector3 *>(dynamic_mesh->mesh.vertices.data()),
+                        /* faces */ reinterpret_cast<Tango3DR_Face *>(dynamic_mesh->mesh.indices.data()),
+                        /* normals */ nullptr,
+                        /* colors */ reinterpret_cast<Tango3DR_Color *>(dynamic_mesh->mesh.colors.data()),
+                        /* texture_coords */ nullptr,
+                        /* texture_ids */ nullptr,
+                        /* textures */ nullptr};
                 render_mutex_.lock();
                 main_scene_.AddDynamicMesh(dynamic_mesh.get());
                 render_mutex_.unlock();
             }
             dynamic_mesh->mutex.lock();
 
-            Tango3DR_Mesh tango_mesh = {
-                    /* timestamp */ 0.0,
-                    /* num_vertices */ 0u,
-                    /* num_faces */ 0u,
-                    /* num_textures */ 0u,
-                    /* max_num_vertices */ static_cast<uint32_t>(dynamic_mesh->mesh.vertices.capacity()),
-                    /* max_num_faces */ static_cast<uint32_t>(dynamic_mesh->mesh.indices.capacity() / 3),
-                    /* max_num_textures */ 0u,
-                    /* vertices */ reinterpret_cast<Tango3DR_Vector3 *>(dynamic_mesh->mesh.vertices.data()),
-                    /* faces */ reinterpret_cast<Tango3DR_Face *>(dynamic_mesh->mesh.indices.data()),
-                    /* normals */ nullptr,
-                    /* colors */ reinterpret_cast<Tango3DR_Color *>(dynamic_mesh->mesh.colors.data()),
-                    /* texture_coords */ nullptr,
-                    /* texture_ids */ nullptr,
-                    /* textures */ nullptr};
-
             Tango3DR_Status err = Tango3DR_extractPreallocatedMeshSegment(t3dr_context_,
-                                                                          updated_index.indices, &tango_mesh);
+                                                                          updated_index.indices,
+                                                                          &dynamic_mesh->tango_mesh);
             if (err == TANGO_3DR_INSUFFICIENT_SPACE) {
                 unsigned long new_vertex_size = dynamic_mesh->mesh.vertices.capacity() * kGrowthFactor;
                 unsigned long new_index_size = dynamic_mesh->mesh.indices.capacity() * kGrowthFactor;
@@ -157,9 +157,14 @@ namespace mesh_builder {
                 dynamic_mesh->mesh.vertices.resize(new_vertex_size);
                 dynamic_mesh->mesh.colors.resize(new_vertex_size);
                 dynamic_mesh->mesh.indices.resize(new_index_size);
+                dynamic_mesh->tango_mesh.max_num_vertices = static_cast<uint32_t>(dynamic_mesh->mesh.vertices.capacity());
+                dynamic_mesh->tango_mesh.max_num_faces = static_cast<uint32_t>(dynamic_mesh->mesh.indices.capacity() / 3);
+                dynamic_mesh->tango_mesh.vertices = reinterpret_cast<Tango3DR_Vector3 *>(dynamic_mesh->mesh.vertices.data());
+                dynamic_mesh->tango_mesh.colors = reinterpret_cast<Tango3DR_Color *>(dynamic_mesh->mesh.colors.data());
+                dynamic_mesh->tango_mesh.faces = reinterpret_cast<Tango3DR_Face *>(dynamic_mesh->mesh.indices.data());
             } else {
                 ++it;
-                dynamic_mesh->size = tango_mesh.num_faces * 3;
+                dynamic_mesh->size = dynamic_mesh->tango_mesh.num_faces * 3;
             }
             dynamic_mesh->mutex.unlock();
         }
