@@ -187,9 +187,7 @@ namespace mesh_builder {
                 writePLYFaces(model[i], offset);
                 offset += vectorSize[i];
             }
-        } else if (type == OBJ)
-            Tango3DR_Mesh_saveToObj(tango_mesh, path.c_str());
-        else
+        } else
             assert(false);
     }
 

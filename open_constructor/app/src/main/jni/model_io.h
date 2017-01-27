@@ -15,7 +15,6 @@ public:
     ~ModelIO();
     void parseFaces(int subdivision, std::vector<tango_gl::StaticMesh>& output);
     void readVertices();
-    void setMesh(Tango3DR_Mesh* mesh) { tango_mesh = mesh; };
     void writeModel(std::vector<SingleDynamicMesh*> model);
 
     enum TYPE{OBJ, PLY};

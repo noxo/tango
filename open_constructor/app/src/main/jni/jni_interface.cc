@@ -40,8 +40,8 @@ JNIEnv* env, jobject, jobject activity) {
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_onTangoServiceConnected(JNIEnv* env, jobject,
           jobject iBinder, jdouble res, jdouble dmin, jdouble dmax, jint noise, jboolean land,
-                                                              jboolean photo, jstring dataset) {
-  app.OnTangoServiceConnected(env, iBinder, res, dmin, dmax, noise, land, photo,
+                                             jboolean photo, bool textures, jstring dataset) {
+  app.OnTangoServiceConnected(env, iBinder, res, dmin, dmax, noise, land, photo, textures,
                               jstring2string(env, dataset));
 }
 
@@ -106,11 +106,6 @@ Java_com_lvonasek_openconstructor_TangoJNINative_centerOfStaticModel(JNIEnv*, jo
 JNIEXPORT jboolean JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_isPhotoFinished(JNIEnv*, jobject) {
   return (jboolean) app.IsPhotoFinished();
-}
-
-JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_initTextures(JNIEnv *env, jobject, jstring path) {
-  app.TangoSetupTextureConfig(jstring2string(env, path));
 }
 
 JNIEXPORT void JNICALL

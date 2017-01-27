@@ -44,7 +44,8 @@ namespace mesh_builder {
         void OnCreate(JNIEnv *env, jobject caller_activity);
         void OnPause();
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin,
-                                     double dmax, int noise, bool land, bool photo, std::string dataset);
+                                     double dmax, int noise, bool land, bool photo, bool textures,
+                                     std::string dataset);
         void onPointCloudAvailable(TangoPointCloud *point_cloud);
         void onFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer);
         void OnSurfaceCreated();
@@ -60,7 +61,6 @@ namespace mesh_builder {
         void SetView(float p, float y, float mx, float my, bool g) { pitch = p; yaw = y; gyro = g;
                                                                             movex = mx; movey = my;}
         void SetZoom(float value) { zoom = value; }
-        void TangoSetupTextureConfig(std::string d);
 
     private:
         void TangoSetupConfig();
@@ -73,8 +73,6 @@ namespace mesh_builder {
         std::string dataset_;
         glm::mat4 start_service_T_device_;
         bool t3dr_is_running_;
-        std::shared_ptr<SingleDynamicMesh> textured_mesh;
-        Tango3DR_TexturingContext context;
         Tango3DR_GridIndexArray *t3dr_updated;
         Tango3DR_Context t3dr_context_;
         Tango3DR_CameraCalibration t3dr_intrinsics_;
@@ -89,7 +87,6 @@ namespace mesh_builder {
         std::unordered_map<GridIndex, std::shared_ptr<SingleDynamicMesh>, GridIndexHasher> meshes_;
         bool pointCloudAvailable;
         bool hasNewFrame;
-        bool initTexturing;
         bool gyro;
         bool landscape;
         bool photoFinished;

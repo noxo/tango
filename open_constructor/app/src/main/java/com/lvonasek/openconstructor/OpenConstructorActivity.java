@@ -89,6 +89,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         int noise       = isNoiseFilterOn() ? 9 : 1;
         boolean land    = !isPortrait(OpenConstructorActivity.this);
         boolean photo   = isPhotoModeOn();
+        boolean txt     = isTexturingOn();
         String tmp      = getTempPath().toString();
 
         if (photo && (mRes > 0))
@@ -100,14 +101,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
 
         m3drRunning = !photo;
         TangoJNINative.onCreate(OpenConstructorActivity.this);
-        TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, photo, tmp);
-        if (isTexturingOn()) {
-          for (File f : getTempPath().listFiles())
-            if (f.isDirectory()) {
-              TangoJNINative.initTextures(f.toString());
-              break;
-            }
-        }
+        TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, photo, txt, tmp);
         new Thread(OpenConstructorActivity.this).start();
 
         TangoJNINative.onToggleButtonClicked(m3drRunning);
@@ -533,25 +527,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
           @Override
           public void onClick(DialogInterface dialog, int which) {
             setViewerMode();
-            if (isTexturingOn()) {
-              mProgress.setVisibility(View.VISIBLE);
-              new Thread(new Runnable()
-              {
-                @Override
-                public void run()
-                {
-                  TangoJNINative.load(file2save.getAbsolutePath());
-                  OpenConstructorActivity.this.runOnUiThread(new Runnable()
-                  {
-                    @Override
-                    public void run()
-                    {
-                      mProgress.setVisibility(View.GONE);
-                    }
-                  });
-                }
-              }).start();
-            }
             dialog.cancel();
           }
         });
