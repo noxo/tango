@@ -1,10 +1,6 @@
 #include <tango_3d_reconstruction_api.h>
 #include "model_io.h"
 
-void onProgressRouter(int progress, void* pass) {
-    LOGI("%ld Save progress %d", (long)pass, progress);
-}
-
 namespace mesh_builder {
 
     ModelIO::ModelIO(std::string filename, bool writeAccess) {
@@ -162,12 +158,6 @@ namespace mesh_builder {
             assert(false);
     }
 
-    void ModelIO::setTangoObjects(std::string dataset, Tango3DR_ConfigH config, Tango3DR_Mesh* m) {
-        dataset_ = dataset;
-        tango_mesh = m;
-        textureConfig = config;
-    }
-
     void ModelIO::writeModel(std::vector<SingleDynamicMesh*> model) {
         assert(writeMode);
         //count vertices and faces
@@ -198,12 +188,6 @@ namespace mesh_builder {
                 offset += vectorSize[i];
             }
         } else if (type == OBJ) {
-            Tango3DR_TrajectoryH tr;
-            Tango3DR_Status ret;
-            ret = Tango3DR_createTrajectoryFromDataset(dataset_.c_str(), &tr, onProgressRouter, (void*)1);
-            if (ret != TANGO_3DR_SUCCESS)
-                return;
-
             tango_gl::StaticMesh fullMesh{};
             unsigned int offset = 0;
             for (unsigned int j = 0; j < model.size(); j++) {
@@ -238,12 +222,7 @@ namespace mesh_builder {
                     /* texture_ids */ nullptr,
                     /* textures */ nullptr};
 
-            ret = Tango3DR_textureMeshFromDataset(textureConfig, dataset_.c_str(), tr, &meshIn,
-                                                  &tango_mesh, onProgressRouter, (void*)2);
-            if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-            Tango3DR_Mesh_saveToObj(tango_mesh, path.c_str());
-
+            Tango3DR_Mesh_saveToObj(&meshIn, path.c_str());
         } else
             assert(false);
     }

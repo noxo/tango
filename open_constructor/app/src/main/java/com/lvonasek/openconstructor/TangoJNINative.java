@@ -89,7 +89,4 @@ class TangoJNINative {
 
   // Init texture processing
   public static native void initTextures(String dataset);
-
-  // Update buffers for mesh texturing
-  public static native void updateTexture();
 }

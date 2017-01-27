@@ -15,7 +15,6 @@ public:
     ~ModelIO();
     void parseFaces(int subdivision, std::vector<tango_gl::StaticMesh>& output);
     void readVertices();
-    void setTangoObjects(std::string dataset, Tango3DR_ConfigH config, Tango3DR_Mesh* mesh);
     void writeModel(std::vector<SingleDynamicMesh*> model);
 
     enum TYPE{OBJ, PLY};
@@ -37,8 +36,6 @@ private:
     unsigned int faceCount;
     FILE* file;
     tango_gl::StaticMesh data;
-    std::string dataset_;
-    Tango3DR_ConfigH textureConfig;
     Tango3DR_Mesh* tango_mesh;
 };
 } // namespace mesh_builder

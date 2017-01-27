@@ -16,8 +16,6 @@
 
 #include "scene.h"
 
-#define THREAD_COUNT 8
-
 namespace mesh_builder {
 
     struct GridIndex {
@@ -62,7 +60,6 @@ namespace mesh_builder {
                                                                             movex = mx; movey = my;}
         void SetZoom(float value) { zoom = value; }
         void TangoSetupTextureConfig(std::string d);
-        void TangoTextureUpdate();
 
     private:
         void TangoSetupConfig();
@@ -71,22 +68,16 @@ namespace mesh_builder {
         void TangoConnect();
         void TangoDisconnect();
         void DeleteResources();
-        static void* Process(void *ptr);
 
         std::string dataset_;
         glm::mat4 start_service_T_device_;
-        bool t3dr_image_stored;
         bool t3dr_is_running_;
-        Tango3DR_ConfigH textureConfig;
         Tango3DR_Context t3dr_context_;
-        Tango3DR_TexturingContext t3dr_texture_context_;
         Tango3DR_CameraCalibration t3dr_intrinsics_;
         Tango3DR_CameraCalibration t3dr_intrinsics_depth;
         Tango3DR_ImageBuffer t3dr_image;
         Tango3DR_Pose t3dr_image_pose;
         glm::mat4 point_cloud_matrix_;
-        Tango3DR_Mesh t3dr_mesh;
-        std::mutex add_mutex_;
         std::mutex binder_mutex_;
         std::mutex process_mutex_;
         std::mutex render_mutex_;
@@ -94,11 +85,7 @@ namespace mesh_builder {
         TangoConfig tango_config_;
         std::vector<GridIndex> updated_indices_binder_thread_;
         std::unordered_map<GridIndex, std::shared_ptr<SingleDynamicMesh>, GridIndexHasher> meshes_;
-        bool threadDone[THREAD_COUNT];
-        pthread_t threadId[THREAD_COUNT];
-        std::mutex threadMutex[THREAD_COUNT];
         bool hasNewFrame;
-        bool initTexturing;
         bool gyro;
         bool landscape;
         bool photoFinished;

@@ -113,11 +113,6 @@ Java_com_lvonasek_openconstructor_TangoJNINative_initTextures(JNIEnv *env, jobje
   app.TangoSetupTextureConfig(jstring2string(env, path));
 }
 
-JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_updateTexture(JNIEnv*, jobject) {
-  app.TangoTextureUpdate();
-}
-
 #ifdef __cplusplus
 }
 #endif
