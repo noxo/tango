@@ -14,6 +14,7 @@
 namespace mesh_builder {
 
 struct SingleDynamicMesh {
+    Tango3DR_TexturingContext context;
     Tango3DR_Mesh tango_mesh;
     tango_gl::StaticMesh mesh;
     std::mutex mutex;

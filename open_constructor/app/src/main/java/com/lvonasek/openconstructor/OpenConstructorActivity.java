@@ -50,7 +50,7 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 public class OpenConstructorActivity extends AbstractActivity implements View.OnClickListener,
-        GLSurfaceView.Renderer {
+        GLSurfaceView.Renderer, Runnable {
 
   private ActivityManager mActivityManager;
   private ActivityManager.MemoryInfo mMemoryInfo;
@@ -59,6 +59,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private SeekBar mSeekbar;
   private String mToLoad;
   private boolean m3drRunning = false;
+  private boolean mUpdateRunning = true;
   private boolean mViewMode = false;
   private long mTimestamp = 0;
 
@@ -105,6 +106,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
               break;
             }
         }
+        new Thread(OpenConstructorActivity.this).start();
 
         TangoJNINative.onToggleButtonClicked(m3drRunning);
         TangoJNINative.setView(0, 0, 0, 0, true);
@@ -420,6 +422,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                   //save
                   final String filename = file.getAbsolutePath();
                   if (isTexturingOn()) {
+                    mUpdateRunning = false;
                     long timestamp = System.currentTimeMillis();
                     File obj = new File(getPath(), timestamp + FILE_EXT[type]);
                     TangoJNINative.save(obj.getAbsolutePath());
@@ -543,5 +546,20 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   // Called when the surface is created or recreated.
   public synchronized void onSurfaceCreated(GL10 gl, EGLConfig config) {
     TangoJNINative.onGlSurfaceCreated();
+  }
+
+  @Override
+  public void run()
+  {
+    while(mUpdateRunning) {
+      TangoJNINative.update();
+      try
+      {
+        Thread.sleep(5);
+      } catch (InterruptedException e)
+      {
+        e.printStackTrace();
+      }
+    }
   }
 }

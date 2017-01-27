@@ -56,6 +56,7 @@ namespace mesh_builder {
         void Save(std::string filename);
         float CenterOfStaticModel(bool horizontal);
         bool IsPhotoFinished() { return photoFinished; }
+        void MeshUpdate();
         void SetView(float p, float y, float mx, float my, bool g) { pitch = p; yaw = y; gyro = g;
                                                                             movex = mx; movey = my;}
         void SetZoom(float value) { zoom = value; }
@@ -79,12 +80,12 @@ namespace mesh_builder {
         Tango3DR_Pose t3dr_image_pose;
         glm::mat4 point_cloud_matrix_;
         std::mutex binder_mutex_;
-        std::mutex process_mutex_;
         std::mutex render_mutex_;
         Scene main_scene_;
         TangoConfig tango_config_;
         std::vector<GridIndex> updated_indices_binder_thread_;
         std::unordered_map<GridIndex, std::shared_ptr<SingleDynamicMesh>, GridIndexHasher> meshes_;
+        bool pointCloudAvailable;
         bool hasNewFrame;
         bool gyro;
         bool landscape;
