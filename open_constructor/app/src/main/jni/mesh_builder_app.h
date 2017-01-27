@@ -73,6 +73,9 @@ namespace mesh_builder {
         std::string dataset_;
         glm::mat4 start_service_T_device_;
         bool t3dr_is_running_;
+        std::shared_ptr<SingleDynamicMesh> textured_mesh;
+        Tango3DR_TexturingContext context;
+        Tango3DR_GridIndexArray *t3dr_updated;
         Tango3DR_Context t3dr_context_;
         Tango3DR_CameraCalibration t3dr_intrinsics_;
         Tango3DR_CameraCalibration t3dr_intrinsics_depth;
@@ -83,10 +86,10 @@ namespace mesh_builder {
         std::mutex render_mutex_;
         Scene main_scene_;
         TangoConfig tango_config_;
-        std::vector<GridIndex> updated_indices_binder_thread_;
         std::unordered_map<GridIndex, std::shared_ptr<SingleDynamicMesh>, GridIndexHasher> meshes_;
         bool pointCloudAvailable;
         bool hasNewFrame;
+        bool initTexturing;
         bool gyro;
         bool landscape;
         bool photoFinished;

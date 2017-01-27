@@ -24,7 +24,7 @@
 
 namespace {
     const int kSubdivisionSize = 5000;
-    const int kInitialVertexCount = 100;
+    const int kInitialVertexCount = 30;
     const int kInitialIndexCount = 99;
     const int kGrowthFactor = 2;
     constexpr int kTangoCoreMinimumVersion = 9377;
@@ -97,7 +97,6 @@ namespace mesh_builder {
         t3dr_depth.points = point_cloud->points;
 
         Tango3DR_Pose t3dr_depth_pose = extract3DRPose(point_cloud_matrix_);
-        Tango3DR_GridIndexArray *t3dr_updated;
         Tango3DR_Status ret;
         ret = Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image,
                               &t3dr_image_pose, &t3dr_updated);
@@ -105,11 +104,6 @@ namespace mesh_builder {
             binder_mutex_.unlock();
             return;
         }
-
-        updated_indices_binder_thread_.resize(t3dr_updated->num_indices);
-        std::copy(&t3dr_updated->indices[0][0], &t3dr_updated->indices[t3dr_updated->num_indices][0],
-                  reinterpret_cast<uint32_t *>(updated_indices_binder_thread_.data()));
-        Tango3DR_GridIndexArray_destroy(t3dr_updated);
         pointCloudAvailable = true;
         binder_mutex_.unlock();
     }
@@ -153,6 +147,7 @@ namespace mesh_builder {
         dataset_ = "";
         gyro = false;
         hasNewFrame = false;
+        initTexturing = false;
         landscape = false;
         photoFinished = false;
         photoMode = false;
@@ -242,6 +237,7 @@ namespace mesh_builder {
         binder_mutex_.lock();
         dataset_ = d;
         textured = true;
+        initTexturing = true;
         binder_mutex_.unlock();
     }
 
@@ -443,7 +439,7 @@ namespace mesh_builder {
         render_mutex_.lock();
         ModelIO io(filename, true);
         if (textured) {
-            TangoDisconnect();
+            io.setMesh(&textured_mesh->tango_mesh);
         }
         io.writeModel(main_scene_.dynamic_meshes_);
         if (textured)
@@ -477,18 +473,54 @@ namespace mesh_builder {
             t3dr_is_running_ = false;
 
         Tango3DR_Status ret;
-        unsigned long it = 0;
-        unsigned long end = updated_indices_binder_thread_.size();
-        while (it < end) {
-            GridIndex updated_index = updated_indices_binder_thread_[it];
+        if (initTexturing) {
+            Tango3DR_ConfigH textureConfig;
+            textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
+            ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", 0.01);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+            textured_mesh = std::make_shared<SingleDynamicMesh>();
+            textured_mesh->mesh.render_mode = GL_TRIANGLES;
+            textured_mesh->mesh.vertices.resize(kInitialVertexCount * 3);
+            textured_mesh->mesh.colors.resize(kInitialVertexCount * 3);
+            textured_mesh->mesh.uv.resize(kInitialVertexCount * 2);
+            textured_mesh->mesh.indices.resize(kInitialIndexCount);
+            textured_mesh->tango_mesh = {
+                    /* timestamp */ 0.0,
+                    /* num_vertices */ 0u,
+                    /* num_faces */ 0u,
+                    /* num_textures */ 0u,
+                    /* max_num_vertices */ static_cast<uint32_t>(textured_mesh->mesh.vertices.capacity()),
+                    /* max_num_faces */ static_cast<uint32_t>(textured_mesh->mesh.indices.capacity() / 3),
+                    /* max_num_textures */ 0u,
+                    /* vertices */ reinterpret_cast<Tango3DR_Vector3 *>(textured_mesh->mesh.vertices.data()),
+                    /* faces */ reinterpret_cast<Tango3DR_Face *>(textured_mesh->mesh.indices.data()),
+                    /* normals */ nullptr,
+                    /* colors */ reinterpret_cast<Tango3DR_Color *>(textured_mesh->mesh.colors.data()),
+                    /* texture_coords */ reinterpret_cast<Tango3DR_TexCoord *>(textured_mesh->mesh.uv.data()),
+                    /* texture_ids */ nullptr,
+                    /* textures */ nullptr};
+            context = Tango3DR_createTexturingContext(textureConfig, dataset_.c_str(), &textured_mesh->tango_mesh);
+            if (context == nullptr)
+                std::exit(EXIT_SUCCESS);
+            Tango3DR_Config_destroy(textureConfig);
+            initTexturing = false;
+        }
+
+        std::vector<GridIndex> indices;
+        indices.resize(t3dr_updated->num_indices);
+        std::copy(&t3dr_updated->indices[0][0], &t3dr_updated->indices[t3dr_updated->num_indices][0],
+                  reinterpret_cast<uint32_t *>(indices.data()));
+        for (unsigned long it = 0; it < indices.size(); ++it) {
+            GridIndex updated_index = indices[it];
 
             // Build a dynamic mesh and add it to the scene.
             std::shared_ptr<SingleDynamicMesh> &dynamic_mesh = meshes_[updated_index];
             if (dynamic_mesh == nullptr) {
                 dynamic_mesh = std::make_shared<SingleDynamicMesh>();
                 dynamic_mesh->mesh.render_mode = GL_TRIANGLES;
-                dynamic_mesh->mesh.vertices.resize(kInitialVertexCount);
-                dynamic_mesh->mesh.colors.resize(kInitialVertexCount);
+                dynamic_mesh->mesh.vertices.resize(kInitialVertexCount * 3);
+                dynamic_mesh->mesh.colors.resize(kInitialVertexCount * 3);
                 dynamic_mesh->mesh.indices.resize(kInitialIndexCount);
                 dynamic_mesh->tango_mesh = {
                         /* timestamp */ 0.0,
@@ -505,21 +537,6 @@ namespace mesh_builder {
                         /* texture_coords */ nullptr,
                         /* texture_ids */ nullptr,
                         /* textures */ nullptr};
-                if (textured) {
-                    Tango3DR_ConfigH textureConfig;
-                    textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
-                    ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", 100);
-                    if (ret != TANGO_3DR_SUCCESS)
-                        std::exit(EXIT_SUCCESS);
-                    ret = Tango3DR_Config_setInt32(textureConfig, "max_num_textures", 1);
-                    if (ret != TANGO_3DR_SUCCESS)
-                        std::exit(EXIT_SUCCESS);
-                    dynamic_mesh->context = Tango3DR_createTexturingContext(textureConfig,
-                                                                            dataset_.c_str(), &dynamic_mesh->tango_mesh);
-                    if (dynamic_mesh->context == nullptr)
-                        std::exit(EXIT_SUCCESS);
-                    Tango3DR_Config_destroy(textureConfig);
-                }
                 render_mutex_.lock();
                 main_scene_.AddDynamicMesh(dynamic_mesh.get());
                 render_mutex_.unlock();
@@ -527,9 +544,9 @@ namespace mesh_builder {
             dynamic_mesh->mutex.lock();
 
             while (true) {
-                Tango3DR_Status err = Tango3DR_extractPreallocatedMeshSegment(t3dr_context_,
-                                                                              updated_index.indices, &dynamic_mesh->tango_mesh);
-                if (err == TANGO_3DR_INSUFFICIENT_SPACE) {
+                ret = Tango3DR_extractPreallocatedMeshSegment(t3dr_context_, updated_index.indices,
+                                                                        &dynamic_mesh->tango_mesh);
+                if (ret == TANGO_3DR_INSUFFICIENT_SPACE) {
                     unsigned long new_vertex_size = dynamic_mesh->mesh.vertices.capacity() * kGrowthFactor;
                     unsigned long new_index_size = dynamic_mesh->mesh.indices.capacity() * kGrowthFactor;
                     new_index_size -= new_index_size % 3;
@@ -544,19 +561,37 @@ namespace mesh_builder {
                 } else
                     break;
             }
-
-            if (textured && hasNewFrame) {
-                ret = Tango3DR_updateTexture(dynamic_mesh->context, &t3dr_image, &t3dr_image_pose);
-                if (ret != TANGO_3DR_SUCCESS)
-                    LOGE("Problem with updating texture");
-                else
-                    LOGI("Stored pose %lf", t3dr_image.timestamp);
-            }
-
-            ++it;
             dynamic_mesh->size = dynamic_mesh->tango_mesh.num_faces * 3;
             dynamic_mesh->mutex.unlock();
         }
+
+        if (textured && hasNewFrame) {
+            while (true) {
+                //ret = Tango3DR_extractPreallocatedMesh(t3dr_context_, t3dr_updated, &textured_mesh->tango_mesh);
+                ret = Tango3DR_extractPreallocatedFullMesh(t3dr_context_, &textured_mesh->tango_mesh);
+                if (ret == TANGO_3DR_INSUFFICIENT_SPACE) {
+                    unsigned long new_vertex_size = textured_mesh->mesh.vertices.capacity() * kGrowthFactor;
+                    unsigned long new_uv_size = textured_mesh->mesh.uv.capacity() * kGrowthFactor;
+                    unsigned long new_index_size = textured_mesh->mesh.indices.capacity() * kGrowthFactor;
+                    new_index_size -= new_index_size % 3;
+                    textured_mesh->mesh.vertices.resize(new_vertex_size);
+                    textured_mesh->mesh.colors.resize(new_vertex_size);
+                    textured_mesh->mesh.uv.resize(new_uv_size);
+                    textured_mesh->mesh.indices.resize(new_index_size);
+                    textured_mesh->tango_mesh.max_num_vertices = static_cast<uint32_t>(textured_mesh->mesh.vertices.capacity());
+                    textured_mesh->tango_mesh.max_num_faces = static_cast<uint32_t>(textured_mesh->mesh.indices.capacity() / 3);
+                    textured_mesh->tango_mesh.vertices = reinterpret_cast<Tango3DR_Vector3 *>(textured_mesh->mesh.vertices.data());
+                    textured_mesh->tango_mesh.colors = reinterpret_cast<Tango3DR_Color *>(textured_mesh->mesh.colors.data());
+                    textured_mesh->tango_mesh.texture_coords = reinterpret_cast<Tango3DR_TexCoord *>(textured_mesh->mesh.uv.data());
+                    textured_mesh->tango_mesh.faces = reinterpret_cast<Tango3DR_Face *>(textured_mesh->mesh.indices.data());
+                } else
+                    break;
+            }
+            ret = Tango3DR_updateTexture(context, &t3dr_image, &t3dr_image_pose);
+            if (ret != TANGO_3DR_SUCCESS)
+                LOGE("Problem with updating texture");
+        }
+        Tango3DR_GridIndexArray_destroy(t3dr_updated);
 
         if (photoMode)
             photoFinished = true;

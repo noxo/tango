@@ -187,43 +187,9 @@ namespace mesh_builder {
                 writePLYFaces(model[i], offset);
                 offset += vectorSize[i];
             }
-        } else if (type == OBJ) {
-            tango_gl::StaticMesh fullMesh{};
-            unsigned int offset = 0;
-            for (unsigned int j = 0; j < model.size(); j++) {
-                SingleDynamicMesh* mesh = model[j];
-                for (unsigned int i = 0; i < mesh->size; i+=3) {
-                    fullMesh.indices.push_back(mesh->mesh.indices[i + 0] + offset);
-                    fullMesh.indices.push_back(mesh->mesh.indices[i + 1] + offset);
-                    fullMesh.indices.push_back(mesh->mesh.indices[i + 2] + offset);
-                }
-                offset += vectorSize[j];
-                //vertices and colors
-                for(unsigned int i = 0; i < vectorSize[j]; i++) {
-                    fullMesh.vertices.push_back(mesh->mesh.vertices[i]);
-                    fullMesh.colors.push_back(0);
-                }
-                fullMesh.render_mode = mesh->mesh.render_mode;
-                delete mesh;
-            }
-            Tango3DR_Mesh meshIn = {
-                    /* timestamp */ 0.0,
-                    /* num_vertices */ static_cast<uint32_t>(fullMesh.vertices.size()),
-                    /* num_faces */ static_cast<uint32_t>(fullMesh.indices.size() / 3),
-                    /* num_textures */ 0u,
-                    /* max_num_vertices */ static_cast<uint32_t>(fullMesh.vertices.size()),
-                    /* max_num_faces */ static_cast<uint32_t>(fullMesh.indices.size() / 3),
-                    /* max_num_textures */ 0u,
-                    /* vertices */ reinterpret_cast<Tango3DR_Vector3 *>(fullMesh.vertices.data()),
-                    /* faces */ reinterpret_cast<Tango3DR_Face *>(fullMesh.indices.data()),
-                    /* normals */ nullptr,
-                    /* colors */ reinterpret_cast<Tango3DR_Color *>(fullMesh.colors.data()),
-                    /* texture_coords */ nullptr,
-                    /* texture_ids */ nullptr,
-                    /* textures */ nullptr};
-
-            Tango3DR_Mesh_saveToObj(&meshIn, path.c_str());
-        } else
+        } else if (type == OBJ)
+            Tango3DR_Mesh_saveToObj(tango_mesh, path.c_str());
+        else
             assert(false);
     }
 

@@ -76,6 +76,8 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private float mYaw = 0;
   private float mZoom = 0;
 
+  private File file2save;
+
   // Tango Service connection.
   boolean mInitialised = false;
   boolean mTangoBinded = false;
@@ -408,7 +410,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                 {
                   //delete old during overwrite
                   int type = isTexturingOn() ? 0 : 1;
-                  final File file = new File(getPath(), input.getText().toString() + FILE_EXT[type]);
+                  File file = new File(getPath(), input.getText().toString() + FILE_EXT[type]);
                   if (isTexturingOn()) {
                     try {
                       if (file.exists())
@@ -420,62 +422,8 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                     }
                   }
                   //save
-                  final String filename = file.getAbsolutePath();
-                  if (isTexturingOn()) {
-                    mUpdateRunning = false;
-                    long timestamp = System.currentTimeMillis();
-                    File obj = new File(getPath(), timestamp + FILE_EXT[type]);
-                    TangoJNINative.save(obj.getAbsolutePath());
-                    if (obj.renameTo(file))
-                      Log.d(TAG, "Obj file " + file.toString() + " saved.");
-                  } else
-                    TangoJNINative.save(filename);
-                  //open???
-                  OpenConstructorActivity.this.runOnUiThread(new Runnable()
-                  {
-                    @Override
-                    public void run()
-                    {
-                      mProgress.setVisibility(View.GONE);
-                      AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                      builder.setTitle(getString(R.string.view));
-                      builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                          setViewerMode();
-                          if (isTexturingOn()) {
-                            mProgress.setVisibility(View.VISIBLE);
-                            new Thread(new Runnable()
-                            {
-                              @Override
-                              public void run()
-                              {
-                                TangoJNINative.load(file.getAbsolutePath());
-                                OpenConstructorActivity.this.runOnUiThread(new Runnable()
-                                {
-                                  @Override
-                                  public void run()
-                                  {
-                                    mProgress.setVisibility(View.GONE);
-                                  }
-                                });
-                              }
-                            }).start();
-                          }
-                          dialog.cancel();
-                        }
-                      });
-                      builder.setNegativeButton(getString(android.R.string.cancel), new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                          dialog.cancel();
-                          if (isTexturingOn())
-                            System.exit(0);
-                        }
-                      });
-                      builder.create().show();
-                    }
-                  });
+                  file2save = new File(getPath(), input.getText().toString() + FILE_EXT[type]);
+                  mUpdateRunning = false;
                 }
               }).start();
               dialog.cancel();
@@ -561,5 +509,62 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         e.printStackTrace();
       }
     }
+    //save
+    final String filename = file2save.getAbsolutePath();
+    if (isTexturingOn()) {
+      long timestamp = System.currentTimeMillis();
+      int type = isTexturingOn() ? 0 : 1;
+      File obj = new File(getPath(), timestamp + FILE_EXT[type]);
+      TangoJNINative.save(obj.getAbsolutePath());
+      if (obj.renameTo(file2save))
+        Log.d(TAG, "Obj file " + file2save.toString() + " saved.");
+    } else
+      TangoJNINative.save(filename);
+    //open???
+    OpenConstructorActivity.this.runOnUiThread(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        mProgress.setVisibility(View.GONE);
+        AlertDialog.Builder builder = new AlertDialog.Builder(OpenConstructorActivity.this);
+        builder.setTitle(getString(R.string.view));
+        builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
+          @Override
+          public void onClick(DialogInterface dialog, int which) {
+            setViewerMode();
+            if (isTexturingOn()) {
+              mProgress.setVisibility(View.VISIBLE);
+              new Thread(new Runnable()
+              {
+                @Override
+                public void run()
+                {
+                  TangoJNINative.load(file2save.getAbsolutePath());
+                  OpenConstructorActivity.this.runOnUiThread(new Runnable()
+                  {
+                    @Override
+                    public void run()
+                    {
+                      mProgress.setVisibility(View.GONE);
+                    }
+                  });
+                }
+              }).start();
+            }
+            dialog.cancel();
+          }
+        });
+        builder.setNegativeButton(getString(android.R.string.cancel), new DialogInterface.OnClickListener() {
+          @Override
+          public void onClick(DialogInterface dialog, int which) {
+            dialog.cancel();
+            mUpdateRunning = true;
+            new Thread(OpenConstructorActivity.this).start();
+          }
+        });
+        builder.create().show();
+      }
+    });
   }
 }

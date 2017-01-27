@@ -124,14 +124,14 @@ public abstract class AbstractActivity extends Activity
   public static String getPath() {
     String dir = Environment.getExternalStorageDirectory().getPath() + MODEL_DIRECTORY;
     if (new File(dir).mkdir())
-      Log.d(TAG, "Directory " + dir + "created");
+      Log.d(TAG, "Directory " + dir + " created");
     return dir;
   }
 
   public static File getTempPath() {
     File dir = new File(getPath(), TEMP_DIRECTORY);
     if (dir.mkdir())
-      Log.d(TAG, "Directory " + dir + "created");
+      Log.d(TAG, "Directory " + dir + " created");
     return dir;
   }
 
