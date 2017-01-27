@@ -69,6 +69,7 @@ namespace mesh_builder {
         void TangoConnect();
         void TangoDisconnect();
         void DeleteResources();
+        void WritePNG(const char* filename, u_int32_t width, u_int32_t height, unsigned char *buffer);
 
         std::string dataset_;
         glm::mat4 start_service_T_device_;

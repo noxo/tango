@@ -18,6 +18,7 @@
 #include <tango-gl/conversions.h>
 #include <tango-gl/util.h>
 #include <map>
+#include <sstream>
 
 #include "mesh_builder_app.h"
 #include "model_io.h"
@@ -141,11 +142,49 @@ namespace mesh_builder {
         if (t3dr_image.format != TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP)
             std::exit(EXIT_SUCCESS);
         if (textured) {
+            textureId++;
             int frameSize = t3dr_image.width * t3dr_image.height;
+            unsigned char* rgba = new unsigned char[frameSize * 4];
+            std::ostringstream ostr;
+            ostr << dataset_.c_str();
+            ostr << "/frame_";
+            ostr << textureId;
+            ostr << ".png";
+            int index = 0;
+            for (int y = 0; y < t3dr_image.height; y++) {
+                for (int x = 0; x < t3dr_image.width; x++) {
+                    int Y = t3dr_image.data[y*t3dr_image.width + x] & 0xff;
+                    int xby2 = x/2;
+                    int yby2 = y/2;
+
+                    float U = (float)(t3dr_image.data[frameSize + 2*xby2 + yby2*t3dr_image.width] & 0xff) - 128.0f;
+                    float V = (float)(t3dr_image.data[frameSize + 2*xby2 + 1 + yby2*t3dr_image.width] & 0xff) - 128.0f;
+
+                    // Do the YUV -> RGB conversion
+                    float Yf = 1.164f*((float)Y) - 16.0f;
+                    int R = (int)(Yf + 1.596f*V);
+                    int G = (int)(Yf - 0.813f*V - 0.391f*U);
+                    int B = (int)(Yf            + 2.018f*U);
+
+                    // Clip rgb values to 0-255
+                    R = R < 0 ? 0 : R > 255 ? 255 : R;
+                    G = G < 0 ? 0 : G > 255 ? 255 : G;
+                    B = B < 0 ? 0 : B > 255 ? 255 : B;
+
+                    // Put that pixel in the buffer
+                    rgba[index++] = (unsigned char) B;
+                    rgba[index++] = (unsigned char) G;
+                    rgba[index++] = (unsigned char) R;
+                    rgba[index++] = 255;
+                }
+            }
+            WritePNG(ostr.str().c_str(), t3dr_image.width, t3dr_image.height, rgba);
+            delete[] rgba;
+
             int yIndex = 0;
             int uvIndex = frameSize;
             int R, G, B, Y, U, V;
-            int index = 0;
+            index = 0;
             for (unsigned int y = 0; y < t3dr_image.height; y++) {
                 for (unsigned int x = 0; x < t3dr_image.width; x++) {
 
@@ -166,7 +205,6 @@ namespace mesh_builder {
                     index++;
                 }
             }
-            textureId++;
         }
         hasNewFrame = true;
         binder_mutex_.unlock();
@@ -574,5 +612,39 @@ namespace mesh_builder {
         hasNewFrame = false;
         pointCloudAvailable = false;
         binder_mutex_.unlock();
+    }
+
+    void MeshBuilderApp::WritePNG(const char* filename, u_int32_t width, u_int32_t height, unsigned char *buffer) {
+        // Open file for writing (binary mode)
+        FILE *fp = fopen(filename, "wb");
+
+        // init PNG library
+        png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+        png_infop info_ptr = png_create_info_struct(png_ptr);
+        setjmp(png_jmpbuf(png_ptr));
+        png_init_io(png_ptr, fp);
+        png_set_IHDR(png_ptr, info_ptr, width, height,
+                     8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE,
+                     PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+        png_write_info(png_ptr, info_ptr);
+
+        // write image data
+        png_bytep row = (png_bytep) malloc(4 * width * sizeof(png_byte));
+        for (int y = height - 1; y >= 0; y--) {
+            for (int x=0; x < width; x++) {
+                row[x * 4 + 0] = buffer[(y * width + x) * 4 + 0];
+                row[x * 4 + 1] = buffer[(y * width + x) * 4 + 1];
+                row[x * 4 + 2] = buffer[(y * width + x) * 4 + 2];
+                row[x * 4 + 3] = buffer[(y * width + x) * 4 + 3];
+            }
+            png_write_row(png_ptr, row);
+        }
+        png_write_end(png_ptr, NULL);
+
+        /// close all
+        if (fp != NULL) fclose(fp);
+        if (info_ptr != NULL) png_free_data(png_ptr, info_ptr, PNG_FREE_ALL, -1);
+        if (png_ptr != NULL) png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
+        if (row != NULL) free(row);
     }
 }  // namespace mesh_builder
