@@ -20,6 +20,12 @@ struct SingleDynamicMesh {
     int size;
 };
 
+struct TextureToLoad {
+    int width;
+    int height;
+    unsigned char* data;
+};
+
 class Scene {
  public:
   Scene();
@@ -34,6 +40,7 @@ class Scene {
 
   tango_gl::Camera* camera_;
   tango_gl::StaticMesh frustum_;
+  std::vector<TextureToLoad> toLoad;
   std::vector<unsigned int> textureMap;
   std::vector<tango_gl::StaticMesh> static_meshes_;
   std::vector<SingleDynamicMesh*> dynamic_meshes_;

@@ -497,7 +497,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       TangoJNINative.update();
       try
       {
-        Thread.sleep(5);
+        Thread.sleep(isTexturingOn() ? 200 : 10);
       } catch (InterruptedException e)
       {
         e.printStackTrace();
