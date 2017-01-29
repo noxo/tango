@@ -166,6 +166,11 @@ namespace mesh_builder {
         dynamic_meshes_.push_back(mesh);
     }
 
-    void Scene::ClearDynamicMeshes() { dynamic_meshes_.clear(); }
+    void Scene::ClearDynamicMeshes() {
+        for (unsigned int i = 0; i < dynamic_meshes_.size(); i++) {
+            delete dynamic_meshes_[i];
+        }
+        dynamic_meshes_.clear();
+    }
 
 }  // namespace mesh_builder

@@ -89,7 +89,7 @@ namespace mesh_builder {
         Scene main_scene_;
         TangoConfig tango_config_;
         std::shared_ptr<SingleDynamicMesh> temp_mesh;
-        std::unordered_map<GridIndex, std::shared_ptr<SingleDynamicMesh>, GridIndexHasher> meshes_;
+        std::unordered_map<GridIndex, SingleDynamicMesh*, GridIndexHasher> meshes_;
         bool hasNewFrame;
         bool gyro;
         bool landscape;

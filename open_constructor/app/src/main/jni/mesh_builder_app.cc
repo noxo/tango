@@ -413,6 +413,8 @@ namespace mesh_builder {
 
     void MeshBuilderApp::OnToggleButtonClicked(bool t3dr_is_running) {
         binder_mutex_.lock();
+        if (t3dr_is_running)
+            hasNewFrame = false;
         t3dr_is_running_ = t3dr_is_running;
         photoFinished = false;
         binder_mutex_.unlock();
@@ -478,7 +480,7 @@ namespace mesh_builder {
             for (unsigned int i = 0; i < temp_mesh->tango_mesh.num_vertices; i++) {
                 int color = temp_mesh->mesh.colors[i];
                 int x = (color >> 8) & 255;
-                int y = 255 - (color & 255);
+                int y = (color >> 16) & 255;
                 dynamic_mesh->mesh.uv[i] = glm::vec2(x / 255.0f, y / 255.0f);
                 dynamic_mesh->mesh.vertices[i] = glm::vec3(temp_mesh->tango_mesh.vertices[i][0],
                                                            temp_mesh->tango_mesh.vertices[i][1],
@@ -487,15 +489,14 @@ namespace mesh_builder {
             int index = 0;
             dynamic_mesh->mesh.indices.resize(temp_mesh->tango_mesh.num_faces * 3);
             for (unsigned int i = 0; i < temp_mesh->tango_mesh.num_faces; i++) {
-                /*bool ok = true;
+                bool ok = true;
                 for (unsigned int j = 0; j < 3; j++) {
                     int color = temp_mesh->mesh.colors[temp_mesh->tango_mesh.faces[i][j]];
-                    int z = (color >> 16) & 255;
-                    if (z < 250)
+                    int z = color & 255;
+                    if (z > 64)
                         ok = false;
                 }
-                if (ok)*/
-                {
+                if (ok) {
                     dynamic_mesh->mesh.indices[index++] = temp_mesh->tango_mesh.faces[i][0];
                     dynamic_mesh->mesh.indices[index++] = temp_mesh->tango_mesh.faces[i][1];
                     dynamic_mesh->mesh.indices[index++] = temp_mesh->tango_mesh.faces[i][2];
@@ -541,9 +542,9 @@ namespace mesh_builder {
                 GridIndex updated_index = indices[it];
 
                 // Build a dynamic mesh and add it to the scene.
-                std::shared_ptr<SingleDynamicMesh> &dynamic_mesh = meshes_[updated_index];
+                SingleDynamicMesh* dynamic_mesh = meshes_[updated_index];
                 if (dynamic_mesh == nullptr) {
-                    dynamic_mesh = std::make_shared<SingleDynamicMesh>();
+                    dynamic_mesh = new SingleDynamicMesh();
                     dynamic_mesh->mesh.render_mode = GL_TRIANGLES;
                     dynamic_mesh->mesh.vertices.resize(kInitialVertexCount * 3);
                     dynamic_mesh->mesh.colors.resize(kInitialVertexCount * 3);
@@ -564,7 +565,7 @@ namespace mesh_builder {
                             /* texture_ids */ nullptr,
                             /* textures */ nullptr};
                     render_mutex_.lock();
-                    main_scene_.AddDynamicMesh(dynamic_mesh.get());
+                    main_scene_.AddDynamicMesh(dynamic_mesh);
                     render_mutex_.unlock();
                 }
                 dynamic_mesh->mutex.lock();
@@ -621,34 +622,30 @@ namespace mesh_builder {
     }
 
     void MeshBuilderApp::GetUVTexture() {
-        int yIndex = 0;
-        int uvIndex = t3dr_image.width * t3dr_image.height;
-        int R, G, B, Y, U, V;
+        if (t3dr_image.format != TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP)
+            std::exit(EXIT_SUCCESS);
         int index = 0;
+        int frameSize = t3dr_image.width * t3dr_image.height;
+        int R, G, B, Y, U, V;
         for (unsigned int y = 0; y < t3dr_image.height; y++) {
             for (unsigned int x = 0; x < t3dr_image.width; x++) {
-
                 R = 0;
-                G = x * 255 / t3dr_image.width;
-                B = y * 255 / t3dr_image.height;
+                G = x * 255 / (t3dr_image.width - 1);
+                B = y * 255 / (t3dr_image.height - 1);
 
                 //RGB to YUV algorithm
-                Y = ( (  66 * R + 129 * G +  25 * B + 128) >> 8) +  16;
-                V = ( ( -38 * R -  74 * G + 112 * B + 128) >> 8) + 128; // Previously U
-                U = ( ( 112 * R -  94 * G -  18 * B + 128) >> 8) + 128; // Previously V
-
-                t3dr_image.data[yIndex++] = (uint8_t) ((Y < 0) ? 0 : ((Y > 255) ? 255 : Y));
-                if (y % 2 == 0 && index % 2 == 0) {
-                    t3dr_image.data[uvIndex++] = (uint8_t)((V<0) ? 0 : ((V > 255) ? 255 : V));
-                    t3dr_image.data[uvIndex++] = (uint8_t)((U<0) ? 0 : ((U > 255) ? 255 : U));
-                }
-                index++;
+                int UVIndex = frameSize + 2 * (x/2) + (y/2) * t3dr_image.width;
+                Y = ((66 * R + 129 * G +  25 * B + 128) >> 8) +  16;
+                V = ((-38 * R -  74 * G + 112 * B + 128) >> 8) + 128;
+                U = ((112 * R -  94 * G -  18 * B + 128) >> 8) + 128;
+                t3dr_image.data[index++] = (uint8_t) ((Y < 0) ? 0 : ((Y > 255) ? 255 : Y));
+                t3dr_image.data[UVIndex + 0] = (uint8_t)((U<0) ? 0 : ((U > 255) ? 255 : U));
+                t3dr_image.data[UVIndex + 1] = (uint8_t)((V<0) ? 0 : ((V > 255) ? 255 : V));
             }
         }
     }
 
     void MeshBuilderApp::SaveFrame() {
-        //store PNG
         if (t3dr_image.format != TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP)
             std::exit(EXIT_SUCCESS);
         int scale = 4;
@@ -662,12 +659,12 @@ namespace mesh_builder {
         int frameSize = t3dr_image.width * t3dr_image.height;
         for (int y = t3dr_image.height - 1; y >= 0; y-=scale) {
             for (int x = 0; x < t3dr_image.width; x+=scale) {
-                int Y = t3dr_image.data[y*t3dr_image.width + x] & 0xff;
                 int xby2 = x/2;
                 int yby2 = y/2;
-
-                float U = (float)(t3dr_image.data[frameSize + 2*xby2 + yby2*t3dr_image.width] & 0xff) - 128.0f;
-                float V = (float)(t3dr_image.data[frameSize + 2*xby2 + 1 + yby2*t3dr_image.width] & 0xff) - 128.0f;
+                int UVIndex = frameSize + 2*xby2 + yby2*t3dr_image.width;
+                int Y = t3dr_image.data[y*t3dr_image.width + x] & 0xff;
+                float U = (float)(t3dr_image.data[UVIndex + 0] & 0xff) - 128.0f;
+                float V = (float)(t3dr_image.data[UVIndex + 1] & 0xff) - 128.0f;
 
                 // Do the YUV -> RGB conversion
                 float Yf = 1.164f*((float)Y) - 16.0f;
