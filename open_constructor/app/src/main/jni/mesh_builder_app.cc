@@ -378,8 +378,8 @@ namespace mesh_builder {
             TangoMatrixTransformData matrix_transform;
             TangoSupport_getMatrixTransformAtTime(
                     0, TANGO_COORDINATE_FRAME_START_OF_SERVICE, TANGO_COORDINATE_FRAME_DEVICE,
-                    TANGO_SUPPORT_ENGINE_OPENGL, TANGO_SUPPORT_ENGINE_OPENGL, ROTATION_0,
-                    &matrix_transform);
+                    TANGO_SUPPORT_ENGINE_OPENGL, TANGO_SUPPORT_ENGINE_OPENGL,
+                    landscape ? ROTATION_90 : ROTATION_0, &matrix_transform);
             if (matrix_transform.status_code == TANGO_POSE_VALID)
                 start_service_T_device_ = glm::make_mat4(matrix_transform.matrix);
             start_service_T_device_[3][0] *= scale;
@@ -394,16 +394,6 @@ namespace mesh_builder {
             main_scene_.camera_->SetRotation(glm::quat(glm::vec3(yaw, pitch, 0)));
             main_scene_.camera_->SetScale(glm::vec3(1, 1, 1));
         } else {
-            if (landscape) {
-                float radian = (float) (-90 * M_PI / 180);
-                glm::mat4x4 rotation(
-                        cosf(radian),sinf(radian),0,0,
-                sinf(radian),cosf(radian),0,0,
-                        0,0,1,0,
-                        0,0,0,1
-                );
-                start_service_T_device_ *= rotation;
-            }
             main_scene_.camera_->SetTransformationMatrix(start_service_T_device_);
             main_scene_.UpdateFrustum(main_scene_.camera_->GetPosition(), zoom);
         }
