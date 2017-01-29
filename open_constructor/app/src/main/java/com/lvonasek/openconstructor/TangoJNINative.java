@@ -86,10 +86,4 @@ class TangoJNINative {
 
   // Check if photo was finished
   public static native boolean isPhotoFinished();
-
-  // Init texture processing
-  public static native void initTextures(String dataset);
-
-  // Update mesh
-  public static native void update();
 }

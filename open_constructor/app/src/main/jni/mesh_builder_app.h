@@ -57,7 +57,6 @@ namespace mesh_builder {
         void Save(std::string filename);
         float CenterOfStaticModel(bool horizontal);
         bool IsPhotoFinished() { return photoFinished; }
-        void MeshUpdate();
         void SetView(float p, float y, float mx, float my, bool g) { pitch = p; yaw = y; gyro = g;
                                                                             movex = mx; movey = my;}
         void SetZoom(float value) { zoom = value; }
@@ -69,6 +68,10 @@ namespace mesh_builder {
         void TangoConnect();
         void TangoDisconnect();
         void DeleteResources();
+        void MeshUpdate();
+        void GetUVMesh();
+        void GetUVTexture();
+        void SaveFrame();
         void WritePNG(const char* filename, u_int32_t width, u_int32_t height, unsigned char *buffer);
 
         std::string dataset_;
@@ -85,8 +88,8 @@ namespace mesh_builder {
         std::mutex render_mutex_;
         Scene main_scene_;
         TangoConfig tango_config_;
+        std::shared_ptr<SingleDynamicMesh> temp_mesh;
         std::unordered_map<GridIndex, std::shared_ptr<SingleDynamicMesh>, GridIndexHasher> meshes_;
-        bool pointCloudAvailable;
         bool hasNewFrame;
         bool gyro;
         bool landscape;

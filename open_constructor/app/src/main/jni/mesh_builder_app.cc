@@ -77,7 +77,7 @@ namespace mesh_builder {
             return;
 
         binder_mutex_.lock();
-        if (!hasNewFrame || pointCloudAvailable) {
+        if (!hasNewFrame) {
             binder_mutex_.unlock();
             return;
         }
@@ -92,20 +92,19 @@ namespace mesh_builder {
                 point_cloud->points[i][2] *= scale;
             }
         }
+        Tango3DR_Pose t3dr_depth_pose;
         Tango3DR_PointCloud t3dr_depth;
         t3dr_depth.timestamp = point_cloud->timestamp;
         t3dr_depth.num_points = point_cloud->num_points;
         t3dr_depth.points = point_cloud->points;
-
-        Tango3DR_Pose t3dr_depth_pose = extract3DRPose(point_cloud_matrix_);
-        Tango3DR_Status ret;
-        ret = Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image,
-                              &t3dr_image_pose, &t3dr_updated);
-        if (ret != TANGO_3DR_SUCCESS) {
-            binder_mutex_.unlock();
-            return;
+        t3dr_depth_pose = extract3DRPose(point_cloud_matrix_);
+        if(textured) {
+            SaveFrame();
+            GetUVTexture();
         }
-        pointCloudAvailable = true;
+        Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image, &t3dr_image_pose,
+                        &t3dr_updated);
+        MeshUpdate();
         binder_mutex_.unlock();
     }
 
@@ -139,79 +138,6 @@ namespace mesh_builder {
         t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(buffer->format);
         t3dr_image.data = buffer->data;
         t3dr_image_pose = extract3DRPose(image_matrix);
-        if (t3dr_image.format != TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP)
-            std::exit(EXIT_SUCCESS);
-        if (textured) {
-            textureId++;
-            int scale = 4;
-            unsigned char* rgba = new unsigned char[(t3dr_image.width / scale) * (t3dr_image.height / scale) * 3];
-            std::ostringstream ostr;
-            ostr << dataset_.c_str();
-            ostr << "/frame_";
-            ostr << textureId;
-            ostr << ".png";
-            int index = 0;
-            int frameSize = t3dr_image.width * t3dr_image.height;
-            for (int y = 0; y < t3dr_image.height; y+=scale) {
-                for (int x = 0; x < t3dr_image.width; x+=scale) {
-                    int Y = t3dr_image.data[y*t3dr_image.width + x] & 0xff;
-                    int xby2 = x/2;
-                    int yby2 = y/2;
-
-                    float U = (float)(t3dr_image.data[frameSize + 2*xby2 + yby2*t3dr_image.width] & 0xff) - 128.0f;
-                    float V = (float)(t3dr_image.data[frameSize + 2*xby2 + 1 + yby2*t3dr_image.width] & 0xff) - 128.0f;
-
-                    // Do the YUV -> RGB conversion
-                    float Yf = 1.164f*((float)Y) - 16.0f;
-                    int R = (int)(Yf + 1.596f*V);
-                    int G = (int)(Yf - 0.813f*V - 0.391f*U);
-                    int B = (int)(Yf            + 2.018f*U);
-
-                    // Clip rgb values to 0-255
-                    R = R < 0 ? 0 : R > 255 ? 255 : R;
-                    G = G < 0 ? 0 : G > 255 ? 255 : G;
-                    B = B < 0 ? 0 : B > 255 ? 255 : B;
-
-                    // Put that pixel in the buffer
-                    rgba[index++] = (unsigned char) B;
-                    rgba[index++] = (unsigned char) G;
-                    rgba[index++] = (unsigned char) R;
-                }
-            }
-            TextureToLoad t;
-            t.width = t3dr_image.width / scale;
-            t.height = t3dr_image.height / scale;
-            t.data = rgba;
-            WritePNG(ostr.str().c_str(), t.width, t.height, t.data);
-            render_mutex_.lock();
-            main_scene_.toLoad.push_back(t);
-            render_mutex_.unlock();
-
-            int yIndex = 0;
-            int uvIndex = frameSize;
-            int R, G, B, Y, U, V;
-            index = 0;
-            for (unsigned int y = 0; y < t3dr_image.height; y++) {
-                for (unsigned int x = 0; x < t3dr_image.width; x++) {
-
-                    R = 255;
-                    G = x * 255 / t3dr_image.width;
-                    B = y * 255 / t3dr_image.height;
-
-                    //RGB to YUV algorithm
-                    Y = ( (  66 * R + 129 * G +  25 * B + 128) >> 8) +  16;
-                    V = ( ( -38 * R -  74 * G + 112 * B + 128) >> 8) + 128; // Previously U
-                    U = ( ( 112 * R -  94 * G -  18 * B + 128) >> 8) + 128; // Previously V
-
-                    t3dr_image.data[yIndex++] = (uint8_t) ((Y < 0) ? 0 : ((Y > 255) ? 255 : Y));
-                    if (y % 2 == 0 && index % 2 == 0) {
-                        t3dr_image.data[uvIndex++] = (uint8_t)((V<0) ? 0 : ((V > 255) ? 255 : V));
-                        t3dr_image.data[uvIndex++] = (uint8_t)((U<0) ? 0 : ((U > 255) ? 255 : U));
-                    }
-                    index++;
-                }
-            }
-        }
         hasNewFrame = true;
         binder_mutex_.unlock();
     }
@@ -224,11 +150,33 @@ namespace mesh_builder {
         landscape = false;
         photoFinished = false;
         photoMode = false;
-        pointCloudAvailable = false;
         textured = false;
         textureId = 0;
         scale = 1;
         zoom = 0;
+
+
+        // Build a dynamic mesh and add it to the scene.
+        temp_mesh = std::make_shared<SingleDynamicMesh>();
+        temp_mesh->mesh.render_mode = GL_TRIANGLES;
+        temp_mesh->mesh.vertices.resize(kInitialVertexCount * 3);
+        temp_mesh->mesh.colors.resize(kInitialVertexCount * 3);
+        temp_mesh->mesh.indices.resize(kInitialIndexCount);
+        temp_mesh->tango_mesh = {
+                    /* timestamp */ 0.0,
+                    /* num_vertices */ 0u,
+                    /* num_faces */ 0u,
+                    /* num_textures */ 0u,
+                    /* max_num_vertices */ static_cast<uint32_t>(temp_mesh->mesh.vertices.capacity()),
+                    /* max_num_faces */ static_cast<uint32_t>(temp_mesh->mesh.indices.capacity() / 3),
+                    /* max_num_textures */ 0u,
+                    /* vertices */ reinterpret_cast<Tango3DR_Vector3 *>(temp_mesh->mesh.vertices.data()),
+                    /* faces */ reinterpret_cast<Tango3DR_Face *>(temp_mesh->mesh.indices.data()),
+                    /* normals */ nullptr,
+                    /* colors */ reinterpret_cast<Tango3DR_Color *>(temp_mesh->mesh.colors.data()),
+                    /* texture_coords */ nullptr,
+                    /* texture_ids */ nullptr,
+                    /* textures */ nullptr};
     }
 
     MeshBuilderApp::~MeshBuilderApp() {
@@ -526,98 +474,236 @@ namespace mesh_builder {
     }
 
     void MeshBuilderApp::MeshUpdate() {
-        binder_mutex_.lock();
-        if (!hasNewFrame || !pointCloudAvailable) {
-            binder_mutex_.unlock();
-            return;
-        }
         if (photoMode)
             t3dr_is_running_ = false;
 
         Tango3DR_Status ret;
-        std::vector<GridIndex> indices;
-        indices.resize(t3dr_updated->num_indices);
-        std::copy(&t3dr_updated->indices[0][0], &t3dr_updated->indices[t3dr_updated->num_indices][0],
-                  reinterpret_cast<uint32_t *>(indices.data()));
-        for (unsigned long it = 0; it < indices.size(); ++it) {
-            GridIndex updated_index = indices[it];
-
-            // Build a dynamic mesh and add it to the scene.
-            std::shared_ptr<SingleDynamicMesh> &dynamic_mesh = meshes_[updated_index];
-            if (dynamic_mesh == nullptr) {
-                dynamic_mesh = std::make_shared<SingleDynamicMesh>();
-                dynamic_mesh->mesh.render_mode = GL_TRIANGLES;
-                dynamic_mesh->mesh.vertices.resize(kInitialVertexCount * 3);
-                dynamic_mesh->mesh.colors.resize(kInitialVertexCount * 3);
-                dynamic_mesh->mesh.indices.resize(kInitialIndexCount);
-                dynamic_mesh->tango_mesh = {
-                        /* timestamp */ 0.0,
-                        /* num_vertices */ 0u,
-                        /* num_faces */ 0u,
-                        /* num_textures */ 0u,
-                        /* max_num_vertices */ static_cast<uint32_t>(dynamic_mesh->mesh.vertices.capacity()),
-                        /* max_num_faces */ static_cast<uint32_t>(dynamic_mesh->mesh.indices.capacity() / 3),
-                        /* max_num_textures */ 0u,
-                        /* vertices */ reinterpret_cast<Tango3DR_Vector3 *>(dynamic_mesh->mesh.vertices.data()),
-                        /* faces */ reinterpret_cast<Tango3DR_Face *>(dynamic_mesh->mesh.indices.data()),
-                        /* normals */ nullptr,
-                        /* colors */ reinterpret_cast<Tango3DR_Color *>(dynamic_mesh->mesh.colors.data()),
-                        /* texture_coords */ nullptr,
-                        /* texture_ids */ nullptr,
-                        /* textures */ nullptr};
-                render_mutex_.lock();
-                main_scene_.AddDynamicMesh(dynamic_mesh.get());
-                render_mutex_.unlock();
+        if (textured) {
+            GetUVMesh();
+            //extract textured mesh
+            SingleDynamicMesh* dynamic_mesh = new SingleDynamicMesh();
+            dynamic_mesh->mesh.vertices.resize(temp_mesh->tango_mesh.num_vertices);
+            dynamic_mesh->mesh.uv.resize(temp_mesh->tango_mesh.num_vertices);
+            dynamic_mesh->mesh.render_mode = GL_TRIANGLES;
+            for (unsigned int i = 0; i < temp_mesh->tango_mesh.num_vertices; i++) {
+                int color = temp_mesh->mesh.colors[i];
+                int x = (color >> 8) & 255;
+                int y = 255 - (color & 255);
+                dynamic_mesh->mesh.uv[i] = glm::vec2(x / 255.0f, y / 255.0f);
+                dynamic_mesh->mesh.vertices[i] = glm::vec3(temp_mesh->tango_mesh.vertices[i][0],
+                                                           temp_mesh->tango_mesh.vertices[i][1],
+                                                           temp_mesh->tango_mesh.vertices[i][2]);
             }
-            dynamic_mesh->mutex.lock();
-
-            while (true) {
-                ret = Tango3DR_extractPreallocatedMeshSegment(t3dr_context_, updated_index.indices,
-                                                                        &dynamic_mesh->tango_mesh);
-                if (ret == TANGO_3DR_INSUFFICIENT_SPACE) {
-                    unsigned long new_vertex_size = dynamic_mesh->mesh.vertices.capacity() * kGrowthFactor;
-                    unsigned long new_index_size = dynamic_mesh->mesh.indices.capacity() * kGrowthFactor;
-                    new_index_size -= new_index_size % 3;
-                    dynamic_mesh->mesh.vertices.resize(new_vertex_size);
-                    dynamic_mesh->mesh.colors.resize(new_vertex_size);
-                    dynamic_mesh->mesh.indices.resize(new_index_size);
-                    dynamic_mesh->tango_mesh.max_num_vertices = static_cast<uint32_t>(dynamic_mesh->mesh.vertices.capacity());
-                    dynamic_mesh->tango_mesh.max_num_faces = static_cast<uint32_t>(dynamic_mesh->mesh.indices.capacity() / 3);
-                    dynamic_mesh->tango_mesh.vertices = reinterpret_cast<Tango3DR_Vector3 *>(dynamic_mesh->mesh.vertices.data());
-                    dynamic_mesh->tango_mesh.colors = reinterpret_cast<Tango3DR_Color *>(dynamic_mesh->mesh.colors.data());
-                    dynamic_mesh->tango_mesh.faces = reinterpret_cast<Tango3DR_Face *>(dynamic_mesh->mesh.indices.data());
-                } else
-                    break;
-            }
-            if (textured) {
-                int color, x, y, z;
-                dynamic_mesh->mesh.uv.resize(dynamic_mesh->mesh.colors.size());
-                dynamic_mesh->mesh.textureIds.resize(dynamic_mesh->mesh.colors.size());
-                for (unsigned int i = 0; i < dynamic_mesh->mesh.colors.size(); i++) {
-                    color = dynamic_mesh->mesh.colors[i];
-                    x = color & 255;
-                    y = (color >> 8) & 255;
-                    z = (color >> 16) & 255;
-                    if (z > 250)
-                    {
-                        dynamic_mesh->mesh.uv[i].x = x / 255.0f;
-                        dynamic_mesh->mesh.uv[i].y = y / 255.0f;
-                        dynamic_mesh->mesh.colors[i] = 0;
-                        dynamic_mesh->mesh.textureIds[i] = textureId;
-                    }
+            int index = 0;
+            dynamic_mesh->mesh.indices.resize(temp_mesh->tango_mesh.num_faces * 3);
+            for (unsigned int i = 0; i < temp_mesh->tango_mesh.num_faces; i++) {
+                /*bool ok = true;
+                for (unsigned int j = 0; j < 3; j++) {
+                    int color = temp_mesh->mesh.colors[temp_mesh->tango_mesh.faces[i][j]];
+                    int z = (color >> 16) & 255;
+                    if (z < 250)
+                        ok = false;
                 }
-                dynamic_mesh->tango_mesh.colors = reinterpret_cast<Tango3DR_Color *>(dynamic_mesh->mesh.colors.data());
+                if (ok)*/
+                {
+                    dynamic_mesh->mesh.indices[index++] = temp_mesh->tango_mesh.faces[i][0];
+                    dynamic_mesh->mesh.indices[index++] = temp_mesh->tango_mesh.faces[i][1];
+                    dynamic_mesh->mesh.indices[index++] = temp_mesh->tango_mesh.faces[i][2];
+                }
             }
-            dynamic_mesh->size = dynamic_mesh->tango_mesh.num_faces * 3;
-            dynamic_mesh->mutex.unlock();
+            if (!dynamic_mesh->mesh.indices.empty()) {
+                dynamic_mesh->size = index;
+                dynamic_mesh->mesh.texture = textureId;
+                textureId++;
+                render_mutex_.lock();
+                main_scene_.AddDynamicMesh(dynamic_mesh);
+                render_mutex_.unlock();
+            } else
+                delete dynamic_mesh;
+
+            //cleanup pose
+/*            index = 0;
+            R = 0;
+            G = 0;
+            B = 0;
+            Y = ( (  66 * R + 129 * G +  25 * B + 128) >> 8) +  16;
+            V = ( ( -38 * R -  74 * G + 112 * B + 128) >> 8) + 128; // Previously U
+            U = ( ( 112 * R -  94 * G -  18 * B + 128) >> 8) + 128; // Previously V
+            for (unsigned int y = 0; y < t3dr_image.height; y++) {
+                for (unsigned int x = 0; x < t3dr_image.width; x++) {
+                    t3dr_image.data[yIndex++] = (uint8_t) ((Y < 0) ? 0 : ((Y > 255) ? 255 : Y));
+                    if (y % 2 == 0 && index % 2 == 0) {
+                        t3dr_image.data[uvIndex++] = (uint8_t)((V<0) ? 0 : ((V > 255) ? 255 : V));
+                        t3dr_image.data[uvIndex++] = (uint8_t)((U<0) ? 0 : ((U > 255) ? 255 : U));
+                    }
+                    index++;
+                }
+            }
+            Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image,
+                                  &t3dr_image_pose, &t3dr_updated);*/
+        } else {
+            std::vector<GridIndex> indices;
+            indices.resize(t3dr_updated->num_indices);
+            std::copy(&t3dr_updated->indices[0][0], &t3dr_updated->indices[t3dr_updated->num_indices][0],
+                      reinterpret_cast<uint32_t *>(indices.data()));
+
+            for (unsigned long it = 0; it < indices.size(); ++it) {
+                GridIndex updated_index = indices[it];
+
+                // Build a dynamic mesh and add it to the scene.
+                std::shared_ptr<SingleDynamicMesh> &dynamic_mesh = meshes_[updated_index];
+                if (dynamic_mesh == nullptr) {
+                    dynamic_mesh = std::make_shared<SingleDynamicMesh>();
+                    dynamic_mesh->mesh.render_mode = GL_TRIANGLES;
+                    dynamic_mesh->mesh.vertices.resize(kInitialVertexCount * 3);
+                    dynamic_mesh->mesh.colors.resize(kInitialVertexCount * 3);
+                    dynamic_mesh->mesh.indices.resize(kInitialIndexCount);
+                    dynamic_mesh->tango_mesh = {
+                            /* timestamp */ 0.0,
+                            /* num_vertices */ 0u,
+                            /* num_faces */ 0u,
+                            /* num_textures */ 0u,
+                            /* max_num_vertices */ static_cast<uint32_t>(dynamic_mesh->mesh.vertices.capacity()),
+                            /* max_num_faces */ static_cast<uint32_t>(dynamic_mesh->mesh.indices.capacity() / 3),
+                            /* max_num_textures */ 0u,
+                            /* vertices */ reinterpret_cast<Tango3DR_Vector3 *>(dynamic_mesh->mesh.vertices.data()),
+                            /* faces */ reinterpret_cast<Tango3DR_Face *>(dynamic_mesh->mesh.indices.data()),
+                            /* normals */ nullptr,
+                            /* colors */ reinterpret_cast<Tango3DR_Color *>(dynamic_mesh->mesh.colors.data()),
+                            /* texture_coords */ nullptr,
+                            /* texture_ids */ nullptr,
+                            /* textures */ nullptr};
+                    render_mutex_.lock();
+                    main_scene_.AddDynamicMesh(dynamic_mesh.get());
+                    render_mutex_.unlock();
+                }
+                dynamic_mesh->mutex.lock();
+
+                while (true) {
+                    ret = Tango3DR_extractPreallocatedMeshSegment(t3dr_context_, updated_index.indices,
+                                                                  &dynamic_mesh->tango_mesh);
+                    if (ret == TANGO_3DR_INSUFFICIENT_SPACE) {
+                        unsigned long new_vertex_size = dynamic_mesh->mesh.vertices.capacity() * kGrowthFactor;
+                        unsigned long new_index_size = dynamic_mesh->mesh.indices.capacity() * kGrowthFactor;
+                        new_index_size -= new_index_size % 3;
+                        dynamic_mesh->mesh.vertices.resize(new_vertex_size);
+                        dynamic_mesh->mesh.colors.resize(new_vertex_size);
+                        dynamic_mesh->mesh.indices.resize(new_index_size);
+                        dynamic_mesh->tango_mesh.max_num_vertices = static_cast<uint32_t>(dynamic_mesh->mesh.vertices.capacity());
+                        dynamic_mesh->tango_mesh.max_num_faces = static_cast<uint32_t>(dynamic_mesh->mesh.indices.capacity() / 3);
+                        dynamic_mesh->tango_mesh.vertices = reinterpret_cast<Tango3DR_Vector3 *>(dynamic_mesh->mesh.vertices.data());
+                        dynamic_mesh->tango_mesh.colors = reinterpret_cast<Tango3DR_Color *>(dynamic_mesh->mesh.colors.data());
+                        dynamic_mesh->tango_mesh.faces = reinterpret_cast<Tango3DR_Face *>(dynamic_mesh->mesh.indices.data());
+                    } else
+                        break;
+                }
+                dynamic_mesh->size = dynamic_mesh->tango_mesh.num_faces * 3;
+                dynamic_mesh->mesh.texture = -1;
+                dynamic_mesh->mutex.unlock();
+            }
         }
         Tango3DR_GridIndexArray_destroy(t3dr_updated);
 
         if (photoMode)
             photoFinished = true;
         hasNewFrame = false;
-        pointCloudAvailable = false;
-        binder_mutex_.unlock();
+    }
+
+    void MeshBuilderApp::GetUVMesh() {
+        while (true) {
+            Tango3DR_Status ret;
+            ret = Tango3DR_extractPreallocatedMesh(t3dr_context_, t3dr_updated, &temp_mesh->tango_mesh);
+            if (ret == TANGO_3DR_INSUFFICIENT_SPACE) {
+                unsigned long new_vertex_size = temp_mesh->mesh.vertices.capacity() * kGrowthFactor;
+                unsigned long new_index_size = temp_mesh->mesh.indices.capacity() * kGrowthFactor;
+                new_index_size -= new_index_size % 3;
+                temp_mesh->mesh.vertices.resize(new_vertex_size);
+                temp_mesh->mesh.colors.resize(new_vertex_size);
+                temp_mesh->mesh.indices.resize(new_index_size);
+                temp_mesh->tango_mesh.max_num_vertices = static_cast<uint32_t>(temp_mesh->mesh.vertices.capacity());
+                temp_mesh->tango_mesh.max_num_faces = static_cast<uint32_t>(temp_mesh->mesh.indices.capacity() / 3);
+                temp_mesh->tango_mesh.vertices = reinterpret_cast<Tango3DR_Vector3 *>(temp_mesh->mesh.vertices.data());
+                temp_mesh->tango_mesh.colors = reinterpret_cast<Tango3DR_Color *>(temp_mesh->mesh.colors.data());
+                temp_mesh->tango_mesh.faces = reinterpret_cast<Tango3DR_Face *>(temp_mesh->mesh.indices.data());
+            } else
+                break;
+        }
+    }
+
+    void MeshBuilderApp::GetUVTexture() {
+        int yIndex = 0;
+        int uvIndex = t3dr_image.width * t3dr_image.height;
+        int R, G, B, Y, U, V;
+        int index = 0;
+        for (unsigned int y = 0; y < t3dr_image.height; y++) {
+            for (unsigned int x = 0; x < t3dr_image.width; x++) {
+
+                R = 0;
+                G = x * 255 / t3dr_image.width;
+                B = y * 255 / t3dr_image.height;
+
+                //RGB to YUV algorithm
+                Y = ( (  66 * R + 129 * G +  25 * B + 128) >> 8) +  16;
+                V = ( ( -38 * R -  74 * G + 112 * B + 128) >> 8) + 128; // Previously U
+                U = ( ( 112 * R -  94 * G -  18 * B + 128) >> 8) + 128; // Previously V
+
+                t3dr_image.data[yIndex++] = (uint8_t) ((Y < 0) ? 0 : ((Y > 255) ? 255 : Y));
+                if (y % 2 == 0 && index % 2 == 0) {
+                    t3dr_image.data[uvIndex++] = (uint8_t)((V<0) ? 0 : ((V > 255) ? 255 : V));
+                    t3dr_image.data[uvIndex++] = (uint8_t)((U<0) ? 0 : ((U > 255) ? 255 : U));
+                }
+                index++;
+            }
+        }
+    }
+
+    void MeshBuilderApp::SaveFrame() {
+        //store PNG
+        if (t3dr_image.format != TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP)
+            std::exit(EXIT_SUCCESS);
+        int scale = 4;
+        unsigned char* rgb = new unsigned char[(t3dr_image.width / scale) * (t3dr_image.height / scale) * 3];
+        std::ostringstream ostr;
+        ostr << dataset_.c_str();
+        ostr << "/frame_";
+        ostr << textureId;
+        ostr << ".png";
+        int index = 0;
+        int frameSize = t3dr_image.width * t3dr_image.height;
+        for (int y = t3dr_image.height - 1; y >= 0; y-=scale) {
+            for (int x = 0; x < t3dr_image.width; x+=scale) {
+                int Y = t3dr_image.data[y*t3dr_image.width + x] & 0xff;
+                int xby2 = x/2;
+                int yby2 = y/2;
+
+                float U = (float)(t3dr_image.data[frameSize + 2*xby2 + yby2*t3dr_image.width] & 0xff) - 128.0f;
+                float V = (float)(t3dr_image.data[frameSize + 2*xby2 + 1 + yby2*t3dr_image.width] & 0xff) - 128.0f;
+
+                // Do the YUV -> RGB conversion
+                float Yf = 1.164f*((float)Y) - 16.0f;
+                int R = (int)(Yf + 1.596f*V);
+                int G = (int)(Yf - 0.813f*V - 0.391f*U);
+                int B = (int)(Yf            + 2.018f*U);
+
+                // Clip rgb values to 0-255
+                R = R < 0 ? 0 : R > 255 ? 255 : R;
+                G = G < 0 ? 0 : G > 255 ? 255 : G;
+                B = B < 0 ? 0 : B > 255 ? 255 : B;
+
+                // Put that pixel in the buffer
+                rgb[index++] = (unsigned char) B;
+                rgb[index++] = (unsigned char) G;
+                rgb[index++] = (unsigned char) R;
+            }
+        }
+        TextureToLoad t;
+        t.width = t3dr_image.width / scale;
+        t.height = t3dr_image.height / scale;
+        t.data = rgb;
+        WritePNG(ostr.str().c_str(), (u_int32_t) t.width, (u_int32_t) t.height, t.data);
+        render_mutex_.lock();
+        main_scene_.toLoad.push_back(t);
+        render_mutex_.unlock();
     }
 
     void MeshBuilderApp::WritePNG(const char* filename, u_int32_t width, u_int32_t height, unsigned char *buffer) {

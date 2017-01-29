@@ -108,11 +108,6 @@ Java_com_lvonasek_openconstructor_TangoJNINative_isPhotoFinished(JNIEnv*, jobjec
   return (jboolean) app.IsPhotoFinished();
 }
 
-JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_update(JNIEnv*, jobject) {
-  app.MeshUpdate();
-}
-
 #ifdef __cplusplus
 }
 #endif

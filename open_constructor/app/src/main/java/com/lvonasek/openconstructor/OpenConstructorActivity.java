@@ -50,7 +50,7 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 public class OpenConstructorActivity extends AbstractActivity implements View.OnClickListener,
-        GLSurfaceView.Renderer, Runnable {
+        GLSurfaceView.Renderer {
 
   private ActivityManager mActivityManager;
   private ActivityManager.MemoryInfo mMemoryInfo;
@@ -59,7 +59,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private SeekBar mSeekbar;
   private String mToLoad;
   private boolean m3drRunning = false;
-  private boolean mUpdateRunning = true;
   private boolean mViewMode = false;
   private long mTimestamp = 0;
 
@@ -75,8 +74,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private float mPitch = 0;
   private float mYaw = 0;
   private float mZoom = 0;
-
-  private File file2save;
 
   // Tango Service connection.
   boolean mInitialised = false;
@@ -102,8 +99,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         m3drRunning = !photo;
         TangoJNINative.onCreate(OpenConstructorActivity.this);
         TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, photo, txt, tmp);
-        new Thread(OpenConstructorActivity.this).start();
-
         TangoJNINative.onToggleButtonClicked(m3drRunning);
         TangoJNINative.setView(0, 0, 0, 0, true);
         OpenConstructorActivity.this.runOnUiThread(new Runnable()
@@ -416,8 +411,41 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                     }
                   }
                   //save
-                  file2save = new File(getPath(), input.getText().toString() + FILE_EXT[type]);
-                  mUpdateRunning = false;
+                  File file2save = new File(getPath(), input.getText().toString() + FILE_EXT[type]);
+                  final String filename = file2save.getAbsolutePath();
+                  if (isTexturingOn()) {
+                    long timestamp = System.currentTimeMillis();
+                    File obj = new File(getPath(), timestamp + FILE_EXT[type]);
+                    TangoJNINative.save(obj.getAbsolutePath());
+                    if (obj.renameTo(file2save))
+                      Log.d(TAG, "Obj file " + file2save.toString() + " saved.");
+                  } else
+                    TangoJNINative.save(filename);
+                  //open???
+                  OpenConstructorActivity.this.runOnUiThread(new Runnable()
+                  {
+                    @Override
+                    public void run()
+                    {
+                      mProgress.setVisibility(View.GONE);
+                      AlertDialog.Builder builder = new AlertDialog.Builder(OpenConstructorActivity.this);
+                      builder.setTitle(getString(R.string.view));
+                      builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                          setViewerMode();
+                          dialog.cancel();
+                        }
+                      });
+                      builder.setNegativeButton(getString(android.R.string.cancel), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                          dialog.cancel();
+                        }
+                      });
+                      builder.create().show();
+                    }
+                  });
                 }
               }).start();
               dialog.cancel();
@@ -488,58 +516,5 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   // Called when the surface is created or recreated.
   public synchronized void onSurfaceCreated(GL10 gl, EGLConfig config) {
     TangoJNINative.onGlSurfaceCreated();
-  }
-
-  @Override
-  public void run()
-  {
-    while(mUpdateRunning) {
-      TangoJNINative.update();
-      try
-      {
-        Thread.sleep(isTexturingOn() ? 200 : 10);
-      } catch (InterruptedException e)
-      {
-        e.printStackTrace();
-      }
-    }
-    //save
-    final String filename = file2save.getAbsolutePath();
-    if (isTexturingOn()) {
-      long timestamp = System.currentTimeMillis();
-      int type = isTexturingOn() ? 0 : 1;
-      File obj = new File(getPath(), timestamp + FILE_EXT[type]);
-      TangoJNINative.save(obj.getAbsolutePath());
-      if (obj.renameTo(file2save))
-        Log.d(TAG, "Obj file " + file2save.toString() + " saved.");
-    } else
-      TangoJNINative.save(filename);
-    //open???
-    OpenConstructorActivity.this.runOnUiThread(new Runnable()
-    {
-      @Override
-      public void run()
-      {
-        mProgress.setVisibility(View.GONE);
-        AlertDialog.Builder builder = new AlertDialog.Builder(OpenConstructorActivity.this);
-        builder.setTitle(getString(R.string.view));
-        builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
-          @Override
-          public void onClick(DialogInterface dialog, int which) {
-            setViewerMode();
-            dialog.cancel();
-          }
-        });
-        builder.setNegativeButton(getString(android.R.string.cancel), new DialogInterface.OnClickListener() {
-          @Override
-          public void onClick(DialogInterface dialog, int which) {
-            dialog.cancel();
-            mUpdateRunning = true;
-            new Thread(OpenConstructorActivity.this).start();
-          }
-        });
-        builder.create().show();
-      }
-    });
   }
 }

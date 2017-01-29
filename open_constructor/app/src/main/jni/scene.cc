@@ -106,7 +106,16 @@ namespace mesh_builder {
         }
         for (SingleDynamicMesh *mesh : dynamic_meshes_) {
             mesh->mutex.lock();
-            tango_gl::Render(mesh->mesh, *color_vertex_shader, tango_gl::Transform(), *camera_, mesh->size);
+            if (mesh->mesh.texture == -1)
+                tango_gl::Render(mesh->mesh, *color_vertex_shader, tango_gl::Transform(), *camera_, mesh->size);
+            else {
+                unsigned int texture = textureMap[mesh->mesh.texture];
+                if (lastTexture != texture) {
+                    lastTexture = texture;
+                    glBindTexture(GL_TEXTURE_2D, texture);
+                }
+                tango_gl::Render(mesh->mesh, *textured_shader, tango_gl::Transform(), *camera_, mesh->size);
+            }
             mesh->mutex.unlock();
         }
         if(!frustum_.vertices.empty() && frustum)

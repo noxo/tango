@@ -59,9 +59,6 @@ class StaticMesh {
   // UV coords for texture
   std::vector<glm::vec2> uv;
 
-  // Texture index for dynamic mesh
-  std::vector<int32_t> textureIds;
-
   // Texture index for static mesh
   int32_t texture;
 
