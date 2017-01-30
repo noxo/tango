@@ -15,6 +15,7 @@ public:
     ~ModelIO();
     void parseFaces(int subdivision, std::vector<tango_gl::StaticMesh>& output);
     void readVertices();
+    void setDataset(std::string path) { dataset = path; }
     void writeModel(std::vector<SingleDynamicMesh*> model);
 
     enum TYPE{OBJ, PLY};
@@ -23,13 +24,12 @@ private:
     glm::ivec3 decodeColor(unsigned int c);
     unsigned int scanDec(char *line, int offset);
     bool startsWith(std::string s, std::string e);
-    void writePLYHeader();
-    void writePLYColorMesh(SingleDynamicMesh *mesh, int size);
-    void writePLYColorVertex(glm::vec3 v, glm::ivec3 c);
-    void writePLYFace(glm::ivec3 i);
-    void writePLYFaces(SingleDynamicMesh *mesh, int offset);
+    void writeHeader(std::vector<SingleDynamicMesh*> model);
+    void writeMesh(SingleDynamicMesh *mesh, int size);
+    void writeFaces(SingleDynamicMesh *mesh, int offset);
 
     TYPE type;
+    std::string dataset;
     std::string path;
     bool writeMode;
     unsigned int vertexCount;

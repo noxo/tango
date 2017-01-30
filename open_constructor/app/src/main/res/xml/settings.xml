@@ -26,12 +26,12 @@
             android:title="@string/realtime_noise_filter">
         </CheckBoxPreference>
 
-        <!--CheckBoxPreference
+        <CheckBoxPreference
             android:defaultValue="true"
             android:key="@string/pref_texture"
             android:summary="@string/texture_summary"
             android:title="@string/texture">
-        </CheckBoxPreference!-->
+        </CheckBoxPreference>
 
     </PreferenceCategory>
 

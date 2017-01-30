@@ -432,6 +432,7 @@ namespace mesh_builder {
         binder_mutex_.lock();
         render_mutex_.lock();
         ModelIO io(filename, true);
+        io.setDataset(dataset_);
         io.writeModel(main_scene_.dynamic_meshes_);
         render_mutex_.unlock();
         binder_mutex_.unlock();

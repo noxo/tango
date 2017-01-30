@@ -1,5 +1,6 @@
 #include <tango_3d_reconstruction_api.h>
 #include "model_io.h"
+#include <sstream>
 
 namespace mesh_builder {
 
@@ -35,8 +36,11 @@ namespace mesh_builder {
                         break;
                 }
             }
-        } else if (ext.compare("obj") == 0)
+        } else if (ext.compare("obj") == 0) {
             type = OBJ;
+            if (writeMode)
+                file = fopen(filename.c_str(), "w");
+        }
     }
 
     ModelIO::~ModelIO() {
@@ -177,13 +181,17 @@ namespace mesh_builder {
             vectorSize.push_back(max);
         }
         //write
-        if (type == PLY) {
-            writePLYHeader();
+        if ((type == PLY) || (type == OBJ)) {
+            writeHeader(model);
             for (unsigned int i = 0; i < model.size(); i++)
-                writePLYColorMesh(model[i], vectorSize[i]);
+                writeMesh(model[i], vectorSize[i]);
             int offset = 0;
+            if (type == OBJ)
+                offset++;
             for (unsigned int i = 0; i < model.size(); i++) {
-                writePLYFaces(model[i], offset);
+                if (type == OBJ)
+                    fprintf(file, "usemtl %d\n", i);
+                writeFaces(model[i], offset);
                 offset += vectorSize[i];
             }
         } else
@@ -217,45 +225,85 @@ namespace mesh_builder {
         return false;
     }
 
-    void ModelIO::writePLYHeader() {
-        fprintf(file, "ply\nformat ascii 1.0\ncomment ---\n");
-        fprintf(file, "element vertex %d\n", vertexCount);
-        fprintf(file, "property float x\n");
-        fprintf(file, "property float y\n");
-        fprintf(file, "property float z\n");
-        fprintf(file, "property uchar red\n");
-        fprintf(file, "property uchar green\n");
-        fprintf(file, "property uchar blue\n");
-        fprintf(file, "element face %d\n", faceCount);
-        fprintf(file, "property list uchar uint vertex_indices\n");
-        fprintf(file, "end_header\n");
-    }
+    void ModelIO::writeHeader(std::vector<SingleDynamicMesh*> model) {
+        if (type == PLY) {
+            fprintf(file, "ply\nformat ascii 1.0\ncomment ---\n");
+            fprintf(file, "element vertex %d\n", vertexCount);
+            fprintf(file, "property float x\n");
+            fprintf(file, "property float y\n");
+            fprintf(file, "property float z\n");
+            fprintf(file, "property uchar red\n");
+            fprintf(file, "property uchar green\n");
+            fprintf(file, "property uchar blue\n");
+            fprintf(file, "element face %d\n", faceCount);
+            fprintf(file, "property list uchar uint vertex_indices\n");
+            fprintf(file, "end_header\n");
+        } else if (type == OBJ) {
+            std::string base = (path.substr(0, path.length() - 4));
+            unsigned long index = 0;
+            for (unsigned long i = 0; i < base.size(); i++) {
+                if (base[i] == '/')
+                    index = i;
+            }
+            std::string shortBase = base.substr(index + 1, base.length());
+            fprintf(file, "mtllib %s.mtl\n", shortBase.c_str());
+            FILE* mtl = fopen((base + ".mtl").c_str(), "w");
+            for (unsigned int i = 0; i < model.size(); i++) {
+                std::ostringstream srcPath;
+                srcPath << dataset.c_str();
+                srcPath << "/frame_";
+                srcPath << i;
+                srcPath << ".png";
+                std::ostringstream dstPath;
+                dstPath << base.c_str();
+                dstPath << "_";
+                dstPath << i;
+                dstPath << ".png";
+                LOGI("Moving %s to %s", srcPath.str().c_str(), dstPath.str().c_str());
+                rename(srcPath.str().c_str(), dstPath.str().c_str());
 
-    void ModelIO::writePLYColorMesh(SingleDynamicMesh *mesh, int size) {
-        glm::vec3 v;
-        glm::ivec3 c;
-        for(unsigned int j = 0; j < size; j++) {
-            v = mesh->mesh.vertices[j];
-            c = decodeColor(mesh->mesh.colors[j]);
-            writePLYColorVertex(v, c);
+                fprintf(mtl, "newmtl %d\n", i);
+                fprintf(mtl, "Ns 96.078431\n");
+                fprintf(mtl, "Ka 1.000000 1.000000 1.000000\n");
+                fprintf(mtl, "Kd 0.640000 0.640000 0.640000\n");
+                fprintf(mtl, "Ks 0.500000 0.500000 0.500000\n");
+                fprintf(mtl, "Ke 0.000000 0.000000 0.000000\n");
+                fprintf(mtl, "Ni 1.000000\n");
+                fprintf(mtl, "d 1.000000\n");
+                fprintf(mtl, "illum 2\n");
+                fprintf(mtl, "map_Kd %s_%d.png\n\n", shortBase.c_str(), i);
+            }
+            fclose(mtl);
         }
     }
 
-    void ModelIO::writePLYColorVertex(glm::vec3 v, glm::ivec3 c) {
-        fprintf(file, "%f %f %f %d %d %d\n", -v.x, v.z, v.y, c.r, c.g, c.b);
+    void ModelIO::writeMesh(SingleDynamicMesh *mesh, int size) {
+        glm::vec3 v;
+        glm::vec2 t;
+        glm::ivec3 c;
+        for(unsigned int j = 0; j < size; j++) {
+            v = mesh->mesh.vertices[j];
+            if (type == PLY) {
+                c = decodeColor(mesh->mesh.colors[j]);
+                fprintf(file, "%f %f %f %d %d %d\n", -v.x, v.z, v.y, c.r, c.g, c.b);
+            } else if (type == OBJ) {
+                t = mesh->mesh.uv[j];
+                fprintf(file, "v %f %f %f\n", v.x, v.y, v.z);
+                fprintf(file, "vt %f %f\n", t.x, t.y);
+            }
+        }
     }
 
-    void ModelIO::writePLYFace(glm::ivec3 i) {
-        fprintf(file, "3 %d %d %d\n", i.x, i.y, i.z);
-    }
-
-    void ModelIO::writePLYFaces(SingleDynamicMesh *mesh, int offset) {
+    void ModelIO::writeFaces(SingleDynamicMesh *mesh, int offset) {
         glm::ivec3 i;
         for (unsigned int j = 0; j < mesh->size; j+=3) {
             i.x = mesh->mesh.indices[j + 0] + offset;
             i.y = mesh->mesh.indices[j + 1] + offset;
             i.z = mesh->mesh.indices[j + 2] + offset;
-            writePLYFace(i);
+            if (type == PLY)
+                fprintf(file, "3 %d %d %d\n", i.x, i.y, i.z);
+            else if (type == OBJ)
+                fprintf(file, "f %d/%d %d/%d %d/%d\n", i.x, i.x, i.y, i.y, i.z, i.z);
         }
     }
 } // namespace mesh_builder
