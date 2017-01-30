@@ -69,8 +69,7 @@ namespace mesh_builder {
         void TangoDisconnect();
         void DeleteResources();
         void MeshUpdate();
-        void GetUVMesh();
-        void GetUVTexture();
+        void GetTempMesh();
         void SaveFrame();
         void WritePNG(const char* filename, u_int32_t width, u_int32_t height, unsigned char *buffer);
 
@@ -83,6 +82,7 @@ namespace mesh_builder {
         Tango3DR_CameraCalibration t3dr_intrinsics_depth;
         Tango3DR_ImageBuffer t3dr_image;
         Tango3DR_Pose t3dr_image_pose;
+        glm::mat4 image_matrix;
         glm::mat4 point_cloud_matrix_;
         std::mutex binder_mutex_;
         std::mutex render_mutex_;
