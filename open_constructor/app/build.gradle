@@ -26,17 +26,3 @@ android {
         }
     }
 }
-
-
-def external_lib_prefix = "../../TangoReleaseLibs"
-
-repositories {
-    flatDir {
-        dirs external_lib_prefix + '/aar'
-    }
-}
-
-dependencies {
-    compile (name: 'tango_support_java_lib', ext: 'aar')
-    compile fileTree(dir: external_lib_prefix + '/jar', include: ['**/*.jar'])
-}

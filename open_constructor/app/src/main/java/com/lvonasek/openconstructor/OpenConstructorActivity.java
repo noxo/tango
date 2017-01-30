@@ -43,8 +43,6 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.atap.tangoservice.Tango;
-
 import java.io.File;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -301,20 +299,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         }).start();
       }
     } else if(!mInitialised && !mTangoBinded)
-      startActivityForResult(Tango.getRequestPermissionIntent(Tango.PERMISSIONTYPE_DATASET),
-              Tango.TANGO_INTENT_ACTIVITYCODE);
-    else
       setupPermission(Manifest.permission.CAMERA, REQUEST_CODE_PERMISSION_CAMERA);
-  }
-
-  @Override
-  protected void onActivityResult(int requestCode, int resultCode, Intent data)
-  {
-    super.onActivityResult(requestCode, resultCode, data);
-    if(resultCode == Activity.RESULT_OK)
-      setupPermission(Manifest.permission.CAMERA, REQUEST_CODE_PERMISSION_CAMERA);
-    else
-      finish();
   }
 
   @Override
