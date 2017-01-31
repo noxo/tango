@@ -41,7 +41,7 @@ private:
     unsigned int scanDec(char *line, int offset);
     bool startsWith(std::string s, std::string e);
     void writeHeader(std::vector<SingleDynamicMesh*> model);
-    void writeMesh(SingleDynamicMesh *mesh, int size);
+    void writePointCloud(SingleDynamicMesh *mesh, int size);
     void writeFaces(SingleDynamicMesh *mesh, int offset);
     TextureToLoad readPNG(std::string file);
 

@@ -72,15 +72,14 @@ public abstract class AbstractActivity extends Activity
     return -1;
   }
 
-
   public static ArrayList<String> getObjResources(File file) throws FileNotFoundException
   {
     Scanner sc = new Scanner(new FileInputStream(file.getAbsolutePath()));
     String filter = "xxx" + System.currentTimeMillis(); //not possible filter
     while(sc.hasNext()) {
       String line = sc.nextLine();
-      if (line.startsWith("usemtl")) {
-        filter = line.substring(7, line.indexOf('_'));
+      if (line.startsWith("mtllib")) {
+        filter = line.substring(7, line.lastIndexOf('.'));
         break;
       }
     }

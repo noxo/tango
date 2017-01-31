@@ -74,7 +74,7 @@ namespace mesh_builder {
         if ((type == PLY) || (type == OBJ)) {
             writeHeader(model);
             for (unsigned int i = 0; i < model.size(); i++)
-                writeMesh(model[i], vectorSize[i]);
+                writePointCloud(model[i], vectorSize[i]);
             int offset = 0;
             if (type == OBJ)
                 offset++;
@@ -300,7 +300,7 @@ namespace mesh_builder {
         }
     }
 
-    void ModelIO::writeMesh(SingleDynamicMesh *mesh, int size) {
+    void ModelIO::writePointCloud(SingleDynamicMesh *mesh, int size) {
         glm::vec3 v;
         glm::vec2 t;
         glm::ivec3 c;
