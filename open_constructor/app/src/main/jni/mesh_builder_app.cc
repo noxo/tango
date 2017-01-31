@@ -660,7 +660,7 @@ namespace mesh_builder {
 
         // write image data
         png_bytep row = (png_bytep) malloc(3 * width * sizeof(png_byte));
-        for (int y = height - 1; y >= 0; y--) {
+        for (int y = 0; y < height; y++) {
             for (int x=0; x < width; x++) {
                 row[x * 3 + 0] = buffer[(y * width + x) * 3 + 0];
                 row[x * 3 + 1] = buffer[(y * width + x) * 3 + 1];

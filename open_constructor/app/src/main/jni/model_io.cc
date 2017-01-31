@@ -352,7 +352,7 @@ namespace mesh_builder {
         texture.data = new unsigned char[row_bytes * height];
         png_bytepp row_pointers = png_get_rows(png_ptr, info_ptr);
         for (unsigned int i = 0; i < height; i++)
-            memcpy(texture.data+(row_bytes * (height-1-i)), row_pointers[i], row_bytes);
+            memcpy(texture.data+(row_bytes * i), row_pointers[i], row_bytes);
 
         png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
         fclose(temp);
