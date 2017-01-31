@@ -22,7 +22,6 @@
 #include <GLES2/gl2.h>
 
 #include <tango-gl/texture.h>
-#include <tango_3d_reconstruction_api.h>
 
 #include "glm/glm.hpp"
 
@@ -61,9 +60,6 @@ class StaticMesh {
 
   // Texture index for static mesh
   int32_t texture;
-
-  // Array of texture images for static mesh
-  Tango3DR_ImageBuffer* textures;
 };
 
 // Describes how to draw a mesh.

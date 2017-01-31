@@ -80,22 +80,6 @@ namespace mesh_builder {
             if (mesh.texture == -1)
                 tango_gl::Render(mesh, *color_vertex_shader, tango_gl::Transform(), *camera_, -1);
             else {
-                if (textureMap.size() <= mesh.texture) {
-                    for(unsigned long i = textureMap.size(); i <= mesh.texture; i++) {
-                        int w = mesh.textures[i].width;
-                        int h = mesh.textures[i].height;
-                        unsigned char* d = mesh.textures[i].data;
-                        GLuint textureID;
-                        glGenTextures(1, &textureID);
-                        glBindTexture(GL_TEXTURE_2D, textureID);
-                        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, d);
-                        textureMap.push_back(textureID);
-                    }
-                }
                 unsigned int texture = textureMap[mesh.texture];
                 if (lastTexture != texture) {
                     lastTexture = texture;

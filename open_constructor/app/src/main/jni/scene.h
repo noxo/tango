@@ -2,7 +2,6 @@
 #define MESH_BUILDER_SCENE_H_
 
 #include <memory>
-#include <mutex>
 #include <vector>
 
 #include <tango_client_api.h>  // NOLINT
@@ -10,21 +9,10 @@
 #include <tango-gl/grid.h>
 #include <tango-gl/tango-gl.h>
 #include <tango-gl/util.h>
+#include <tango_3d_reconstruction_api.h>
+#include "model_io.h"
 
 namespace mesh_builder {
-
-struct SingleDynamicMesh {
-    Tango3DR_Mesh tango_mesh;
-    tango_gl::StaticMesh mesh;
-    std::mutex mutex;
-    int size;
-};
-
-struct TextureToLoad {
-    int width;
-    int height;
-    unsigned char* data;
-};
 
 class Scene {
  public:

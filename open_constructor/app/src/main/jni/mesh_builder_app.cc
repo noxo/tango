@@ -420,8 +420,7 @@ namespace mesh_builder {
         render_mutex_.lock();
 
         ModelIO io(filename, false);
-        io.readVertices();
-        io.parseFaces(kSubdivisionSize, main_scene_.static_meshes_);
+        main_scene_.toLoad = io.readModel(kSubdivisionSize, main_scene_.static_meshes_);
 
         render_mutex_.unlock();
         binder_mutex_.unlock();
