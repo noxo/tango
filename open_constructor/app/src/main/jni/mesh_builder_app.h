@@ -76,6 +76,7 @@ namespace mesh_builder {
         std::string dataset_;
         glm::mat4 start_service_T_device_;
         bool t3dr_is_running_;
+        Tango3DR_ConfigH t3dr_config;
         Tango3DR_GridIndexArray *t3dr_updated;
         Tango3DR_Context t3dr_context_;
         Tango3DR_CameraCalibration t3dr_intrinsics_;

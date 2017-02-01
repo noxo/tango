@@ -85,6 +85,9 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         boolean txt     = isTexturingOn();
         String tmp      = getTempPath().toString();
 
+        if (android.os.Build.DEVICE.toLowerCase().startsWith("yellowstone"))
+          land = !land;
+
         if (photo && (mRes > 0))
             dmax = 5.0;
         if(mRes == 0) {

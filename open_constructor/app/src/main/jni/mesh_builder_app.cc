@@ -21,7 +21,6 @@
 #include <sstream>
 
 #include "mesh_builder_app.h"
-#include "model_io.h"
 
 namespace {
     const int kSubdivisionSize = 5000;
@@ -98,8 +97,10 @@ namespace mesh_builder {
         t3dr_depth.num_points = point_cloud->num_points;
         t3dr_depth.points = point_cloud->points;
         t3dr_depth_pose = extract3DRPose(point_cloud_matrix_);
-        if(textured)
+        if(textured) {
             SaveFrame();
+            Tango3DR_clear(t3dr_context_);
+        }
         Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image, &t3dr_image_pose,
                         &t3dr_updated);
         MeshUpdate();
@@ -182,6 +183,10 @@ namespace mesh_builder {
             TangoConfig_free(tango_config_);
             tango_config_ = nullptr;
         }
+        if (t3dr_config != nullptr) {
+            Tango3DR_Config_destroy(t3dr_config);
+            t3dr_config = nullptr;
+        }
     }
 
     void MeshBuilderApp::OnCreate(JNIEnv *env, jobject activity) {
@@ -245,9 +250,7 @@ namespace mesh_builder {
 
     void MeshBuilderApp::TangoSetup3DR(double res, double dmin, double dmax, int noise) {
         binder_mutex_.lock();
-        if(t3dr_context_ != nullptr)
-            Tango3DR_destroy(t3dr_context_);
-        Tango3DR_ConfigH t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_CONTEXT);
+        t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_CONTEXT);
         Tango3DR_Status t3dr_err;
         if (res < 0.00999)
             scale = 10;
@@ -282,7 +285,6 @@ namespace mesh_builder {
 
         Tango3DR_setColorCalibration(t3dr_context_, &t3dr_intrinsics_);
         Tango3DR_setDepthCalibration(t3dr_context_, &t3dr_intrinsics_depth);
-        Tango3DR_Config_destroy(t3dr_config);
         binder_mutex_.unlock();
     }
 
