@@ -102,6 +102,9 @@ namespace mesh_builder {
             }
             mesh->mutex.unlock();
         }
+        for (tango_gl::StaticMesh mesh : debug_meshes_) {
+            tango_gl::Render(mesh, *color_vertex_shader, tango_gl::Transform(), *camera_, -1);
+        }
         if(!frustum_.vertices.empty() && frustum)
             tango_gl::Render(frustum_, *color_vertex_shader, tango_gl::Transform(), *camera_,
                              (const int) frustum_.indices.size());

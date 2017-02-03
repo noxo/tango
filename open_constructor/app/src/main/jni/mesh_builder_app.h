@@ -74,17 +74,13 @@ namespace mesh_builder {
         void WritePNG(const char* filename, u_int32_t width, u_int32_t height, unsigned char *buffer);
 
         std::string dataset_;
-        glm::mat4 start_service_T_device_;
         bool t3dr_is_running_;
-        Tango3DR_ConfigH t3dr_config;
         Tango3DR_GridIndexArray *t3dr_updated;
         Tango3DR_Context t3dr_context_;
         Tango3DR_CameraCalibration t3dr_intrinsics_;
         Tango3DR_CameraCalibration t3dr_intrinsics_depth;
         Tango3DR_ImageBuffer t3dr_image;
-        Tango3DR_Pose t3dr_image_pose;
         glm::mat4 image_matrix;
-        glm::mat4 point_cloud_matrix_;
         std::mutex binder_mutex_;
         std::mutex render_mutex_;
         Scene main_scene_;

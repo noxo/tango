@@ -31,6 +31,7 @@ class Scene {
   std::vector<TextureToLoad> toLoad;
   std::vector<unsigned int> textureMap;
   std::vector<tango_gl::StaticMesh> static_meshes_;
+  std::vector<tango_gl::StaticMesh> debug_meshes_;
   std::vector<SingleDynamicMesh*> dynamic_meshes_;
   tango_gl::Material* color_vertex_shader;
   tango_gl::Material* textured_shader;

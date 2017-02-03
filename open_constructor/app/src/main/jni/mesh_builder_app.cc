@@ -80,6 +80,7 @@ namespace mesh_builder {
             binder_mutex_.unlock();
             return;
         }
+        glm::mat4 point_cloud_matrix_;
         point_cloud_matrix_ = glm::make_mat4(matrix_transform.matrix);
         point_cloud_matrix_[3][0] *= scale;
         point_cloud_matrix_[3][1] *= scale;
@@ -101,6 +102,7 @@ namespace mesh_builder {
             SaveFrame();
             Tango3DR_clear(t3dr_context_);
         }
+        Tango3DR_Pose t3dr_image_pose = extract3DRPose(image_matrix);
         Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image, &t3dr_image_pose,
                         &t3dr_updated);
         MeshUpdate();
@@ -136,7 +138,6 @@ namespace mesh_builder {
         t3dr_image.timestamp = buffer->timestamp;
         t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(buffer->format);
         t3dr_image.data = buffer->data;
-        t3dr_image_pose = extract3DRPose(image_matrix);
         hasNewFrame = true;
         binder_mutex_.unlock();
     }
@@ -182,10 +183,6 @@ namespace mesh_builder {
         if (tango_config_ != nullptr) {
             TangoConfig_free(tango_config_);
             tango_config_ = nullptr;
-        }
-        if (t3dr_config != nullptr) {
-            Tango3DR_Config_destroy(t3dr_config);
-            t3dr_config = nullptr;
         }
     }
 
@@ -250,6 +247,7 @@ namespace mesh_builder {
 
     void MeshBuilderApp::TangoSetup3DR(double res, double dmin, double dmax, int noise) {
         binder_mutex_.lock();
+        Tango3DR_ConfigH t3dr_config;
         t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_CONTEXT);
         Tango3DR_Status t3dr_err;
         if (res < 0.00999)
@@ -282,6 +280,7 @@ namespace mesh_builder {
         t3dr_context_ = Tango3DR_create(t3dr_config);
         if (t3dr_context_ == nullptr)
             std::exit(EXIT_SUCCESS);
+        Tango3DR_Config_destroy(t3dr_config);
 
         Tango3DR_setColorCalibration(t3dr_context_, &t3dr_intrinsics_);
         Tango3DR_setDepthCalibration(t3dr_context_, &t3dr_intrinsics_depth);
@@ -362,20 +361,6 @@ namespace mesh_builder {
     }
 
     void MeshBuilderApp::OnDrawFrame() {
-
-        if (gyro) {
-            TangoMatrixTransformData matrix_transform;
-            TangoSupport_getMatrixTransformAtTime(
-                    0, TANGO_COORDINATE_FRAME_START_OF_SERVICE, TANGO_COORDINATE_FRAME_DEVICE,
-                    TANGO_SUPPORT_ENGINE_OPENGL, TANGO_SUPPORT_ENGINE_OPENGL,
-                    landscape ? ROTATION_90 : ROTATION_0, &matrix_transform);
-            if (matrix_transform.status_code == TANGO_POSE_VALID)
-                start_service_T_device_ = glm::make_mat4(matrix_transform.matrix);
-            start_service_T_device_[3][0] *= scale;
-            start_service_T_device_[3][1] *= scale;
-            start_service_T_device_[3][2] *= scale;
-        }
-
         render_mutex_.lock();
         //camera transformation
         if (!gyro) {
@@ -383,6 +368,17 @@ namespace mesh_builder {
             main_scene_.camera_->SetRotation(glm::quat(glm::vec3(yaw, pitch, 0)));
             main_scene_.camera_->SetScale(glm::vec3(1, 1, 1));
         } else {
+            TangoMatrixTransformData matrix_transform;
+            TangoSupport_getMatrixTransformAtTime(
+                    0, TANGO_COORDINATE_FRAME_START_OF_SERVICE, TANGO_COORDINATE_FRAME_DEVICE,
+                    TANGO_SUPPORT_ENGINE_OPENGL, TANGO_SUPPORT_ENGINE_OPENGL,
+                    landscape ? ROTATION_90 : ROTATION_0, &matrix_transform);
+            glm::mat4 start_service_T_device_;
+            if (matrix_transform.status_code == TANGO_POSE_VALID)
+                start_service_T_device_ = glm::make_mat4(matrix_transform.matrix);
+            start_service_T_device_[3][0] *= scale;
+            start_service_T_device_[3][1] *= scale;
+            start_service_T_device_[3][2] *= scale;
             main_scene_.camera_->SetTransformationMatrix(start_service_T_device_);
             main_scene_.UpdateFrustum(main_scene_.camera_->GetPosition(), zoom);
         }
@@ -477,7 +473,6 @@ namespace mesh_builder {
                 v.y *= t3dr_intrinsics_.fy / (float)t3dr_intrinsics_.height;
                 v.x += t3dr_intrinsics_.cx / (float)t3dr_intrinsics_.width;
                 v.y += t3dr_intrinsics_.cy / (float)t3dr_intrinsics_.height;
-                //v += 0.5f;
                 dynamic_mesh->mesh.uv[i] = glm::vec2(v.x, v.y);
                 dynamic_mesh->mesh.vertices[i] = glm::vec3(temp_mesh->tango_mesh.vertices[i][0],
                                                            temp_mesh->tango_mesh.vertices[i][1],
