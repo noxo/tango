@@ -7,6 +7,7 @@ namespace mesh_builder {
     public:
         VertexProcessor(Tango3DR_Context context, Tango3DR_GridIndex index);
         ~VertexProcessor();
+        void getDebugMesh(tango_gl::StaticMesh* result);
         void getMeshWithUV(glm::mat4 world2uv, Tango3DR_CameraCalibration calibration,
                            SingleDynamicMesh* result);
     private:

@@ -441,11 +441,13 @@ namespace mesh_builder {
         if (textured) {
             //extract textured mesh
             glm::mat4 world2uv = glm::inverse(image_matrix);
+            tango_gl::StaticMesh debug;
             SingleDynamicMesh* dynamic_mesh = new SingleDynamicMesh();
             for (unsigned long it = 0; it < indices.size(); ++it) {
                 GridIndex updated_index = indices[it];
                 VertexProcessor vp(t3dr_context_, updated_index.indices);
                 vp.getMeshWithUV(world2uv, t3dr_intrinsics_, dynamic_mesh);
+                vp.getDebugMesh(&debug);
             }
 
             if (!dynamic_mesh->mesh.indices.empty()) {
@@ -454,6 +456,7 @@ namespace mesh_builder {
                 textureId++;
                 render_mutex_.lock();
                 main_scene_.AddDynamicMesh(dynamic_mesh);
+                main_scene_.debug_meshes_.push_back(debug);
                 render_mutex_.unlock();
             } else
                 delete dynamic_mesh;
