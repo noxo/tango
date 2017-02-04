@@ -21,6 +21,7 @@
 #include <sstream>
 
 #include "mesh_builder_app.h"
+#include "vertex_processor.h"
 
 namespace {
     const int kSubdivisionSize = 5000;
@@ -154,29 +155,6 @@ namespace mesh_builder {
         textureId = 0;
         scale = 1;
         zoom = 0;
-
-
-        // Build a dynamic mesh and add it to the scene.
-        temp_mesh = std::make_shared<SingleDynamicMesh>();
-        temp_mesh->mesh.render_mode = GL_TRIANGLES;
-        temp_mesh->mesh.vertices.resize(kInitialVertexCount * 3);
-        temp_mesh->mesh.colors.resize(kInitialVertexCount * 3);
-        temp_mesh->mesh.indices.resize(kInitialIndexCount);
-        temp_mesh->tango_mesh = {
-                    /* timestamp */ 0.0,
-                    /* num_vertices */ 0u,
-                    /* num_faces */ 0u,
-                    /* num_textures */ 0u,
-                    /* max_num_vertices */ static_cast<uint32_t>(temp_mesh->mesh.vertices.capacity()),
-                    /* max_num_faces */ static_cast<uint32_t>(temp_mesh->mesh.indices.capacity() / 3),
-                    /* max_num_textures */ 0u,
-                    /* vertices */ reinterpret_cast<Tango3DR_Vector3 *>(temp_mesh->mesh.vertices.data()),
-                    /* faces */ reinterpret_cast<Tango3DR_Face *>(temp_mesh->mesh.indices.data()),
-                    /* normals */ nullptr,
-                    /* colors */ reinterpret_cast<Tango3DR_Color *>(temp_mesh->mesh.colors.data()),
-                    /* texture_coords */ nullptr,
-                    /* texture_ids */ nullptr,
-                    /* textures */ nullptr};
     }
 
     MeshBuilderApp::~MeshBuilderApp() {
@@ -454,49 +432,24 @@ namespace mesh_builder {
         if (photoMode)
             t3dr_is_running_ = false;
 
+        std::vector<GridIndex> indices;
+        indices.resize(t3dr_updated->num_indices);
+        std::copy(&t3dr_updated->indices[0][0], &t3dr_updated->indices[t3dr_updated->num_indices][0],
+                  reinterpret_cast<uint32_t *>(indices.data()));
+
         Tango3DR_Status ret;
         if (textured) {
-            GetTempMesh();
-            glm::mat4 world2uv = glm::inverse(image_matrix);
             //extract textured mesh
+            glm::mat4 world2uv = glm::inverse(image_matrix);
             SingleDynamicMesh* dynamic_mesh = new SingleDynamicMesh();
-            dynamic_mesh->mesh.vertices.resize(temp_mesh->tango_mesh.num_vertices);
-            dynamic_mesh->mesh.uv.resize(temp_mesh->tango_mesh.num_vertices);
-            dynamic_mesh->mesh.render_mode = GL_TRIANGLES;
-            for (unsigned int i = 0; i < temp_mesh->tango_mesh.num_vertices; i++) {
-                glm::vec4 v = glm::vec4(temp_mesh->tango_mesh.vertices[i][0],
-                                        temp_mesh->tango_mesh.vertices[i][1],
-                                        temp_mesh->tango_mesh.vertices[i][2], 1);
-                v = world2uv * v;
-                v /= fabs(v.w * v.z);
-                v.x *= t3dr_intrinsics_.fx / (float)t3dr_intrinsics_.width;
-                v.y *= t3dr_intrinsics_.fy / (float)t3dr_intrinsics_.height;
-                v.x += t3dr_intrinsics_.cx / (float)t3dr_intrinsics_.width;
-                v.y += t3dr_intrinsics_.cy / (float)t3dr_intrinsics_.height;
-                dynamic_mesh->mesh.uv[i] = glm::vec2(v.x, v.y);
-                dynamic_mesh->mesh.vertices[i] = glm::vec3(temp_mesh->tango_mesh.vertices[i][0],
-                                                           temp_mesh->tango_mesh.vertices[i][1],
-                                                           temp_mesh->tango_mesh.vertices[i][2]);
+            for (unsigned long it = 0; it < indices.size(); ++it) {
+                GridIndex updated_index = indices[it];
+                VertexProcessor vp(t3dr_context_, updated_index.indices);
+                vp.getMeshWithUV(world2uv, t3dr_intrinsics_, dynamic_mesh);
             }
-            int index = 0;
-            dynamic_mesh->mesh.indices.resize(temp_mesh->tango_mesh.num_faces * 3);
-            for (unsigned int i = 0; i < temp_mesh->tango_mesh.num_faces; i++) {
-                bool ok = true;
-                for(unsigned int j = 0; j < 3; j++) {
-                    glm::vec2 uv = dynamic_mesh->mesh.uv[temp_mesh->tango_mesh.faces[i][j]];
-                    if ((uv.x < 0) || (uv.y < 0) || (uv.x > 1) || (uv.y > 1)) {
-                        ok = false;
-                        break;
-                    }
-                }
-                if (ok) {
-                    dynamic_mesh->mesh.indices[index++] = temp_mesh->tango_mesh.faces[i][0];
-                    dynamic_mesh->mesh.indices[index++] = temp_mesh->tango_mesh.faces[i][1];
-                    dynamic_mesh->mesh.indices[index++] = temp_mesh->tango_mesh.faces[i][2];
-                }
-            }
+
             if (!dynamic_mesh->mesh.indices.empty()) {
-                dynamic_mesh->size = index;
+                dynamic_mesh->size = (int) dynamic_mesh->mesh.indices.size();
                 dynamic_mesh->mesh.texture = textureId;
                 textureId++;
                 render_mutex_.lock();
@@ -505,11 +458,6 @@ namespace mesh_builder {
             } else
                 delete dynamic_mesh;
         } else {
-            std::vector<GridIndex> indices;
-            indices.resize(t3dr_updated->num_indices);
-            std::copy(&t3dr_updated->indices[0][0], &t3dr_updated->indices[t3dr_updated->num_indices][0],
-                      reinterpret_cast<uint32_t *>(indices.data()));
-
             for (unsigned long it = 0; it < indices.size(); ++it) {
                 GridIndex updated_index = indices[it];
 
@@ -572,27 +520,6 @@ namespace mesh_builder {
         hasNewFrame = false;
     }
 
-    void MeshBuilderApp::GetTempMesh() {
-        while (true) {
-            Tango3DR_Status ret;
-            ret = Tango3DR_extractPreallocatedMesh(t3dr_context_, t3dr_updated, &temp_mesh->tango_mesh);
-            if (ret == TANGO_3DR_INSUFFICIENT_SPACE) {
-                unsigned long new_vertex_size = temp_mesh->mesh.vertices.capacity() * kGrowthFactor;
-                unsigned long new_index_size = temp_mesh->mesh.indices.capacity() * kGrowthFactor;
-                new_index_size -= new_index_size % 3;
-                temp_mesh->mesh.vertices.resize(new_vertex_size);
-                temp_mesh->mesh.colors.resize(new_vertex_size);
-                temp_mesh->mesh.indices.resize(new_index_size);
-                temp_mesh->tango_mesh.max_num_vertices = static_cast<uint32_t>(temp_mesh->mesh.vertices.capacity());
-                temp_mesh->tango_mesh.max_num_faces = static_cast<uint32_t>(temp_mesh->mesh.indices.capacity() / 3);
-                temp_mesh->tango_mesh.vertices = reinterpret_cast<Tango3DR_Vector3 *>(temp_mesh->mesh.vertices.data());
-                temp_mesh->tango_mesh.colors = reinterpret_cast<Tango3DR_Color *>(temp_mesh->mesh.colors.data());
-                temp_mesh->tango_mesh.faces = reinterpret_cast<Tango3DR_Face *>(temp_mesh->mesh.indices.data());
-            } else
-                break;
-        }
-    }
-
     void MeshBuilderApp::SaveFrame() {
         if (t3dr_image.format != TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP)
             std::exit(EXIT_SUCCESS);
@@ -641,7 +568,7 @@ namespace mesh_builder {
         render_mutex_.unlock();
     }
 
-    void MeshBuilderApp::WritePNG(const char* filename, u_int32_t width, u_int32_t height, unsigned char *buffer) {
+    void MeshBuilderApp::WritePNG(const char* filename, int width, int height, unsigned char *buffer) {
         // Open file for writing (binary mode)
         FILE *fp = fopen(filename, "wb");
 

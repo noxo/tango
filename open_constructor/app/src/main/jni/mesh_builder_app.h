@@ -69,9 +69,8 @@ namespace mesh_builder {
         void TangoDisconnect();
         void DeleteResources();
         void MeshUpdate();
-        void GetTempMesh();
         void SaveFrame();
-        void WritePNG(const char* filename, u_int32_t width, u_int32_t height, unsigned char *buffer);
+        void WritePNG(const char* filename, int width, int height, unsigned char *buffer);
 
         std::string dataset_;
         bool t3dr_is_running_;
@@ -85,7 +84,6 @@ namespace mesh_builder {
         std::mutex render_mutex_;
         Scene main_scene_;
         TangoConfig tango_config_;
-        std::shared_ptr<SingleDynamicMesh> temp_mesh;
         std::unordered_map<GridIndex, SingleDynamicMesh*, GridIndexHasher> meshes_;
         bool hasNewFrame;
         bool gyro;
