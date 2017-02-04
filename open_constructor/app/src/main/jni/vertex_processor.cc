@@ -56,6 +56,7 @@ namespace mesh_builder {
     }
 
     void VertexProcessor::collideMesh(SingleDynamicMesh* slave, glm::mat4 to2d, Tango3DR_CameraCalibration calibration) {
+        std::vector<glm::ivec3> faces;
         std::vector<glm::vec2> uvs;
         slave->mutex.lock();
         for (unsigned int i = 0; i < slave->mesh.vertices.size(); i++) {
@@ -70,15 +71,23 @@ namespace mesh_builder {
             v.y += calibration.cy / (float)calibration.height;
             uvs.push_back(glm::vec2(v.x, v.y));
         }
+        for (unsigned int i = 0; i < slave->mesh.indices.size() / 3; i++) {
+            faces.push_back(glm::ivec3(slave->mesh.indices[i * 3 + 0],
+                                       slave->mesh.indices[i * 3 + 1],
+                                       slave->mesh.indices[i * 3 + 2]));
+        }
+        slave->mutex.unlock();
+
         unsigned int a, b, c, d, e, f, count;
-        for (unsigned int i = 0; i < temp_mesh->tango_mesh.num_faces; i++) {
-            a = temp_mesh->tango_mesh.faces[i][0];
-            b = temp_mesh->tango_mesh.faces[i][1];
-            c = temp_mesh->tango_mesh.faces[i][2];
-            for (int j = slave->mesh.indices.size() / 3 - 1; j >= 0; j--) {
-                d = slave->mesh.indices[j * 3 + 0];
-                e = slave->mesh.indices[j * 3 + 1];
-                f = slave->mesh.indices[j * 3 + 2];
+        std::vector<unsigned int> toDelete;
+        for (unsigned int j = 0; j < faces.size(); j++) {
+            for (unsigned int i = 0; i < temp_mesh->tango_mesh.num_faces; i++) {
+                a = temp_mesh->tango_mesh.faces[i][0];
+                b = temp_mesh->tango_mesh.faces[i][1];
+                c = temp_mesh->tango_mesh.faces[i][2];
+                d = (unsigned int) faces[j].x;
+                e = (unsigned int) faces[j].y;
+                f = (unsigned int) faces[j].z;
                 count = 0;
                 if (intersect(temp_mesh->mesh.uv[a], temp_mesh->mesh.uv[b], uvs[d], uvs[e]))
                     count++;
@@ -86,27 +95,30 @@ namespace mesh_builder {
                     count++;
                 else if (intersect(temp_mesh->mesh.uv[a], temp_mesh->mesh.uv[b], uvs[e], uvs[f]))
                     count++;
-
-                if (intersect(temp_mesh->mesh.uv[a], temp_mesh->mesh.uv[c], uvs[d], uvs[e]))
+                else if (intersect(temp_mesh->mesh.uv[a], temp_mesh->mesh.uv[c], uvs[d], uvs[e]))
                     count++;
                 else if (intersect(temp_mesh->mesh.uv[a], temp_mesh->mesh.uv[c], uvs[d], uvs[f]))
                     count++;
                 else if (intersect(temp_mesh->mesh.uv[a], temp_mesh->mesh.uv[c], uvs[e], uvs[f]))
                     count++;
-
-                if (intersect(temp_mesh->mesh.uv[b], temp_mesh->mesh.uv[c], uvs[d], uvs[e]))
+                else if (intersect(temp_mesh->mesh.uv[b], temp_mesh->mesh.uv[c], uvs[d], uvs[e]))
                     count++;
                 else if (intersect(temp_mesh->mesh.uv[b], temp_mesh->mesh.uv[c], uvs[d], uvs[f]))
                     count++;
                 else if (intersect(temp_mesh->mesh.uv[b], temp_mesh->mesh.uv[c], uvs[e], uvs[f]))
                     count++;
-                if (count == 3) {
-                    slave->mesh.indices.erase(slave->mesh.indices.begin() + j * 3 + 2);
-                    slave->mesh.indices.erase(slave->mesh.indices.begin() + j * 3 + 1);
-                    slave->mesh.indices.erase(slave->mesh.indices.begin() + j * 3 + 0);
+                if (count == 1) {
+                    toDelete.push_back(j);
                     break;
                 }
             }
+        }
+
+        slave->mutex.lock();
+        for (int i = toDelete.size() - 1; i >= 0; i--) {
+            slave->mesh.indices.erase(slave->mesh.indices.begin() + toDelete[i] * 3 + 2);
+            slave->mesh.indices.erase(slave->mesh.indices.begin() + toDelete[i] * 3 + 1);
+            slave->mesh.indices.erase(slave->mesh.indices.begin() + toDelete[i] * 3 + 0);
         }
         slave->mutex.unlock();
     }
