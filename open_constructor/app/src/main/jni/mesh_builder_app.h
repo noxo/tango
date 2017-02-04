@@ -85,6 +85,7 @@ namespace mesh_builder {
         Scene main_scene_;
         TangoConfig tango_config_;
         std::unordered_map<GridIndex, SingleDynamicMesh*, GridIndexHasher> meshes_;
+        std::unordered_map<GridIndex, std::vector<SingleDynamicMesh*>, GridIndexHasher> polygonUsage;
         bool hasNewFrame;
         bool gyro;
         bool landscape;

@@ -386,7 +386,9 @@ namespace mesh_builder {
     void MeshBuilderApp::OnClearButtonClicked() {
         binder_mutex_.lock();
         Tango3DR_clear(t3dr_context_);
+        textureId = 0;
         meshes_.clear();
+        polygonUsage.clear();
         main_scene_.ClearDynamicMeshes();
         binder_mutex_.unlock();
     }
@@ -441,25 +443,24 @@ namespace mesh_builder {
         if (textured) {
             //extract textured mesh
             glm::mat4 world2uv = glm::inverse(image_matrix);
-            tango_gl::StaticMesh debug;
-            SingleDynamicMesh* dynamic_mesh = new SingleDynamicMesh();
             for (unsigned long it = 0; it < indices.size(); ++it) {
                 GridIndex updated_index = indices[it];
+                SingleDynamicMesh* dynamic_mesh = new SingleDynamicMesh();
                 VertexProcessor vp(t3dr_context_, updated_index.indices);
                 vp.getMeshWithUV(world2uv, t3dr_intrinsics_, dynamic_mesh);
-                vp.getDebugMesh(&debug);
+                for (SingleDynamicMesh* j : polygonUsage[updated_index])
+                    vp.collideMesh(j, world2uv, t3dr_intrinsics_);
+                if (!dynamic_mesh->mesh.indices.empty()) {
+                    polygonUsage[updated_index].push_back(dynamic_mesh);
+                    dynamic_mesh->size = (int) dynamic_mesh->mesh.indices.size();
+                    dynamic_mesh->mesh.texture = textureId;
+                    render_mutex_.lock();
+                    main_scene_.AddDynamicMesh(dynamic_mesh);
+                    render_mutex_.unlock();
+                } else
+                    delete dynamic_mesh;
             }
-
-            if (!dynamic_mesh->mesh.indices.empty()) {
-                dynamic_mesh->size = (int) dynamic_mesh->mesh.indices.size();
-                dynamic_mesh->mesh.texture = textureId;
-                textureId++;
-                render_mutex_.lock();
-                main_scene_.AddDynamicMesh(dynamic_mesh);
-                main_scene_.debug_meshes_.push_back(debug);
-                render_mutex_.unlock();
-            } else
-                delete dynamic_mesh;
+            textureId++;
         } else {
             for (unsigned long it = 0; it < indices.size(); ++it) {
                 GridIndex updated_index = indices[it];

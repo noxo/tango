@@ -55,6 +55,62 @@ namespace mesh_builder {
 
     }
 
+    void VertexProcessor::collideMesh(SingleDynamicMesh* slave, glm::mat4 to2d, Tango3DR_CameraCalibration calibration) {
+        std::vector<glm::vec2> uvs;
+        slave->mutex.lock();
+        for (unsigned int i = 0; i < slave->mesh.vertices.size(); i++) {
+            glm::vec4 v = glm::vec4(slave->mesh.vertices[i].x,
+                                    slave->mesh.vertices[i].y,
+                                    slave->mesh.vertices[i].z, 1);
+            v = to2d * v;
+            v /= fabs(v.w * v.z);
+            v.x *= calibration.fx / (float)calibration.width;
+            v.y *= calibration.fy / (float)calibration.height;
+            v.x += calibration.cx / (float)calibration.width;
+            v.y += calibration.cy / (float)calibration.height;
+            uvs.push_back(glm::vec2(v.x, v.y));
+        }
+        unsigned int a, b, c, d, e, f, count;
+        for (unsigned int i = 0; i < temp_mesh->tango_mesh.num_faces; i++) {
+            a = temp_mesh->tango_mesh.faces[i][0];
+            b = temp_mesh->tango_mesh.faces[i][1];
+            c = temp_mesh->tango_mesh.faces[i][2];
+            for (int j = slave->mesh.indices.size() / 3 - 1; j >= 0; j--) {
+                d = slave->mesh.indices[j * 3 + 0];
+                e = slave->mesh.indices[j * 3 + 1];
+                f = slave->mesh.indices[j * 3 + 2];
+                count = 0;
+                if (intersect(temp_mesh->mesh.uv[a], temp_mesh->mesh.uv[b], uvs[d], uvs[e]))
+                    count++;
+                else if (intersect(temp_mesh->mesh.uv[a], temp_mesh->mesh.uv[b], uvs[d], uvs[f]))
+                    count++;
+                else if (intersect(temp_mesh->mesh.uv[a], temp_mesh->mesh.uv[b], uvs[e], uvs[f]))
+                    count++;
+
+                if (intersect(temp_mesh->mesh.uv[a], temp_mesh->mesh.uv[c], uvs[d], uvs[e]))
+                    count++;
+                else if (intersect(temp_mesh->mesh.uv[a], temp_mesh->mesh.uv[c], uvs[d], uvs[f]))
+                    count++;
+                else if (intersect(temp_mesh->mesh.uv[a], temp_mesh->mesh.uv[c], uvs[e], uvs[f]))
+                    count++;
+
+                if (intersect(temp_mesh->mesh.uv[b], temp_mesh->mesh.uv[c], uvs[d], uvs[e]))
+                    count++;
+                else if (intersect(temp_mesh->mesh.uv[b], temp_mesh->mesh.uv[c], uvs[d], uvs[f]))
+                    count++;
+                else if (intersect(temp_mesh->mesh.uv[b], temp_mesh->mesh.uv[c], uvs[e], uvs[f]))
+                    count++;
+                if (count == 3) {
+                    slave->mesh.indices.erase(slave->mesh.indices.begin() + j * 3 + 2);
+                    slave->mesh.indices.erase(slave->mesh.indices.begin() + j * 3 + 1);
+                    slave->mesh.indices.erase(slave->mesh.indices.begin() + j * 3 + 0);
+                    break;
+                }
+            }
+        }
+        slave->mutex.unlock();
+    }
+
     void VertexProcessor::getMeshWithUV(glm::mat4 world2uv, Tango3DR_CameraCalibration calibration,
                                         SingleDynamicMesh* result) {
         result->mesh.render_mode = GL_TRIANGLES;
@@ -74,6 +130,7 @@ namespace mesh_builder {
                                                       temp_mesh->tango_mesh.vertices[i][1],
                                                       temp_mesh->tango_mesh.vertices[i][2]));
             topology.push_back(std::map<unsigned int, bool>());
+            temp_mesh->mesh.uv.push_back(glm::vec2(v.x, v.y));
         }
         unsigned int a, b, c;
         for (unsigned int i = 0; i < temp_mesh->tango_mesh.num_faces; i++) {
@@ -89,20 +146,13 @@ namespace mesh_builder {
         }
     }
 
-    void VertexProcessor::getDebugMesh(tango_gl::StaticMesh *result) {
-        result->render_mode = GL_LINES;
-        for (unsigned int i = 0; i < temp_mesh->tango_mesh.num_vertices; i++) {
-            glm::vec3 v = glm::vec3(temp_mesh->tango_mesh.vertices[i][0],
-                                    temp_mesh->tango_mesh.vertices[i][1],
-                                    temp_mesh->tango_mesh.vertices[i][2]);
-            for (std::pair<const unsigned int, bool> &j : topology[i]) {
-                result->vertices.push_back(v);
-                result->vertices.push_back(glm::vec3(temp_mesh->tango_mesh.vertices[j.first][0],
-                                                     temp_mesh->tango_mesh.vertices[j.first][1],
-                                                     temp_mesh->tango_mesh.vertices[j.first][2]));
-                result->colors.push_back(0xFFFFFFFF);
-                result->colors.push_back(0xFFFFFFFF);
-            }
-        }
+    bool VertexProcessor::intersect(glm::vec2 const& p0, glm::vec2 const& p1, glm::vec2 const& p2, glm::vec2 const& p3) {
+        glm::vec2 const s1 = p1 - p0;
+        glm::vec2 const s2 = p3 - p2;
+        glm::vec2 const u = p0 - p2;
+        float const ip = 1.f / (-s2.x * s1.y + s1.x * s2.y);
+        float const s = (-s1.y * u.x + s1.x * u.y) * ip;
+        float const t = ( s2.x * u.y - s2.y * u.x) * ip;
+        return s >= 0 && s <= 1 && t >= 0 && t <= 1;
     }
 }
