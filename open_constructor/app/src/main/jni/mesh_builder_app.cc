@@ -248,6 +248,11 @@ namespace mesh_builder {
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
+        /*int factor = textured ? 300 : 30;
+        t3dr_err = Tango3DR_Config_setInt32(t3dr_config, "mesh_simplification_factor", factor);
+        if (t3dr_err != TANGO_3DR_SUCCESS)
+            std::exit(EXIT_SUCCESS);*/
+
         Tango3DR_Config_setInt32(t3dr_config, "min_num_vertices", noise);
         Tango3DR_Config_setInt32(t3dr_config, "update_method", TANGO_3DR_PROJECTIVE_UPDATE);
 
@@ -438,20 +443,24 @@ namespace mesh_builder {
         Tango3DR_Status ret;
         if (textured) {
             //extract textured mesh
+            tango_gl::StaticMesh debug;
             glm::mat4 world2uv = glm::inverse(image_matrix);
             for (unsigned long it = 0; it < indices.size(); ++it) {
                 GridIndex updated_index = indices[it];
                 SingleDynamicMesh* dynamic_mesh = new SingleDynamicMesh();
                 VertexProcessor vp(t3dr_context_, updated_index.indices);
                 vp.getMeshWithUV(world2uv, t3dr_intrinsics_, dynamic_mesh);
-                for (SingleDynamicMesh* j : polygonUsage[updated_index])
-                    vp.collideMesh(j, world2uv, t3dr_intrinsics_);
+                vp.getDebugMesh(&debug);
+                /*for (SingleDynamicMesh* j : polygonUsage[updated_index])
+                    vp.collideMesh(j, world2uv, t3dr_intrinsics_);*/
                 if (!dynamic_mesh->mesh.indices.empty()) {
                     polygonUsage[updated_index].push_back(dynamic_mesh);
                     dynamic_mesh->size = (int) dynamic_mesh->mesh.indices.size();
                     dynamic_mesh->mesh.texture = textureId;
                     render_mutex_.lock();
                     main_scene_.AddDynamicMesh(dynamic_mesh);
+                    main_scene_.debug_meshes_.clear();
+                    main_scene_.debug_meshes_.push_back(debug);
                     render_mutex_.unlock();
                 } else
                     delete dynamic_mesh;

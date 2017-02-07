@@ -115,7 +115,7 @@ namespace mesh_builder {
         }
 
         slave->mutex.lock();
-        for (int i = toDelete.size() - 1; i >= 0; i--) {
+        for (long i = toDelete.size() - 1; i >= 0; i--) {
             slave->mesh.indices.erase(slave->mesh.indices.begin() + toDelete[i] * 3 + 2);
             slave->mesh.indices.erase(slave->mesh.indices.begin() + toDelete[i] * 3 + 1);
             slave->mesh.indices.erase(slave->mesh.indices.begin() + toDelete[i] * 3 + 0);
@@ -123,10 +123,27 @@ namespace mesh_builder {
         slave->mutex.unlock();
     }
 
+    void VertexProcessor::getDebugMesh(tango_gl::StaticMesh *result) {
+        result->render_mode = GL_LINES;
+        for (unsigned int i = 0; i < temp_mesh->tango_mesh.num_vertices; i++) {
+            glm::vec3 v = glm::vec3(temp_mesh->tango_mesh.vertices[i][0],
+                                    temp_mesh->tango_mesh.vertices[i][1],
+                                    temp_mesh->tango_mesh.vertices[i][2]);
+            for (std::pair<const unsigned int, bool> &j : topology[i]) {
+                result->vertices.push_back(v);
+                result->vertices.push_back(glm::vec3(temp_mesh->tango_mesh.vertices[j.first][0],
+                                                     temp_mesh->tango_mesh.vertices[j.first][1],
+                                                     temp_mesh->tango_mesh.vertices[j.first][2]));
+                result->colors.push_back(0xFFFFFFFF);
+                result->colors.push_back(0xFFFFFFFF);
+            }
+        }
+    }
+    
     void VertexProcessor::getMeshWithUV(glm::mat4 world2uv, Tango3DR_CameraCalibration calibration,
                                         SingleDynamicMesh* result) {
         result->mesh.render_mode = GL_TRIANGLES;
-        unsigned int offset = result->mesh.vertices.size();
+        unsigned long offset = result->mesh.vertices.size();
         for (unsigned int i = 0; i < temp_mesh->tango_mesh.num_vertices; i++) {
             glm::vec4 v = glm::vec4(temp_mesh->tango_mesh.vertices[i][0],
                                     temp_mesh->tango_mesh.vertices[i][1],

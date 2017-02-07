@@ -8,6 +8,7 @@ namespace mesh_builder {
         VertexProcessor(Tango3DR_Context context, Tango3DR_GridIndex index);
         ~VertexProcessor();
         void collideMesh(SingleDynamicMesh* slave, glm::mat4 to2d, Tango3DR_CameraCalibration calibration);
+        void getDebugMesh(tango_gl::StaticMesh* result);
         void getMeshWithUV(glm::mat4 world2uv, Tango3DR_CameraCalibration calibration,
                            SingleDynamicMesh* result);
     private:
