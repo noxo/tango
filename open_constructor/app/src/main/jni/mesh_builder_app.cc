@@ -45,7 +45,7 @@ namespace {
         glm::vec3 translation;
         glm::quat rotation;
         glm::vec3 scale;
-        tango_gl::util::DecomposeMatrix(mat, translation, rotation, scale);
+        tango_gl::util::DecomposeMatrix(mat, &translation, &rotation, &scale);
         pose.translation[0] = translation[0];
         pose.translation[1] = translation[1];
         pose.translation[2] = translation[2];
@@ -217,10 +217,6 @@ namespace mesh_builder {
         ret = TangoConfig_setBool(tango_config_, "config_enable_color_camera", true);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
-
-        /*TangoConfig_setBool(tango_config_, "config_color_mode_auto", false);
-        TangoConfig_setInt32(tango_config_, "config_color_iso", 800);
-        TangoConfig_setInt32(tango_config_, "config_color_exp", (int32_t) floor(11.1 * 2.0));*/
     }
 
     void MeshBuilderApp::TangoSetup3DR(double res, double dmin, double dmax, int noise) {
