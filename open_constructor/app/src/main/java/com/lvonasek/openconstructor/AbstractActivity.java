@@ -4,9 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
-import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -33,10 +31,6 @@ public abstract class AbstractActivity extends Activity
   protected static final String TAG = "tango_app";
   protected static final String TEMP_DIRECTORY = "temp";
   protected static final String ZIP_TEMP = "upload.zip";
-  protected static final int REQUEST_CODE_PERMISSION_CAMERA = 1987;
-  protected static final int REQUEST_CODE_PERMISSION_READ_STORAGE = 1988;
-  protected static final int REQUEST_CODE_PERMISSION_WRITE_STORAGE = 1989;
-  protected static final int REQUEST_CODE_PERMISSION_INTERNET = 1990;
 
   public static boolean isPortrait(Context context) {
     SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
@@ -134,16 +128,6 @@ public abstract class AbstractActivity extends Activity
     return dir;
   }
 
-  protected void setupPermission(String permission, int requestCode) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED)
-        requestPermissions(new String[]{permission}, requestCode);
-      else
-        onRequestPermissionsResult(requestCode, null, new int[]{PackageManager.PERMISSION_GRANTED});
-    } else
-      onRequestPermissionsResult(requestCode, null, new int[]{PackageManager.PERMISSION_GRANTED});
-  }
-
   protected void zip(String[] files, String zip) throws Exception {
     try (ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip))))
     {
@@ -164,6 +148,4 @@ public abstract class AbstractActivity extends Activity
       }
     }
   }
-
-  public abstract void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults);
 }

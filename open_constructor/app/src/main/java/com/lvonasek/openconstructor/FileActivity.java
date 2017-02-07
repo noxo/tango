@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -20,6 +21,8 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
   private LinearLayout mLayout;
   private ProgressBar mProgress;
   private TextView mText;
+
+  private static final int PERMISSIONS_CODE = 1987;
 
   @Override
   protected void onCreate(Bundle savedInstanceState)
@@ -42,7 +45,7 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
     super.onResume();
     mLayout.setVisibility(View.VISIBLE);
     mProgress.setVisibility(View.GONE);
-    setupPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, REQUEST_CODE_PERMISSION_WRITE_STORAGE);
+    setupPermissions();
   }
 
   public void refreshUI()
@@ -60,6 +63,26 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
     mProgress.setVisibility(View.GONE);
   }
 
+  protected void setupPermissions() {
+    String[] permissions = {
+            Manifest.permission.CAMERA,
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+    };
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      boolean ok = true;
+      for (String s : permissions)
+        if (checkSelfPermission(s) != PackageManager.PERMISSION_GRANTED)
+          ok = false;
+
+      if (!ok)
+        requestPermissions(permissions, PERMISSIONS_CODE);
+      else
+        onRequestPermissionsResult(PERMISSIONS_CODE, null, new int[]{PackageManager.PERMISSION_GRANTED});
+    } else
+      onRequestPermissionsResult(PERMISSIONS_CODE, null, new int[]{PackageManager.PERMISSION_GRANTED});
+  }
+
   public void showProgress()
   {
     mLayout.setVisibility(View.GONE);
@@ -71,21 +94,13 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
   {
     switch (requestCode)
     {
-      case REQUEST_CODE_PERMISSION_READ_STORAGE:
+      case PERMISSIONS_CODE:
       {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
         {
           deleteRecursive(getTempPath());
           refreshUI();
         } else
-          finish();
-        break;
-      }
-      case REQUEST_CODE_PERMISSION_WRITE_STORAGE:
-      {
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
-          setupPermission(Manifest.permission.READ_EXTERNAL_STORAGE, REQUEST_CODE_PERMISSION_READ_STORAGE);
-        else
           finish();
         break;
       }

@@ -16,14 +16,12 @@
 
 package com.lvonasek.openconstructor;
 
-import android.Manifest;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.ServiceConnection;
-import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.opengl.GLSurfaceView;
@@ -261,8 +259,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       m3drRunning = false;
       TangoJNINative.onToggleButtonClicked(false);
       refreshUi();
-      //save
-      setupPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, REQUEST_CODE_PERMISSION_WRITE_STORAGE);
+      save();
       break;
     }
     refreshUi();
@@ -299,8 +296,10 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
           }
         }).start();
       }
-    } else if(!mInitialised && !mTangoBinded)
-      setupPermission(Manifest.permission.CAMERA, REQUEST_CODE_PERMISSION_CAMERA);
+    } else if(!mInitialised && !mTangoBinded) {
+      TangoInitHelper.bindTangoService(this, mTangoServiceConnection);
+      mTangoBinded = true;
+    }
   }
 
   @Override
@@ -354,94 +353,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     else
       mResText.setTextColor(Color.WHITE);
     mResText.setText(text);
-  }
-
-  @Override
-  public synchronized void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-    switch (requestCode) {
-      case REQUEST_CODE_PERMISSION_CAMERA: {
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-          TangoInitHelper.bindTangoService(this, mTangoServiceConnection);
-          mTangoBinded = true;
-        } else
-          finish();
-        break;
-      }
-      case REQUEST_CODE_PERMISSION_WRITE_STORAGE: {
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-          //filename dialog
-          final Context context = OpenConstructorActivity.this;
-          AlertDialog.Builder builder = new AlertDialog.Builder(context);
-          builder.setTitle(getString(R.string.enter_filename));
-          final EditText input = new EditText(context);
-          builder.setView(input);
-          builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-              mProgress.setVisibility(View.VISIBLE);
-              new Thread(new Runnable(){
-                @Override
-                public void run()
-                {
-                  //delete old during overwrite
-                  int type = isTexturingOn() ? 0 : 1;
-                  File file = new File(getPath(), input.getText().toString() + FILE_EXT[type]);
-                  if (isTexturingOn()) {
-                    try {
-                      if (file.exists())
-                        for(String s : getObjResources(file))
-                          if (new File(getPath(), s).delete())
-                            Log.d(AbstractActivity.TAG, "File " + s + " deleted");
-                    } catch(Exception e) {
-                      e.printStackTrace();
-                    }
-                  }
-                  //save
-                  File file2save = new File(getPath(), input.getText().toString() + FILE_EXT[type]);
-                  final String filename = file2save.getAbsolutePath();
-                  if (isTexturingOn()) {
-                    long timestamp = System.currentTimeMillis();
-                    File obj = new File(getPath(), timestamp + FILE_EXT[type]);
-                    TangoJNINative.save(obj.getAbsolutePath());
-                    if (obj.renameTo(file2save))
-                      Log.d(TAG, "Obj file " + file2save.toString() + " saved.");
-                  } else
-                    TangoJNINative.save(filename);
-                  //open???
-                  OpenConstructorActivity.this.runOnUiThread(new Runnable()
-                  {
-                    @Override
-                    public void run()
-                    {
-                      mProgress.setVisibility(View.GONE);
-                      AlertDialog.Builder builder = new AlertDialog.Builder(OpenConstructorActivity.this);
-                      builder.setTitle(getString(R.string.view));
-                      builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                          setViewerMode();
-                          dialog.cancel();
-                        }
-                      });
-                      builder.setNegativeButton(getString(android.R.string.cancel), new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                          dialog.cancel();
-                        }
-                      });
-                      builder.create().show();
-                    }
-                  });
-                }
-              }).start();
-              dialog.cancel();
-            }
-          });
-          builder.setNegativeButton(getString(android.R.string.cancel), null);
-          builder.create().show();
-        }
-      }
-    }
   }
 
   @Override
@@ -502,5 +413,78 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   // Called when the surface is created or recreated.
   public synchronized void onSurfaceCreated(GL10 gl, EGLConfig config) {
     TangoJNINative.onGlSurfaceCreated();
+  }
+
+  private void save() {
+    //filename dialog
+    final Context context = OpenConstructorActivity.this;
+    AlertDialog.Builder builder = new AlertDialog.Builder(context);
+    builder.setTitle(getString(R.string.enter_filename));
+    final EditText input = new EditText(context);
+    builder.setView(input);
+    builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
+      @Override
+      public void onClick(DialogInterface dialog, int which) {
+        mProgress.setVisibility(View.VISIBLE);
+        new Thread(new Runnable(){
+          @Override
+          public void run()
+          {
+            //delete old during overwrite
+            int type = isTexturingOn() ? 0 : 1;
+            File file = new File(getPath(), input.getText().toString() + FILE_EXT[type]);
+            if (isTexturingOn()) {
+              try {
+                if (file.exists())
+                  for(String s : getObjResources(file))
+                    if (new File(getPath(), s).delete())
+                      Log.d(AbstractActivity.TAG, "File " + s + " deleted");
+              } catch(Exception e) {
+                e.printStackTrace();
+              }
+            }
+            //save
+            File file2save = new File(getPath(), input.getText().toString() + FILE_EXT[type]);
+            final String filename = file2save.getAbsolutePath();
+            if (isTexturingOn()) {
+              long timestamp = System.currentTimeMillis();
+              File obj = new File(getPath(), timestamp + FILE_EXT[type]);
+              TangoJNINative.save(obj.getAbsolutePath());
+              if (obj.renameTo(file2save))
+                Log.d(TAG, "Obj file " + file2save.toString() + " saved.");
+            } else
+              TangoJNINative.save(filename);
+            //open???
+            OpenConstructorActivity.this.runOnUiThread(new Runnable()
+            {
+              @Override
+              public void run()
+              {
+                mProgress.setVisibility(View.GONE);
+                AlertDialog.Builder builder = new AlertDialog.Builder(OpenConstructorActivity.this);
+                builder.setTitle(getString(R.string.view));
+                builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
+                  @Override
+                  public void onClick(DialogInterface dialog, int which) {
+                    setViewerMode();
+                    dialog.cancel();
+                  }
+                });
+                builder.setNegativeButton(getString(android.R.string.cancel), new DialogInterface.OnClickListener() {
+                  @Override
+                  public void onClick(DialogInterface dialog, int which) {
+                    dialog.cancel();
+                  }
+                });
+                builder.create().show();
+              }
+            });
+          }
+        }).start();
+        dialog.cancel();
+      }
+    });
+    builder.setNegativeButton(getString(android.R.string.cancel), null);
+    builder.create().show();
   }
 }

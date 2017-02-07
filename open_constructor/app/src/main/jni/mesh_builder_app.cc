@@ -248,10 +248,11 @@ namespace mesh_builder {
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
-        /*int factor = textured ? 300 : 30;
-        t3dr_err = Tango3DR_Config_setInt32(t3dr_config, "mesh_simplification_factor", factor);
-        if (t3dr_err != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);*/
+        if (textured) {
+            t3dr_err = Tango3DR_Config_setInt32(t3dr_config, "mesh_simplification_factor", 300);
+            /*if (t3dr_err != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);*/
+        }
 
         Tango3DR_Config_setInt32(t3dr_config, "min_num_vertices", noise);
         Tango3DR_Config_setInt32(t3dr_config, "update_method", TANGO_3DR_PROJECTIVE_UPDATE);

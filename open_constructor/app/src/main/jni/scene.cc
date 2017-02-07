@@ -158,6 +158,7 @@ namespace mesh_builder {
             delete dynamic_meshes_[i];
         }
         dynamic_meshes_.clear();
+        textureMap.clear();
     }
 
 }  // namespace mesh_builder
