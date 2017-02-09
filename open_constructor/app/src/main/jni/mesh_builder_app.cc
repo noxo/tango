@@ -93,8 +93,8 @@ namespace mesh_builder {
             float diff = Math::diff(rot, image_rotation);
             image_rotation = rot;
             if (diff > 5) {
-                binder_mutex_.unlock();
                 hasNewFrame = false;
+                binder_mutex_.unlock();
                 return;
             }
         }

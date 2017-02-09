@@ -58,13 +58,14 @@ namespace mesh_builder {
     void VertexProcessor::getMeshWithUV(glm::mat4 world2uv, Tango3DR_CameraCalibration calibration,
                                         SingleDynamicMesh* result) {
         result->mesh.render_mode = GL_TRIANGLES;
+        std::vector<bool> valid;
         unsigned int offset = (unsigned int) result->mesh.vertices.size();
         for (unsigned int i = 0; i < temp_mesh->tango_mesh.num_vertices; i++) {
             glm::vec4 v = glm::vec4(temp_mesh->tango_mesh.vertices[i][0],
                                     temp_mesh->tango_mesh.vertices[i][1],
                                     temp_mesh->tango_mesh.vertices[i][2], 1);
             v = world2uv * v;
-            v /= fabs(v.w * v.z);
+            v /= glm::abs(v.w * v.z);
             v.x *= calibration.fx / (float)calibration.width;
             v.y *= calibration.fy / (float)calibration.height;
             v.x += calibration.cx / (float)calibration.width;
@@ -74,15 +75,18 @@ namespace mesh_builder {
                                                       temp_mesh->tango_mesh.vertices[i][1],
                                                       temp_mesh->tango_mesh.vertices[i][2]));
             temp_mesh->mesh.uv.push_back(glm::vec2(v.x, v.y));
+            valid.push_back((v.x > 0) && (v.y > 0) && (v.x < 1) && (v.y < 1));
         }
         unsigned int a, b, c;
         for (unsigned int i = 0; i < temp_mesh->tango_mesh.num_faces; i++) {
             a = temp_mesh->tango_mesh.faces[i][0];
             b = temp_mesh->tango_mesh.faces[i][1];
             c = temp_mesh->tango_mesh.faces[i][2];
-            result->mesh.indices.push_back(a + offset);
-            result->mesh.indices.push_back(b + offset);
-            result->mesh.indices.push_back(c + offset);
+            if(valid[a] && valid[b] && valid[c]) {
+                result->mesh.indices.push_back(a + offset);
+                result->mesh.indices.push_back(b + offset);
+                result->mesh.indices.push_back(c + offset);
+            }
         }
     }
 }
