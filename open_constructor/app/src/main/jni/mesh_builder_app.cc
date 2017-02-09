@@ -101,13 +101,14 @@ namespace mesh_builder {
         }
         if(textured) {
             SaveFrame();
-            Tango3DR_clear(t3dr_context_temp);
             Tango3DR_update(t3dr_context_temp, &t3dr_depth, &t3dr_depth_pose, &t3dr_image,
                             &t3dr_image_pose, &t3dr_updated);
         }
         Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image, &t3dr_image_pose,
                         &t3dr_updated);
         MeshUpdate();
+        if(textured)
+            Tango3DR_clear(t3dr_context_temp);
         binder_mutex_.unlock();
     }
 
@@ -451,7 +452,8 @@ namespace mesh_builder {
             glm::mat4 world2uv = glm::inverse(image_matrix);
             for (unsigned long it = 0; it < indices.size(); ++it) {
                 GridIndex updated_index = indices[it];
-                MaskProcessor mp(t3dr_context_temp, updated_index.indices);
+                MaskProcessor mp(t3dr_context_temp, updated_index.indices, t3dr_image.width / 4,
+                                 t3dr_image.height / 4, world2uv, t3dr_intrinsics_);
                 for (SingleDynamicMesh* mesh : polygonUsage[updated_index]) {
                     //TODO:delete masked triangles
                 }

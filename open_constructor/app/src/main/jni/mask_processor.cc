@@ -2,12 +2,16 @@
 #include "math_utils.h"
 
 SingleDynamicMesh* temp_mask_mesh = 0;
+std::vector<std::pair<int, glm::vec3> > fillCache1;
+std::vector<std::pair<int, glm::vec3> > fillCache2;
+
 const int kGrowthFactor = 2;
 const int kInitialVertexCount = 30;
 const int kInitialIndexCount = 99;
 
 namespace mesh_builder {
-    MaskProcessor::MaskProcessor(Tango3DR_Context context, Tango3DR_GridIndex index) {
+    MaskProcessor::MaskProcessor(Tango3DR_Context context, Tango3DR_GridIndex index, int w, int h,
+                                 glm::mat4 matrix, Tango3DR_CameraCalibration calib) {
         if (!temp_mask_mesh) {
             // Build a dynamic mesh and add it to the scene.
             temp_mask_mesh = new SingleDynamicMesh();
@@ -50,10 +54,35 @@ namespace mesh_builder {
             } else
                 break;
         }
+
+        buffer = new glm::vec3[w * h];
+        calibration = calib;
+        viewport_width = w;
+        viewport_height = h;
+        world2uv = matrix;
+
+        if (fillCache1.empty())
+            fillCache1.resize((unsigned long) (h + 1));
+        if (fillCache2.empty())
+            fillCache2.resize((unsigned long) (h + 1));
+
+        std::vector<glm::vec3> vertices;
+        unsigned int pos;
+        glm::vec3 vertex;
+        for (unsigned int i = 0; i < temp_mask_mesh->tango_mesh.max_num_faces; i++) {
+            for (unsigned int j = 0; j < 3; j++) {
+                pos = temp_mask_mesh->tango_mesh.faces[i][j];
+                vertex = glm::vec3(temp_mask_mesh->tango_mesh.vertices[pos][0],
+                                   temp_mask_mesh->tango_mesh.vertices[pos][1],
+                                   temp_mask_mesh->tango_mesh.vertices[pos][2]);
+                vertices.push_back(vertex);
+            }
+        }
+        triangles(&vertices[0].x, vertices.size() / 3);
     }
 
     MaskProcessor::~MaskProcessor() {
-
+        delete[] buffer;
     }
 
     bool MaskProcessor::line(int x1, int y1, int x2, int y2, glm::vec3 z1, glm::vec3 z2,
@@ -64,7 +93,6 @@ namespace mesh_builder {
         float t1 = 0, t2 = 1;
         if (test(-h, y1, t1, t2) && test(h, viewport_height - 1 - y1, t1, t2) ) {
             glm::vec3 z;
-            std::pair<int, glm::vec3> v;
             int c0, c1, xp0, xp1, yp0, yp1, y, p, w;
             bool wp, hp;
 
@@ -126,9 +154,8 @@ namespace mesh_builder {
             p = c0 - w;
             c1 = p - w;
             y = y1;
-            v.first = x1;
-            v.second = z1;
-            fillCache[y] = v;
+            fillCache[y].first = x1;
+            fillCache[y].second = z1;
             for (w--; w >= 0; w--) {
 
                 //interpolate
@@ -146,9 +173,8 @@ namespace mesh_builder {
                 //write cache info
                 if (wp || (y != y1)) {
                     y = y1;
-                    v.first = x1;
-                    v.second = z1;
-                    fillCache[y] = v;
+                    fillCache[y].first = x1;
+                    fillCache[y].second = z1;
                 }
             }
             return true;
@@ -185,17 +211,13 @@ namespace mesh_builder {
         return true;
     }
 
-    void MaskProcessor::triangles(float* vertices, int size) {
+    void MaskProcessor::triangles(float* vertices, unsigned long size) {
         int ab, ac, bc, step, x, x1, x2, y, min, mem, memy, max;
         float t1, t2;
         glm::vec4 a, b, c;
         glm::vec3 az, bz, cz, z, z1, z2;
-
-        std::pair<int, glm::vec3>* fillCache1 = new std::pair<int, glm::vec3>[viewport_height + 1];
-        std::pair<int, glm::vec3>* fillCache2 = new std::pair<int, glm::vec3>[viewport_height + 1];
-
         int v = 0;
-        for (unsigned int i = 0; i < size; i++, v += 9) {
+        for (unsigned long i = 0; i < size; i++, v += 9) {
             //get vertices
             a = glm::vec4(vertices[v + 0], vertices[v + 1], vertices[v + 2], 1.0f);
             b = glm::vec4(vertices[v + 3], vertices[v + 4], vertices[v + 5], 1.0f);
@@ -221,23 +243,23 @@ namespace mesh_builder {
             ac = (int) glm::abs(a.y - c.y);
             bc = (int) glm::abs(b.y - c.y);
             if ((ab >= ac) && (ab >= bc)) {
-                line(a.x, a.y, b.x, b.y, az, bz, fillCache1);
-                line(a.x, a.y, c.x, c.y, az, cz, fillCache2);
-                line(b.x, b.y, c.x, c.y, bz, cz, fillCache2);
+                line(a.x, a.y, b.x, b.y, az, bz, &fillCache1[0]);
+                line(a.x, a.y, c.x, c.y, az, cz, &fillCache2[0]);
+                line(b.x, b.y, c.x, c.y, bz, cz, &fillCache2[0]);
                 min = glm::max(0, (int) glm::min(a.y, b.y));
-                max = glm::min(glm::max(a.y, b.y), viewport_height - 1.0f);
+                max = glm::min((int) glm::max(a.y, b.y), viewport_height - 1);
             } else if ((ac >= ab) && (ac >= bc)) {
-                line(a.x, a.y, c.x, c.y, az, cz, fillCache1);
-                line(a.x, a.y, b.x, b.y, az, bz, fillCache2);
-                line(b.x, b.y, c.x, c.y, bz, cz, fillCache2);
+                line(a.x, a.y, c.x, c.y, az, cz, &fillCache1[0]);
+                line(a.x, a.y, b.x, b.y, az, bz, &fillCache2[0]);
+                line(b.x, b.y, c.x, c.y, bz, cz, &fillCache2[0]);
                 min = glm::max(0, (int) glm::min(a.y, c.y));
-                max = glm::min(glm::max(a.y, c.y), viewport_height - 1.0f);
-            } else if ((bc >= ab) && (bc >= ac)) {
-                line(b.x, b.y, c.x, c.y, bz, cz, fillCache1);
-                line(a.x, a.y, b.x, b.y, az, bz, fillCache2);
-                line(a.x, a.y, c.x, c.y, az, cz, fillCache2);
+                max = glm::min((int) glm::max(a.y, c.y), viewport_height - 1);
+            }else {
+                line(b.x, b.y, c.x, c.y, bz, cz, &fillCache1[0]);
+                line(a.x, a.y, b.x, b.y, az, bz, &fillCache2[0]);
+                line(a.x, a.y, c.x, c.y, az, cz, &fillCache2[0]);
                 min = glm::max(0, (int) glm::min(b.y, c.y));
-                max = glm::min(glm::max(b.y, c.y), viewport_height - 1.0f);
+                max = glm::min((int) glm::max(b.y, c.y), viewport_height - 1);
             }
 
             //fill triangle
@@ -283,7 +305,5 @@ namespace mesh_builder {
                 memy += viewport_width;
             }
         }
-        delete[] fillCache1;
-        delete[] fillCache2;
     }
 }
