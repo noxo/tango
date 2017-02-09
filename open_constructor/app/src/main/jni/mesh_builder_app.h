@@ -80,6 +80,7 @@ namespace mesh_builder {
         Tango3DR_CameraCalibration t3dr_intrinsics_depth;
         Tango3DR_ImageBuffer t3dr_image;
         glm::mat4 image_matrix;
+        glm::quat image_rotation;
         std::mutex binder_mutex_;
         std::mutex render_mutex_;
         Scene main_scene_;

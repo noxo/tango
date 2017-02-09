@@ -20,6 +20,7 @@
 #include <map>
 #include <sstream>
 
+#include "math_utils.h"
 #include "mesh_builder_app.h"
 #include "vertex_processor.h"
 
@@ -38,22 +39,6 @@ namespace {
     void onFrameAvailableRouter(void *context, TangoCameraId id, const TangoImageBuffer *buffer) {
         mesh_builder::MeshBuilderApp *app = static_cast<mesh_builder::MeshBuilderApp *>(context);
         app->onFrameAvailable(id, buffer);
-    }
-
-    Tango3DR_Pose extract3DRPose(const glm::mat4 &mat) {
-        Tango3DR_Pose pose;
-        glm::vec3 translation;
-        glm::quat rotation;
-        glm::vec3 scale;
-        tango_gl::util::DecomposeMatrix(mat, &translation, &rotation, &scale);
-        pose.translation[0] = translation[0];
-        pose.translation[1] = translation[1];
-        pose.translation[2] = translation[2];
-        pose.orientation[0] = rotation[0];
-        pose.orientation[1] = rotation[1];
-        pose.orientation[2] = rotation[2];
-        pose.orientation[3] = rotation[3];
-        return pose;
     }
 }  // namespace
 
@@ -86,7 +71,7 @@ namespace mesh_builder {
         point_cloud_matrix_[3][0] *= scale;
         point_cloud_matrix_[3][1] *= scale;
         point_cloud_matrix_[3][2] *= scale;
-        if (fabs(1 - scale) > 0.005f) {
+        if (glm::abs(1 - scale) > 0.005f) {
             for (unsigned int i = 0; i < point_cloud->num_points; i++) {
                 point_cloud->points[i][0] *= scale;
                 point_cloud->points[i][1] *= scale;
@@ -98,10 +83,23 @@ namespace mesh_builder {
         t3dr_depth.timestamp = point_cloud->timestamp;
         t3dr_depth.num_points = point_cloud->num_points;
         t3dr_depth.points = point_cloud->points;
-        t3dr_depth_pose = extract3DRPose(point_cloud_matrix_);
+        t3dr_depth_pose = Math::extract3DRPose(point_cloud_matrix_);
+        Tango3DR_Pose t3dr_image_pose = Math::extract3DRPose(image_matrix);
+        if(!photoMode) {
+            glm::quat rot = glm::quat((float) t3dr_image_pose.orientation[0],
+                                      (float) t3dr_image_pose.orientation[1],
+                                      (float) t3dr_image_pose.orientation[2],
+                                      (float) t3dr_image_pose.orientation[3]);
+            float diff = Math::diff(rot, image_rotation);
+            image_rotation = rot;
+            if (diff > 5) {
+                binder_mutex_.unlock();
+                hasNewFrame = false;
+                return;
+            }
+        }
         if(textured)
             SaveFrame();
-        Tango3DR_Pose t3dr_image_pose = extract3DRPose(image_matrix);
         Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image, &t3dr_image_pose,
                         &t3dr_updated);
         MeshUpdate();
