@@ -11,7 +11,7 @@ struct SingleDynamicMesh {
     Tango3DR_Mesh tango_mesh;
     tango_gl::StaticMesh mesh;
     std::mutex mutex;
-    int size;
+    unsigned long size;
 };
 
 struct TextureToLoad {

@@ -455,15 +455,17 @@ namespace mesh_builder {
                 MaskProcessor mp(t3dr_context_temp, updated_index.indices, t3dr_image.width / 4,
                                  t3dr_image.height / 4, world2uv, t3dr_intrinsics_);
                 for (SingleDynamicMesh* mesh : polygonUsage[updated_index]) {
-                    //TODO:delete masked triangles
+                    mesh->mutex.lock();
+                    mp.maskMesh(mesh, false);
+                    mesh->mutex.unlock();
                 }
                 SingleDynamicMesh* dynamic_mesh = new SingleDynamicMesh();
                 VertexProcessor vp(t3dr_context_, updated_index.indices);
                 vp.getMeshWithUV(world2uv, t3dr_intrinsics_, dynamic_mesh);
-                //TODO:delete unmasked triangles
                 if (!dynamic_mesh->mesh.indices.empty()) {
+                    //mp.maskMesh(dynamic_mesh, true);//TODO:make this line working well
                     polygonUsage[updated_index].push_back(dynamic_mesh);
-                    dynamic_mesh->size = (int) dynamic_mesh->mesh.indices.size();
+                    dynamic_mesh->size = dynamic_mesh->mesh.indices.size();
                     dynamic_mesh->mesh.texture = textureId;
                     render_mutex_.lock();
                     main_scene_.AddDynamicMesh(dynamic_mesh);

@@ -85,6 +85,43 @@ namespace mesh_builder {
         delete[] buffer;
     }
 
+    void MaskProcessor::maskMesh(SingleDynamicMesh* mesh, bool inverse) {
+        if (mesh->mesh.indices.empty())
+            return;
+        std::vector<bool> valid;
+        glm::vec3 d;
+        glm::vec4 v;
+        int x, y;
+        for (unsigned long i = 0; i < mesh->mesh.vertices.size(); i++) {
+            v = glm::vec4(mesh->mesh.vertices[i], 1.0f);
+            Math::convert2uv(v, world2uv, calibration);
+            x = (int) (v.x * viewport_width);
+            y = (int) (v.y * viewport_height);
+            if ((x < 0) || (y < 0) || (x >= viewport_width) || (y >= viewport_height))
+                valid.push_back(false);
+            else {
+                d = glm::abs(buffer[x + y * viewport_width] - mesh->mesh.vertices[i]);
+                valid.push_back(d.x + d.y + d.z < 0.01);
+            }
+        }
+        bool ok;
+        for (long i = (mesh->mesh.indices.size() - 1) / 3; i >= 0; i--) {
+            ok = !inverse;
+            if (valid[mesh->mesh.indices[i * 3 + 0]])
+            if (valid[mesh->mesh.indices[i * 3 + 1]])
+            if (valid[mesh->mesh.indices[i * 3 + 2]])
+                ok = !ok;
+            if (!ok) {
+                mesh->mesh.indices.erase(mesh->mesh.indices.begin() + i * 3 + 2);
+                mesh->mesh.indices.erase(mesh->mesh.indices.begin() + i * 3 + 1);
+                mesh->mesh.indices.erase(mesh->mesh.indices.begin() + i * 3 + 0);
+                if (mesh->mesh.indices.empty())
+                    break;
+            }
+        }
+        mesh->size = mesh->mesh.indices.size();
+    }
+
     bool MaskProcessor::line(int x1, int y1, int x2, int y2, glm::vec3 z1, glm::vec3 z2,
                              std::pair<int, glm::vec3>* fillCache) {
 
