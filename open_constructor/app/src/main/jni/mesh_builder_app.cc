@@ -20,6 +20,7 @@
 #include <map>
 #include <sstream>
 
+#include "mask_processor.h"
 #include "math_utils.h"
 #include "mesh_builder_app.h"
 #include "vertex_processor.h"
@@ -98,8 +99,12 @@ namespace mesh_builder {
                 return;
             }
         }
-        if(textured)
+        if(textured) {
             SaveFrame();
+            Tango3DR_clear(t3dr_context_temp);
+            Tango3DR_update(t3dr_context_temp, &t3dr_depth, &t3dr_depth_pose, &t3dr_image,
+                            &t3dr_image_pose, &t3dr_updated);
+        }
         Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image, &t3dr_image_pose,
                         &t3dr_updated);
         MeshUpdate();
@@ -175,11 +180,20 @@ namespace mesh_builder {
         photoFinished = false;
         photoMode = photo;
         textured = textures;
+        if (res < 0.00999)
+            scale = 10;
+        else
+            scale = 1;
+
         TangoService_setBinder(env, binder);
         TangoSetupConfig();
         TangoConnectCallbacks();
         TangoConnect();
-        TangoSetup3DR(res, dmin, dmax, noise);
+        binder_mutex_.lock();
+        t3dr_context_ = TangoSetup3DR(res, dmin, dmax, noise);
+        if (textured)
+            t3dr_context_temp = TangoSetup3DR(res, dmin, dmax, noise);
+        binder_mutex_.unlock();
     }
 
     void MeshBuilderApp::TangoSetupConfig() {
@@ -215,15 +229,9 @@ namespace mesh_builder {
             std::exit(EXIT_SUCCESS);
     }
 
-    void MeshBuilderApp::TangoSetup3DR(double res, double dmin, double dmax, int noise) {
-        binder_mutex_.lock();
-        Tango3DR_ConfigH t3dr_config;
-        t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_CONTEXT);
+    Tango3DR_Context MeshBuilderApp::TangoSetup3DR(double res, double dmin, double dmax, int noise) {
+        Tango3DR_ConfigH t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_CONTEXT);
         Tango3DR_Status t3dr_err;
-        if (res < 0.00999)
-            scale = 10;
-        else
-            scale = 1;
         t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "resolution", res * scale);
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
@@ -253,14 +261,14 @@ namespace mesh_builder {
         Tango3DR_Config_setInt32(t3dr_config, "min_num_vertices", noise);
         Tango3DR_Config_setInt32(t3dr_config, "update_method", TANGO_3DR_PROJECTIVE_UPDATE);
 
-        t3dr_context_ = Tango3DR_create(t3dr_config);
-        if (t3dr_context_ == nullptr)
+        Tango3DR_Context output = Tango3DR_create(t3dr_config);
+        if (output == nullptr)
             std::exit(EXIT_SUCCESS);
         Tango3DR_Config_destroy(t3dr_config);
 
-        Tango3DR_setColorCalibration(t3dr_context_, &t3dr_intrinsics_);
-        Tango3DR_setDepthCalibration(t3dr_context_, &t3dr_intrinsics_depth);
-        binder_mutex_.unlock();
+        Tango3DR_setColorCalibration(output, &t3dr_intrinsics_);
+        Tango3DR_setDepthCalibration(output, &t3dr_intrinsics_depth);
+        return output;
     }
 
     void MeshBuilderApp::TangoConnectCallbacks() {
@@ -443,9 +451,14 @@ namespace mesh_builder {
             glm::mat4 world2uv = glm::inverse(image_matrix);
             for (unsigned long it = 0; it < indices.size(); ++it) {
                 GridIndex updated_index = indices[it];
+                MaskProcessor mp(t3dr_context_temp, updated_index.indices);
+                for (SingleDynamicMesh* mesh : polygonUsage[updated_index]) {
+                    //TODO:delete masked triangles
+                }
                 SingleDynamicMesh* dynamic_mesh = new SingleDynamicMesh();
                 VertexProcessor vp(t3dr_context_, updated_index.indices);
                 vp.getMeshWithUV(world2uv, t3dr_intrinsics_, dynamic_mesh);
+                //TODO:delete unmasked triangles
                 if (!dynamic_mesh->mesh.indices.empty()) {
                     polygonUsage[updated_index].push_back(dynamic_mesh);
                     dynamic_mesh->size = (int) dynamic_mesh->mesh.indices.size();

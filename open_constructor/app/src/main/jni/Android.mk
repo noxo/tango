@@ -29,6 +29,7 @@ LOCAL_C_INCLUDES := $(PROJECT_ROOT)/tango-service-sdk/include/ \
                     $(PROJECT_ROOT)/third_party/libpng/include/
 
 LOCAL_SRC_FILES := jni_interface.cc \
+                   mask_processor.cc \
                    mesh_builder_app.cc \
                    model_io.cc \
                    scene.cc \
