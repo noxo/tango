@@ -99,10 +99,8 @@ namespace mesh_builder {
         t3dr_depth.num_points = point_cloud->num_points;
         t3dr_depth.points = point_cloud->points;
         t3dr_depth_pose = extract3DRPose(point_cloud_matrix_);
-        if(textured) {
+        if(textured)
             SaveFrame();
-            Tango3DR_clear(t3dr_context_);
-        }
         Tango3DR_Pose t3dr_image_pose = extract3DRPose(image_matrix);
         Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image, &t3dr_image_pose,
                         &t3dr_updated);
@@ -444,24 +442,18 @@ namespace mesh_builder {
         Tango3DR_Status ret;
         if (textured) {
             //extract textured mesh
-            tango_gl::StaticMesh debug;
             glm::mat4 world2uv = glm::inverse(image_matrix);
             for (unsigned long it = 0; it < indices.size(); ++it) {
                 GridIndex updated_index = indices[it];
                 SingleDynamicMesh* dynamic_mesh = new SingleDynamicMesh();
                 VertexProcessor vp(t3dr_context_, updated_index.indices);
                 vp.getMeshWithUV(world2uv, t3dr_intrinsics_, dynamic_mesh);
-                vp.getDebugMesh(&debug);
-                /*for (SingleDynamicMesh* j : polygonUsage[updated_index])
-                    vp.collideMesh(j, world2uv, t3dr_intrinsics_);*/
                 if (!dynamic_mesh->mesh.indices.empty()) {
                     polygonUsage[updated_index].push_back(dynamic_mesh);
                     dynamic_mesh->size = (int) dynamic_mesh->mesh.indices.size();
                     dynamic_mesh->mesh.texture = textureId;
                     render_mutex_.lock();
                     main_scene_.AddDynamicMesh(dynamic_mesh);
-                    main_scene_.debug_meshes_.clear();
-                    main_scene_.debug_meshes_.push_back(debug);
                     render_mutex_.unlock();
                 } else
                     delete dynamic_mesh;
@@ -587,7 +579,7 @@ namespace mesh_builder {
         png_infop info_ptr = png_create_info_struct(png_ptr);
         setjmp(png_jmpbuf(png_ptr));
         png_init_io(png_ptr, fp);
-        png_set_IHDR(png_ptr, info_ptr, width, height,
+        png_set_IHDR(png_ptr, info_ptr, (png_uint_32) width, (png_uint_32) height,
                      8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
                      PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
         png_write_info(png_ptr, info_ptr);

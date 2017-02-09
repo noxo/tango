@@ -55,95 +55,10 @@ namespace mesh_builder {
 
     }
 
-    void VertexProcessor::collideMesh(SingleDynamicMesh* slave, glm::mat4 to2d, Tango3DR_CameraCalibration calibration) {
-        std::vector<glm::ivec3> faces;
-        std::vector<glm::vec2> uvs;
-        slave->mutex.lock();
-        for (unsigned int i = 0; i < slave->mesh.vertices.size(); i++) {
-            glm::vec4 v = glm::vec4(slave->mesh.vertices[i].x,
-                                    slave->mesh.vertices[i].y,
-                                    slave->mesh.vertices[i].z, 1);
-            v = to2d * v;
-            v /= fabs(v.w * v.z);
-            v.x *= calibration.fx / (float)calibration.width;
-            v.y *= calibration.fy / (float)calibration.height;
-            v.x += calibration.cx / (float)calibration.width;
-            v.y += calibration.cy / (float)calibration.height;
-            uvs.push_back(glm::vec2(v.x, v.y));
-        }
-        for (unsigned int i = 0; i < slave->mesh.indices.size() / 3; i++) {
-            faces.push_back(glm::ivec3(slave->mesh.indices[i * 3 + 0],
-                                       slave->mesh.indices[i * 3 + 1],
-                                       slave->mesh.indices[i * 3 + 2]));
-        }
-        slave->mutex.unlock();
-
-        unsigned int a, b, c, d, e, f, count;
-        std::vector<unsigned int> toDelete;
-        for (unsigned int j = 0; j < faces.size(); j++) {
-            for (unsigned int i = 0; i < temp_mesh->tango_mesh.num_faces; i++) {
-                a = temp_mesh->tango_mesh.faces[i][0];
-                b = temp_mesh->tango_mesh.faces[i][1];
-                c = temp_mesh->tango_mesh.faces[i][2];
-                d = (unsigned int) faces[j].x;
-                e = (unsigned int) faces[j].y;
-                f = (unsigned int) faces[j].z;
-                count = 0;
-                if (intersect(temp_mesh->mesh.uv[a], temp_mesh->mesh.uv[b], uvs[d], uvs[e]))
-                    count++;
-                else if (intersect(temp_mesh->mesh.uv[a], temp_mesh->mesh.uv[b], uvs[d], uvs[f]))
-                    count++;
-                else if (intersect(temp_mesh->mesh.uv[a], temp_mesh->mesh.uv[b], uvs[e], uvs[f]))
-                    count++;
-                else if (intersect(temp_mesh->mesh.uv[a], temp_mesh->mesh.uv[c], uvs[d], uvs[e]))
-                    count++;
-                else if (intersect(temp_mesh->mesh.uv[a], temp_mesh->mesh.uv[c], uvs[d], uvs[f]))
-                    count++;
-                else if (intersect(temp_mesh->mesh.uv[a], temp_mesh->mesh.uv[c], uvs[e], uvs[f]))
-                    count++;
-                else if (intersect(temp_mesh->mesh.uv[b], temp_mesh->mesh.uv[c], uvs[d], uvs[e]))
-                    count++;
-                else if (intersect(temp_mesh->mesh.uv[b], temp_mesh->mesh.uv[c], uvs[d], uvs[f]))
-                    count++;
-                else if (intersect(temp_mesh->mesh.uv[b], temp_mesh->mesh.uv[c], uvs[e], uvs[f]))
-                    count++;
-                if (count == 1) {
-                    toDelete.push_back(j);
-                    break;
-                }
-            }
-        }
-
-        slave->mutex.lock();
-        for (long i = toDelete.size() - 1; i >= 0; i--) {
-            slave->mesh.indices.erase(slave->mesh.indices.begin() + toDelete[i] * 3 + 2);
-            slave->mesh.indices.erase(slave->mesh.indices.begin() + toDelete[i] * 3 + 1);
-            slave->mesh.indices.erase(slave->mesh.indices.begin() + toDelete[i] * 3 + 0);
-        }
-        slave->mutex.unlock();
-    }
-
-    void VertexProcessor::getDebugMesh(tango_gl::StaticMesh *result) {
-        result->render_mode = GL_LINES;
-        for (unsigned int i = 0; i < temp_mesh->tango_mesh.num_vertices; i++) {
-            glm::vec3 v = glm::vec3(temp_mesh->tango_mesh.vertices[i][0],
-                                    temp_mesh->tango_mesh.vertices[i][1],
-                                    temp_mesh->tango_mesh.vertices[i][2]);
-            for (std::pair<const unsigned int, bool> &j : topology[i]) {
-                result->vertices.push_back(v);
-                result->vertices.push_back(glm::vec3(temp_mesh->tango_mesh.vertices[j.first][0],
-                                                     temp_mesh->tango_mesh.vertices[j.first][1],
-                                                     temp_mesh->tango_mesh.vertices[j.first][2]));
-                result->colors.push_back(0xFFFFFFFF);
-                result->colors.push_back(0xFFFFFFFF);
-            }
-        }
-    }
-    
     void VertexProcessor::getMeshWithUV(glm::mat4 world2uv, Tango3DR_CameraCalibration calibration,
                                         SingleDynamicMesh* result) {
         result->mesh.render_mode = GL_TRIANGLES;
-        unsigned long offset = result->mesh.vertices.size();
+        unsigned int offset = (unsigned int) result->mesh.vertices.size();
         for (unsigned int i = 0; i < temp_mesh->tango_mesh.num_vertices; i++) {
             glm::vec4 v = glm::vec4(temp_mesh->tango_mesh.vertices[i][0],
                                     temp_mesh->tango_mesh.vertices[i][1],
@@ -158,7 +73,6 @@ namespace mesh_builder {
             result->mesh.vertices.push_back(glm::vec3(temp_mesh->tango_mesh.vertices[i][0],
                                                       temp_mesh->tango_mesh.vertices[i][1],
                                                       temp_mesh->tango_mesh.vertices[i][2]));
-            topology.push_back(std::map<unsigned int, bool>());
             temp_mesh->mesh.uv.push_back(glm::vec2(v.x, v.y));
         }
         unsigned int a, b, c;
@@ -169,19 +83,6 @@ namespace mesh_builder {
             result->mesh.indices.push_back(a + offset);
             result->mesh.indices.push_back(b + offset);
             result->mesh.indices.push_back(c + offset);
-            topology[a][b] = true; topology[b][a] = true;
-            topology[a][c] = true; topology[c][a] = true;
-            topology[b][c] = true; topology[c][b] = true;
         }
-    }
-
-    bool VertexProcessor::intersect(glm::vec2 const& p0, glm::vec2 const& p1, glm::vec2 const& p2, glm::vec2 const& p3) {
-        glm::vec2 const s1 = p1 - p0;
-        glm::vec2 const s2 = p3 - p2;
-        glm::vec2 const u = p0 - p2;
-        float const ip = 1.f / (-s2.x * s1.y + s1.x * s2.y);
-        float const s = (-s1.y * u.x + s1.x * u.y) * ip;
-        float const t = ( s2.x * u.y - s2.y * u.x) * ip;
-        return s >= 0 && s <= 1 && t >= 0 && t <= 1;
     }
 }
