@@ -7,5 +7,15 @@ namespace mesh_builder {
     public:
         MaskProcessor(Tango3DR_Context context, Tango3DR_GridIndex index);
         ~MaskProcessor();
+    private:
+        bool line(int x1, int y1, int x2, int y2, glm::vec3 z1, glm::vec3 z2,
+                                 std::pair<int, glm::vec3>* fillCache);
+        bool test(double p, double q, float &t1, float &t2);
+        void triangles(float* vertices, int size);
+
+        glm::vec3* buffer;
+        Tango3DR_CameraCalibration calibration;
+        int viewport_width, viewport_height;
+        glm::mat4 world2uv;
     };
 } // namespace mesh_builder

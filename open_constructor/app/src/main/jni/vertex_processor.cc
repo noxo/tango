@@ -1,3 +1,4 @@
+#include "math_utils.h"
 #include "vertex_processor.h"
 
 SingleDynamicMesh* temp_mesh = 0;
@@ -64,12 +65,7 @@ namespace mesh_builder {
             glm::vec4 v = glm::vec4(temp_mesh->tango_mesh.vertices[i][0],
                                     temp_mesh->tango_mesh.vertices[i][1],
                                     temp_mesh->tango_mesh.vertices[i][2], 1);
-            v = world2uv * v;
-            v /= glm::abs(v.w * v.z);
-            v.x *= calibration.fx / (float)calibration.width;
-            v.y *= calibration.fy / (float)calibration.height;
-            v.x += calibration.cx / (float)calibration.width;
-            v.y += calibration.cy / (float)calibration.height;
+            Math::convert2uv(v, world2uv, calibration);
             result->mesh.uv.push_back(glm::vec2(v.x, v.y));
             result->mesh.vertices.push_back(glm::vec3(temp_mesh->tango_mesh.vertices[i][0],
                                                       temp_mesh->tango_mesh.vertices[i][1],
