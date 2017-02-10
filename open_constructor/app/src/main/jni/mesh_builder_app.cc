@@ -20,6 +20,8 @@
 #include <map>
 #include <sstream>
 
+#include "mask_processor.h"
+#include "math_utils.h"
 #include "mesh_builder_app.h"
 #include "vertex_processor.h"
 
@@ -38,22 +40,6 @@ namespace {
     void onFrameAvailableRouter(void *context, TangoCameraId id, const TangoImageBuffer *buffer) {
         mesh_builder::MeshBuilderApp *app = static_cast<mesh_builder::MeshBuilderApp *>(context);
         app->onFrameAvailable(id, buffer);
-    }
-
-    Tango3DR_Pose extract3DRPose(const glm::mat4 &mat) {
-        Tango3DR_Pose pose;
-        glm::vec3 translation;
-        glm::quat rotation;
-        glm::vec3 scale;
-        tango_gl::util::DecomposeMatrix(mat, translation, rotation, scale);
-        pose.translation[0] = translation[0];
-        pose.translation[1] = translation[1];
-        pose.translation[2] = translation[2];
-        pose.orientation[0] = rotation[0];
-        pose.orientation[1] = rotation[1];
-        pose.orientation[2] = rotation[2];
-        pose.orientation[3] = rotation[3];
-        return pose;
     }
 }  // namespace
 
@@ -86,7 +72,7 @@ namespace mesh_builder {
         point_cloud_matrix_[3][0] *= scale;
         point_cloud_matrix_[3][1] *= scale;
         point_cloud_matrix_[3][2] *= scale;
-        if (fabs(1 - scale) > 0.005f) {
+        if (glm::abs(1 - scale) > 0.005f) {
             for (unsigned int i = 0; i < point_cloud->num_points; i++) {
                 point_cloud->points[i][0] *= scale;
                 point_cloud->points[i][1] *= scale;
@@ -98,15 +84,31 @@ namespace mesh_builder {
         t3dr_depth.timestamp = point_cloud->timestamp;
         t3dr_depth.num_points = point_cloud->num_points;
         t3dr_depth.points = point_cloud->points;
-        t3dr_depth_pose = extract3DRPose(point_cloud_matrix_);
+        t3dr_depth_pose = Math::extract3DRPose(point_cloud_matrix_);
+        Tango3DR_Pose t3dr_image_pose = Math::extract3DRPose(image_matrix);
+        if(!photoMode) {
+            glm::quat rot = glm::quat((float) t3dr_image_pose.orientation[0],
+                                      (float) t3dr_image_pose.orientation[1],
+                                      (float) t3dr_image_pose.orientation[2],
+                                      (float) t3dr_image_pose.orientation[3]);
+            float diff = Math::diff(rot, image_rotation);
+            image_rotation = rot;
+            if (diff > 5) {
+                hasNewFrame = false;
+                binder_mutex_.unlock();
+                return;
+            }
+        }
         if(textured) {
             SaveFrame();
-            Tango3DR_clear(t3dr_context_);
+            Tango3DR_update(t3dr_context_temp, &t3dr_depth, &t3dr_depth_pose, &t3dr_image,
+                            &t3dr_image_pose, &t3dr_updated);
         }
-        Tango3DR_Pose t3dr_image_pose = extract3DRPose(image_matrix);
         Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image, &t3dr_image_pose,
                         &t3dr_updated);
         MeshUpdate();
+        if(textured)
+            Tango3DR_clear(t3dr_context_temp);
         binder_mutex_.unlock();
     }
 
@@ -179,11 +181,20 @@ namespace mesh_builder {
         photoFinished = false;
         photoMode = photo;
         textured = textures;
+        if (res < 0.00999)
+            scale = 10;
+        else
+            scale = 1;
+
         TangoService_setBinder(env, binder);
         TangoSetupConfig();
         TangoConnectCallbacks();
         TangoConnect();
-        TangoSetup3DR(res, dmin, dmax, noise);
+        binder_mutex_.lock();
+        t3dr_context_ = TangoSetup3DR(res, dmin, dmax, noise);
+        if (textured)
+            t3dr_context_temp = TangoSetup3DR(res, dmin, dmax, noise);
+        binder_mutex_.unlock();
     }
 
     void MeshBuilderApp::TangoSetupConfig() {
@@ -217,21 +228,11 @@ namespace mesh_builder {
         ret = TangoConfig_setBool(tango_config_, "config_enable_color_camera", true);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
-
-        /*TangoConfig_setBool(tango_config_, "config_color_mode_auto", false);
-        TangoConfig_setInt32(tango_config_, "config_color_iso", 800);
-        TangoConfig_setInt32(tango_config_, "config_color_exp", (int32_t) floor(11.1 * 2.0));*/
     }
 
-    void MeshBuilderApp::TangoSetup3DR(double res, double dmin, double dmax, int noise) {
-        binder_mutex_.lock();
-        Tango3DR_ConfigH t3dr_config;
-        t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_CONTEXT);
+    Tango3DR_Context MeshBuilderApp::TangoSetup3DR(double res, double dmin, double dmax, int noise) {
+        Tango3DR_ConfigH t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_CONTEXT);
         Tango3DR_Status t3dr_err;
-        if (res < 0.00999)
-            scale = 10;
-        else
-            scale = 1;
         t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "resolution", res * scale);
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
@@ -252,17 +253,23 @@ namespace mesh_builder {
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
+        if (textured) {
+            t3dr_err = Tango3DR_Config_setInt32(t3dr_config, "mesh_simplification_factor", 300);
+            /*if (t3dr_err != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);*/
+        }
+
         Tango3DR_Config_setInt32(t3dr_config, "min_num_vertices", noise);
         Tango3DR_Config_setInt32(t3dr_config, "update_method", TANGO_3DR_PROJECTIVE_UPDATE);
 
-        t3dr_context_ = Tango3DR_create(t3dr_config);
-        if (t3dr_context_ == nullptr)
+        Tango3DR_Context output = Tango3DR_create(t3dr_config);
+        if (output == nullptr)
             std::exit(EXIT_SUCCESS);
         Tango3DR_Config_destroy(t3dr_config);
 
-        Tango3DR_setColorCalibration(t3dr_context_, &t3dr_intrinsics_);
-        Tango3DR_setDepthCalibration(t3dr_context_, &t3dr_intrinsics_depth);
-        binder_mutex_.unlock();
+        Tango3DR_setColorCalibration(output, &t3dr_intrinsics_);
+        Tango3DR_setDepthCalibration(output, &t3dr_intrinsics_depth);
+        return output;
     }
 
     void MeshBuilderApp::TangoConnectCallbacks() {
@@ -445,14 +452,20 @@ namespace mesh_builder {
             glm::mat4 world2uv = glm::inverse(image_matrix);
             for (unsigned long it = 0; it < indices.size(); ++it) {
                 GridIndex updated_index = indices[it];
+                MaskProcessor mp(t3dr_context_temp, updated_index.indices, t3dr_image.width / 4,
+                                 t3dr_image.height / 4, world2uv, t3dr_intrinsics_);
+                for (SingleDynamicMesh* mesh : polygonUsage[updated_index]) {
+                    mesh->mutex.lock();
+                    mp.maskMesh(mesh, false);
+                    mesh->mutex.unlock();
+                }
                 SingleDynamicMesh* dynamic_mesh = new SingleDynamicMesh();
                 VertexProcessor vp(t3dr_context_, updated_index.indices);
                 vp.getMeshWithUV(world2uv, t3dr_intrinsics_, dynamic_mesh);
-                for (SingleDynamicMesh* j : polygonUsage[updated_index])
-                    vp.collideMesh(j, world2uv, t3dr_intrinsics_);
                 if (!dynamic_mesh->mesh.indices.empty()) {
+                    //mp.maskMesh(dynamic_mesh, true);//TODO:make this line working well
                     polygonUsage[updated_index].push_back(dynamic_mesh);
-                    dynamic_mesh->size = (int) dynamic_mesh->mesh.indices.size();
+                    dynamic_mesh->size = dynamic_mesh->mesh.indices.size();
                     dynamic_mesh->mesh.texture = textureId;
                     render_mutex_.lock();
                     main_scene_.AddDynamicMesh(dynamic_mesh);
@@ -581,7 +594,7 @@ namespace mesh_builder {
         png_infop info_ptr = png_create_info_struct(png_ptr);
         setjmp(png_jmpbuf(png_ptr));
         png_init_io(png_ptr, fp);
-        png_set_IHDR(png_ptr, info_ptr, width, height,
+        png_set_IHDR(png_ptr, info_ptr, (png_uint_32) width, (png_uint_32) height,
                      8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
                      PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
         png_write_info(png_ptr, info_ptr);

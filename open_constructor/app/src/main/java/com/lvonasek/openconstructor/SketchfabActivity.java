@@ -3,6 +3,7 @@ package com.lvonasek.openconstructor;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -14,6 +15,8 @@ public class SketchfabActivity extends AbstractActivity
 {
   private static final String SKETCHFAB_HOME = "https://sketchfab.com";
   private static final String SKETCHFAB_UPLOAD = "https://sketchfab.com/upload";
+
+  private static final int PERMISSIONS_CODE = 1990;
 
   private Uri mUri;
   private WebView mWebView;
@@ -42,15 +45,35 @@ public class SketchfabActivity extends AbstractActivity
         }
       });
     }
-    setupPermission(Manifest.permission.INTERNET, REQUEST_CODE_PERMISSION_INTERNET);
+    setupPermissions();
   }
+
+
+  protected void setupPermissions() {
+    String[] permissions = {
+            Manifest.permission.INTERNET
+    };
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      boolean ok = true;
+      for (String s : permissions)
+        if (checkSelfPermission(s) != PackageManager.PERMISSION_GRANTED)
+          ok = false;
+
+      if (!ok)
+        requestPermissions(permissions, PERMISSIONS_CODE);
+      else
+        onRequestPermissionsResult(PERMISSIONS_CODE, null, new int[]{PackageManager.PERMISSION_GRANTED});
+    } else
+      onRequestPermissionsResult(PERMISSIONS_CODE, null, new int[]{PackageManager.PERMISSION_GRANTED});
+  }
+
 
   @Override
   public synchronized void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults)
   {
     switch (requestCode)
     {
-      case REQUEST_CODE_PERMISSION_INTERNET:
+      case PERMISSIONS_CODE:
       {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
           if (mUri != null)

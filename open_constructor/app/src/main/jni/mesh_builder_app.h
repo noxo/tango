@@ -63,7 +63,7 @@ namespace mesh_builder {
 
     private:
         void TangoSetupConfig();
-        void TangoSetup3DR(double res, double dmin, double dmax, int noise);
+        Tango3DR_Context TangoSetup3DR(double res, double dmin, double dmax, int noise);
         void TangoConnectCallbacks();
         void TangoConnect();
         void TangoDisconnect();
@@ -76,10 +76,12 @@ namespace mesh_builder {
         bool t3dr_is_running_;
         Tango3DR_GridIndexArray *t3dr_updated;
         Tango3DR_Context t3dr_context_;
+        Tango3DR_Context t3dr_context_temp;
         Tango3DR_CameraCalibration t3dr_intrinsics_;
         Tango3DR_CameraCalibration t3dr_intrinsics_depth;
         Tango3DR_ImageBuffer t3dr_image;
         glm::mat4 image_matrix;
+        glm::quat image_rotation;
         std::mutex binder_mutex_;
         std::mutex render_mutex_;
         Scene main_scene_;

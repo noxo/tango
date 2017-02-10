@@ -78,9 +78,14 @@ namespace mesh_builder {
             int offset = 0;
             if (type == OBJ)
                 offset++;
+            int texture = -1;
             for (unsigned int i = 0; i < model.size(); i++) {
-                if (type == OBJ)
-                    fprintf(file, "usemtl %d\n", i);
+                if (type == OBJ) {
+                    if (texture != model[i]->mesh.texture) {
+                        texture = model[i]->mesh.texture;
+                        fprintf(file, "usemtl %d\n", texture);
+                    }
+                }
                 writeFaces(model[i], offset);
                 offset += vectorSize[i];
             }
@@ -271,21 +276,26 @@ namespace mesh_builder {
             std::string shortBase = base.substr(index + 1, base.length());
             fprintf(file, "mtllib %s.mtl\n", shortBase.c_str());
             FILE* mtl = fopen((base + ".mtl").c_str(), "w");
+            int texture = -1;
             for (unsigned int i = 0; i < model.size(); i++) {
+                if (texture != model[i]->mesh.texture) {
+                    texture = model[i]->mesh.texture;
+                } else
+                    continue;
                 std::ostringstream srcPath;
                 srcPath << dataset.c_str();
                 srcPath << "/frame_";
-                srcPath << i;
+                srcPath << texture;
                 srcPath << ".png";
                 std::ostringstream dstPath;
                 dstPath << base.c_str();
                 dstPath << "_";
-                dstPath << i;
+                dstPath << texture;
                 dstPath << ".png";
                 LOGI("Moving %s to %s", srcPath.str().c_str(), dstPath.str().c_str());
                 rename(srcPath.str().c_str(), dstPath.str().c_str());
 
-                fprintf(mtl, "newmtl %d\n", i);
+                fprintf(mtl, "newmtl %d\n", texture);
                 fprintf(mtl, "Ns 96.078431\n");
                 fprintf(mtl, "Ka 1.000000 1.000000 1.000000\n");
                 fprintf(mtl, "Kd 0.640000 0.640000 0.640000\n");
@@ -294,7 +304,7 @@ namespace mesh_builder {
                 fprintf(mtl, "Ni 1.000000\n");
                 fprintf(mtl, "d 1.000000\n");
                 fprintf(mtl, "illum 2\n");
-                fprintf(mtl, "map_Kd %s_%d.png\n\n", shortBase.c_str(), i);
+                fprintf(mtl, "map_Kd %s_%d.png\n\n", shortBase.c_str(), texture);
             }
             fclose(mtl);
         }
