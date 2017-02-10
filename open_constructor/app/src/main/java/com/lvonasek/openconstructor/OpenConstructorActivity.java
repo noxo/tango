@@ -77,7 +77,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         double res      = mRes * 0.01;
         double dmin     = 0.6f;
         double dmax     = mRes;
-        int noise       = isNoiseFilterOn() ? 9 : 1;
+        int noise       = isNoiseFilterOn() ? 9 : 0;
         boolean land    = !isPortrait(OpenConstructorActivity.this);
         boolean photo   = isPhotoModeOn();
         boolean txt     = isTexturingOn();
