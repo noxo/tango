@@ -56,6 +56,39 @@ namespace mesh_builder {
 
     }
 
+    void VertexProcessor::cleanup(tango_gl::StaticMesh* mesh) {
+        bool hasColors = !mesh->colors.empty();
+        bool hasNormals = !mesh->normals.empty();
+        bool hasUVs = !mesh->uv.empty();
+        std::vector<bool> used;
+        for (unsigned long i = 0; i < mesh->vertices.size(); i++)
+            used.push_back(false);
+        for (unsigned long i = 0; i < mesh->indices.size(); i++)
+            used[mesh->indices[i]] = true;
+        //clear vertices
+        for (long i = used.size() - 1; i >= 0; i--) {
+            if (!used[i]) {
+                mesh->vertices.erase(mesh->vertices.begin() + i);
+                if (hasColors)
+                    mesh->colors.erase(mesh->colors.begin() + i);
+                if (hasNormals)
+                    mesh->normals.erase(mesh->normals.begin() + i);
+                if (hasUVs)
+                    mesh->uv.erase(mesh->uv.begin() + i);
+            }
+        }
+        //reindex
+        std::vector<unsigned int> reindex;
+        int index = 0;
+        for (unsigned long i = 0; i < used.size(); i++) {
+            reindex.push_back(index);
+            if (used[i])
+                index++;
+        }
+        for (unsigned long i = 0; i < mesh->indices.size(); i++)
+            mesh->indices[i] = reindex[mesh->indices[i]];
+    }
+
     void VertexProcessor::getMeshWithUV(glm::mat4 world2uv, Tango3DR_CameraCalibration calibration,
                                         SingleDynamicMesh* result) {
         result->mesh.render_mode = GL_TRIANGLES;

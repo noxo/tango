@@ -194,7 +194,7 @@ namespace mesh_builder {
         binder_mutex_.lock();
         t3dr_context_ = TangoSetup3DR(res, dmin, dmax, noise);
         if (textured)
-            t3dr_context_temp = TangoSetup3DR(res, dmin, dmax, noise);
+            t3dr_context_temp = TangoSetup3DR(res, dmin, dmax, 0);
         binder_mutex_.unlock();
     }
 
@@ -475,6 +475,7 @@ namespace mesh_builder {
                 for (SingleDynamicMesh *mesh : polygonUsage[updated_index]) {
                     mesh->mutex.lock();
                     mp.maskMesh(mesh);
+                    VertexProcessor::cleanup(&mesh->mesh);
                     mesh->mutex.unlock();
                 }
             }
