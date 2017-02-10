@@ -145,19 +145,20 @@ namespace mesh_builder {
         binder_mutex_.unlock();
     }
 
-    MeshBuilderApp::MeshBuilderApp() {
-        t3dr_is_running_ = false;
-        dataset_ = "";
-        gyro = false;
-        hasNewFrame = false;
-        landscape = false;
-        photoFinished = false;
-        photoMode = false;
-        textured = false;
-        textureId = 0;
-        scale = 1;
-        zoom = 0;
-    }
+
+    MeshBuilderApp::MeshBuilderApp() :  t3dr_is_running_(false),
+                                        dataset_ (""),
+                                        gyro(false),
+                                        hasNewFrame(false),
+                                        landscape(false),
+                                        photoFinished(false),
+                                        photoMode(false),
+                                        textured(false),
+                                        textureId(0),
+                                        scale(1),
+                                        zoom(0)
+    {}
+
 
     MeshBuilderApp::~MeshBuilderApp() {
         if (tango_config_ != nullptr) {
