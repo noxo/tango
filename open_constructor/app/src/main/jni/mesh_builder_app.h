@@ -76,7 +76,6 @@ namespace mesh_builder {
         bool t3dr_is_running_;
         Tango3DR_GridIndexArray *t3dr_updated;
         Tango3DR_Context t3dr_context_;
-        Tango3DR_Context t3dr_context_temp;
         Tango3DR_CameraCalibration t3dr_intrinsics_;
         Tango3DR_CameraCalibration t3dr_intrinsics_depth;
         Tango3DR_ImageBuffer t3dr_image;

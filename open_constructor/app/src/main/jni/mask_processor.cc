@@ -10,7 +10,7 @@ const int kInitialVertexCount = 30;
 const int kInitialIndexCount = 99;
 
 namespace mesh_builder {
-    MaskProcessor::MaskProcessor(Tango3DR_Context context, Tango3DR_GridIndex index, int w, int h,
+    MaskProcessor::MaskProcessor(Tango3DR_Context context, int w, int h, Tango3DR_GridIndexArray* i,
                                  glm::mat4 matrix, Tango3DR_CameraCalibration calib) {
         if (!temp_mask_mesh) {
             // Build a dynamic mesh and add it to the scene.
@@ -38,7 +38,7 @@ namespace mesh_builder {
 
         Tango3DR_Status ret;
         while (true) {
-            ret = Tango3DR_extractPreallocatedMeshSegment(context, index, &temp_mask_mesh->tango_mesh);
+            ret = Tango3DR_extractPreallocatedMesh(context, i, &temp_mask_mesh->tango_mesh);
             if (ret == TANGO_3DR_INSUFFICIENT_SPACE) {
                 unsigned long new_vertex_size = temp_mask_mesh->mesh.vertices.capacity() * kGrowthFactor;
                 unsigned long new_index_size = temp_mask_mesh->mesh.indices.capacity() * kGrowthFactor;
@@ -61,6 +61,8 @@ namespace mesh_builder {
         viewport_height = h;
         world2uv = matrix;
 
+        for (int mem = 0; mem < w * h; mem++)
+            buffer[mem] = INT_MAX;
         if (fillCache1.empty())
             fillCache1.resize((unsigned long) (h + 1));
         if (fillCache2.empty())
@@ -85,14 +87,14 @@ namespace mesh_builder {
         delete[] buffer;
     }
 
-    void MaskProcessor::maskMesh(SingleDynamicMesh* mesh) {
+    void MaskProcessor::maskMesh(SingleDynamicMesh* mesh, bool inverse) {
         if (mesh->mesh.indices.empty())
             return;
         std::vector<DepthTest> status;
         glm::vec4 v;
         int x, y;
-        int m = 4;
         float d;
+        int m = inverse ? 0 : 8;
         for (unsigned long i = 0; i < mesh->mesh.vertices.size(); i++) {
             v = glm::vec4(mesh->mesh.vertices[i], 1.0f);
             Math::convert2uv(v, world2uv, calibration);
@@ -105,15 +107,18 @@ namespace mesh_builder {
                 if (d > INT_MAX * 0.5f)
                     status.push_back(INVALID_DATA);
                 else
-                    status.push_back(glm::abs(d - v.z) < 2 ? PASSED : NOT_PASSED);
+                    status.push_back(fabs(d - v.z) < 0.25f ? PASSED : NOT_PASSED);
             }
         }
         int count;
         for (long i = (mesh->mesh.indices.size() - 1) / 3; i >= 0; i--) {
             count = 0;
-            for (unsigned int j = 0; j < 3; j++)
-                if (status[mesh->mesh.indices[i * 3 + j]] == PASSED)
+            for (unsigned int j = 0; j < 3; j++) {
+                if (!inverse && status[mesh->mesh.indices[i * 3 + j]] == PASSED)
                     count++;
+                else if (inverse && (status[mesh->mesh.indices[i * 3 + j]] == NOT_PASSED))
+                    count++;
+            }
             if (count == 3) {
                 mesh->mesh.indices.erase(mesh->mesh.indices.begin() + i * 3 + 2);
                 mesh->mesh.indices.erase(mesh->mesh.indices.begin() + i * 3 + 1);
@@ -324,24 +329,16 @@ namespace mesh_builder {
                         z2 = z1 + t2 * z;
                     }
 
-                    //filling algorithm initialize
+                    //filling algorithm
                     x = glm::abs(x2 - x1);
                     step = (x2 >= x1) ? 1 : -1;
                     z = (z2 - z1) / (float)x;
                     mem = x1 + memy;
-                    //clipped lines are invalid
-                    if ((x1 == 0) || (x2 == viewport_width - 1) ||
-                        (y == 0) || (y == viewport_height - 1)) {
-                        for (; x >= 0; x--) {
-                            buffer[mem] = INT_MAX;
-                            mem += step;
-                        }
-                    } else {
-                        for (; x >= 0; x--) {
+                    for (; x >= 0; x--) {
+                        if ((z1 > 0) && (buffer[mem] > z1))
                             buffer[mem] = z1;
-                            mem += step;
-                            z1 += z;
-                        }
+                        mem += step;
+                        z1 += z;
                     }
                 }
                 memy += viewport_width;

@@ -99,16 +99,12 @@ namespace mesh_builder {
                 return;
             }
         }
-        if(textured) {
+        if(textured)
             SaveFrame();
-            Tango3DR_update(t3dr_context_temp, &t3dr_depth, &t3dr_depth_pose, &t3dr_image,
-                            &t3dr_image_pose, &t3dr_updated);
-        }
         Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image, &t3dr_image_pose,
                         &t3dr_updated);
         MeshUpdate();
-        if(textured)
-            Tango3DR_clear(t3dr_context_temp);
+        hasNewFrame = false;
         binder_mutex_.unlock();
     }
 
@@ -193,8 +189,6 @@ namespace mesh_builder {
         TangoConnect();
         binder_mutex_.lock();
         t3dr_context_ = TangoSetup3DR(res, dmin, dmax, noise);
-        if (textured)
-            t3dr_context_temp = TangoSetup3DR(res, dmin, dmax, 0);
         binder_mutex_.unlock();
     }
 
@@ -442,25 +436,27 @@ namespace mesh_builder {
         if (photoMode)
             t3dr_is_running_ = false;
 
-        std::vector<GridIndex> indices;
-        indices.resize(t3dr_updated->num_indices);
-        std::copy(&t3dr_updated->indices[0][0], &t3dr_updated->indices[t3dr_updated->num_indices][0],
-                  reinterpret_cast<uint32_t *>(indices.data()));
-
         Tango3DR_Status ret;
         if (textured) {
             //extract textured mesh
             glm::mat4 world2uv = glm::inverse(image_matrix);
             std::vector<std::pair<GridIndex, SingleDynamicMesh* > > toAdd;
-            for (unsigned long it = 0; it < indices.size(); ++it) {
-                GridIndex updated_index = indices[it];
+            MaskProcessor mp(t3dr_context_, t3dr_image.width / 2, t3dr_image.height / 2,
+                             t3dr_updated, world2uv, t3dr_intrinsics_);
+            for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
+                GridIndex updated_index;
+                updated_index.indices[0] = t3dr_updated->indices[it][0];
+                updated_index.indices[1] = t3dr_updated->indices[it][1];
+                updated_index.indices[2] = t3dr_updated->indices[it][2];
                 SingleDynamicMesh* dynamic_mesh = new SingleDynamicMesh();
                 VertexProcessor vp(t3dr_context_, updated_index.indices);
                 vp.getMeshWithUV(world2uv, t3dr_intrinsics_, dynamic_mesh);
                 if (!dynamic_mesh->mesh.indices.empty()) {
-                    toAdd.push_back(std::pair<GridIndex, SingleDynamicMesh* >(updated_index, dynamic_mesh));
+                    mp.maskMesh(dynamic_mesh, true);
+                    vp.cleanup(&dynamic_mesh->mesh);
                     dynamic_mesh->size = dynamic_mesh->mesh.indices.size();
                     dynamic_mesh->mesh.texture = textureId;
+                    toAdd.push_back(std::pair<GridIndex, SingleDynamicMesh* >(updated_index, dynamic_mesh));
                     render_mutex_.lock();
                     main_scene_.AddDynamicMesh(dynamic_mesh);
                     render_mutex_.unlock();
@@ -468,13 +464,14 @@ namespace mesh_builder {
                     delete dynamic_mesh;
             }
             //remove old mesh
-            for (unsigned long it = 0; it < indices.size(); ++it) {
-                GridIndex updated_index = indices[it];
-                MaskProcessor mp(t3dr_context_temp, updated_index.indices, t3dr_image.width / 4,
-                                 t3dr_image.height / 4, world2uv, t3dr_intrinsics_);
+            for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
+                GridIndex updated_index;
+                updated_index.indices[0] = t3dr_updated->indices[it][0];
+                updated_index.indices[1] = t3dr_updated->indices[it][1];
+                updated_index.indices[2] = t3dr_updated->indices[it][2];
                 for (SingleDynamicMesh *mesh : polygonUsage[updated_index]) {
                     mesh->mutex.lock();
-                    mp.maskMesh(mesh);
+                    mp.maskMesh(mesh, false);
                     VertexProcessor::cleanup(&mesh->mesh);
                     mesh->mutex.unlock();
                 }
@@ -484,8 +481,11 @@ namespace mesh_builder {
                 polygonUsage[toAdd[it].first].push_back(toAdd[it].second);
             textureId++;
         } else {
-            for (unsigned long it = 0; it < indices.size(); ++it) {
-                GridIndex updated_index = indices[it];
+            for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
+                GridIndex updated_index;
+                updated_index.indices[0] = t3dr_updated->indices[it][0];
+                updated_index.indices[1] = t3dr_updated->indices[it][1];
+                updated_index.indices[2] = t3dr_updated->indices[it][2];
 
                 // Build a dynamic mesh and add it to the scene.
                 SingleDynamicMesh* dynamic_mesh = meshes_[updated_index];
@@ -543,7 +543,6 @@ namespace mesh_builder {
 
         if (photoMode)
             photoFinished = true;
-        hasNewFrame = false;
     }
 
     void MeshBuilderApp::SaveFrame() {
