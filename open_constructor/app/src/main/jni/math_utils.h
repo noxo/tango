@@ -12,7 +12,9 @@ public:
     static inline void convert2uv(glm::vec4 &v, glm::mat4 &world2uv,
                                   Tango3DR_CameraCalibration &calibration) {
         v = world2uv * v;
-        v /= glm::abs(v.w * v.z);
+        v.x /= glm::abs(v.w * v.z);
+        v.y /= glm::abs(v.w * v.z);
+        v.z /= glm::abs(v.w);
         v.x *= calibration.fx / (float)calibration.width;
         v.y *= calibration.fy / (float)calibration.height;
         v.x += calibration.cx / (float)calibration.width;

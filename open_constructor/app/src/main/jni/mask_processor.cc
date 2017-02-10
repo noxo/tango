@@ -2,8 +2,8 @@
 #include "math_utils.h"
 
 SingleDynamicMesh* temp_mask_mesh = 0;
-std::vector<std::pair<int, glm::vec3> > fillCache1;
-std::vector<std::pair<int, glm::vec3> > fillCache2;
+std::vector<std::pair<int, float> > fillCache1;
+std::vector<std::pair<int, float> > fillCache2;
 
 const int kGrowthFactor = 2;
 const int kInitialVertexCount = 30;
@@ -55,7 +55,7 @@ namespace mesh_builder {
                 break;
         }
 
-        buffer = new glm::vec3[w * h];
+        buffer = new float[w * h];
         calibration = calib;
         viewport_width = w;
         viewport_height = h;
@@ -85,33 +85,36 @@ namespace mesh_builder {
         delete[] buffer;
     }
 
-    void MaskProcessor::maskMesh(SingleDynamicMesh* mesh, bool inverse) {
+    void MaskProcessor::maskMesh(SingleDynamicMesh* mesh) {
         if (mesh->mesh.indices.empty())
             return;
-        std::vector<bool> valid;
-        glm::vec3 d;
+        std::vector<DepthTest> status;
         glm::vec4 v;
         int x, y;
+        int m = 4;
+        float d;
         for (unsigned long i = 0; i < mesh->mesh.vertices.size(); i++) {
             v = glm::vec4(mesh->mesh.vertices[i], 1.0f);
             Math::convert2uv(v, world2uv, calibration);
             x = (int) (v.x * viewport_width);
             y = (int) (v.y * viewport_height);
-            if ((x < 0) || (y < 0) || (x >= viewport_width) || (y >= viewport_height))
-                valid.push_back(false);
+            if ((x < m) || (y < m) || (x >= viewport_width - m) || (y >= viewport_height - m))
+                status.push_back(OUT_OF_BOUNDS);
             else {
-                d = glm::abs(buffer[x + y * viewport_width] - mesh->mesh.vertices[i]);
-                valid.push_back(d.x + d.y + d.z < 0.01);
+                d = buffer[x + y * viewport_width];
+                if (d > INT_MAX * 0.5f)
+                    status.push_back(INVALID_DATA);
+                else
+                    status.push_back(glm::abs(d - v.z) < 2 ? PASSED : NOT_PASSED);
             }
         }
-        bool ok;
+        int count;
         for (long i = (mesh->mesh.indices.size() - 1) / 3; i >= 0; i--) {
-            ok = !inverse;
-            if (valid[mesh->mesh.indices[i * 3 + 0]])
-            if (valid[mesh->mesh.indices[i * 3 + 1]])
-            if (valid[mesh->mesh.indices[i * 3 + 2]])
-                ok = !ok;
-            if (!ok) {
+            count = 0;
+            for (unsigned int j = 0; j < 3; j++)
+                if (status[mesh->mesh.indices[i * 3 + j]] == PASSED)
+                    count++;
+            if (count == 3) {
                 mesh->mesh.indices.erase(mesh->mesh.indices.begin() + i * 3 + 2);
                 mesh->mesh.indices.erase(mesh->mesh.indices.begin() + i * 3 + 1);
                 mesh->mesh.indices.erase(mesh->mesh.indices.begin() + i * 3 + 0);
@@ -122,14 +125,14 @@ namespace mesh_builder {
         mesh->size = mesh->mesh.indices.size();
     }
 
-    bool MaskProcessor::line(int x1, int y1, int x2, int y2, glm::vec3 z1, glm::vec3 z2,
-                             std::pair<int, glm::vec3>* fillCache) {
+    bool MaskProcessor::line(int x1, int y1, int x2, int y2, float z1, float z2,
+                             std::pair<int, float>* fillCache) {
 
         //Liang & Barsky clipping (only top-bottom)
         int h = y2 - y1;
         float t1 = 0, t2 = 1;
         if (test(-h, y1, t1, t2) && test(h, viewport_height - 1 - y1, t1, t2) ) {
-            glm::vec3 z;
+            float z;
             int c0, c1, xp0, xp1, yp0, yp1, y, p, w;
             bool wp, hp;
 
@@ -250,9 +253,8 @@ namespace mesh_builder {
 
     void MaskProcessor::triangles(float* vertices, unsigned long size) {
         int ab, ac, bc, step, x, x1, x2, y, min, mem, memy, max;
-        float t1, t2;
+        float t1, t2, z, z1, z2;
         glm::vec4 a, b, c;
-        glm::vec3 az, bz, cz, z, z1, z2;
         int v = 0;
         for (unsigned long i = 0; i < size; i++, v += 9) {
             //get vertices
@@ -270,31 +272,27 @@ namespace mesh_builder {
             b.y *= (float)viewport_height;
             c.x *= (float)viewport_width;
             c.y *= (float)viewport_height;
-            //get coordinates for interpolation
-            az = glm::vec3(vertices[v + 0], vertices[v + 1], vertices[v + 2]);
-            bz = glm::vec3(vertices[v + 3], vertices[v + 4], vertices[v + 5]);
-            cz = glm::vec3(vertices[v + 6], vertices[v + 7], vertices[v + 8]);
 
             //create markers for filling
             ab = (int) glm::abs(a.y - b.y);
             ac = (int) glm::abs(a.y - c.y);
             bc = (int) glm::abs(b.y - c.y);
             if ((ab >= ac) && (ab >= bc)) {
-                line(a.x, a.y, b.x, b.y, az, bz, &fillCache1[0]);
-                line(a.x, a.y, c.x, c.y, az, cz, &fillCache2[0]);
-                line(b.x, b.y, c.x, c.y, bz, cz, &fillCache2[0]);
+                line(a.x, a.y, b.x, b.y, a.z, b.z, &fillCache1[0]);
+                line(a.x, a.y, c.x, c.y, a.z, c.z, &fillCache2[0]);
+                line(b.x, b.y, c.x, c.y, b.z, c.z, &fillCache2[0]);
                 min = glm::max(0, (int) glm::min(a.y, b.y));
                 max = glm::min((int) glm::max(a.y, b.y), viewport_height - 1);
             } else if ((ac >= ab) && (ac >= bc)) {
-                line(a.x, a.y, c.x, c.y, az, cz, &fillCache1[0]);
-                line(a.x, a.y, b.x, b.y, az, bz, &fillCache2[0]);
-                line(b.x, b.y, c.x, c.y, bz, cz, &fillCache2[0]);
+                line(a.x, a.y, c.x, c.y, a.z, c.z, &fillCache1[0]);
+                line(a.x, a.y, b.x, b.y, a.z, b.z, &fillCache2[0]);
+                line(b.x, b.y, c.x, c.y, b.z, c.z, &fillCache2[0]);
                 min = glm::max(0, (int) glm::min(a.y, c.y));
                 max = glm::min((int) glm::max(a.y, c.y), viewport_height - 1);
             }else {
-                line(b.x, b.y, c.x, c.y, bz, cz, &fillCache1[0]);
-                line(a.x, a.y, b.x, b.y, az, bz, &fillCache2[0]);
-                line(a.x, a.y, c.x, c.y, az, cz, &fillCache2[0]);
+                line(b.x, b.y, c.x, c.y, b.z, c.z, &fillCache1[0]);
+                line(a.x, a.y, b.x, b.y, a.z, b.z, &fillCache2[0]);
+                line(a.x, a.y, c.x, c.y, a.z, c.z, &fillCache2[0]);
                 min = glm::max(0, (int) glm::min(b.y, c.y));
                 max = glm::min((int) glm::max(b.y, c.y), viewport_height - 1);
             }
@@ -331,12 +329,19 @@ namespace mesh_builder {
                     step = (x2 >= x1) ? 1 : -1;
                     z = (z2 - z1) / (float)x;
                     mem = x1 + memy;
-                    for (; x >= 0; x--) {
-                        buffer[mem] = z1;
-
-                        //interpolate
-                        mem += step;
-                        z1 += z;
+                    //clipped lines are invalid
+                    if ((x1 == 0) || (x2 == viewport_width - 1) ||
+                        (y == 0) || (y == viewport_height - 1)) {
+                        for (; x >= 0; x--) {
+                            buffer[mem] = INT_MAX;
+                            mem += step;
+                        }
+                    } else {
+                        for (; x >= 0; x--) {
+                            buffer[mem] = z1;
+                            mem += step;
+                            z1 += z;
+                        }
                     }
                 }
                 memy += viewport_width;
