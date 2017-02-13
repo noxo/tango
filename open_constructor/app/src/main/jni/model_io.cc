@@ -2,12 +2,6 @@
 #include "model_io.h"
 #include <sstream>
 
-FILE* temp;
-void png_read_file(png_structp, png_bytep data, png_size_t length)
-{
-    fread(data, length, 1, temp);
-}
-
 namespace mesh_builder {
 
     ModelIO::ModelIO(std::string filename, bool writeAccess) {
@@ -38,9 +32,9 @@ namespace mesh_builder {
             fclose(file);
     }
 
-    std::vector<TextureToLoad> ModelIO::readModel(int subdivision, std::vector<tango_gl::StaticMesh>& output) {
+    std::vector<std::string> ModelIO::readModel(int subdivision, std::vector<tango_gl::StaticMesh>& output) {
         assert(!writeMode);
-        std::vector<TextureToLoad> textures = readHeader();
+        std::vector<std::string> textures = readHeader();
         if (type == PLY) {
             readPLYVertices();
             parsePLYFaces(subdivision, output);
@@ -180,8 +174,8 @@ namespace mesh_builder {
         }
     }
 
-    std::vector<TextureToLoad> ModelIO::readHeader() {
-        std::vector<TextureToLoad> output;
+    std::vector<std::string> ModelIO::readHeader() {
+        std::vector<std::string> output;
         char buffer[1024];
         if (type == PLY) {
             while (true) {
@@ -217,7 +211,7 @@ namespace mesh_builder {
                     break;
                 if (startsWith(buffer, "map_Kd")) {
                     sscanf(buffer, "map_Kd %s", pngFile);
-                    output.push_back(readPNG(data + pngFile));
+                    output.push_back(data + pngFile);
                 }
             }
             fclose(mtl);
@@ -282,18 +276,6 @@ namespace mesh_builder {
                     texture = model[i]->mesh.texture;
                 } else
                     continue;
-                std::ostringstream srcPath;
-                srcPath << dataset.c_str();
-                srcPath << "/frame_";
-                srcPath << texture;
-                srcPath << ".png";
-                std::ostringstream dstPath;
-                dstPath << base.c_str();
-                dstPath << "_";
-                dstPath << texture;
-                dstPath << ".png";
-                LOGI("Moving %s to %s", srcPath.str().c_str(), dstPath.str().c_str());
-                rename(srcPath.str().c_str(), dstPath.str().c_str());
 
                 fprintf(mtl, "newmtl %d\n", texture);
                 fprintf(mtl, "Ns 96.078431\n");
@@ -338,36 +320,5 @@ namespace mesh_builder {
             else if (type == OBJ)
                 fprintf(file, "f %d/%d %d/%d %d/%d\n", i.x, i.x, i.y, i.y, i.z, i.z);
         }
-    }
-
-    TextureToLoad ModelIO::readPNG(std::string file)
-    {
-        temp = fopen(file.c_str(), "r");
-        TextureToLoad texture;
-        unsigned int sig_read = 0;
-
-        /// init PNG library
-        png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-        png_infop info_ptr = png_create_info_struct(png_ptr);
-        setjmp(png_jmpbuf(png_ptr));
-        png_set_read_fn(png_ptr, NULL, png_read_file);
-        png_set_sig_bytes(png_ptr, sig_read);
-        png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_STRIP_16, NULL);
-        int bit_depth, color_type, interlace_type;
-        png_uint_32 width, height;
-        png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type, &interlace_type, NULL, NULL);
-
-        /// load PNG
-        png_size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
-        texture.data = new unsigned char[row_bytes * height];
-        png_bytepp row_pointers = png_get_rows(png_ptr, info_ptr);
-        for (unsigned int i = 0; i < height; i++)
-            memcpy(texture.data+(row_bytes * i), row_pointers[i], row_bytes);
-
-        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-        fclose(temp);
-        texture.width = (int) width;
-        texture.height = (int) height;
-        return texture;
     }
 } // namespace mesh_builder

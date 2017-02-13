@@ -28,7 +28,6 @@ class Scene {
 
   tango_gl::Camera* camera_;
   tango_gl::StaticMesh frustum_;
-  std::vector<TextureToLoad> toLoad;
   std::vector<unsigned int> textureMap;
   std::vector<tango_gl::StaticMesh> static_meshes_;
   std::vector<tango_gl::StaticMesh> debug_meshes_;

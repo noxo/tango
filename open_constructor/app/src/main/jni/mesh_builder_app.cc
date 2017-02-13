@@ -100,7 +100,7 @@ namespace mesh_builder {
             }
         }
         if(textured)
-            SaveFrame();
+            textureProcessor.Add(t3dr_image);
         Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image, &t3dr_image_pose,
                         &t3dr_updated);
         MeshUpdate();
@@ -143,14 +143,12 @@ namespace mesh_builder {
 
 
     MeshBuilderApp::MeshBuilderApp() :  t3dr_is_running_(false),
-                                        dataset_ (""),
                                         gyro(false),
                                         hasNewFrame(false),
                                         landscape(false),
                                         photoFinished(false),
                                         photoMode(false),
                                         textured(false),
-                                        textureId(0),
                                         scale(1),
                                         zoom(0)
     {}
@@ -171,9 +169,7 @@ namespace mesh_builder {
     }
 
     void MeshBuilderApp::OnTangoServiceConnected(JNIEnv *env, jobject binder, double res,
-                              double dmin, double dmax, int noise, bool land, bool photo,
-                                                    bool textures, std::string dataset) {
-        dataset_ = dataset;
+               double dmin, double dmax, int noise, bool land, bool photo, bool textures) {
         landscape = land;
         photoFinished = false;
         photoMode = photo;
@@ -360,6 +356,8 @@ namespace mesh_builder {
         glm::vec4 move = main_scene_.camera_->GetTransformationMatrix() * glm::vec4(0, 0, zoom, 0);
         main_scene_.camera_->Translate(glm::vec3(move.x, move.y, move.z));
         //render
+        if (textureProcessor.UpdateGL())
+          main_scene_.textureMap = textureProcessor.TextureMap();
         main_scene_.Render(gyro);
         render_mutex_.unlock();
     }
@@ -382,7 +380,6 @@ namespace mesh_builder {
     void MeshBuilderApp::OnClearButtonClicked() {
         binder_mutex_.lock();
         Tango3DR_clear(t3dr_context_);
-        textureId = 0;
         meshes_.clear();
         polygonUsage.clear();
         main_scene_.ClearDynamicMeshes();
@@ -392,10 +389,8 @@ namespace mesh_builder {
     void MeshBuilderApp::Load(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
-
         ModelIO io(filename, false);
-        main_scene_.toLoad = io.readModel(kSubdivisionSize, main_scene_.static_meshes_);
-
+        textureProcessor.Add(io.readModel(kSubdivisionSize, main_scene_.static_meshes_));
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -405,8 +400,8 @@ namespace mesh_builder {
         binder_mutex_.lock();
         render_mutex_.lock();
         ModelIO io(filename, true);
-        io.setDataset(dataset_);
         io.writeModel(main_scene_.dynamic_meshes_);
+        textureProcessor.Save(filename);
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -449,7 +444,7 @@ namespace mesh_builder {
                     mp.maskMesh(dynamic_mesh, true);
                     vp.cleanup(&dynamic_mesh->mesh);
                     dynamic_mesh->size = dynamic_mesh->mesh.indices.size();
-                    dynamic_mesh->mesh.texture = textureId;
+                    dynamic_mesh->mesh.texture = textureProcessor.TextureId();
                     toAdd.push_back(std::pair<GridIndex, SingleDynamicMesh* >(updated_index, dynamic_mesh));
                     render_mutex_.lock();
                     main_scene_.AddDynamicMesh(dynamic_mesh);
@@ -473,7 +468,6 @@ namespace mesh_builder {
             //add mesh into data structure
             for (unsigned long it = 0; it < toAdd.size(); ++it)
                 polygonUsage[toAdd[it].first].push_back(toAdd[it].second);
-            textureId++;
         } else {
             for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
                 GridIndex updated_index;
@@ -537,86 +531,5 @@ namespace mesh_builder {
 
         if (photoMode)
             photoFinished = true;
-    }
-
-    void MeshBuilderApp::SaveFrame() {
-        if (t3dr_image.format != TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP)
-            std::exit(EXIT_SUCCESS);
-        int scale = 4;
-        unsigned char* rgb = new unsigned char[(t3dr_image.width / scale) * (t3dr_image.height / scale) * 3];
-        std::ostringstream ostr;
-        ostr << dataset_.c_str();
-        ostr << "/frame_";
-        ostr << textureId;
-        ostr << ".png";
-        int index = 0;
-        int frameSize = t3dr_image.width * t3dr_image.height;
-        for (int y = t3dr_image.height - 1; y >= 0; y-=scale) {
-            for (int x = 0; x < t3dr_image.width; x+=scale) {
-                int xby2 = x/2;
-                int yby2 = y/2;
-                int UVIndex = frameSize + 2*xby2 + yby2*t3dr_image.width;
-                int Y = t3dr_image.data[y*t3dr_image.width + x] & 0xff;
-                float U = (float)(t3dr_image.data[UVIndex + 0] & 0xff) - 128.0f;
-                float V = (float)(t3dr_image.data[UVIndex + 1] & 0xff) - 128.0f;
-
-                // Do the YUV -> RGB conversion
-                float Yf = 1.164f*((float)Y) - 16.0f;
-                int R = (int)(Yf + 1.596f*V);
-                int G = (int)(Yf - 0.813f*V - 0.391f*U);
-                int B = (int)(Yf            + 2.018f*U);
-
-                // Clip rgb values to 0-255
-                R = R < 0 ? 0 : R > 255 ? 255 : R;
-                G = G < 0 ? 0 : G > 255 ? 255 : G;
-                B = B < 0 ? 0 : B > 255 ? 255 : B;
-
-                // Put that pixel in the buffer
-                rgb[index++] = (unsigned char) B;
-                rgb[index++] = (unsigned char) G;
-                rgb[index++] = (unsigned char) R;
-            }
-        }
-        TextureToLoad t;
-        t.width = t3dr_image.width / scale;
-        t.height = t3dr_image.height / scale;
-        t.data = rgb;
-        WritePNG(ostr.str().c_str(), (u_int32_t) t.width, (u_int32_t) t.height, t.data);
-        render_mutex_.lock();
-        main_scene_.toLoad.push_back(t);
-        render_mutex_.unlock();
-    }
-
-    void MeshBuilderApp::WritePNG(const char* filename, int width, int height, unsigned char *buffer) {
-        // Open file for writing (binary mode)
-        FILE *fp = fopen(filename, "wb");
-
-        // init PNG library
-        png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-        png_infop info_ptr = png_create_info_struct(png_ptr);
-        setjmp(png_jmpbuf(png_ptr));
-        png_init_io(png_ptr, fp);
-        png_set_IHDR(png_ptr, info_ptr, (png_uint_32) width, (png_uint_32) height,
-                     8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
-                     PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
-        png_write_info(png_ptr, info_ptr);
-
-        // write image data
-        png_bytep row = (png_bytep) malloc(3 * width * sizeof(png_byte));
-        for (int y = 0; y < height; y++) {
-            for (int x=0; x < width; x++) {
-                row[x * 3 + 0] = buffer[(y * width + x) * 3 + 0];
-                row[x * 3 + 1] = buffer[(y * width + x) * 3 + 1];
-                row[x * 3 + 2] = buffer[(y * width + x) * 3 + 2];
-            }
-            png_write_row(png_ptr, row);
-        }
-        png_write_end(png_ptr, NULL);
-
-        /// close all
-        if (fp != NULL) fclose(fp);
-        if (info_ptr != NULL) png_free_data(png_ptr, info_ptr, PNG_FREE_ALL, -1);
-        if (png_ptr != NULL) png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
-        if (row != NULL) free(row);
     }
 }  // namespace mesh_builder

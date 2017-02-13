@@ -29,7 +29,6 @@ public abstract class AbstractActivity extends Activity
   protected static final String MODEL_DIRECTORY = "/Models/";
   protected static final String RESOLUTION_KEY = "RESOLUTION";
   protected static final String TAG = "tango_app";
-  protected static final String TEMP_DIRECTORY = "temp";
   protected static final String ZIP_TEMP = "upload.zip";
 
   public static boolean isPortrait(Context context) {
@@ -54,10 +53,9 @@ public abstract class AbstractActivity extends Activity
 
   public boolean isTexturingOn()
   {
-    return false;
-    /*SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
     String key = getString(R.string.pref_texture);
-    return pref.getBoolean(key, true);*/
+    return pref.getBoolean(key, true);
   }
 
   public static int getModelType(String filename) {
@@ -100,15 +98,6 @@ public abstract class AbstractActivity extends Activity
     setOrientation(isPortrait(this), this);
   }
 
-  public void deleteRecursive(File fileOrDirectory) {
-    if (fileOrDirectory.isDirectory())
-      for (File child : fileOrDirectory.listFiles())
-        deleteRecursive(child);
-
-    if (fileOrDirectory.delete())
-      Log.d(TAG, fileOrDirectory + " deleted");
-  }
-
   public Uri filename2Uri(String filename) {
     if(filename == null)
       return null;
@@ -118,13 +107,6 @@ public abstract class AbstractActivity extends Activity
   public static String getPath() {
     String dir = Environment.getExternalStorageDirectory().getPath() + MODEL_DIRECTORY;
     if (new File(dir).mkdir())
-      Log.d(TAG, "Directory " + dir + " created");
-    return dir;
-  }
-
-  public static File getTempPath() {
-    File dir = new File(getPath(), TEMP_DIRECTORY);
-    if (dir.mkdir())
       Log.d(TAG, "Directory " + dir + " created");
     return dir;
   }

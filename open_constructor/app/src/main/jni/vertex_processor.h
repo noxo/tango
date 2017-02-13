@@ -1,3 +1,6 @@
+#ifndef OPEN_CONSTRUCTOR_VERTEX_PROCESSOR_H
+#define OPEN_CONSTRUCTOR_VERTEX_PROCESSOR_H
+
 #include <tango_3d_reconstruction_api.h>
 #include "model_io.h"
 
@@ -12,3 +15,5 @@ namespace mesh_builder {
                            SingleDynamicMesh* result);
     };
 } // namespace mesh_builder
+
+#endif

@@ -81,7 +81,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         boolean land    = !isPortrait(OpenConstructorActivity.this);
         boolean photo   = isPhotoModeOn();
         boolean txt     = isTexturingOn();
-        String tmp      = getTempPath().toString();
 
         if (android.os.Build.DEVICE.toLowerCase().startsWith("yellowstone"))
           land = !land;
@@ -95,7 +94,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
 
         m3drRunning = !photo;
         TangoJNINative.onCreate(OpenConstructorActivity.this);
-        TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, photo, txt, tmp);
+        TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, photo, txt);
         TangoJNINative.onToggleButtonClicked(m3drRunning);
         TangoJNINative.setView(0, 0, 0, 0, true);
         OpenConstructorActivity.this.runOnUiThread(new Runnable()

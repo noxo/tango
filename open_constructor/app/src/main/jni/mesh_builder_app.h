@@ -15,6 +15,7 @@
 #include <tango_support_api.h>
 
 #include "scene.h"
+#include "texture_processor.h"
 
 namespace mesh_builder {
 
@@ -44,8 +45,7 @@ namespace mesh_builder {
         void OnCreate(JNIEnv *env, jobject caller_activity);
         void OnPause();
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin,
-                                     double dmax, int noise, bool land, bool photo, bool textures,
-                                     std::string dataset);
+                                     double dmax, int noise, bool land, bool photo, bool textures);
         void onPointCloudAvailable(TangoPointCloud *point_cloud);
         void onFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer);
         void OnSurfaceCreated();
@@ -69,10 +69,7 @@ namespace mesh_builder {
         void TangoDisconnect();
         void DeleteResources();
         void MeshUpdate();
-        void SaveFrame();
-        void WritePNG(const char* filename, int width, int height, unsigned char *buffer);
 
-        std::string dataset_;
         bool t3dr_is_running_;
         Tango3DR_GridIndexArray *t3dr_updated;
         Tango3DR_Context t3dr_context_;
@@ -85,6 +82,7 @@ namespace mesh_builder {
         std::mutex render_mutex_;
         Scene main_scene_;
         TangoConfig tango_config_;
+        TextureProcessor textureProcessor;
         std::unordered_map<GridIndex, SingleDynamicMesh*, GridIndexHasher> meshes_;
         std::unordered_map<GridIndex, std::vector<SingleDynamicMesh*>, GridIndexHasher> polygonUsage;
         bool hasNewFrame;
@@ -93,7 +91,6 @@ namespace mesh_builder {
         bool photoFinished;
         bool photoMode;
         bool textured;
-        int textureId;
         float scale;
         float movex;
         float movey;

@@ -1,3 +1,6 @@
+#ifndef OPEN_CONSTRUCTOR_MASK_PROCESSOR_H
+#define OPEN_CONSTRUCTOR_MASK_PROCESSOR_H
+
 #include <tango_3d_reconstruction_api.h>
 #include "model_io.h"
 
@@ -23,3 +26,5 @@ namespace mesh_builder {
         glm::mat4 world2uv;
     };
 } // namespace mesh_builder
+
+#endif

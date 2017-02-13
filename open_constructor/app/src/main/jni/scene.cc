@@ -57,24 +57,6 @@ namespace mesh_builder {
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
-        for (unsigned int i = 0; i < toLoad.size(); i++) {
-            int w = toLoad[i].width;
-            int h = toLoad[i].height;
-            unsigned char* d = toLoad[i].data;
-            GLuint textureID;
-            glGenTextures(1, &textureID);
-            glBindTexture(GL_TEXTURE_2D, textureID);
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, d);
-            textureMap.push_back(textureID);
-            delete[] d;
-        }
-        toLoad.clear();
-
         unsigned int lastTexture = INT_MAX;
         for (tango_gl::StaticMesh mesh : static_meshes_) {
             if (mesh.texture == -1)
