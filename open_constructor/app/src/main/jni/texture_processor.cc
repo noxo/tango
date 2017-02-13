@@ -14,29 +14,38 @@ void png_read_file(png_structp, png_bytep data, png_size_t length)
 }
 
 namespace mesh_builder {
-    TextureProcessor::TextureProcessor() {
-    }
+    TextureProcessor::TextureProcessor() : lastTextureIndex(-1) {}
 
     TextureProcessor::~TextureProcessor() {
-
+        for (RGBImage t : images) {
+            delete[] t.data;
+        }
+        for (unsigned int i : textureMap) {
+            glDeleteTextures(1, &i);
+        }
     }
 
     void TextureProcessor::Add(Tango3DR_ImageBuffer t3dr_image) {
         RGBImage t = YUV2RGB(t3dr_image, 4);
         mutex.lock();
         toLoad[images.size()] = true;
+        lastTextureIndex = (int) images.size();
         images.push_back(t);
         mutex.unlock();
     }
 
     void TextureProcessor::Add(std::vector<std::string> pngFiles) {
         for (unsigned int i = 0; i < pngFiles.size(); i++) {
+            RGBImage t = ReadPNG(pngFiles[i]);
+            mutex.lock();
             toLoad[images.size()] = true;
-            images.push_back(ReadPNG(pngFiles[i]));
+            images.push_back(t);
+            mutex.unlock();
         }
     }
 
     void TextureProcessor::Save(std::string modelPath) {
+        mutex.lock();
         std::string base = (modelPath.substr(0, modelPath.length() - 4));
         for (unsigned int i = 0; i < images.size(); i++) {
             std::ostringstream ostr;
@@ -48,9 +57,25 @@ namespace mesh_builder {
             RGBImage t = images[i];
             WritePNG(ostr.str().c_str(), t.width, t.height, t.data);
         }
+        mutex.unlock();
+    }
+
+    int TextureProcessor::TextureId() {
+        mutex.lock();
+        int output = lastTextureIndex;
+        mutex.unlock();
+        return output;
+    }
+
+    std::vector<unsigned int> TextureProcessor::TextureMap() {
+        mutex.lock();
+        std::vector<unsigned int> output = textureMap;
+        mutex.unlock();
+        return output;
     }
 
     bool TextureProcessor::UpdateGL() {
+        mutex.lock();
         bool updated = !toLoad.empty();
         for(std::pair<const int, bool> i : toLoad ) {
             while (i.first >= textureMap.size()) {
@@ -67,6 +92,7 @@ namespace mesh_builder {
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t.width, t.height, 0, GL_RGB, GL_UNSIGNED_BYTE, t.data);
         }
         toLoad.clear();
+        mutex.unlock();
         return updated;
     }
 

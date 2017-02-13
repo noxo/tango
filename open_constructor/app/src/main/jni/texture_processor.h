@@ -21,9 +21,9 @@ namespace mesh_builder {
         void Add(Tango3DR_ImageBuffer t3dr_image);
         void Add(std::vector<std::string> pngFiles);
         void Save(std::string modelPath);
-        int TextureId() { return (int) (textureMap.size() - 1); }
+        int TextureId();
+        std::vector<unsigned int> TextureMap();
         bool UpdateGL();
-        std::vector<unsigned int> TextureMap() { return textureMap; };
 
     private:
         RGBImage ReadPNG(std::string file);
@@ -34,6 +34,7 @@ namespace mesh_builder {
         std::map<int, bool> toLoad;
         std::mutex mutex;
         std::vector<unsigned int> textureMap;
+        int lastTextureIndex;
     };
 } // namespace mesh_builder
 
