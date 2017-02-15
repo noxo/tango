@@ -6,6 +6,7 @@
 #include <sstream>
 #include <tango-gl/util.h>
 #include "texture_processor.h"
+#include "mask_processor.h"
 
 FILE* temp;
 void png_read_file(png_structp, png_bytep data, png_size_t length)
@@ -80,6 +81,7 @@ namespace mesh_builder {
             ostr << i;
             ostr << ".png";
             LOGI("Saving %s", ostr.str().c_str());
+            MaskUnused(i);
             RGBImage t = images[i];
             WritePNG(ostr.str().c_str(), t.width, t.height, t.data);
         }
@@ -113,6 +115,25 @@ namespace mesh_builder {
         toLoad.clear();
         mutex.unlock();
         return updated;
+    }
+
+    void TextureProcessor::MaskUnused(int index) {
+        int w = images[index].width;
+        int h = images[index].height;
+        unsigned char* data = images[index].data;
+        MaskProcessor mp(instances[index], w, h);
+        int i = 0;
+        for (int y = h - 1; y >= 0; y--) {
+            for (int x = 0; x < w; x++) {
+                if(mp.isMasked(x, y)) {
+                    data[i++] = 0;
+                    data[i++] = 0;
+                    data[i++] = 0;
+                } else
+                    i+=3;
+            }
+        }
+        toLoad[index] = true;
     }
 
     RGBImage TextureProcessor::ReadPNG(std::string file)

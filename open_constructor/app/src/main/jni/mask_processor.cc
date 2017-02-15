@@ -10,6 +10,44 @@ const int kInitialVertexCount = 30;
 const int kInitialIndexCount = 99;
 
 namespace mesh_builder {
+    MaskProcessor::MaskProcessor(std::vector<SingleDynamicMesh *> meshes, int w, int h) {
+
+        buffer = new float[w * h];
+        viewport_width = w;
+        viewport_height = h;
+
+        for (int mem = 0; mem < w * h; mem++)
+            buffer[mem] = INT_MAX;
+        if (fillCache1.empty())
+            fillCache1.resize((unsigned long) (h + 1));
+        if (fillCache2.empty())
+            fillCache2.resize((unsigned long) (h + 1));
+
+        std::vector<glm::vec3> vertices;
+        unsigned int pos;
+        for (unsigned int i = 0; i < meshes.size(); i++) {
+            meshes[i]->mutex.lock();
+            for (unsigned int j = 0; j < meshes[i]->mesh.indices.size() / 3; j++) {
+                for (int k = 0; k < 3; k++) {
+                    pos = meshes[i]->mesh.indices[j * 3 + k];
+                    vertices.push_back(glm::vec3(meshes[i]->mesh.uv[pos], 1.0f));
+                }
+            }
+            meshes[i]->mutex.unlock();
+        }
+        triangles(&vertices[0].x, vertices.size() / 3);
+    }
+
+    bool MaskProcessor::isMasked(int x, int y, int r) {
+        for (int i = -r; i < r; i++)
+            for (int j = -r; j < r; j++)
+                if ((x + i >= 0) && (x + i < viewport_width))
+                    if ((y + j >= 0) && (y + j < viewport_height))
+                        if (buffer[(y + j) * viewport_width + x + i] < 1000)
+                            return false;
+        return true;
+    }
+
     MaskProcessor::MaskProcessor(Tango3DR_Context context, int w, int h, Tango3DR_GridIndexArray* i,
                                  glm::mat4 matrix, Tango3DR_CameraCalibration calib) {
         if (!temp_mask_mesh) {
@@ -70,14 +108,15 @@ namespace mesh_builder {
 
         std::vector<glm::vec3> vertices;
         unsigned int pos;
-        glm::vec3 vertex;
+        glm::vec4 vertex;
         for (unsigned int i = 0; i < temp_mask_mesh->tango_mesh.max_num_faces; i++) {
             for (unsigned int j = 0; j < 3; j++) {
                 pos = temp_mask_mesh->tango_mesh.faces[i][j];
-                vertex = glm::vec3(temp_mask_mesh->tango_mesh.vertices[pos][0],
+                vertex = glm::vec4(temp_mask_mesh->tango_mesh.vertices[pos][0],
                                    temp_mask_mesh->tango_mesh.vertices[pos][1],
-                                   temp_mask_mesh->tango_mesh.vertices[pos][2]);
-                vertices.push_back(vertex);
+                                   temp_mask_mesh->tango_mesh.vertices[pos][2], 1.0f);
+                Math::convert2uv(vertex, world2uv, calibration);
+                vertices.push_back(glm::vec3(vertex.x, vertex.y, vertex.z));
             }
         }
         triangles(&vertices[0].x, vertices.size() / 3);
@@ -259,17 +298,13 @@ namespace mesh_builder {
     void MaskProcessor::triangles(float* vertices, unsigned long size) {
         int ab, ac, bc, step, x, x1, x2, y, min, mem, memy, max;
         float t1, t2, z, z1, z2;
-        glm::vec4 a, b, c;
+        glm::vec3 a, b, c;
         int v = 0;
         for (unsigned long i = 0; i < size; i++, v += 9) {
             //get vertices
-            a = glm::vec4(vertices[v + 0], vertices[v + 1], vertices[v + 2], 1.0f);
-            b = glm::vec4(vertices[v + 3], vertices[v + 4], vertices[v + 5], 1.0f);
-            c = glm::vec4(vertices[v + 6], vertices[v + 7], vertices[v + 8], 1.0f);
-            //transfer into mask coordinates from 0 to 1
-            Math::convert2uv(a, world2uv, calibration);
-            Math::convert2uv(b, world2uv, calibration);
-            Math::convert2uv(c, world2uv, calibration);
+            a = glm::vec3(vertices[v + 0], vertices[v + 1], vertices[v + 2]);
+            b = glm::vec3(vertices[v + 3], vertices[v + 4], vertices[v + 5]);
+            c = glm::vec3(vertices[v + 6], vertices[v + 7], vertices[v + 8]);
             //scale into mask dimensions
             a.x *= (float)viewport_width;
             a.y *= (float)viewport_height;

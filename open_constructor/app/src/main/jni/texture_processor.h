@@ -29,6 +29,7 @@ namespace mesh_builder {
 
     private:
         RGBImage ReadPNG(std::string file);
+        void MaskUnused(int index);
         void WritePNG(const char* filename, int width, int height, unsigned char *buffer);
         RGBImage YUV2RGB(Tango3DR_ImageBuffer t3dr_image, int scale);
 

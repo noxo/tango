@@ -465,9 +465,6 @@ namespace mesh_builder {
                     VertexProcessor::cleanup(&mesh->mesh);
                     if ((size > 0) && mesh->mesh.indices.empty())
                         textureProcessor.RemoveInstance(mesh);
-                    else if (size - mesh->mesh.indices.empty() != 0){
-                        //TODO:texture clipping
-                    }
                     mesh->mutex.unlock();
                 }
             }
