@@ -53,10 +53,9 @@ public abstract class AbstractActivity extends Activity
 
   public boolean isTexturingOn()
   {
-    return false;
-    /*SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
     String key = getString(R.string.pref_texture);
-    return pref.getBoolean(key, true);*/
+    return pref.getBoolean(key, true);
   }
 
   public static int getModelType(String filename) {

@@ -28,9 +28,21 @@ namespace mesh_builder {
     void TextureProcessor::Add(Tango3DR_ImageBuffer t3dr_image) {
         RGBImage t = YUV2RGB(t3dr_image, 4);
         mutex.lock();
-        toLoad[images.size()] = true;
-        lastTextureIndex = (int) images.size();
-        images.push_back(t);
+        int found = -1;
+        for (unsigned int i = 0; i < instances.size(); i++)
+            if (instances[i].empty())
+                found = i;
+        if (found >= 0) {
+            delete[] images[found].data;
+            images[found] = t;
+            lastTextureIndex = found;
+            toLoad[found] = true;
+        } else {
+            toLoad[images.size()] = true;
+            lastTextureIndex = (int) images.size();
+            images.push_back(t);
+            instances.push_back(std::vector<SingleDynamicMesh*>());
+        }
         mutex.unlock();
     }
 
@@ -40,8 +52,22 @@ namespace mesh_builder {
             mutex.lock();
             toLoad[images.size()] = true;
             images.push_back(t);
+            instances.push_back(std::vector<SingleDynamicMesh*>());
             mutex.unlock();
         }
+    }
+
+    void TextureProcessor::ApplyInstance(SingleDynamicMesh* mesh) {
+        mutex.lock();
+        mesh->mesh.texture = lastTextureIndex;
+        instances[lastTextureIndex].push_back(mesh);
+        mutex.unlock();
+    }
+
+    void TextureProcessor::RemoveInstance(SingleDynamicMesh* mesh) {
+        for (int i = (int) (instances[mesh->mesh.texture].size() - 1); i >= 0; i--)
+            if (instances[mesh->mesh.texture][i] == mesh)
+                instances[mesh->mesh.texture].erase(instances[mesh->mesh.texture].begin() + i);
     }
 
     void TextureProcessor::Save(std::string modelPath) {
@@ -58,13 +84,6 @@ namespace mesh_builder {
             WritePNG(ostr.str().c_str(), t.width, t.height, t.data);
         }
         mutex.unlock();
-    }
-
-    int TextureProcessor::TextureId() {
-        mutex.lock();
-        int output = lastTextureIndex;
-        mutex.unlock();
-        return output;
     }
 
     std::vector<unsigned int> TextureProcessor::TextureMap() {

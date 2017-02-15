@@ -444,7 +444,7 @@ namespace mesh_builder {
                     mp.maskMesh(dynamic_mesh, true);
                     vp.cleanup(&dynamic_mesh->mesh);
                     dynamic_mesh->size = dynamic_mesh->mesh.indices.size();
-                    dynamic_mesh->mesh.texture = textureProcessor.TextureId();
+                    textureProcessor.ApplyInstance(dynamic_mesh);
                     toAdd.push_back(std::pair<GridIndex, SingleDynamicMesh* >(updated_index, dynamic_mesh));
                     render_mutex_.lock();
                     main_scene_.AddDynamicMesh(dynamic_mesh);
@@ -460,8 +460,14 @@ namespace mesh_builder {
                 updated_index.indices[2] = t3dr_updated->indices[it][2];
                 for (SingleDynamicMesh *mesh : polygonUsage[updated_index]) {
                     mesh->mutex.lock();
+                    unsigned long size = mesh->mesh.indices.size();
                     mp.maskMesh(mesh, false);
                     VertexProcessor::cleanup(&mesh->mesh);
+                    if ((size > 0) && mesh->mesh.indices.empty())
+                        textureProcessor.RemoveInstance(mesh);
+                    else if (size - mesh->mesh.indices.empty() != 0){
+                        //TODO:texture clipping
+                    }
                     mesh->mutex.unlock();
                 }
             }

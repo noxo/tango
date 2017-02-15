@@ -4,6 +4,7 @@
 #include <vector>
 #include <mutex>
 #include <map>
+#include "model_io.h"
 
 namespace mesh_builder {
 
@@ -20,8 +21,9 @@ namespace mesh_builder {
 
         void Add(Tango3DR_ImageBuffer t3dr_image);
         void Add(std::vector<std::string> pngFiles);
+        void ApplyInstance(SingleDynamicMesh* mesh);
+        void RemoveInstance(SingleDynamicMesh* mesh);
         void Save(std::string modelPath);
-        int TextureId();
         std::vector<unsigned int> TextureMap();
         bool UpdateGL();
 
@@ -30,6 +32,7 @@ namespace mesh_builder {
         void WritePNG(const char* filename, int width, int height, unsigned char *buffer);
         RGBImage YUV2RGB(Tango3DR_ImageBuffer t3dr_image, int scale);
 
+        std::vector<std::vector<SingleDynamicMesh*> > instances;
         std::vector<RGBImage> images;
         std::map<int, bool> toLoad;
         std::mutex mutex;
