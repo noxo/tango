@@ -27,7 +27,7 @@ public:
 
 private:
     glm::ivec3 decodeColor(unsigned int c);
-    void parseOBJ(std::vector<tango_gl::StaticMesh> &output);
+    void parseOBJ(int subdivision, std::vector<tango_gl::StaticMesh> &output);
     void parsePLYFaces(int subdivision, std::vector<tango_gl::StaticMesh> &output);
     std::vector<std::string> readHeader();
     void readPLYVertices();

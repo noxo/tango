@@ -28,8 +28,7 @@ namespace mesh_builder {
     }
 
     ModelIO::~ModelIO() {
-        if (type != ModelIO::OBJ)
-            fclose(file);
+        fclose(file);
     }
 
     std::vector<std::string> ModelIO::readModel(int subdivision, std::vector<tango_gl::StaticMesh>& output) {
@@ -39,7 +38,7 @@ namespace mesh_builder {
             readPLYVertices();
             parsePLYFaces(subdivision, output);
         } else if (type == OBJ) {
-            parseOBJ(output);
+            parseOBJ(subdivision, output);
         } else
             assert(false);
         return textures;
@@ -87,9 +86,10 @@ namespace mesh_builder {
             assert(false);
     }
 
-    void ModelIO::parseOBJ(std::vector<tango_gl::StaticMesh> &output) {
+    void ModelIO::parseOBJ(int subdivision, std::vector<tango_gl::StaticMesh> &output) {
         char buffer[1024];
         unsigned long meshIndex = 0;
+        int textureIndex = 0;
         glm::vec3 v;
         glm::vec2 t;
         std::vector<glm::vec3> vertices;
@@ -99,10 +99,11 @@ namespace mesh_builder {
             if (!fgets(buffer, 1024, file))
                 break;
             if (buffer[0] == 'u') {
+                meshIndex = output.size();
                 output.push_back(tango_gl::StaticMesh());
-                meshIndex = output.size() - 1;
                 output[meshIndex].render_mode = GL_TRIANGLES;
-                output[meshIndex].texture = (int32_t) meshIndex;
+                output[meshIndex].texture = textureIndex;
+                textureIndex++;
             } else if ((buffer[0] == 'v') && (buffer[1] == ' ')) {
                 sscanf(buffer, "v %f %f %f", &v.x, &v.y, &v.z);
                 vertices.push_back(v);
@@ -110,9 +111,15 @@ namespace mesh_builder {
                 sscanf(buffer, "vt %f %f", &t.x, &t.y);
                 uvs.push_back(t);
             } else if ((buffer[0] == 'f') && (buffer[1] == ' ')) {
+                a = 0;
+                b = 0;
+                c = 0;
                 sscanf(buffer, "f %d/%d %d/%d %d/%d", &a, &aa, &b, &bb, &c, &cc);
                 //broken topology ignored
                 if ((a == b) || (a == c) || (b == c))
+                    continue;
+                //incomplete line ignored
+                if ((a == 0) || (b == 0) || (c == 0))
                     continue;
                 output[meshIndex].vertices.push_back(vertices[a - 1]);
                 output[meshIndex].uv.push_back(uvs[aa - 1]);
@@ -120,6 +127,12 @@ namespace mesh_builder {
                 output[meshIndex].uv.push_back(uvs[bb - 1]);
                 output[meshIndex].vertices.push_back(vertices[c - 1]);
                 output[meshIndex].uv.push_back(uvs[cc - 1]);
+                if (output[meshIndex].vertices.size() >= subdivision * 3) {
+                    meshIndex = output.size();
+                    output.push_back(tango_gl::StaticMesh());
+                    output[meshIndex].render_mode = GL_TRIANGLES;
+                    output[meshIndex].texture = textureIndex;
+                }
             }
         }
     }
