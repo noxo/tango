@@ -99,11 +99,13 @@ namespace mesh_builder {
                 return;
             }
         }
-        if(textured)
-            textureProcessor.Add(t3dr_image);
-        Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image, &t3dr_image_pose,
-                        &t3dr_updated);
-        MeshUpdate();
+        if ((t3dr_image.width > 0) && (t3dr_image.height > 0) && (t3dr_image.data)) {
+            if (textured)
+                textureProcessor.Add(t3dr_image);
+            Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image, &t3dr_image_pose,
+                            &t3dr_updated);
+            MeshUpdate();
+        }
         hasNewFrame = false;
         binder_mutex_.unlock();
     }
