@@ -80,10 +80,15 @@ namespace mesh_builder {
             ostr << "_";
             ostr << i;
             ostr << ".png";
-            LOGI("Saving %s", ostr.str().c_str());
-            MaskUnused(i);
-            RGBImage t = images[i];
-            WritePNG(ostr.str().c_str(), t.width, t.height, t.data);
+            if (!instances.empty()) {
+                LOGI("Saving %s", ostr.str().c_str());
+                MaskUnused(i);
+                glm::ivec4 aabb = GetAABB(i);
+                //Translate(i, -aabb.x, -aabb.y); //top left
+                //Translate(i, images[i].width - aabb.z - 1, images[i].height - aabb.w - 1); //bottom right
+                RGBImage t = images[i];
+                WritePNG(ostr.str().c_str(), t.width, t.height, t.data);
+            }
         }
         mutex.unlock();
     }
@@ -117,6 +122,44 @@ namespace mesh_builder {
         return updated;
     }
 
+    glm::ivec4 TextureProcessor::GetAABB(int index) {
+        int w = images[index].width;
+        int h = images[index].height;
+        unsigned char* data = images[index].data;
+
+        glm::ivec4 output;
+        output.x = INT_MAX;
+        output.y = INT_MAX;
+        output.z = INT_MIN;
+        output.w = INT_MIN;
+
+        int i = 0;
+        int r, g, b;
+        bool empty = true;
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                r = data[i++];
+                g = data[i++];
+                b = data[i++];
+                if ((r != 255) && (g != 0) && (b != 255)) {
+                    if (output.x > x)
+                        output.x = x;
+                    if (output.y > y)
+                        output.y = y;
+                    if (output.z < x)
+                        output.z = x;
+                    if (output.w < y)
+                        output.w = y;
+                    empty = false;
+                }
+            }
+        }
+        if (empty)
+            return glm::ivec4(0, 0, 0, 0);
+        else
+            return output;
+    }
+
     void TextureProcessor::MaskUnused(int index) {
         int w = images[index].width;
         int h = images[index].height;
@@ -126,9 +169,9 @@ namespace mesh_builder {
         for (int y = h - 1; y >= 0; y--) {
             for (int x = 0; x < w; x++) {
                 if(mp.isMasked(x, y)) {
+                    data[i++] = 255;
                     data[i++] = 0;
-                    data[i++] = 0;
-                    data[i++] = 0;
+                    data[i++] = 255;
                 } else
                     i+=3;
             }
@@ -165,6 +208,73 @@ namespace mesh_builder {
         texture.width = (int) width;
         texture.height = (int) height;
         return texture;
+    }
+
+    void TextureProcessor::Translate(int index, int mx, int my) {
+        int w = images[index].width;
+        int h = images[index].height;
+        unsigned char* data = images[index].data;
+        //right and left shifting
+        for (int y = 0; y < h; y++) {
+            if (mx > 0) {
+                for (int x = w - 1; x >= mx; x--) {
+                    data[(y * w + x) * 3 + 0] = data[(y * w + x - mx) * 3 + 0];
+                    data[(y * w + x) * 3 + 1] = data[(y * w + x - mx) * 3 + 1];
+                    data[(y * w + x) * 3 + 2] = data[(y * w + x - mx) * 3 + 2];
+                }
+                for (int x = mx - 1; x >= 0; x--) {
+                    data[(y * w + x) * 3 + 0] = 255;
+                    data[(y * w + x) * 3 + 1] = 0;
+                    data[(y * w + x) * 3 + 2] = 255;
+                }
+            } else if (mx < 0) {
+                for (int x = 0; x < w + mx; x++) {
+                    data[(y * w + x) * 3 + 0] = data[(y * w + x - mx) * 3 + 0];
+                    data[(y * w + x) * 3 + 1] = data[(y * w + x - mx) * 3 + 1];
+                    data[(y * w + x) * 3 + 2] = data[(y * w + x - mx) * 3 + 2];
+                }
+                for (int x = w + mx; x < w; x++) {
+                    data[(y * w + x) * 3 + 0] = 255;
+                    data[(y * w + x) * 3 + 1] = 0;
+                    data[(y * w + x) * 3 + 2] = 255;
+                }
+            }
+        }
+        //up and down shifting
+        for (int x = 0; x < w; x++) {
+            if (my > 0) {
+                for (int y = h - 1; y >= my; y--) {
+                    data[(y * w + x) * 3 + 0] = data[((y - my) * w + x) * 3 + 0];
+                    data[(y * w + x) * 3 + 1] = data[((y - my) * w + x) * 3 + 1];
+                    data[(y * w + x) * 3 + 2] = data[((y - my) * w + x) * 3 + 2];
+                }
+                for (int y = my - 1; y >= 0; y--) {
+                    data[(y * w + x) * 3 + 0] = 255;
+                    data[(y * w + x) * 3 + 1] = 0;
+                    data[(y * w + x) * 3 + 2] = 255;
+                }
+            } else if (my < 0) {
+                for (int y = 0; y < h + my; y++) {
+                    data[(y * w + x) * 3 + 0] = data[((y - my) * w + x) * 3 + 0];
+                    data[(y * w + x) * 3 + 1] = data[((y - my) * w + x) * 3 + 1];
+                    data[(y * w + x) * 3 + 2] = data[((y - my) * w + x) * 3 + 2];
+                }
+                for (int y = h + my; y < h; y++) {
+                    data[(y * w + x) * 3 + 0] = 255;
+                    data[(y * w + x) * 3 + 1] = 0;
+                    data[(y * w + x) * 3 + 2] = 255;
+                }
+            }
+        }
+        //update texture coordinates
+        glm::vec2 offset = glm::vec2(mx / (float)(w - 1), -my / (float)(h - 1));
+        for (SingleDynamicMesh* mesh : instances[index]) {
+            mesh->mutex.lock();
+            for (unsigned int i = 0; i < mesh->mesh.uv.size(); i++)
+                mesh->mesh.uv[i] += offset;
+            mesh->mutex.unlock();
+        }
+        toLoad[index] = true;
     }
 
     void TextureProcessor::WritePNG(const char* filename, int width, int height, unsigned char *buffer) {

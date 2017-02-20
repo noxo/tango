@@ -73,6 +73,8 @@ namespace mesh_builder {
                 offset++;
             int texture = -1;
             for (unsigned int i = 0; i < model.size(); i++) {
+                if (model[i]->mesh.indices.empty())
+                    continue;
                 if (type == OBJ) {
                     if (texture != model[i]->mesh.texture) {
                         texture = model[i]->mesh.texture;
@@ -288,6 +290,8 @@ namespace mesh_builder {
                 if (texture != model[i]->mesh.texture) {
                     texture = model[i]->mesh.texture;
                 } else
+                    continue;
+                if (model[i]->mesh.indices.empty())
                     continue;
 
                 fprintf(mtl, "newmtl %d\n", texture);

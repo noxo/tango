@@ -28,8 +28,10 @@ namespace mesh_builder {
         bool UpdateGL();
 
     private:
+        glm::ivec4 GetAABB(int index);
         RGBImage ReadPNG(std::string file);
         void MaskUnused(int index);
+        void Translate(int index, int mx, int my);
         void WritePNG(const char* filename, int width, int height, unsigned char *buffer);
         RGBImage YUV2RGB(Tango3DR_ImageBuffer t3dr_image, int scale);
 
