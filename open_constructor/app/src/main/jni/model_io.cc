@@ -73,8 +73,10 @@ namespace mesh_builder {
                 offset++;
             int texture = -1;
             for (unsigned int i = 0; i < model.size(); i++) {
-                if (model[i]->mesh.indices.empty())
+                if (model[i]->mesh.indices.empty()) {
+                    offset += vectorSize[i];
                     continue;
+                }
                 if (type == OBJ) {
                     if (texture != model[i]->mesh.texture) {
                         texture = model[i]->mesh.texture;
@@ -285,16 +287,14 @@ namespace mesh_builder {
             std::string shortBase = base.substr(index + 1, base.length());
             fprintf(file, "mtllib %s.mtl\n", shortBase.c_str());
             FILE* mtl = fopen((base + ".mtl").c_str(), "w");
-            int texture = -1;
+            std::map<int, bool> stored;
             for (unsigned int i = 0; i < model.size(); i++) {
-                if (texture != model[i]->mesh.texture) {
-                    texture = model[i]->mesh.texture;
-                } else
-                    continue;
                 if (model[i]->mesh.indices.empty())
                     continue;
+                if (stored.find(model[i]->mesh.texture) != stored.end())
+                    continue;
 
-                fprintf(mtl, "newmtl %d\n", texture);
+                fprintf(mtl, "newmtl %d\n", model[i]->mesh.texture);
                 fprintf(mtl, "Ns 96.078431\n");
                 fprintf(mtl, "Ka 1.000000 1.000000 1.000000\n");
                 fprintf(mtl, "Kd 0.640000 0.640000 0.640000\n");
@@ -303,7 +303,8 @@ namespace mesh_builder {
                 fprintf(mtl, "Ni 1.000000\n");
                 fprintf(mtl, "d 1.000000\n");
                 fprintf(mtl, "illum 2\n");
-                fprintf(mtl, "map_Kd %s_%d.png\n\n", shortBase.c_str(), texture);
+                fprintf(mtl, "map_Kd %s_%d.png\n\n", shortBase.c_str(), model[i]->mesh.texture);
+                stored[model[i]->mesh.texture] = true;
             }
             fclose(mtl);
         }
