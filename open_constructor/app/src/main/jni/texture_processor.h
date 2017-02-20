@@ -22,10 +22,12 @@ namespace mesh_builder {
         void Add(Tango3DR_ImageBuffer t3dr_image);
         void Add(std::vector<std::string> pngFiles);
         void ApplyInstance(SingleDynamicMesh* mesh);
+        void MarkForUpdate(int index) { toUpdate[index] = true; }
         void RemoveInstance(SingleDynamicMesh* mesh);
         void Save(std::string modelPath);
         std::vector<unsigned int> TextureMap();
         bool UpdateGL();
+        void UpdateTextures();
 
     private:
         glm::ivec4 GetAABB(int index);
@@ -38,6 +40,7 @@ namespace mesh_builder {
         std::vector<std::vector<SingleDynamicMesh*> > instances;
         std::vector<RGBImage> images;
         std::map<int, bool> toLoad;
+        std::map<int, bool> toUpdate;
         std::mutex mutex;
         std::vector<unsigned int> textureMap;
         int lastTextureIndex;

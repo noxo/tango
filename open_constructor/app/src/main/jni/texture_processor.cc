@@ -82,10 +82,6 @@ namespace mesh_builder {
             ostr << ".png";
             if (!instances.empty()) {
                 LOGI("Saving %s", ostr.str().c_str());
-                MaskUnused(i);
-                glm::ivec4 aabb = GetAABB(i);
-                //Translate(i, -aabb.x, -aabb.y); //top left
-                //Translate(i, images[i].width - aabb.z - 1, images[i].height - aabb.w - 1); //bottom right
                 RGBImage t = images[i];
                 WritePNG(ostr.str().c_str(), t.width, t.height, t.data);
             }
@@ -120,6 +116,17 @@ namespace mesh_builder {
         toLoad.clear();
         mutex.unlock();
         return updated;
+    }
+
+    void TextureProcessor::UpdateTextures() {
+        for (std::pair<const int, bool> i : toUpdate) {
+            MaskUnused(i.first);
+            glm::ivec4 aabb = GetAABB(i.first);
+            //Translate(i.first, -aabb.x, -aabb.y); //top left
+            //Translate(i.first, images[i].width - aabb.z - 1, images[i].height - aabb.w - 1); //bottom right
+            //TODO:texture merging
+        }
+        toUpdate.clear();
     }
 
     glm::ivec4 TextureProcessor::GetAABB(int index) {
@@ -176,7 +183,9 @@ namespace mesh_builder {
                     i+=3;
             }
         }
+        mutex.lock();
         toLoad[index] = true;
+        mutex.unlock();
     }
 
     RGBImage TextureProcessor::ReadPNG(std::string file)

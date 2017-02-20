@@ -467,10 +467,13 @@ namespace mesh_builder {
                     VertexProcessor::cleanup(&mesh->mesh);
                     if ((size > 0) && mesh->mesh.indices.empty())
                         textureProcessor.RemoveInstance(mesh);
+                    else if (size != mesh->mesh.indices.size())
+                        textureProcessor.MarkForUpdate(mesh->mesh.texture);
                     mesh->mutex.unlock();
                 }
             }
             //add mesh into data structure
+            textureProcessor.UpdateTextures();
             for (unsigned long it = 0; it < toAdd.size(); ++it)
                 polygonUsage[toAdd[it].first].push_back(toAdd[it].second);
         } else {
