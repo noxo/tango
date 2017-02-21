@@ -1,13 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:orientation="vertical"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="match_parent"
               android:layout_height="match_parent">
 
     <TextView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="35sp"
         android:layout_margin="5dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
         android:textSize="28sp"
-        android:id="@+id/name"/>
-</LinearLayout>
+        android:id="@+id/name" />
+
+    <View
+        android:layout_width="35sp"
+        android:layout_height="35sp"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="5sp"
+        android:background="@drawable/ic_context_menu"
+        android:id="@+id/context" />
+</RelativeLayout>

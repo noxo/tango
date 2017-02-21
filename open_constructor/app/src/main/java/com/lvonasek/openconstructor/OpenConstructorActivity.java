@@ -355,7 +355,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   }
 
   @Override
-  public synchronized void onBackPressed()
+  public void onBackPressed()
   {
     System.exit(0);
   }
