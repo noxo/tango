@@ -33,10 +33,12 @@ namespace mesh_builder {
         glm::ivec4 GetAABB(int index);
         RGBImage ReadPNG(std::string file);
         void MaskUnused(int index);
+        void Merge(int dst, int src);
         void Translate(int index, int mx, int my);
         void WritePNG(const char* filename, int width, int height, unsigned char *buffer);
         RGBImage YUV2RGB(Tango3DR_ImageBuffer t3dr_image, int scale);
 
+        std::map<int, glm::ivec4> boundaries;
         std::vector<std::vector<SingleDynamicMesh*> > instances;
         std::vector<RGBImage> images;
         std::map<int, bool> toLoad;

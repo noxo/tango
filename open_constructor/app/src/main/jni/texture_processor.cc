@@ -62,6 +62,7 @@ namespace mesh_builder {
         mutex.lock();
         mesh->mesh.texture = lastTextureIndex;
         instances[lastTextureIndex].push_back(mesh);
+        toUpdate[lastTextureIndex] = true;
         mutex.unlock();
     }
 
@@ -121,10 +122,32 @@ namespace mesh_builder {
     void TextureProcessor::UpdateTextures() {
         for (std::pair<const int, bool> i : toUpdate) {
             MaskUnused(i.first);
-            glm::ivec4 aabb = GetAABB(i.first);
-            //Translate(i.first, -aabb.x, -aabb.y); //top left
-            //Translate(i.first, images[i].width - aabb.z - 1, images[i].height - aabb.w - 1); //bottom right
-            //TODO:texture merging
+            boundaries[i.first] = GetAABB(i.first);
+        }
+        for (std::pair<const int, bool> i : toUpdate) {
+            for (std::pair<const int, glm::ivec4> j : boundaries) {
+                if (i.first == j.first)
+                    continue;
+                if (images[i.first].width != images[j.first].width)
+                    continue;
+                if (images[i.first].height != images[j.first].height)
+                    continue;
+                glm::ivec4 bi = boundaries[i.first];
+                glm::ivec4 bj = j.second;
+                int h = images[i.first].width - (bi.z - bi.x + bj.z - bj.x);
+                int v = images[i.first].height - (bi.w - bi.y + bj.w - bj.y);
+                if ((h > 0) && (h > v)) {
+                    Translate(i.first, -bi.x, -bi.y);
+                    Translate(j.first, -bj.x + bi.z - bi.x, -bj.y);
+                    Merge(i.first, j.first);
+                    break;
+                } else if ((v > 0) && (v > h)) {
+                    Translate(i.first, -bi.x, -bi.y);
+                    Translate(j.first, -bj.x, -bj.y + bi.w - bi.y);
+                    Merge(i.first, j.first);
+                    break;
+                }
+            }
         }
         toUpdate.clear();
     }
@@ -186,6 +209,39 @@ namespace mesh_builder {
         mutex.lock();
         toLoad[index] = true;
         mutex.unlock();
+    }
+
+    void TextureProcessor::Merge(int dst, int src) {
+        //texture merging
+        int r, g, b;
+        for (int i = 0; i < images[dst].width * images[dst].height * 3; i+=3) {
+            r = images[dst].data[i + 0];
+            g = images[dst].data[i + 1];
+            b = images[dst].data[i + 2];
+            if ((r == 255) && (g == 0) && (b == 255)) {
+                images[dst].data[i + 0] = images[src].data[i + 0];
+                images[dst].data[i + 1] = images[src].data[i + 1];
+                images[dst].data[i + 2] = images[src].data[i + 2];
+            }
+        }
+
+        //update meshes
+        for (SingleDynamicMesh* mesh : instances[src]) {
+            mesh->mutex.lock();
+            mesh->mesh.texture = dst;
+            mesh->mutex.unlock();
+            instances[dst].push_back(mesh);
+        }
+        instances[src].clear();
+
+        //update texture variables
+        MaskUnused(dst);
+        boundaries[dst] = GetAABB(dst);
+        mutex.lock();
+        toLoad[dst] = true;
+        mutex.unlock();
+        toUpdate[dst] = true;
+        toUpdate.erase(src);
     }
 
     RGBImage TextureProcessor::ReadPNG(std::string file)
