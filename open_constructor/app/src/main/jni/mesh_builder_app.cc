@@ -101,7 +101,7 @@ namespace mesh_builder {
         }
         if ((t3dr_image.width > 0) && (t3dr_image.height > 0) && (t3dr_image.data)) {
             if (textured)
-                textureProcessor.Add(t3dr_image);
+                textureProcessor->Add(t3dr_image);
             Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image, &t3dr_image_pose,
                             &t3dr_updated);
             MeshUpdate();
@@ -153,7 +153,9 @@ namespace mesh_builder {
                                         textured(false),
                                         scale(1),
                                         zoom(0)
-    {}
+    {
+        textureProcessor = new TextureProcessor();
+    }
 
 
     MeshBuilderApp::~MeshBuilderApp() {
@@ -334,6 +336,10 @@ namespace mesh_builder {
 
     void MeshBuilderApp::OnDrawFrame() {
         render_mutex_.lock();
+        for (TextureProcessor* i : toDelete)
+            delete i;
+        toDelete.clear();
+
         //camera transformation
         if (!gyro) {
             main_scene_.camera_->SetPosition(glm::vec3(movex, 0, movey));
@@ -358,8 +364,8 @@ namespace mesh_builder {
         glm::vec4 move = main_scene_.camera_->GetTransformationMatrix() * glm::vec4(0, 0, zoom, 0);
         main_scene_.camera_->Translate(glm::vec3(move.x, move.y, move.z));
         //render
-        if (textureProcessor.UpdateGL())
-          main_scene_.textureMap = textureProcessor.TextureMap();
+        if (textureProcessor->UpdateGL())
+          main_scene_.textureMap = textureProcessor->TextureMap();
         main_scene_.Render(gyro);
         render_mutex_.unlock();
     }
@@ -381,10 +387,14 @@ namespace mesh_builder {
 
     void MeshBuilderApp::OnClearButtonClicked() {
         binder_mutex_.lock();
+        render_mutex_.lock();
         Tango3DR_clear(t3dr_context_);
         meshes_.clear();
         polygonUsage.clear();
         main_scene_.ClearDynamicMeshes();
+        toDelete.push_back(textureProcessor);
+        textureProcessor = new TextureProcessor();
+        render_mutex_.unlock();
         binder_mutex_.unlock();
     }
 
@@ -392,7 +402,7 @@ namespace mesh_builder {
         binder_mutex_.lock();
         render_mutex_.lock();
         ModelIO io(filename, false);
-        textureProcessor.Add(io.readModel(kSubdivisionSize, main_scene_.static_meshes_));
+        textureProcessor->Add(io.readModel(kSubdivisionSize, main_scene_.static_meshes_));
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -403,7 +413,7 @@ namespace mesh_builder {
         render_mutex_.lock();
         ModelIO io(filename, true);
         io.writeModel(main_scene_.dynamic_meshes_);
-        textureProcessor.Save(filename);
+        textureProcessor->Save(filename);
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -446,7 +456,7 @@ namespace mesh_builder {
                     mp.maskMesh(dynamic_mesh, true);
                     vp.cleanup(&dynamic_mesh->mesh);
                     dynamic_mesh->size = dynamic_mesh->mesh.indices.size();
-                    textureProcessor.ApplyInstance(dynamic_mesh);
+                    textureProcessor->ApplyInstance(dynamic_mesh);
                     toAdd.push_back(std::pair<GridIndex, SingleDynamicMesh* >(updated_index, dynamic_mesh));
                     render_mutex_.lock();
                     main_scene_.AddDynamicMesh(dynamic_mesh);
@@ -466,14 +476,14 @@ namespace mesh_builder {
                     mp.maskMesh(mesh, false);
                     VertexProcessor::cleanup(&mesh->mesh);
                     if ((size > 0) && mesh->mesh.indices.empty())
-                        textureProcessor.RemoveInstance(mesh);
+                        textureProcessor->RemoveInstance(mesh);
                     else if (size != mesh->mesh.indices.size())
-                        textureProcessor.MarkForUpdate(mesh->mesh.texture);
+                        textureProcessor->MarkForUpdate(mesh->mesh.texture);
                     mesh->mutex.unlock();
                 }
             }
             //add mesh into data structure
-            textureProcessor.UpdateTextures();
+            textureProcessor->UpdateTextures();
             for (unsigned long it = 0; it < toAdd.size(); ++it)
                 polygonUsage[toAdd[it].first].push_back(toAdd[it].second);
         } else {
