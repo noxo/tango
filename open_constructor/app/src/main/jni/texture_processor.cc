@@ -193,6 +193,7 @@ namespace mesh_builder {
         unsigned char* data = images[index].data;
         int i = 0;
         int r, g, b;
+        std::map<int, bool> limits;
         std::vector<glm::ivec2> spaces;
         for (int y = 0; y < h; y++) {
             int minx = INT_MIN;
@@ -217,6 +218,8 @@ namespace mesh_builder {
                     maxx = tmaxx;
                 }
             }
+            limits[minx] = true;
+            limits[maxx] = true;
             spaces.push_back(glm::ivec2(minx, maxx));
         }
         long area;
@@ -228,27 +231,29 @@ namespace mesh_builder {
             p = spaces[y];
             if (p.x == INT_MIN)
                 continue;
-            for (int x = p.x; x < p.y; x++) {
+            for (std::pair<const int, bool> & x : limits) {
+                if ((x.first < p.x) || (x.first > p.y))
+                    continue;
                 for (ym = y; ym > 0;) {
                     d = spaces[ym];
-                    if ((d.x == INT_MIN) || (d.x > p.x) || (d.y < x))
+                    if ((d.x == INT_MIN) || (d.x > p.x) || (d.y < x.first))
                         break;
                     else
                         ym--;
                 }
                 for (yp = y; yp < h - 1;) {
-                    glm::ivec2 d = spaces[yp];
-                    if ((d.x == INT_MIN) || (d.x > p.x) || (d.y < x))
+                    d = spaces[yp];
+                    if ((d.x == INT_MIN) || (d.x > p.x) || (d.y < x.first))
                         break;
                     else
                         yp++;
                 }
-                area = (yp - ym) * (x - p.x);
+                area = (yp - ym) * (x.first - p.x);
                 if (maxArea < area) {
                     maxArea = area;
                     output.x = p.x;
                     output.y = ym;
-                    output.z = x;
+                    output.z = x.first;
                     output.w = yp;
                 }
             }
