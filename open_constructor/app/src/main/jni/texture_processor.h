@@ -30,15 +30,17 @@ namespace mesh_builder {
         void UpdateTextures();
 
     private:
+        glm::ivec4 FindAABB(int index);
         glm::ivec4 GetAABB(int index);
         RGBImage ReadPNG(std::string file);
         void MaskUnused(int index);
         void Merge(int dst, int src);
         void Translate(int index, int mx, int my);
-        void WritePNG(const char* filename, int width, int height, unsigned char *buffer);
+        void WritePNG(const char* filename, RGBImage t);
         RGBImage YUV2RGB(Tango3DR_ImageBuffer t3dr_image, int scale);
 
         std::map<int, glm::ivec4> boundaries;
+        std::map<int, glm::ivec4> holes;
         std::vector<std::vector<SingleDynamicMesh*> > instances;
         std::vector<RGBImage> images;
         std::map<int, bool> toLoad;
