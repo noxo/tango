@@ -63,11 +63,6 @@ namespace mesh_builder {
             return;
 
         binder_mutex_.lock();
-        if (!hasNewFrame) {
-            binder_mutex_.unlock();
-            return;
-        }
-        glm::mat4 point_cloud_matrix_;
         point_cloud_matrix_ = glm::make_mat4(matrix_transform.matrix);
         point_cloud_matrix_[3][0] *= scale;
         point_cloud_matrix_[3][1] *= scale;
@@ -79,34 +74,8 @@ namespace mesh_builder {
                 point_cloud->points[i][2] *= scale;
             }
         }
-        Tango3DR_Pose t3dr_depth_pose;
-        Tango3DR_PointCloud t3dr_depth;
-        t3dr_depth.timestamp = point_cloud->timestamp;
-        t3dr_depth.num_points = point_cloud->num_points;
-        t3dr_depth.points = point_cloud->points;
-        t3dr_depth_pose = Math::extract3DRPose(point_cloud_matrix_);
-        Tango3DR_Pose t3dr_image_pose = Math::extract3DRPose(image_matrix);
-        if(!photoMode) {
-            glm::quat rot = glm::quat((float) t3dr_image_pose.orientation[0],
-                                      (float) t3dr_image_pose.orientation[1],
-                                      (float) t3dr_image_pose.orientation[2],
-                                      (float) t3dr_image_pose.orientation[3]);
-            float diff = Math::diff(rot, image_rotation);
-            image_rotation = rot;
-            if (diff > 5) {
-                hasNewFrame = false;
-                binder_mutex_.unlock();
-                return;
-            }
-        }
-        if ((t3dr_image.width > 0) && (t3dr_image.height > 0) && (t3dr_image.data)) {
-            if (textured)
-                textureProcessor->Add(t3dr_image);
-            Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image, &t3dr_image_pose,
-                            &t3dr_updated);
-            MeshUpdate();
-        }
-        hasNewFrame = false;
+        TangoSupport_updatePointCloud(point_cloud_manager_, point_cloud);
+        point_cloud_available_ = true;
         binder_mutex_.unlock();
     }
 
@@ -114,7 +83,6 @@ namespace mesh_builder {
         if (id != TANGO_CAMERA_COLOR || !t3dr_is_running_)
             return;
 
-        // Get the camera color transform to OpenGL world frame in OpenGL convention.
         TangoMatrixTransformData matrix_transform;
         TangoSupport_getMatrixTransformAtTime(
                         buffer->timestamp, TANGO_COORDINATE_FRAME_START_OF_SERVICE,
@@ -124,7 +92,7 @@ namespace mesh_builder {
             return;
 
         binder_mutex_.lock();
-        if (hasNewFrame) {
+        if (!point_cloud_available_) {
             binder_mutex_.unlock();
             return;
         }
@@ -133,23 +101,57 @@ namespace mesh_builder {
         image_matrix[3][0] *= scale;
         image_matrix[3][1] *= scale;
         image_matrix[3][2] *= scale;
+
+        Tango3DR_ImageBuffer t3dr_image;
         t3dr_image.width = buffer->width;
         t3dr_image.height = buffer->height;
         t3dr_image.stride = buffer->stride;
         t3dr_image.timestamp = buffer->timestamp;
         t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(buffer->format);
         t3dr_image.data = buffer->data;
-        hasNewFrame = true;
+        Tango3DR_Pose t3dr_image_pose = Math::extract3DRPose(image_matrix);
+        if(!photoMode) {
+            glm::quat rot = glm::quat((float) t3dr_image_pose.orientation[0],
+                                      (float) t3dr_image_pose.orientation[1],
+                                      (float) t3dr_image_pose.orientation[2],
+                                      (float) t3dr_image_pose.orientation[3]);
+            float diff = Math::diff(rot, image_rotation);
+            image_rotation = rot;
+            if (diff > 5) {
+                binder_mutex_.unlock();
+                return;
+            }
+        }
+
+        Tango3DR_PointCloud t3dr_depth;
+        TangoSupport_getLatestPointCloud(point_cloud_manager_, &front_cloud_);
+        t3dr_depth.timestamp = front_cloud_->timestamp;
+        t3dr_depth.num_points = front_cloud_->num_points;
+        t3dr_depth.points = front_cloud_->points;
+
+        Tango3DR_Pose t3dr_depth_pose = Math::extract3DRPose(point_cloud_matrix_);
+        Tango3DR_GridIndexArray* t3dr_updated;
+        Tango3DR_Status t3dr_err =
+                Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image,
+                                &t3dr_image_pose, &t3dr_updated);
+        if (t3dr_err != TANGO_3DR_SUCCESS)
+            return;
+
+        if (textured)
+            textureProcessor->Add(t3dr_image);
+        MeshUpdate(t3dr_image, t3dr_updated);
+        Tango3DR_GridIndexArray_destroy(t3dr_updated);
+        point_cloud_available_ = false;
         binder_mutex_.unlock();
     }
 
 
     MeshBuilderApp::MeshBuilderApp() :  t3dr_is_running_(false),
                                         gyro(false),
-                                        hasNewFrame(false),
                                         landscape(false),
                                         photoFinished(false),
                                         photoMode(false),
+                                        point_cloud_available_(false),
                                         textured(false),
                                         scale(1),
                                         zoom(0)
@@ -162,6 +164,10 @@ namespace mesh_builder {
         if (tango_config_ != nullptr) {
             TangoConfig_free(tango_config_);
             tango_config_ = nullptr;
+        }
+        if (point_cloud_manager_ != nullptr) {
+            TangoSupport_freePointCloudManager(point_cloud_manager_);
+            point_cloud_manager_ = nullptr;
         }
     }
 
@@ -223,6 +229,21 @@ namespace mesh_builder {
         ret = TangoConfig_setBool(tango_config_, "config_enable_color_camera", true);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
+
+        if (point_cloud_manager_ == nullptr) {
+            int32_t max_point_cloud_elements;
+            ret = TangoConfig_getInt32(tango_config_, "max_point_cloud_elements",
+                                       &max_point_cloud_elements);
+            if (ret != TANGO_SUCCESS) {
+                LOGE("Failed to query maximum number of point cloud elements.");
+                std::exit(EXIT_SUCCESS);
+            }
+
+            ret = TangoSupport_createPointCloudManager((size_t) max_point_cloud_elements,
+                                                       &point_cloud_manager_);
+            if (ret != TANGO_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+        }
     }
 
     Tango3DR_Context MeshBuilderApp::TangoSetup3DR(double res, double dmin, double dmax, int noise) {
@@ -378,8 +399,6 @@ namespace mesh_builder {
 
     void MeshBuilderApp::OnToggleButtonClicked(bool t3dr_is_running) {
         binder_mutex_.lock();
-        if (t3dr_is_running)
-            hasNewFrame = false;
         t3dr_is_running_ = t3dr_is_running;
         photoFinished = false;
         binder_mutex_.unlock();
@@ -433,7 +452,7 @@ namespace mesh_builder {
         return (min + max) * 0.5f;
     }
 
-    void MeshBuilderApp::MeshUpdate() {
+    void MeshBuilderApp::MeshUpdate(Tango3DR_ImageBuffer t3dr_image, Tango3DR_GridIndexArray *t3dr_updated) {
         if (photoMode)
             t3dr_is_running_ = false;
 
@@ -545,8 +564,6 @@ namespace mesh_builder {
                 dynamic_mesh->mutex.unlock();
             }
         }
-        Tango3DR_GridIndexArray_destroy(t3dr_updated);
-
         if (photoMode)
             photoFinished = true;
     }

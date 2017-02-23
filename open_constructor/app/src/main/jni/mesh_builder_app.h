@@ -68,25 +68,28 @@ namespace mesh_builder {
         void TangoConnect();
         void TangoDisconnect();
         void DeleteResources();
-        void MeshUpdate();
+        void MeshUpdate(Tango3DR_ImageBuffer t3dr_image, Tango3DR_GridIndexArray *t3dr_updated);
 
         bool t3dr_is_running_;
-        Tango3DR_GridIndexArray *t3dr_updated;
         Tango3DR_Context t3dr_context_;
         Tango3DR_CameraCalibration t3dr_intrinsics_;
         Tango3DR_CameraCalibration t3dr_intrinsics_depth;
-        Tango3DR_ImageBuffer t3dr_image;
         glm::mat4 image_matrix;
         glm::quat image_rotation;
         std::mutex binder_mutex_;
         std::mutex render_mutex_;
+
+        bool point_cloud_available_;
+        TangoSupportPointCloudManager* point_cloud_manager_;
+        TangoPointCloud* front_cloud_;
+        glm::mat4 point_cloud_matrix_;
+
         Scene main_scene_;
         TangoConfig tango_config_;
         TextureProcessor* textureProcessor;
         std::vector<TextureProcessor*> toDelete;
         std::unordered_map<GridIndex, SingleDynamicMesh*, GridIndexHasher> meshes_;
         std::unordered_map<GridIndex, std::vector<SingleDynamicMesh*>, GridIndexHasher> polygonUsage;
-        bool hasNewFrame;
         bool gyro;
         bool landscape;
         bool photoFinished;
