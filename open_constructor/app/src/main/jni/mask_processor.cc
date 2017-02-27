@@ -38,14 +38,17 @@ namespace mesh_builder {
         triangles(&vertices[0].x, vertices.size() / 3);
     }
 
-    bool MaskProcessor::isMasked(int x, int y, int r) {
+    float MaskProcessor::getMask(int x, int y, int r) {
+        float output = INT_MAX;
         for (int i = -r; i < r; i++)
             for (int j = -r; j < r; j++)
                 if ((x + i >= 0) && (x + i < viewport_width))
-                    if ((y + j >= 0) && (y + j < viewport_height))
-                        if (buffer[(y + j) * viewport_width + x + i] < 1000)
-                            return false;
-        return true;
+                    if ((y + j >= 0) && (y + j < viewport_height)) {
+                        float v = buffer[(y + j) * viewport_width + x + i];
+                        if (output > v)
+                            output = v;
+                    }
+        return output;
     }
 
     MaskProcessor::MaskProcessor(Tango3DR_Context context, int w, int h, Tango3DR_GridIndexArray* i,
@@ -95,9 +98,10 @@ namespace mesh_builder {
 
         buffer = new float[w * h];
         calibration = calib;
+        camera = matrix[3] / matrix[3][3];
         viewport_width = w;
         viewport_height = h;
-        world2uv = matrix;
+        world2uv  = glm::inverse(matrix);
 
         for (int mem = 0; mem < w * h; mem++)
             buffer[mem] = INT_MAX;
@@ -109,14 +113,16 @@ namespace mesh_builder {
         std::vector<glm::vec3> vertices;
         unsigned int pos;
         glm::vec4 vertex;
+        float z;
         for (unsigned int i = 0; i < temp_mask_mesh->tango_mesh.max_num_faces; i++) {
             for (unsigned int j = 0; j < 3; j++) {
                 pos = temp_mask_mesh->tango_mesh.faces[i][j];
                 vertex = glm::vec4(temp_mask_mesh->tango_mesh.vertices[pos][0],
                                    temp_mask_mesh->tango_mesh.vertices[pos][1],
                                    temp_mask_mesh->tango_mesh.vertices[pos][2], 1.0f);
+                z = glm::length(vertex - camera);
                 Math::convert2uv(vertex, world2uv, calibration);
-                vertices.push_back(glm::vec3(vertex.x, vertex.y, vertex.z));
+                vertices.push_back(glm::vec3(vertex.x, vertex.y, z));
             }
         }
         triangles(&vertices[0].x, vertices.size() / 3);
@@ -132,10 +138,11 @@ namespace mesh_builder {
         std::vector<DepthTest> status;
         glm::vec4 v;
         int x, y;
-        float d;
+        float d, z;
         int m = inverse ? 0 : 8;
         for (unsigned long i = 0; i < mesh->mesh.vertices.size(); i++) {
             v = glm::vec4(mesh->mesh.vertices[i], 1.0f);
+            z = glm::length(v - camera);
             Math::convert2uv(v, world2uv, calibration);
             x = (int) (v.x * viewport_width);
             y = (int) (v.y * viewport_height);
@@ -146,7 +153,7 @@ namespace mesh_builder {
                 if (d > INT_MAX * 0.5f)
                     status.push_back(INVALID_DATA);
                 else
-                    status.push_back(fabs(d - v.z) < 0.25f ? PASSED : NOT_PASSED);
+                    status.push_back(fabs(d - z) < 0.25f ? PASSED : NOT_PASSED);
             }
         }
         int count;

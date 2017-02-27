@@ -117,7 +117,8 @@ namespace mesh_builder {
                                       (float) t3dr_image_pose.orientation[3]);
             float diff = Math::diff(rot, image_rotation);
             image_rotation = rot;
-            if (diff > 5) {
+            int limit = textured ? 2 : 5;
+            if (diff > limit) {
                 binder_mutex_.unlock();
                 return;
             }
@@ -135,7 +136,10 @@ namespace mesh_builder {
                 Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image,
                                 &t3dr_image_pose, &t3dr_updated);
         if (t3dr_err != TANGO_3DR_SUCCESS)
+        {
+            binder_mutex_.unlock();
             return;
+        }
 
         if (textured)
             textureProcessor->Add(t3dr_image);
@@ -215,8 +219,13 @@ namespace mesh_builder {
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
-        // Enable learning.
-        ret = TangoConfig_setBool(tango_config_, "config_enable_learning_mode", true);
+        // Disable learning.
+        ret = TangoConfig_setBool(tango_config_, "config_enable_learning_mode", false);
+        if (ret != TANGO_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+
+        // Enable drift correction.
+        ret = TangoConfig_setBool(tango_config_, "config_enable_drift_correction", true);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
@@ -462,7 +471,7 @@ namespace mesh_builder {
             glm::mat4 world2uv = glm::inverse(image_matrix);
             std::vector<std::pair<GridIndex, SingleDynamicMesh* > > toAdd;
             MaskProcessor mp(t3dr_context_, t3dr_image.width / 2, t3dr_image.height / 2,
-                             t3dr_updated, world2uv, t3dr_intrinsics_);
+                             t3dr_updated, image_matrix, t3dr_intrinsics_);
             for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
                 GridIndex updated_index;
                 updated_index.indices[0] = t3dr_updated->indices[it][0];

@@ -307,7 +307,7 @@ namespace mesh_builder {
         int i = 0;
         for (int y = h - 1; y >= 0; y--) {
             for (int x = 0; x < w; x++) {
-                if(mp.isMasked(x, y)) {
+                if(mp.getMask(x, y) > 1000) {
                     data[i++] = 255;
                     data[i++] = 0;
                     data[i++] = 255;
