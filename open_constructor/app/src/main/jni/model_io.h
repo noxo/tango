@@ -20,7 +20,7 @@ class ModelIO {
 public:
     ModelIO(std::string filename, bool writeAccess);
     ~ModelIO();
-    std::vector<std::string> ReadModel(int subdivision, std::vector<tango_gl::StaticMesh>& output);
+    std::map<int, std::string> ReadModel(int subdivision, std::vector<tango_gl::StaticMesh>& output);
     void WriteModel(std::vector<SingleDynamicMesh*> model);
 
     enum TYPE{OBJ, PLY};
@@ -29,7 +29,7 @@ private:
     glm::ivec3 DecodeColor(unsigned int c);
     void ParseOBJ(int subdivision, std::vector<tango_gl::StaticMesh> &output);
     void ParsePLYFaces(int subdivision, std::vector<tango_gl::StaticMesh> &output);
-    std::vector<std::string> ReadHeader();
+    std::map<int, std::string> ReadHeader();
     void ReadPLYVertices();
     unsigned int ScanDec(char *line, int offset);
     bool StartsWith(std::string s, std::string e);

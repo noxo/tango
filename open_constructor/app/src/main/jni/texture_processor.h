@@ -20,7 +20,7 @@ namespace mesh_builder {
         ~TextureProcessor();
 
         void Add(Tango3DR_ImageBuffer t3dr_image);
-        void Add(std::vector<std::string> pngFiles);
+        void Add(std::map<int, std::string> files);
         void ApplyInstance(SingleDynamicMesh* mesh);
         void MarkForUpdate(int index) { toUpdate[index] = true; }
         void RemoveInstance(SingleDynamicMesh* mesh);

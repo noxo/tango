@@ -31,9 +31,9 @@ namespace mesh_builder {
         fclose(file);
     }
 
-    std::vector<std::string> ModelIO::ReadModel(int subdivision, std::vector<tango_gl::StaticMesh>& output) {
+    std::map<int, std::string> ModelIO::ReadModel(int subdivision, std::vector<tango_gl::StaticMesh>& output) {
         assert(!writeMode);
-        std::vector<std::string> textures = ReadHeader();
+        std::map<int, std::string> textures = ReadHeader();
         if (type == PLY) {
             ReadPLYVertices();
             ParsePLYFaces(subdivision, output);
@@ -111,11 +111,11 @@ namespace mesh_builder {
             if (!fgets(buffer, 1024, file))
                 break;
             if (buffer[0] == 'u') {
+                sscanf(buffer, "usemtl %d", &textureIndex);
                 meshIndex = output.size();
                 output.push_back(tango_gl::StaticMesh());
                 output[meshIndex].render_mode = GL_TRIANGLES;
                 output[meshIndex].texture = textureIndex;
-                textureIndex++;
             } else if ((buffer[0] == 'v') && (buffer[1] == ' ')) {
                 sscanf(buffer, "v %f %f %f", &v.x, &v.y, &v.z);
                 vertices.push_back(v);
@@ -199,8 +199,8 @@ namespace mesh_builder {
         }
     }
 
-    std::vector<std::string> ModelIO::ReadHeader() {
-        std::vector<std::string> output;
+    std::map<int, std::string> ModelIO::ReadHeader() {
+        std::map<int, std::string> output;
         char buffer[1024];
         if (type == PLY) {
             while (true) {
@@ -223,10 +223,10 @@ namespace mesh_builder {
                     break;
                 }
             }
-            unsigned long index = 0;
+            unsigned int index = 0;
             for (unsigned long i = 0; i < path.size(); i++) {
                 if (path[i] == '/')
-                    index = i;
+                    index = (unsigned int) i;
             }
             std::string data = path.substr(0, index + 1);
             FILE* mtl = fopen((data + mtlFile).c_str(), "r");
@@ -234,9 +234,12 @@ namespace mesh_builder {
                 char pngFile[1024];
                 if (!fgets(buffer, 1024, mtl))
                     break;
+                if (StartsWith(buffer, "newmtl")) {
+                    sscanf(buffer, "newmtl %d", &index);
+                }
                 if (StartsWith(buffer, "map_Kd")) {
                     sscanf(buffer, "map_Kd %s", pngFile);
-                    output.push_back(data + pngFile);
+                    output[index] = data + pngFile;
                 }
             }
             fclose(mtl);

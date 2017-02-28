@@ -47,9 +47,22 @@ namespace mesh_builder {
         mutex.unlock();
     }
 
-    void TextureProcessor::Add(std::vector<std::string> pngFiles) {
+    void TextureProcessor::Add(std::map<int, std::string> files) {
+        std::vector<std::string> pngFiles;
+        for (std::pair<const int, std::string> i : files) {
+            while(i.first >= pngFiles.size()) {
+                pngFiles.push_back("");
+            }
+            pngFiles[i.first] = i.second;
+        }
         for (unsigned int i = 0; i < pngFiles.size(); i++) {
-            RGBImage t = ReadPNG(pngFiles[i]);
+            RGBImage t;
+            if(pngFiles[i].empty()) {
+                t.width = 1;
+                t.height = 1;
+                t.data = new unsigned char[3];
+            } else
+                t = ReadPNG(pngFiles[i]);
             mutex.lock();
             toLoad[images.size()] = true;
             images.push_back(t);
@@ -354,6 +367,7 @@ namespace mesh_builder {
 
     RGBImage TextureProcessor::ReadPNG(std::string file)
     {
+        LOGI("Reading %s", file.c_str());
         temp = fopen(file.c_str(), "r");
         RGBImage texture;
         unsigned int sig_read = 0;
