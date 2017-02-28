@@ -6,16 +6,14 @@
 
 namespace mesh_builder {
 
-    enum DepthTest { INVALID_DATA, OUT_OF_BOUNDS, NOT_PASSED, PASSED};
-
     class MaskProcessor {
     public:
         MaskProcessor(std::vector<SingleDynamicMesh*> meshes, int w, int h);
         MaskProcessor(Tango3DR_Context context, int w, int h, Tango3DR_GridIndexArray* indices,
                       glm::mat4 matrix, Tango3DR_CameraCalibration calib);
         ~MaskProcessor();
-        float getMask(int x, int y, int r = 2);
-        void maskMesh(SingleDynamicMesh* mesh, bool inverse);
+        float getMask(int x, int y, int r = 2, bool minim = true);
+        void maskMesh(SingleDynamicMesh* mesh, bool processFront);
     private:
         bool line(int x1, int y1, int x2, int y2, float z1, float z2,
                   std::pair<int, float>* fillCache);

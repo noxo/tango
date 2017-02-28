@@ -38,14 +38,16 @@ namespace mesh_builder {
         triangles(&vertices[0].x, vertices.size() / 3);
     }
 
-    float MaskProcessor::getMask(int x, int y, int r) {
-        float output = INT_MAX;
-        for (int i = -r; i < r; i++)
-            for (int j = -r; j < r; j++)
+    float MaskProcessor::getMask(int x, int y, int r, bool minim) {
+        float output = minim ? INT_MAX : 0;
+        for (int i = -r; i <= r; i++)
+            for (int j = -r; j <= r; j++)
                 if ((x + i >= 0) && (x + i < viewport_width))
                     if ((y + j >= 0) && (y + j < viewport_height)) {
                         float v = buffer[(y + j) * viewport_width + x + i];
-                        if (output > v)
+                        if (minim && (output > v))
+                            output = v;
+                        if (!minim && (output < v))
                             output = v;
                     }
         return output;
@@ -132,40 +134,35 @@ namespace mesh_builder {
         delete[] buffer;
     }
 
-    void MaskProcessor::maskMesh(SingleDynamicMesh* mesh, bool inverse) {
+    void MaskProcessor::maskMesh(SingleDynamicMesh* mesh, bool processFront) {
         if (mesh->mesh.indices.empty())
             return;
-        std::vector<DepthTest> status;
+        std::vector<bool> edgeFace;
+        std::vector<bool> frontFace;
         glm::vec4 v;
         int x, y;
         float d, z;
-        int m = inverse ? 0 : 8;
         for (unsigned long i = 0; i < mesh->mesh.vertices.size(); i++) {
             v = glm::vec4(mesh->mesh.vertices[i], 1.0f);
             z = glm::length(v - camera);
             Math::convert2uv(v, world2uv, calibration);
             x = (int) (v.x * viewport_width);
             y = (int) (v.y * viewport_height);
-            if ((x < m) || (y < m) || (x >= viewport_width - m) || (y >= viewport_height - m))
-                status.push_back(OUT_OF_BOUNDS);
-            else {
-                d = buffer[x + y * viewport_width];
-                if (d > INT_MAX * 0.5f)
-                    status.push_back(INVALID_DATA);
-                else
-                    status.push_back(fabs(d - z) < 0.25f ? PASSED : NOT_PASSED);
-            }
+            d = getMask(x, y, 0, false);
+            edgeFace.push_back((v.x < 0.05f) ||(v.y < 0.05f) || (v.x > 0.95f) || (v.y > 0.95f));
+            frontFace.push_back(fabs(z - d) < 0.25f);
         }
-        int count;
+        int count, index;
         for (long i = (mesh->mesh.indices.size() - 1) / 3; i >= 0; i--) {
             count = 0;
             for (unsigned int j = 0; j < 3; j++) {
-                if (!inverse && status[mesh->mesh.indices[i * 3 + j]] == PASSED)
+                index = mesh->mesh.indices[i * 3 + j];
+                if (!processFront && !edgeFace[index] && frontFace[index])
                     count++;
-                else if (inverse && (status[mesh->mesh.indices[i * 3 + j]] == NOT_PASSED))
+                else if (processFront && !frontFace[index])
                     count++;
             }
-            if (count == 3) {
+            if ((!processFront && (count == 3)) || (processFront && (count > 0))) {
                 mesh->mesh.indices.erase(mesh->mesh.indices.begin() + i * 3 + 2);
                 mesh->mesh.indices.erase(mesh->mesh.indices.begin() + i * 3 + 1);
                 mesh->mesh.indices.erase(mesh->mesh.indices.begin() + i * 3 + 0);

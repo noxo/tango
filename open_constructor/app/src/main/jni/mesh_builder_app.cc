@@ -117,7 +117,7 @@ namespace mesh_builder {
                                       (float) t3dr_image_pose.orientation[3]);
             float diff = Math::diff(rot, image_rotation);
             image_rotation = rot;
-            int limit = textured ? 2 : 5;
+            int limit = textured ? 1 : 5;
             if (diff > limit) {
                 binder_mutex_.unlock();
                 return;
@@ -470,7 +470,7 @@ namespace mesh_builder {
             //extract textured mesh
             glm::mat4 world2uv = glm::inverse(image_matrix);
             std::vector<std::pair<GridIndex, SingleDynamicMesh* > > toAdd;
-            MaskProcessor mp(t3dr_context_, t3dr_image.width / 2, t3dr_image.height / 2,
+            MaskProcessor mp(t3dr_context_, t3dr_image.width, t3dr_image.height,
                              t3dr_updated, image_matrix, t3dr_intrinsics_);
             for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
                 GridIndex updated_index;
