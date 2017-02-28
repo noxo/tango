@@ -440,6 +440,7 @@ namespace mesh_builder {
             }
         }
         //update texture coordinates
+        mutex.lock();
         glm::vec2 offset = glm::vec2(mx / (float)(w - 1), -my / (float)(h - 1));
         for (SingleDynamicMesh* mesh : instances[index]) {
             mesh->mutex.lock();
@@ -448,6 +449,7 @@ namespace mesh_builder {
             mesh->mutex.unlock();
         }
         toLoad[index] = true;
+        mutex.unlock();
     }
 
     void TextureProcessor::WritePNG(const char* filename, RGBImage t) {

@@ -149,7 +149,7 @@ namespace mesh_builder {
             x = (int) (v.x * viewport_width);
             y = (int) (v.y * viewport_height);
             d = GetMask(x, y, 0, false);
-            edgeFace.push_back((v.x < 0.05f) ||(v.y < 0.05f) || (v.x > 0.95f) || (v.y > 0.95f));
+            edgeFace.push_back((v.x < 0.025f) ||(v.y < 0.025f) || (v.x > 0.975f) || (v.y > 0.975f));
             frontFace.push_back(fabs(z - d) < 0.25f);
         }
         int count, index;
