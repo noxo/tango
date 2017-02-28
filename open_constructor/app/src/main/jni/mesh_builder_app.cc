@@ -430,7 +430,7 @@ namespace mesh_builder {
         binder_mutex_.lock();
         render_mutex_.lock();
         ModelIO io(filename, false);
-        textureProcessor->Add(io.readModel(kSubdivisionSize, main_scene_.static_meshes_));
+        textureProcessor->Add(io.ReadModel(kSubdivisionSize, main_scene_.static_meshes_));
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -440,7 +440,7 @@ namespace mesh_builder {
         binder_mutex_.lock();
         render_mutex_.lock();
         ModelIO io(filename, true);
-        io.writeModel(main_scene_.dynamic_meshes_);
+        io.WriteModel(main_scene_.dynamic_meshes_);
         textureProcessor->Save(filename);
         render_mutex_.unlock();
         binder_mutex_.unlock();
@@ -479,10 +479,10 @@ namespace mesh_builder {
                 updated_index.indices[2] = t3dr_updated->indices[it][2];
                 SingleDynamicMesh* dynamic_mesh = new SingleDynamicMesh();
                 VertexProcessor vp(t3dr_context_, updated_index.indices);
-                vp.getMeshWithUV(world2uv, t3dr_intrinsics_, dynamic_mesh);
+                vp.GetMeshWithUV(world2uv, t3dr_intrinsics_, dynamic_mesh);
                 if (!dynamic_mesh->mesh.indices.empty()) {
-                    mp.maskMesh(dynamic_mesh, true);
-                    vp.cleanup(&dynamic_mesh->mesh);
+                    mp.MaskMesh(dynamic_mesh, true);
+                    vp.Cleanup(&dynamic_mesh->mesh);
                     dynamic_mesh->size = dynamic_mesh->mesh.indices.size();
                     textureProcessor->ApplyInstance(dynamic_mesh);
                     toAdd.push_back(std::pair<GridIndex, SingleDynamicMesh* >(updated_index, dynamic_mesh));
@@ -501,8 +501,8 @@ namespace mesh_builder {
                 for (SingleDynamicMesh *mesh : polygonUsage[updated_index]) {
                     mesh->mutex.lock();
                     unsigned long size = mesh->mesh.indices.size();
-                    mp.maskMesh(mesh, false);
-                    VertexProcessor::cleanup(&mesh->mesh);
+                    mp.MaskMesh(mesh, false);
+                    VertexProcessor::Cleanup(&mesh->mesh);
                     if ((size > 0) && mesh->mesh.indices.empty())
                         textureProcessor->RemoveInstance(mesh);
                     else if (size != mesh->mesh.indices.size())

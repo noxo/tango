@@ -20,22 +20,22 @@ class ModelIO {
 public:
     ModelIO(std::string filename, bool writeAccess);
     ~ModelIO();
-    std::vector<std::string> readModel(int subdivision, std::vector<tango_gl::StaticMesh>& output);
-    void writeModel(std::vector<SingleDynamicMesh*> model);
+    std::vector<std::string> ReadModel(int subdivision, std::vector<tango_gl::StaticMesh>& output);
+    void WriteModel(std::vector<SingleDynamicMesh*> model);
 
     enum TYPE{OBJ, PLY};
 
 private:
-    glm::ivec3 decodeColor(unsigned int c);
-    void parseOBJ(int subdivision, std::vector<tango_gl::StaticMesh> &output);
-    void parsePLYFaces(int subdivision, std::vector<tango_gl::StaticMesh> &output);
-    std::vector<std::string> readHeader();
-    void readPLYVertices();
-    unsigned int scanDec(char *line, int offset);
-    bool startsWith(std::string s, std::string e);
-    void writeHeader(std::vector<SingleDynamicMesh*> model);
-    void writePointCloud(SingleDynamicMesh *mesh, int size);
-    void writeFaces(SingleDynamicMesh *mesh, int offset);
+    glm::ivec3 DecodeColor(unsigned int c);
+    void ParseOBJ(int subdivision, std::vector<tango_gl::StaticMesh> &output);
+    void ParsePLYFaces(int subdivision, std::vector<tango_gl::StaticMesh> &output);
+    std::vector<std::string> ReadHeader();
+    void ReadPLYVertices();
+    unsigned int ScanDec(char *line, int offset);
+    bool StartsWith(std::string s, std::string e);
+    void WriteHeader(std::vector<SingleDynamicMesh*> model);
+    void WritePointCloud(SingleDynamicMesh *mesh, int size);
+    void WriteFaces(SingleDynamicMesh *mesh, int offset);
 
     TYPE type;
     std::string path;

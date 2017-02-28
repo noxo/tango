@@ -12,13 +12,13 @@ namespace mesh_builder {
         MaskProcessor(Tango3DR_Context context, int w, int h, Tango3DR_GridIndexArray* indices,
                       glm::mat4 matrix, Tango3DR_CameraCalibration calib);
         ~MaskProcessor();
-        float getMask(int x, int y, int r = 2, bool minim = true);
-        void maskMesh(SingleDynamicMesh* mesh, bool processFront);
+        float GetMask(int x, int y, int r = 2, bool minim = true);
+        void MaskMesh(SingleDynamicMesh* mesh, bool processFront);
     private:
-        bool line(int x1, int y1, int x2, int y2, float z1, float z2,
+        bool Line(int x1, int y1, int x2, int y2, float z1, float z2,
                   std::pair<int, float>* fillCache);
-        bool test(double p, double q, float &t1, float &t2);
-        void triangles(float* vertices, unsigned long size);
+        bool Test(double p, double q, float &t1, float &t2);
+        void Triangles(float* vertices, unsigned long size);
 
         float* buffer;
         Tango3DR_CameraCalibration calibration;

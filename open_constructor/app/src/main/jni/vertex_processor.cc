@@ -56,7 +56,7 @@ namespace mesh_builder {
 
     }
 
-    void VertexProcessor::cleanup(tango_gl::StaticMesh* mesh) {
+    void VertexProcessor::Cleanup(tango_gl::StaticMesh* mesh) {
         bool hasColors = !mesh->colors.empty();
         bool hasNormals = !mesh->normals.empty();
         bool hasUVs = !mesh->uv.empty();
@@ -89,7 +89,7 @@ namespace mesh_builder {
             mesh->indices[i] = reindex[mesh->indices[i]];
     }
 
-    void VertexProcessor::getMeshWithUV(glm::mat4 world2uv, Tango3DR_CameraCalibration calibration,
+    void VertexProcessor::GetMeshWithUV(glm::mat4 world2uv, Tango3DR_CameraCalibration calibration,
                                         SingleDynamicMesh* result) {
         result->mesh.render_mode = GL_TRIANGLES;
         std::vector<bool> valid;

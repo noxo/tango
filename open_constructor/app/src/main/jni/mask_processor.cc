@@ -35,22 +35,7 @@ namespace mesh_builder {
             }
             meshes[i]->mutex.unlock();
         }
-        triangles(&vertices[0].x, vertices.size() / 3);
-    }
-
-    float MaskProcessor::getMask(int x, int y, int r, bool minim) {
-        float output = minim ? INT_MAX : 0;
-        for (int i = -r; i <= r; i++)
-            for (int j = -r; j <= r; j++)
-                if ((x + i >= 0) && (x + i < viewport_width))
-                    if ((y + j >= 0) && (y + j < viewport_height)) {
-                        float v = buffer[(y + j) * viewport_width + x + i];
-                        if (minim && (output > v))
-                            output = v;
-                        if (!minim && (output < v))
-                            output = v;
-                    }
-        return output;
+        Triangles(&vertices[0].x, vertices.size() / 3);
     }
 
     MaskProcessor::MaskProcessor(Tango3DR_Context context, int w, int h, Tango3DR_GridIndexArray* i,
@@ -127,14 +112,29 @@ namespace mesh_builder {
                 vertices.push_back(glm::vec3(vertex.x, vertex.y, z));
             }
         }
-        triangles(&vertices[0].x, vertices.size() / 3);
+        Triangles(&vertices[0].x, vertices.size() / 3);
     }
 
     MaskProcessor::~MaskProcessor() {
         delete[] buffer;
     }
 
-    void MaskProcessor::maskMesh(SingleDynamicMesh* mesh, bool processFront) {
+    float MaskProcessor::GetMask(int x, int y, int r, bool minim) {
+        float output = minim ? INT_MAX : 0;
+        for (int i = -r; i <= r; i++)
+            for (int j = -r; j <= r; j++)
+                if ((x + i >= 0) && (x + i < viewport_width))
+                    if ((y + j >= 0) && (y + j < viewport_height)) {
+                        float v = buffer[(y + j) * viewport_width + x + i];
+                        if (minim && (output > v))
+                            output = v;
+                        if (!minim && (output < v))
+                            output = v;
+                    }
+        return output;
+    }
+
+    void MaskProcessor::MaskMesh(SingleDynamicMesh* mesh, bool processFront) {
         if (mesh->mesh.indices.empty())
             return;
         std::vector<bool> edgeFace;
@@ -148,7 +148,7 @@ namespace mesh_builder {
             Math::convert2uv(v, world2uv, calibration);
             x = (int) (v.x * viewport_width);
             y = (int) (v.y * viewport_height);
-            d = getMask(x, y, 0, false);
+            d = GetMask(x, y, 0, false);
             edgeFace.push_back((v.x < 0.05f) ||(v.y < 0.05f) || (v.x > 0.95f) || (v.y > 0.95f));
             frontFace.push_back(fabs(z - d) < 0.25f);
         }
@@ -173,13 +173,13 @@ namespace mesh_builder {
         mesh->size = mesh->mesh.indices.size();
     }
 
-    bool MaskProcessor::line(int x1, int y1, int x2, int y2, float z1, float z2,
+    bool MaskProcessor::Line(int x1, int y1, int x2, int y2, float z1, float z2,
                              std::pair<int, float>* fillCache) {
 
         //Liang & Barsky clipping (only top-bottom)
         int h = y2 - y1;
         float t1 = 0, t2 = 1;
-        if (test(-h, y1, t1, t2) && test(h, viewport_height - 1 - y1, t1, t2) ) {
+        if (Test(-h, y1, t1, t2) && Test(h, viewport_height - 1 - y1, t1, t2) ) {
             float z;
             int c0, c1, xp0, xp1, yp0, yp1, y, p, w;
             bool wp, hp;
@@ -270,7 +270,7 @@ namespace mesh_builder {
         return false;
     }
 
-    bool MaskProcessor::test(double p, double q, float &t1, float &t2) {
+    bool MaskProcessor::Test(double p, double q, float &t1, float &t2) {
         //negative cutting
         if (p < 0) {
             double t = q/p;
@@ -299,7 +299,7 @@ namespace mesh_builder {
         return true;
     }
 
-    void MaskProcessor::triangles(float* vertices, unsigned long size) {
+    void MaskProcessor::Triangles(float* vertices, unsigned long size) {
         int ab, ac, bc, step, x, x1, x2, y, min, mem, memy, max;
         float t1, t2, z, z1, z2;
         glm::vec3 a, b, c;
@@ -322,21 +322,21 @@ namespace mesh_builder {
             ac = (int) glm::abs(a.y - c.y);
             bc = (int) glm::abs(b.y - c.y);
             if ((ab >= ac) && (ab >= bc)) {
-                line(a.x, a.y, b.x, b.y, a.z, b.z, &fillCache1[0]);
-                line(a.x, a.y, c.x, c.y, a.z, c.z, &fillCache2[0]);
-                line(b.x, b.y, c.x, c.y, b.z, c.z, &fillCache2[0]);
+                Line(a.x, a.y, b.x, b.y, a.z, b.z, &fillCache1[0]);
+                Line(a.x, a.y, c.x, c.y, a.z, c.z, &fillCache2[0]);
+                Line(b.x, b.y, c.x, c.y, b.z, c.z, &fillCache2[0]);
                 min = glm::max(0, (int) glm::min(a.y, b.y));
                 max = glm::min((int) glm::max(a.y, b.y), viewport_height - 1);
             } else if ((ac >= ab) && (ac >= bc)) {
-                line(a.x, a.y, c.x, c.y, a.z, c.z, &fillCache1[0]);
-                line(a.x, a.y, b.x, b.y, a.z, b.z, &fillCache2[0]);
-                line(b.x, b.y, c.x, c.y, b.z, c.z, &fillCache2[0]);
+                Line(a.x, a.y, c.x, c.y, a.z, c.z, &fillCache1[0]);
+                Line(a.x, a.y, b.x, b.y, a.z, b.z, &fillCache2[0]);
+                Line(b.x, b.y, c.x, c.y, b.z, c.z, &fillCache2[0]);
                 min = glm::max(0, (int) glm::min(a.y, c.y));
                 max = glm::min((int) glm::max(a.y, c.y), viewport_height - 1);
             }else {
-                line(b.x, b.y, c.x, c.y, b.z, c.z, &fillCache1[0]);
-                line(a.x, a.y, b.x, b.y, a.z, b.z, &fillCache2[0]);
-                line(a.x, a.y, c.x, c.y, a.z, c.z, &fillCache2[0]);
+                Line(b.x, b.y, c.x, c.y, b.z, c.z, &fillCache1[0]);
+                Line(a.x, a.y, b.x, b.y, a.z, b.z, &fillCache2[0]);
+                Line(a.x, a.y, c.x, c.y, a.z, c.z, &fillCache2[0]);
                 min = glm::max(0, (int) glm::min(b.y, c.y));
                 max = glm::min((int) glm::max(b.y, c.y), viewport_height - 1);
             }
@@ -353,7 +353,7 @@ namespace mesh_builder {
                 t1 = 0;
                 t2 = 1;
                 x = x2 - x1;
-                if (test(-x, x1, t1, t2) && test(x, viewport_width - 1 - x1, t1, t2)) {
+                if (Test(-x, x1, t1, t2) && Test(x, viewport_width - 1 - x1, t1, t2)) {
 
                     //clip line
                     z = z2 - z1;

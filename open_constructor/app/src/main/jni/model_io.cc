@@ -31,20 +31,20 @@ namespace mesh_builder {
         fclose(file);
     }
 
-    std::vector<std::string> ModelIO::readModel(int subdivision, std::vector<tango_gl::StaticMesh>& output) {
+    std::vector<std::string> ModelIO::ReadModel(int subdivision, std::vector<tango_gl::StaticMesh>& output) {
         assert(!writeMode);
-        std::vector<std::string> textures = readHeader();
+        std::vector<std::string> textures = ReadHeader();
         if (type == PLY) {
-            readPLYVertices();
-            parsePLYFaces(subdivision, output);
+            ReadPLYVertices();
+            ParsePLYFaces(subdivision, output);
         } else if (type == OBJ) {
-            parseOBJ(subdivision, output);
+            ParseOBJ(subdivision, output);
         } else
             assert(false);
         return textures;
     }
 
-    void ModelIO::writeModel(std::vector<SingleDynamicMesh*> model) {
+    void ModelIO::WriteModel(std::vector<SingleDynamicMesh*> model) {
         assert(writeMode);
         //count vertices and faces
         faceCount = 0;
@@ -65,9 +65,9 @@ namespace mesh_builder {
         }
         //write
         if ((type == PLY) || (type == OBJ)) {
-            writeHeader(model);
+            WriteHeader(model);
             for (unsigned int i = 0; i < model.size(); i++)
-                writePointCloud(model[i], vectorSize[i]);
+                WritePointCloud(model[i], vectorSize[i]);
             int offset = 0;
             if (type == OBJ)
                 offset++;
@@ -83,14 +83,22 @@ namespace mesh_builder {
                         fprintf(file, "usemtl %d\n", texture);
                     }
                 }
-                writeFaces(model[i], offset);
+                WriteFaces(model[i], offset);
                 offset += vectorSize[i];
             }
         } else
             assert(false);
     }
 
-    void ModelIO::parseOBJ(int subdivision, std::vector<tango_gl::StaticMesh> &output) {
+    glm::ivec3 ModelIO::DecodeColor(unsigned int c) {
+        glm::ivec3 output;
+        output.r = (c & 0x000000FF);
+        output.g = (c & 0x0000FF00) >> 8;
+        output.b = (c & 0x00FF0000) >> 16;
+        return output;
+    }
+
+    void ModelIO::ParseOBJ(int subdivision, std::vector<tango_gl::StaticMesh> &output) {
         char buffer[1024];
         unsigned long meshIndex = 0;
         int textureIndex = 0;
@@ -141,7 +149,7 @@ namespace mesh_builder {
         }
     }
 
-    void ModelIO::parsePLYFaces(int subdivision, std::vector<tango_gl::StaticMesh> &output) {
+    void ModelIO::ParsePLYFaces(int subdivision, std::vector<tango_gl::StaticMesh> &output) {
         unsigned int offset = 0;
         int parts = faceCount / subdivision;
         if(faceCount % subdivision > 0)
@@ -179,7 +187,7 @@ namespace mesh_builder {
         }
     }
 
-    void ModelIO::readPLYVertices() {
+    void ModelIO::ReadPLYVertices() {
         assert(!writeMode);
         unsigned int a, b, c;
         glm::vec3 v;
@@ -191,18 +199,18 @@ namespace mesh_builder {
         }
     }
 
-    std::vector<std::string> ModelIO::readHeader() {
+    std::vector<std::string> ModelIO::ReadHeader() {
         std::vector<std::string> output;
         char buffer[1024];
         if (type == PLY) {
             while (true) {
                 if (!fgets(buffer, 1024, file))
                     break;
-                if (startsWith(buffer, "element vertex"))
-                    vertexCount = scanDec(buffer, 15);
-                else if (startsWith(buffer, "element face"))
-                    faceCount = scanDec(buffer, 13);
-                else if (startsWith(buffer, "end_header"))
+                if (StartsWith(buffer, "element vertex"))
+                    vertexCount = ScanDec(buffer, 15);
+                else if (StartsWith(buffer, "element face"))
+                    faceCount = ScanDec(buffer, 13);
+                else if (StartsWith(buffer, "end_header"))
                     break;
             }
         } else if (type == OBJ) {
@@ -210,7 +218,7 @@ namespace mesh_builder {
             while (true) {
                 if (!fgets(buffer, 1024, file))
                     break;
-                if (startsWith(buffer, "mtllib")) {
+                if (StartsWith(buffer, "mtllib")) {
                     sscanf(buffer, "mtllib %s", mtlFile);
                     break;
                 }
@@ -226,7 +234,7 @@ namespace mesh_builder {
                 char pngFile[1024];
                 if (!fgets(buffer, 1024, mtl))
                     break;
-                if (startsWith(buffer, "map_Kd")) {
+                if (StartsWith(buffer, "map_Kd")) {
                     sscanf(buffer, "map_Kd %s", pngFile);
                     output.push_back(data + pngFile);
                 }
@@ -237,15 +245,7 @@ namespace mesh_builder {
         return output;
     }
 
-    glm::ivec3 ModelIO::decodeColor(unsigned int c) {
-        glm::ivec3 output;
-        output.r = (c & 0x000000FF);
-        output.g = (c & 0x0000FF00) >> 8;
-        output.b = (c & 0x00FF0000) >> 16;
-        return output;
-    }
-
-    unsigned int ModelIO::scanDec(char *line, int offset) {
+    unsigned int ModelIO::ScanDec(char *line, int offset) {
         unsigned int number = 0;
         for (int i = offset; i < 1024; i++) {
             char c = line[i];
@@ -257,14 +257,14 @@ namespace mesh_builder {
         return number;
     }
 
-    bool ModelIO::startsWith(std::string s, std::string e) {
+    bool ModelIO::StartsWith(std::string s, std::string e) {
         if (s.size() >= e.size())
         if (s.substr(0, e.size()).compare(e) == 0)
             return true;
         return false;
     }
 
-    void ModelIO::writeHeader(std::vector<SingleDynamicMesh*> model) {
+    void ModelIO::WriteHeader(std::vector<SingleDynamicMesh*> model) {
         if (type == PLY) {
             fprintf(file, "ply\nformat ascii 1.0\ncomment ---\n");
             fprintf(file, "element vertex %d\n", vertexCount);
@@ -310,14 +310,14 @@ namespace mesh_builder {
         }
     }
 
-    void ModelIO::writePointCloud(SingleDynamicMesh *mesh, int size) {
+    void ModelIO::WritePointCloud(SingleDynamicMesh *mesh, int size) {
         glm::vec3 v;
         glm::vec2 t;
         glm::ivec3 c;
         for(unsigned int j = 0; j < size; j++) {
             v = mesh->mesh.vertices[j];
             if (type == PLY) {
-                c = decodeColor(mesh->mesh.colors[j]);
+                c = DecodeColor(mesh->mesh.colors[j]);
                 fprintf(file, "%f %f %f %d %d %d\n", -v.x, v.z, v.y, c.r, c.g, c.b);
             } else if (type == OBJ) {
                 t = mesh->mesh.uv[j];
@@ -327,7 +327,7 @@ namespace mesh_builder {
         }
     }
 
-    void ModelIO::writeFaces(SingleDynamicMesh *mesh, int offset) {
+    void ModelIO::WriteFaces(SingleDynamicMesh *mesh, int offset) {
         glm::ivec3 i;
         for (unsigned int j = 0; j < mesh->size; j+=3) {
             i.x = mesh->mesh.indices[j + 0] + offset;
