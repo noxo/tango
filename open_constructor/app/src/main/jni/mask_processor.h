@@ -13,6 +13,7 @@ namespace mesh_builder {
                       glm::mat4 matrix, Tango3DR_CameraCalibration calib);
         ~MaskProcessor();
         float GetMask(int x, int y, int r = 2, bool minim = true);
+        float GetMask(glm::vec4 uv);
         void MaskMesh(SingleDynamicMesh* mesh, bool processFront);
     private:
         bool Line(int x1, int y1, int x2, int y2, float z1, float z2,

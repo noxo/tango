@@ -38,7 +38,7 @@ namespace mesh_builder {
         Triangles(&vertices[0].x, vertices.size() / 3);
     }
 
-    MaskProcessor::MaskProcessor(Tango3DR_Context context, int w, int h, Tango3DR_GridIndexArray* i,
+    MaskProcessor::MaskProcessor(Tango3DR_Context context, int w, int h, Tango3DR_GridIndexArray* in,
                                  glm::mat4 matrix, Tango3DR_CameraCalibration calib) {
         if (!temp_mask_mesh) {
             // Build a dynamic mesh and add it to the scene.
@@ -66,7 +66,7 @@ namespace mesh_builder {
 
         Tango3DR_Status ret;
         while (true) {
-            ret = Tango3DR_extractPreallocatedMesh(context, i, &temp_mask_mesh->tango_mesh);
+            ret = Tango3DR_extractPreallocatedMesh(context, in, &temp_mask_mesh->tango_mesh);
             if (ret == TANGO_3DR_INSUFFICIENT_SPACE) {
                 unsigned long new_vertex_size = temp_mask_mesh->mesh.vertices.capacity() * kGrowthFactor;
                 unsigned long new_index_size = temp_mask_mesh->mesh.indices.capacity() * kGrowthFactor;
@@ -134,23 +134,34 @@ namespace mesh_builder {
         return output;
     }
 
+    float MaskProcessor::GetMask(glm::vec4 uv) {
+        float x = uv.x * (float)viewport_width;
+        float y = uv.y * (float)viewport_height;
+        int ix = (int) x;
+        int iy = (int) y;
+        float dx = x - ix;
+        float dy = y - iy;
+        float v = 0;
+        v += GetMask(ix, iy, 0) * (1 - dx) * (1 - dy);
+        v += GetMask(ix, iy + 1, 0) * (1 - dx) * dy;
+        v += GetMask(ix + 1, iy, 0) * dx * (1 - dy);
+        v += GetMask(ix + 1, iy + 1, 0) * dx * dy;
+        return v;
+    }
+
     void MaskProcessor::MaskMesh(SingleDynamicMesh* mesh, bool processFront) {
         if (mesh->mesh.indices.empty())
             return;
         std::vector<bool> edgeFace;
         std::vector<bool> frontFace;
         glm::vec4 v;
-        int x, y;
-        float d, z;
+        float z;
         for (unsigned long i = 0; i < mesh->mesh.vertices.size(); i++) {
             v = glm::vec4(mesh->mesh.vertices[i], 1.0f);
             z = glm::length(v - camera);
             Math::convert2uv(v, world2uv, calibration);
-            x = (int) (v.x * viewport_width);
-            y = (int) (v.y * viewport_height);
-            d = GetMask(x, y, 0, false);
-            edgeFace.push_back((v.x < 0.025f) ||(v.y < 0.025f) || (v.x > 0.975f) || (v.y > 0.975f));
-            frontFace.push_back(fabs(z - d) < 0.25f);
+            edgeFace.push_back((v.x < 0.05f) ||(v.y < 0.05f) || (v.x > 0.95f) || (v.y > 0.95f));
+            frontFace.push_back(fabs(z - GetMask(v)) < 0.1f);
         }
         int count, index;
         for (long i = (mesh->mesh.indices.size() - 1) / 3; i >= 0; i--) {
