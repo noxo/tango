@@ -14,7 +14,6 @@ public:
         v = world2uv * v;
         v.x /= glm::abs(v.w * v.z);
         v.y /= glm::abs(v.w * v.z);
-        v.z /= glm::abs(v.w);
         v.x *= calibration.fx / (float)calibration.width;
         v.y *= calibration.fy / (float)calibration.height;
         v.x += calibration.cx / (float)calibration.width;

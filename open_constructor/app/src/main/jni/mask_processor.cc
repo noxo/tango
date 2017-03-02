@@ -362,7 +362,7 @@ namespace mesh_builder {
                 z = (z2 - z1) / (float)x;
                 int mem = x1 + memy;
                 for (; x >= 0; x--) {
-                    if ((z1 > 0) && (buffer[mem] >= z1 - 0.01)) {
+                    if ((z1 > 0) && (buffer[mem] >= z1 - 0.05)) {
                         buffer[mem] = z1;
                         passed++;
                     }

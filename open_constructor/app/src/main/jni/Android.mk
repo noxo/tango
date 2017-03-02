@@ -32,6 +32,7 @@ LOCAL_SRC_FILES := jni_interface.cc \
                    mask_processor.cc \
                    mesh_builder_app.cc \
                    model_io.cc \
+                   rgb_image.cc \
                    scene.cc \
                    texture_processor.cc \
                    vertex_processor.cc \
