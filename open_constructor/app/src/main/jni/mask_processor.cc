@@ -2,8 +2,8 @@
 #include "math_utils.h"
 
 SingleDynamicMesh* temp_mask_mesh = 0;
-std::vector<std::pair<int, float> > fillCache1;
-std::vector<std::pair<int, float> > fillCache2;
+std::vector<std::pair<int, double> > fillCache1;
+std::vector<std::pair<int, double> > fillCache2;
 
 const int kGrowthFactor = 2;
 const int kInitialVertexCount = 30;
@@ -12,7 +12,7 @@ const int kInitialIndexCount = 99;
 namespace mesh_builder {
     MaskProcessor::MaskProcessor(std::vector<SingleDynamicMesh *> meshes, int w, int h) {
 
-        buffer = new float[w * h];
+        buffer = new double[w * h];
         viewport_width = w;
         viewport_height = h;
 
@@ -83,7 +83,7 @@ namespace mesh_builder {
                 break;
         }
 
-        buffer = new float[w * h];
+        buffer = new double[w * h];
         calibration = calib;
         camera = matrix[3] / matrix[3][3];
         viewport_width = w;
@@ -119,13 +119,13 @@ namespace mesh_builder {
         delete[] buffer;
     }
 
-    float MaskProcessor::GetMask(int x, int y, int r, bool minim) {
-        float output = minim ? INT_MAX : 0;
+    double MaskProcessor::GetMask(int x, int y, int r, bool minim) {
+        double output = minim ? INT_MAX : 0;
         for (int i = -r; i <= r; i++)
             for (int j = -r; j <= r; j++)
                 if ((x + i >= 0) && (x + i < viewport_width))
                     if ((y + j >= 0) && (y + j < viewport_height)) {
-                        float v = buffer[(y + j) * viewport_width + x + i];
+                        double v = buffer[(y + j) * viewport_width + x + i];
                         if (minim && (output > v))
                             output = v;
                         if (!minim && (output < v))
@@ -134,26 +134,11 @@ namespace mesh_builder {
         return output;
     }
 
-    float MaskProcessor::GetMask(glm::vec4 uv) {
-        float x = uv.x * (float)viewport_width;
-        float y = uv.y * (float)viewport_height;
-        int ix = (int) x;
-        int iy = (int) y;
-        float dx = x - ix;
-        float dy = y - iy;
-        float v = 0;
-        v += GetMask(ix, iy, 0) * (1 - dx) * (1 - dy);
-        v += GetMask(ix, iy + 1, 0) * (1 - dx) * dy;
-        v += GetMask(ix + 1, iy, 0) * dx * (1 - dy);
-        v += GetMask(ix + 1, iy + 1, 0) * dx * dy;
-        return v;
-    }
-
     void MaskProcessor::MaskMesh(SingleDynamicMesh* mesh, bool processFront) {
         if (mesh->mesh.indices.empty())
             return;
         std::vector<bool> edgeFace;
-        std::vector<bool> frontFace;
+        std::vector<glm::vec3> vertices;
         glm::vec4 v;
         float z;
         for (unsigned long i = 0; i < mesh->mesh.vertices.size(); i++) {
@@ -161,19 +146,24 @@ namespace mesh_builder {
             z = glm::length(v - camera);
             Math::convert2uv(v, world2uv, calibration);
             edgeFace.push_back((v.x < 0.05f) ||(v.y < 0.05f) || (v.x > 0.95f) || (v.y > 0.95f));
-            frontFace.push_back(fabs(z - GetMask(v)) < 0.1f);
+            v.x *= (float)viewport_width;
+            v.y *= (float)viewport_height;
+            v.z = z;
+            vertices.push_back(glm::vec3(v.x, v.y, v.z));
         }
-        int count, index;
+        glm::vec3 a, b, c;
         for (long i = (mesh->mesh.indices.size() - 1) / 3; i >= 0; i--) {
-            count = 0;
-            for (unsigned int j = 0; j < 3; j++) {
-                index = mesh->mesh.indices[i * 3 + j];
-                if (!processFront && !edgeFace[index] && frontFace[index])
-                    count++;
-                else if (processFront && !frontFace[index])
-                    count++;
-            }
-            if ((!processFront && (count == 3)) || (processFront && (count > 0))) {
+            if (edgeFace[mesh->mesh.indices[i * 3 + 0]])
+                continue;
+            if (edgeFace[mesh->mesh.indices[i * 3 + 1]])
+                continue;
+            if (edgeFace[mesh->mesh.indices[i * 3 + 2]])
+                continue;
+            a = vertices[mesh->mesh.indices[i * 3 + 0]];
+            b = vertices[mesh->mesh.indices[i * 3 + 1]];
+            c = vertices[mesh->mesh.indices[i * 3 + 2]];
+            int r = Triangle(a, b, c);
+            if ((!processFront && (r == 100)) || (processFront && (r < 100))) {
                 mesh->mesh.indices.erase(mesh->mesh.indices.begin() + i * 3 + 2);
                 mesh->mesh.indices.erase(mesh->mesh.indices.begin() + i * 3 + 1);
                 mesh->mesh.indices.erase(mesh->mesh.indices.begin() + i * 3 + 0);
@@ -184,14 +174,14 @@ namespace mesh_builder {
         mesh->size = mesh->mesh.indices.size();
     }
 
-    bool MaskProcessor::Line(int x1, int y1, int x2, int y2, float z1, float z2,
-                             std::pair<int, float>* fillCache) {
+    bool MaskProcessor::Line(int x1, int y1, int x2, int y2, double z1, double z2,
+                             std::pair<int, double>* fillCache) {
 
         //Liang & Barsky clipping (only top-bottom)
         int h = y2 - y1;
-        float t1 = 0, t2 = 1;
+        double t1 = 0, t2 = 1;
         if (Test(-h, y1, t1, t2) && Test(h, viewport_height - 1 - y1, t1, t2) ) {
-            float z;
+            double z;
             int c0, c1, xp0, xp1, yp0, yp1, y, p, w;
             bool wp, hp;
 
@@ -208,8 +198,8 @@ namespace mesh_builder {
                 w = x2 - x1;
                 z = z2 - z1;
                 t2 -= t1;
-                x2 = x1 + t2 * w;
-                y2 = y1 + t2 * h;
+                x2 = (int) (x1 + t2 * w);
+                y2 = (int) (y1 + t2 * h);
                 z2 = z1 + t2 * z;
             }
 
@@ -246,7 +236,7 @@ namespace mesh_builder {
             }
 
             //count z coordinate step
-            z = (z2 - z1) / (float)w;
+            z = (z2 - z1) / (double)w;
 
             //Bresenham's algorithm
             c0 = h + h;
@@ -281,7 +271,7 @@ namespace mesh_builder {
         return false;
     }
 
-    bool MaskProcessor::Test(double p, double q, float &t1, float &t2) {
+    bool MaskProcessor::Test(double p, double q, double &t1, double &t2) {
         //negative cutting
         if (p < 0) {
             double t = q/p;
@@ -291,7 +281,7 @@ namespace mesh_builder {
                 return false;
                 //cut the first coordinate
             else if (t > t1)
-                t1 = (float) t;
+                t1 = t;
 
             //positive cutting
         } else if (p > 0) {
@@ -302,7 +292,7 @@ namespace mesh_builder {
                 return false;
                 //cut the second coordinate
             else if (t < t2)
-                t2 = (float) t;
+                t2 = t;
 
             //line is right to left(or bottom to top)
         } else if (q < 0)
@@ -310,9 +300,85 @@ namespace mesh_builder {
         return true;
     }
 
+    int MaskProcessor::Triangle(glm::vec3 &a, glm::vec3 &b, glm::vec3 &c) {
+
+        //create markers for filling
+        int min, max;
+        int ab = (int) glm::abs(a.y - b.y);
+        int ac = (int) glm::abs(a.y - c.y);
+        int bc = (int) glm::abs(b.y - c.y);
+        if ((ab >= ac) && (ab >= bc)) {
+            Line((int) a.x, (int) a.y, (int) b.x, (int) b.y, a.z, b.z, &fillCache1[0]);
+            Line((int) a.x, (int) a.y, (int) c.x, (int) c.y, a.z, c.z, &fillCache2[0]);
+            Line((int) b.x, (int) b.y, (int) c.x, (int) c.y, b.z, c.z, &fillCache2[0]);
+            min = glm::max(0, (int) glm::min(a.y, b.y));
+            max = glm::min((int) glm::max(a.y, b.y), viewport_height - 1);
+        } else if ((ac >= ab) && (ac >= bc)) {
+            Line((int) a.x, (int) a.y, (int) c.x, (int) c.y, a.z, c.z, &fillCache1[0]);
+            Line((int) a.x, (int) a.y, (int) b.x, (int) b.y, a.z, b.z, &fillCache2[0]);
+            Line((int) b.x, (int) b.y, (int) c.x, (int) c.y, b.z, c.z, &fillCache2[0]);
+            min = glm::max(0, (int) glm::min(a.y, c.y));
+            max = glm::min((int) glm::max(a.y, c.y), viewport_height - 1);
+        }else {
+            Line((int) b.x, (int) b.y, (int) c.x, (int) c.y, b.z, c.z, &fillCache1[0]);
+            Line((int) a.x, (int) a.y, (int) b.x, (int) b.y, a.z, b.z, &fillCache2[0]);
+            Line((int) a.x, (int) a.y, (int) c.x, (int) c.y, a.z, c.z, &fillCache2[0]);
+            min = glm::max(0, (int) glm::min(b.y, c.y));
+            max = glm::min((int) glm::max(b.y, c.y), viewport_height - 1);
+        }
+
+        //fill triangle
+        int count = 0;
+        int passed = 0;
+        int memy = min * viewport_width;
+        for (int y = min; y <= max; y++) {
+            int x1 = fillCache1[y].first;
+            int x2 = fillCache2[y].first;
+            double z1 = fillCache1[y].second;
+            double z2 = fillCache2[y].second;
+
+            //Liang & Barsky clipping
+            double t1 = 0;
+            double t2 = 1;
+            int x = x2 - x1;
+            if (Test(-x, x1, t1, t2) && Test(x, viewport_width - 1 - x1, t1, t2)) {
+
+                //clip line
+                double z = z2 - z1;
+                if (t1 > 0) {
+                    x1 += t1 * x;
+                    z1 += t1 * z;
+                } else
+                    t1 = 0;
+                if (t2 < 1) {
+                    t2 -= t1;
+                    x2 = (int) (x1 + t2 * x);
+                    z2 = z1 + t2 * z;
+                }
+
+                //filling algorithm
+                x = glm::abs(x2 - x1);
+                int step = (x2 >= x1) ? 1 : -1;
+                z = (z2 - z1) / (float)x;
+                int mem = x1 + memy;
+                for (; x >= 0; x--) {
+                    if ((z1 > 0) && (buffer[mem] >= z1 - 0.01)) {
+                        buffer[mem] = z1;
+                        passed++;
+                    }
+                    count++;
+                    mem += step;
+                    z1 += z;
+                }
+            }
+            memy += viewport_width;
+        }
+        if (count == 0)
+            return 0;
+        return (100 * passed) / count;
+    }
+
     void MaskProcessor::Triangles(float* vertices, unsigned long size) {
-        int ab, ac, bc, step, x, x1, x2, y, min, mem, memy, max;
-        float t1, t2, z, z1, z2;
         glm::vec3 a, b, c;
         int v = 0;
         for (unsigned long i = 0; i < size; i++, v += 9) {
@@ -327,72 +393,8 @@ namespace mesh_builder {
             b.y *= (float)viewport_height;
             c.x *= (float)viewport_width;
             c.y *= (float)viewport_height;
-
-            //create markers for filling
-            ab = (int) glm::abs(a.y - b.y);
-            ac = (int) glm::abs(a.y - c.y);
-            bc = (int) glm::abs(b.y - c.y);
-            if ((ab >= ac) && (ab >= bc)) {
-                Line(a.x, a.y, b.x, b.y, a.z, b.z, &fillCache1[0]);
-                Line(a.x, a.y, c.x, c.y, a.z, c.z, &fillCache2[0]);
-                Line(b.x, b.y, c.x, c.y, b.z, c.z, &fillCache2[0]);
-                min = glm::max(0, (int) glm::min(a.y, b.y));
-                max = glm::min((int) glm::max(a.y, b.y), viewport_height - 1);
-            } else if ((ac >= ab) && (ac >= bc)) {
-                Line(a.x, a.y, c.x, c.y, a.z, c.z, &fillCache1[0]);
-                Line(a.x, a.y, b.x, b.y, a.z, b.z, &fillCache2[0]);
-                Line(b.x, b.y, c.x, c.y, b.z, c.z, &fillCache2[0]);
-                min = glm::max(0, (int) glm::min(a.y, c.y));
-                max = glm::min((int) glm::max(a.y, c.y), viewport_height - 1);
-            }else {
-                Line(b.x, b.y, c.x, c.y, b.z, c.z, &fillCache1[0]);
-                Line(a.x, a.y, b.x, b.y, a.z, b.z, &fillCache2[0]);
-                Line(a.x, a.y, c.x, c.y, a.z, c.z, &fillCache2[0]);
-                min = glm::max(0, (int) glm::min(b.y, c.y));
-                max = glm::min((int) glm::max(b.y, c.y), viewport_height - 1);
-            }
-
-            //fill triangle
-            memy = min * viewport_width;
-            for (y = min; y <= max; y++) {
-                x1 = fillCache1[y].first;
-                x2 = fillCache2[y].first;
-                z1 = fillCache1[y].second;
-                z2 = fillCache2[y].second;
-
-                //Liang & Barsky clipping
-                t1 = 0;
-                t2 = 1;
-                x = x2 - x1;
-                if (Test(-x, x1, t1, t2) && Test(x, viewport_width - 1 - x1, t1, t2)) {
-
-                    //clip line
-                    z = z2 - z1;
-                    if (t1 > 0) {
-                        x1 += t1 * x;
-                        z1 += t1 * z;
-                    } else
-                        t1 = 0;
-                    if (t2 < 1) {
-                        t2 -= t1;
-                        x2 = x1 + t2 * x;
-                        z2 = z1 + t2 * z;
-                    }
-
-                    //filling algorithm
-                    x = glm::abs(x2 - x1);
-                    step = (x2 >= x1) ? 1 : -1;
-                    z = (z2 - z1) / (float)x;
-                    mem = x1 + memy;
-                    for (; x >= 0; x--) {
-                        if ((z1 > 0) && (buffer[mem] > z1))
-                            buffer[mem] = z1;
-                        mem += step;
-                        z1 += z;
-                    }
-                }
-                memy += viewport_width;
-            }
+            //process
+            Triangle(a, b, c);
         }
     }
 }

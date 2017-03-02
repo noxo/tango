@@ -482,9 +482,9 @@ namespace mesh_builder {
                 vp.GetMeshWithUV(world2uv, t3dr_intrinsics_, dynamic_mesh);
                 if (!dynamic_mesh->mesh.indices.empty()) {
                     mp.MaskMesh(dynamic_mesh, true);
-                    vp.Cleanup(&dynamic_mesh->mesh);
                     dynamic_mesh->size = dynamic_mesh->mesh.indices.size();
                     textureProcessor->ApplyInstance(dynamic_mesh);
+                    vp.Cleanup(&dynamic_mesh->mesh);
                     toAdd.push_back(std::pair<GridIndex, SingleDynamicMesh* >(updated_index, dynamic_mesh));
                     render_mutex_.lock();
                     main_scene_.AddDynamicMesh(dynamic_mesh);
