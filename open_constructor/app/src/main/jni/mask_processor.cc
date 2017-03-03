@@ -1,5 +1,5 @@
 #include "mask_processor.h"
-#include "math_utils.h"
+#include <queue>
 
 SingleDynamicMesh* temp_mask_mesh = 0;
 std::vector<std::pair<int, double> > fillCache1;
@@ -13,6 +13,8 @@ namespace mesh_builder {
     MaskProcessor::MaskProcessor(std::vector<SingleDynamicMesh *> meshes, int w, int h) {
 
         buffer = new double[w * h];
+        depth_test = true;
+        draw = true;
         viewport_width = w;
         viewport_height = h;
 
@@ -86,6 +88,8 @@ namespace mesh_builder {
         buffer = new double[w * h];
         calibration = calib;
         camera = matrix[3] / matrix[3][3];
+        depth_test = true;
+        draw = true;
         viewport_width = w;
         viewport_height = h;
         world2uv  = glm::inverse(matrix);
@@ -115,8 +119,83 @@ namespace mesh_builder {
         Triangles(&vertices[0].x, vertices.size() / 3);
     }
 
+    MaskProcessor::MaskProcessor(TangoPointCloud *front_cloud_, glm::mat4 point_cloud_matrix_,
+                                 int w, int h, glm::mat4 matrix, Tango3DR_CameraCalibration calib) {
+
+        buffer = new double[w * h];
+        calibration = calib;
+        camera = matrix[3] / matrix[3][3];
+        depth_test = true;
+        draw = true;
+        viewport_width = w;
+        viewport_height = h;
+        world2uv  = glm::inverse(matrix);
+
+        for (int mem = 0; mem < w * h; mem++)
+            buffer[mem] = INT_MAX;
+        if (fillCache1.empty())
+            fillCache1.resize((unsigned long) (h + 1));
+        if (fillCache2.empty())
+            fillCache2.resize((unsigned long) (h + 1));
+
+        glm::vec4 v;
+        float z;
+        std::queue<glm::vec3> toAdd;
+        for (long i = 0; i < front_cloud_->num_points; i++) {
+            v.x = front_cloud_->points[i][0];
+            v.y = front_cloud_->points[i][1];
+            v.z = front_cloud_->points[i][2];
+            v.w = front_cloud_->points[i][3];
+            v /= v.w;
+            z = glm::length(v - camera);
+            v = point_cloud_matrix_ * v;
+            Math::convert2uv(v, world2uv, calibration);
+            v.x *= (float)(viewport_width - 1);
+            v.y *= (float)(viewport_height - 1);
+            if ((v.x < 0) ||(v.y < 0) || (v.x >= viewport_width) || (v.y >= viewport_height))
+                continue;
+            toAdd.push(glm::vec3(v.x, v.y, z));
+        }
+        int index;
+        glm::vec3 p, t;
+        while (!toAdd.empty()) {
+            p = toAdd.front();
+            toAdd.pop();
+            index = (int)p.y * viewport_width + (int)p.x;
+            if (buffer[index] > INT_MAX - 10000) {
+                buffer[index] = p.z;
+                for (int i = 1; i <= 4; i++) {
+                    t = p;
+                    if (i == 1)
+                        t.x += 1.0f;
+                    else if (i == 2)
+                        t.x -= 1.0f;
+                    else if (i == 3)
+                        t.y += 1.0f;
+                    else if (i == 4)
+                        t.y -= 1.0f;
+                    if ((t.x < 0) ||(t.y < 0) || (t.x >= viewport_width) || (t.y >= viewport_height))
+                        continue;
+                    toAdd.push(t);
+                }
+            }
+        }
+    }
+
     MaskProcessor::~MaskProcessor() {
         delete[] buffer;
+    }
+
+    void MaskProcessor::CleanUp(std::vector<glm::vec3> *vertices) {
+        depth_test = false;
+        glm::vec4 vertex;
+        std::vector<glm::vec3> uvs;
+        for (unsigned int i = 0; i < vertices->size(); i++) {
+            vertex = glm::vec4(vertices->begin()[i], 1.0f);
+            uvs.push_back(glm::vec3(vertex.x, vertex.y, 0));
+        }
+        Triangles(&uvs[0].x, uvs.size() / 3);
+        depth_test = true;
     }
 
     double MaskProcessor::GetMask(int x, int y, int r, bool minim) {
@@ -146,24 +225,33 @@ namespace mesh_builder {
             z = glm::length(v - camera);
             Math::convert2uv(v, world2uv, calibration);
             edgeFace.push_back((v.x < 0.05f) ||(v.y < 0.05f) || (v.x > 0.95f) || (v.y > 0.95f));
-            v.x *= (float)viewport_width;
-            v.y *= (float)viewport_height;
+            v.x *= (float)(viewport_width - 1);
+            v.y *= (float)(viewport_height - 1);
             v.z = z;
             vertices.push_back(glm::vec3(v.x, v.y, v.z));
         }
+
+        draw = false;
         glm::vec3 a, b, c;
         for (long i = (mesh->mesh.indices.size() - 1) / 3; i >= 0; i--) {
-            if (edgeFace[mesh->mesh.indices[i * 3 + 0]])
-                continue;
-            if (edgeFace[mesh->mesh.indices[i * 3 + 1]])
-                continue;
-            if (edgeFace[mesh->mesh.indices[i * 3 + 2]])
-                continue;
+            if (!processFront) {
+                if (edgeFace[mesh->mesh.indices[i * 3 + 0]])
+                    continue;
+                if (edgeFace[mesh->mesh.indices[i * 3 + 1]])
+                    continue;
+                if (edgeFace[mesh->mesh.indices[i * 3 + 2]])
+                    continue;
+            }
             a = vertices[mesh->mesh.indices[i * 3 + 0]];
             b = vertices[mesh->mesh.indices[i * 3 + 1]];
             c = vertices[mesh->mesh.indices[i * 3 + 2]];
             int r = Triangle(a, b, c);
             if ((!processFront && (r == 100)) || (processFront && (r < 100))) {
+                if (processFront) {
+                    toClear.push_back(a);
+                    toClear.push_back(b);
+                    toClear.push_back(c);
+                }
                 mesh->mesh.indices.erase(mesh->mesh.indices.begin() + i * 3 + 2);
                 mesh->mesh.indices.erase(mesh->mesh.indices.begin() + i * 3 + 1);
                 mesh->mesh.indices.erase(mesh->mesh.indices.begin() + i * 3 + 0);
@@ -172,6 +260,7 @@ namespace mesh_builder {
             }
         }
         mesh->size = mesh->mesh.indices.size();
+        draw = true;
     }
 
     bool MaskProcessor::Line(int x1, int y1, int x2, int y2, double z1, double z2,
@@ -362,8 +451,9 @@ namespace mesh_builder {
                 z = (z2 - z1) / (float)x;
                 int mem = x1 + memy;
                 for (; x >= 0; x--) {
-                    if ((z1 > 0) && (buffer[mem] >= z1 - 0.05)) {
-                        buffer[mem] = z1;
+                    if (!depth_test || ((z1 > 0) && (buffer[mem] >= z1 - 0.25))) {
+                        if (draw)
+                            buffer[mem] = z1;
                         passed++;
                     }
                     count++;
@@ -387,12 +477,12 @@ namespace mesh_builder {
             b = glm::vec3(vertices[v + 3], vertices[v + 4], vertices[v + 5]);
             c = glm::vec3(vertices[v + 6], vertices[v + 7], vertices[v + 8]);
             //scale into mask dimensions
-            a.x *= (float)viewport_width;
-            a.y *= (float)viewport_height;
-            b.x *= (float)viewport_width;
-            b.y *= (float)viewport_height;
-            c.x *= (float)viewport_width;
-            c.y *= (float)viewport_height;
+            a.x *= (float)(viewport_width - 1);
+            a.y *= (float)(viewport_height - 1);
+            b.x *= (float)(viewport_width - 1);
+            b.y *= (float)(viewport_height - 1);
+            c.x *= (float)(viewport_width - 1);
+            c.y *= (float)(viewport_height - 1);
             //process
             Triangle(a, b, c);
         }

@@ -27,7 +27,7 @@ namespace mesh_builder {
             if (instances[i].empty())
                 found = i;
         if (found >= 0) {
-            delete[] images[found];
+            delete images[found];
             images[found] = t;
             lastTextureIndex = found;
             toLoad[found] = true;

@@ -21,9 +21,10 @@
 #include <sstream>
 
 #include "mask_processor.h"
-#include "math_utils.h"
 #include "mesh_builder_app.h"
 #include "vertex_processor.h"
+
+//#define DEBUG_TEXTURING
 
 namespace {
     const int kSubdivisionSize = 5000;
@@ -468,10 +469,13 @@ namespace mesh_builder {
         Tango3DR_Status ret;
         if (textured) {
             //extract textured mesh
+            int s = 4;
             glm::mat4 world2uv = glm::inverse(image_matrix);
             std::vector<std::pair<GridIndex, SingleDynamicMesh* > > toAdd;
             MaskProcessor mp(t3dr_context_, t3dr_image.width, t3dr_image.height,
-                             t3dr_updated, image_matrix, t3dr_intrinsics_);
+                                t3dr_updated, image_matrix, t3dr_intrinsics_);
+            MaskProcessor mp_pc(front_cloud_, point_cloud_matrix_, t3dr_image.width / s,
+                                t3dr_image.height / s, image_matrix, t3dr_intrinsics_);
             for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
                 GridIndex updated_index;
                 updated_index.indices[0] = t3dr_updated->indices[it][0];
@@ -482,6 +486,7 @@ namespace mesh_builder {
                 vp.GetMeshWithUV(world2uv, t3dr_intrinsics_, dynamic_mesh);
                 if (!dynamic_mesh->mesh.indices.empty()) {
                     mp.MaskMesh(dynamic_mesh, true);
+                    //mp_pc.MaskMesh(dynamic_mesh, true);
                     dynamic_mesh->size = dynamic_mesh->mesh.indices.size();
                     textureProcessor->ApplyInstance(dynamic_mesh);
                     vp.Cleanup(&dynamic_mesh->mesh);
@@ -492,7 +497,10 @@ namespace mesh_builder {
                 } else
                     delete dynamic_mesh;
             }
-            //remove old mesh
+
+            //remove old faces
+            //mp.CleanUp(mp.getClearedVertices());
+            //mp.CleanUp(mp_pc.getClearedVertices());
             for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
                 GridIndex updated_index;
                 updated_index.indices[0] = t3dr_updated->indices[it][0];
@@ -510,10 +518,17 @@ namespace mesh_builder {
                     mesh->mutex.unlock();
                 }
             }
+
             //add mesh into data structure
             textureProcessor->UpdateTextures();
             for (unsigned long it = 0; it < toAdd.size(); ++it)
                 polygonUsage[toAdd[it].first].push_back(toAdd[it].second);
+
+#ifdef DEBUG_TEXTURING
+            textureProcessor->GetLastImage()->Write("/mnt/sdcard/color.png");
+            RGBImage(t3dr_image.width / s, t3dr_image.height / s, mp_pc.GetBuffer()).Write("/mnt/sdcard/depthCloud.png");
+            RGBImage(t3dr_image.width, t3dr_image.height, mp.GetBuffer()).Write("/mnt/sdcard/depthMesh.png");
+#endif
         } else {
             for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
                 GridIndex updated_index;

@@ -11,6 +11,7 @@ namespace mesh_builder {
         RGBImage();
         RGBImage(Tango3DR_ImageBuffer t3dr_image, int scale);
         RGBImage(std::string file);
+        RGBImage(int w, int h, double* buffer);
         ~RGBImage();
         void Write(const char* filename);
 

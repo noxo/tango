@@ -79,6 +79,20 @@ namespace mesh_builder {
         fclose(temp);
     }
 
+    RGBImage::RGBImage(int w, int h, double *buffer) {
+        width = w;
+        height = h;
+        data = new unsigned char[w * h * 3];
+        int index = 0;
+        for(int y = h - 1; y >= 0; y--) {
+            for(int x = 0; x < w; x++) {
+                data[index++] = (unsigned char) glm::clamp(buffer[y * w + x] * 255.0, 0.0, 255.0);
+                data[index++] = (unsigned char) glm::clamp(buffer[y * w + x] * 255.0, 0.0, 255.0);
+                data[index++] = (unsigned char) glm::clamp(buffer[y * w + x] * 255.0, 0.0, 255.0);
+            }
+        }
+    }
+
     RGBImage::~RGBImage() {
         delete[] data;
     }

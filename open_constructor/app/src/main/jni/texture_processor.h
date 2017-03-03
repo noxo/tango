@@ -23,6 +23,8 @@ namespace mesh_builder {
         bool UpdateGL();
         void UpdateTextures();
 
+        RGBImage* GetLastImage() { return images[lastTextureIndex]; }
+
     private:
         glm::ivec4 FindAABB(int index);
         glm::ivec4 GetAABB(int index);
