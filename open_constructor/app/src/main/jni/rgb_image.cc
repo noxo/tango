@@ -86,9 +86,9 @@ namespace mesh_builder {
         int index = 0;
         for(int y = h - 1; y >= 0; y--) {
             for(int x = 0; x < w; x++) {
-                data[index++] = (unsigned char) glm::clamp(buffer[y * w + x] * 255.0, 0.0, 255.0);
-                data[index++] = (unsigned char) glm::clamp(buffer[y * w + x] * 255.0, 0.0, 255.0);
-                data[index++] = (unsigned char) glm::clamp(buffer[y * w + x] * 255.0, 0.0, 255.0);
+                data[index++] = (unsigned char) glm::clamp(buffer[y * w + x] * 128.0, 0.0, 255.0);
+                data[index++] = (unsigned char) glm::clamp(buffer[y * w + x] * 128.0, 0.0, 255.0);
+                data[index++] = (unsigned char) glm::clamp(buffer[y * w + x] * 512.0, 0.0, 255.0);
             }
         }
     }

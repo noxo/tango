@@ -469,13 +469,17 @@ namespace mesh_builder {
         Tango3DR_Status ret;
         if (textured) {
             //extract textured mesh
-            int s = 4;
             glm::mat4 world2uv = glm::inverse(image_matrix);
             std::vector<std::pair<GridIndex, SingleDynamicMesh* > > toAdd;
-            MaskProcessor mp(t3dr_context_, t3dr_image.width, t3dr_image.height,
-                                t3dr_updated, image_matrix, t3dr_intrinsics_);
-            MaskProcessor mp_pc(front_cloud_, point_cloud_matrix_, t3dr_image.width / s,
-                                t3dr_image.height / s, image_matrix, t3dr_intrinsics_);
+            MaskProcessor mp(t3dr_image.width, t3dr_image.height, image_matrix, t3dr_intrinsics_);
+            mp.AddPointClound(front_cloud_, point_cloud_matrix_);
+            mp.AddContext(t3dr_context_, t3dr_updated);
+#ifdef DEBUG_TEXTURING
+            RGBImage* color = textureProcessor->GetLastImage();
+            RGBImage depth(t3dr_image.width, t3dr_image.height, mp.GetBuffer());
+            color->Write("/mnt/sdcard/color.png");
+            depth.Write("/mnt/sdcard/depth.png");
+#endif
             for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
                 GridIndex updated_index;
                 updated_index.indices[0] = t3dr_updated->indices[it][0];
@@ -499,8 +503,6 @@ namespace mesh_builder {
             }
 
             //remove old faces
-            //mp.CleanUp(mp.getClearedVertices());
-            //mp.CleanUp(mp_pc.getClearedVertices());
             for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
                 GridIndex updated_index;
                 updated_index.indices[0] = t3dr_updated->indices[it][0];
@@ -523,12 +525,6 @@ namespace mesh_builder {
             textureProcessor->UpdateTextures();
             for (unsigned long it = 0; it < toAdd.size(); ++it)
                 polygonUsage[toAdd[it].first].push_back(toAdd[it].second);
-
-#ifdef DEBUG_TEXTURING
-            textureProcessor->GetLastImage()->Write("/mnt/sdcard/color.png");
-            RGBImage(t3dr_image.width / s, t3dr_image.height / s, mp_pc.GetBuffer()).Write("/mnt/sdcard/depthCloud.png");
-            RGBImage(t3dr_image.width, t3dr_image.height, mp.GetBuffer()).Write("/mnt/sdcard/depthMesh.png");
-#endif
         } else {
             for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
                 GridIndex updated_index;

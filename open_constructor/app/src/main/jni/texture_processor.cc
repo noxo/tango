@@ -308,7 +308,8 @@ namespace mesh_builder {
         int w = images[index]->GetWidth();
         int h = images[index]->GetHeight();
         unsigned char* data = images[index]->GetData();
-        MaskProcessor mp(instances[index], w, h);
+        MaskProcessor mp(w, h);
+        mp.AddUVs(instances[index]);
         int i = 0;
         for (int y = h - 1; y >= 0; y--) {
             for (int x = 0; x < w; x++) {

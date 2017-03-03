@@ -9,18 +9,16 @@ namespace mesh_builder {
 
     class MaskProcessor {
     public:
-        MaskProcessor(std::vector<SingleDynamicMesh*> meshes, int w, int h);
-        MaskProcessor(Tango3DR_Context context, int w, int h, Tango3DR_GridIndexArray* indices,
-                      glm::mat4 matrix, Tango3DR_CameraCalibration calib);
-        MaskProcessor(TangoPointCloud* front_cloud_, glm::mat4 point_cloud_matrix_, int w, int h,
-                      glm::mat4 matrix, Tango3DR_CameraCalibration calib);
+        MaskProcessor(int w, int h);
+        MaskProcessor(int w, int h, glm::mat4 matrix, Tango3DR_CameraCalibration calib);
+        void AddContext(Tango3DR_Context context, Tango3DR_GridIndexArray* indices);
+        void AddPointClound(TangoPointCloud* front_cloud_, glm::mat4 matrix);
+        void AddUVs(std::vector<SingleDynamicMesh*> meshes);
         ~MaskProcessor();
-        void CleanUp(std::vector<glm::vec3>* vertices);
         double GetMask(int x, int y, int r = 2, bool minim = true);
         void MaskMesh(SingleDynamicMesh* mesh, bool processFront);
 
         double* GetBuffer() { return buffer; }
-        std::vector<glm::vec3>* getClearedVertices() { return &toClear; }
     private:
         bool Line(int x1, int y1, int x2, int y2, double z1, double z2,
                   std::pair<int, double>* fillCache);
@@ -33,7 +31,6 @@ namespace mesh_builder {
         glm::vec4 camera;
         bool depth_test;
         bool draw;
-        std::vector<glm::vec3> toClear;
         int viewport_width, viewport_height;
         glm::mat4 world2uv;
     };
