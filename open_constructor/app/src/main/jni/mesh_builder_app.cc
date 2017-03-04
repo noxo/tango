@@ -490,7 +490,6 @@ namespace mesh_builder {
                 vp.GetMeshWithUV(world2uv, t3dr_intrinsics_, dynamic_mesh);
                 if (!dynamic_mesh->mesh.indices.empty()) {
                     mp.MaskMesh(dynamic_mesh, true);
-                    //mp_pc.MaskMesh(dynamic_mesh, true);
                     dynamic_mesh->size = dynamic_mesh->mesh.indices.size();
                     textureProcessor->ApplyInstance(dynamic_mesh);
                     vp.Cleanup(&dynamic_mesh->mesh);
@@ -502,6 +501,13 @@ namespace mesh_builder {
                     delete dynamic_mesh;
             }
 
+            //get filter for old faces
+            std::vector<SingleDynamicMesh*> added;
+            for (std::pair<GridIndex, SingleDynamicMesh *> i : toAdd)
+                added.push_back(i.second);
+            MaskProcessor mpFilter(t3dr_image.width, t3dr_image.height, image_matrix, t3dr_intrinsics_);
+            mpFilter.AddVertices(added);
+
             //remove old faces
             for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
                 GridIndex updated_index;
@@ -511,7 +517,7 @@ namespace mesh_builder {
                 for (SingleDynamicMesh *mesh : polygonUsage[updated_index]) {
                     mesh->mutex.lock();
                     unsigned long size = mesh->mesh.indices.size();
-                    mp.MaskMesh(mesh, false);
+                    mpFilter.MaskMesh(mesh, false);
                     VertexProcessor::Cleanup(&mesh->mesh);
                     if ((size > 0) && mesh->mesh.indices.empty())
                         textureProcessor->RemoveInstance(mesh);

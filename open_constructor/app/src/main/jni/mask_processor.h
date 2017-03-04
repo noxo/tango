@@ -1,5 +1,5 @@
-#ifndef OPEN_CONSTRUCTOR_MASK_PROCESSOR_H
-#define OPEN_CONSTRUCTOR_MASK_PROCESSOR_H
+#ifndef MASK_PROCESSOR_H
+#define MASK_PROCESSOR_H
 
 #include <tango_3d_reconstruction_api.h>
 #include "math_utils.h"
@@ -11,10 +11,12 @@ namespace mesh_builder {
     public:
         MaskProcessor(int w, int h);
         MaskProcessor(int w, int h, glm::mat4 matrix, Tango3DR_CameraCalibration calib);
+        ~MaskProcessor();
+
         void AddContext(Tango3DR_Context context, Tango3DR_GridIndexArray* indices);
         void AddPointClound(TangoPointCloud* front_cloud_, glm::mat4 matrix);
         void AddUVs(std::vector<SingleDynamicMesh*> meshes);
-        ~MaskProcessor();
+        void AddVertices(std::vector<SingleDynamicMesh*> meshes);
         double GetMask(int x, int y, int r = 2, bool minim = true);
         void MaskMesh(SingleDynamicMesh* mesh, bool processFront);
 
@@ -29,8 +31,8 @@ namespace mesh_builder {
         double* buffer;
         Tango3DR_CameraCalibration calibration;
         glm::vec4 camera;
-        bool depth_test;
         bool draw;
+        bool exact;
         int viewport_width, viewport_height;
         glm::mat4 world2uv;
     };

@@ -1,5 +1,5 @@
-#ifndef OPEN_CONSTRUCTOR_VERTEX_PROCESSOR_H
-#define OPEN_CONSTRUCTOR_VERTEX_PROCESSOR_H
+#ifndef VERTEX_PROCESSOR_H
+#define VERTEX_PROCESSOR_H
 
 #include <tango_3d_reconstruction_api.h>
 #include "model_io.h"

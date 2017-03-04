@@ -13,8 +13,8 @@ namespace mesh_builder {
 
     MaskProcessor::MaskProcessor(int w, int h) {
         buffer = new double[w * h];
-        depth_test = true;
         draw = true;
+        exact = false;
         viewport_width = w;
         viewport_height = h;
 
@@ -30,8 +30,8 @@ namespace mesh_builder {
         buffer = new double[w * h];
         calibration = calib;
         camera = matrix[3] / matrix[3][3];
-        depth_test = true;
         draw = true;
+        exact = false;
         viewport_width = w;
         viewport_height = h;
         world2uv  = glm::inverse(matrix);
@@ -127,7 +127,7 @@ namespace mesh_builder {
             v.y *= (float)(viewport_height - 1);
             if ((v.x < 0) ||(v.y < 0) || (v.x >= viewport_width) || (v.y >= viewport_height))
                 continue;
-            toAdd.push(glm::vec3(v.x, v.y, z));
+            toAdd.push(glm::vec3(v.x, v.y, z - 0.25f));
         }
         int index;
         glm::vec3 p, t;
@@ -171,6 +171,27 @@ namespace mesh_builder {
         Triangles(&vertices[0].x, vertices.size() / 3);
     }
 
+    void MaskProcessor::AddVertices(std::vector<SingleDynamicMesh *> meshes) {
+        std::vector<glm::vec3> vertices;
+        float z;
+        unsigned int pos;
+        glm::vec4 vertex;
+        for (unsigned int i = 0; i < meshes.size(); i++) {
+            meshes[i]->mutex.lock();
+            for (unsigned int j = 0; j < meshes[i]->mesh.indices.size() / 3; j++) {
+                for (int k = 0; k < 3; k++) {
+                    pos = meshes[i]->mesh.indices[j * 3 + k];
+                    vertex = glm::vec4(meshes[i]->mesh.vertices[pos], 1.0f);
+                    z = glm::length(vertex - camera);
+                    Math::convert2uv(vertex, world2uv, calibration);
+                    vertices.push_back(glm::vec3(vertex.x, vertex.y, z));
+                }
+            }
+            meshes[i]->mutex.unlock();
+        }
+        Triangles(&vertices[0].x, vertices.size() / 3);
+    }
+
     double MaskProcessor::GetMask(int x, int y, int r, bool minim) {
         double output = minim ? INT_MAX : 0;
         for (int i = -r; i <= r; i++)
@@ -197,7 +218,7 @@ namespace mesh_builder {
             v = glm::vec4(mesh->mesh.vertices[i], 1.0f);
             z = glm::length(v - camera);
             Math::convert2uv(v, world2uv, calibration);
-            edgeFace.push_back((v.x < 0.05f) ||(v.y < 0.05f) || (v.x > 0.95f) || (v.y > 0.95f));
+            edgeFace.push_back((v.x < 0) ||(v.y < 0) || (v.x > 1) || (v.y > 1));
             v.x *= (float)(viewport_width - 1);
             v.y *= (float)(viewport_height - 1);
             v.z = z;
@@ -205,6 +226,7 @@ namespace mesh_builder {
         }
 
         draw = false;
+        exact = !processFront;
         glm::vec3 a, b, c;
         for (long i = (mesh->mesh.indices.size() - 1) / 3; i >= 0; i--) {
             if (!processFront) {
@@ -229,6 +251,7 @@ namespace mesh_builder {
         }
         mesh->size = mesh->mesh.indices.size();
         draw = true;
+        exact = false;
     }
 
     bool MaskProcessor::Line(int x1, int y1, int x2, int y2, double z1, double z2,
@@ -420,10 +443,18 @@ namespace mesh_builder {
                 z = (z2 - z1) / (float)x;
                 int mem = x1 + memy;
                 for (; x >= 0; x--) {
-                    if (!depth_test || ((z1 > 0) && (buffer[mem] >= z1 - tolerancy))) {
-                        if (draw)
-                            buffer[mem] = z1;
-                        passed++;
+                    if (exact) {
+                        if ((z1 > 0) && (fabs(buffer[mem] - z1) <= tolerancy)) {
+                            if (draw)
+                                buffer[mem] = z1;
+                            passed++;
+                        }
+                    } else {
+                        if ((z1 > 0) && (buffer[mem] >= z1 - tolerancy)) {
+                            if (draw)
+                                buffer[mem] = z1;
+                            passed++;
+                        }
                     }
                     count++;
                     mem += step;

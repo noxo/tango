@@ -1,5 +1,5 @@
-#ifndef OPEN_CONSTRUCTOR_MODEL_IO_H
-#define OPEN_CONSTRUCTOR_MODEL_IO_H
+#ifndef MODEL_IO_H
+#define MODEL_IO_H
 
 #include <glm/glm.hpp>
 #include <tango-gl/tango-gl.h>
