@@ -14,9 +14,10 @@ namespace mesh_builder {
         ~MaskProcessor();
 
         void AddContext(Tango3DR_Context context, Tango3DR_GridIndexArray* indices);
-        void AddPointClound(TangoPointCloud* front_cloud_, glm::mat4 matrix);
+        void AddPointCloud(TangoPointCloud *front_cloud_, glm::mat4 matrix);
         void AddUVs(std::vector<SingleDynamicMesh*> meshes);
         void AddVertices(std::vector<SingleDynamicMesh*> meshes);
+        void DetectEdges();
         double GetMask(int x, int y, int r = 2, bool minim = true);
         void MaskMesh(SingleDynamicMesh* mesh, bool processFront);
 

@@ -110,7 +110,7 @@ namespace mesh_builder {
         Triangles(&vertices[0].x, vertices.size() / 3);
     }
 
-    void MaskProcessor::AddPointClound(TangoPointCloud *front_cloud_, glm::mat4 matrix) {
+    void MaskProcessor::AddPointCloud(TangoPointCloud *front_cloud_, glm::mat4 matrix) {
         glm::vec4 v;
         float z;
         std::queue<glm::vec3> toAdd;
@@ -127,7 +127,7 @@ namespace mesh_builder {
             v.y *= (float)(viewport_height - 1);
             if ((v.x < 0) ||(v.y < 0) || (v.x >= viewport_width) || (v.y >= viewport_height))
                 continue;
-            toAdd.push(glm::vec3(v.x, v.y, z - 0.25f));
+            toAdd.push(glm::vec3(v.x, v.y, z));
         }
         int index;
         glm::vec3 p, t;
@@ -192,6 +192,51 @@ namespace mesh_builder {
         Triangles(&vertices[0].x, vertices.size() / 3);
     }
 
+
+    void MaskProcessor::DetectEdges() {
+        //make a copy
+        int w = viewport_width;
+        int h = viewport_height;
+        double* temp = new double[w * h];
+        memcpy(temp, buffer, w * h * sizeof(double));
+        //detect edges horizontally
+        int mx = w / 16;
+        int my = h / 16;
+        int min, max;
+        for (int y = 0; y < h; y++) {
+            for (int x = 1; x < w; x++) {
+                if (fabs(buffer[y * w + x] - buffer[y * w + x - 1]) > 0.1) {
+                    min = x - mx;
+                    if (min < 0)
+                        min = 0;
+                    max = x + mx;
+                    if (max >= w)
+                        max = w - 1;
+                    for (int i = min; i <= max; i++)
+                        temp[y * w + i] = 0;
+                }
+            }
+        }
+        //detect edges vertically
+        for (int y = 1; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                if (fabs(buffer[y * w + x] - buffer[(y - 1) * w + x]) > 0.1) {
+                    min = y - my;
+                    if (min < 0)
+                        min = 0;
+                    max = y + my;
+                    if (max >= h)
+                        max = h - 1;
+                    for (int i = min; i <= max; i++)
+                        temp[i * w + x] = 0;
+                }
+            }
+        }
+        //apply
+        delete buffer;
+        buffer = temp;
+    }
+
     double MaskProcessor::GetMask(int x, int y, int r, bool minim) {
         double output = minim ? INT_MAX : 0;
         for (int i = -r; i <= r; i++)
@@ -226,7 +271,7 @@ namespace mesh_builder {
         }
 
         draw = false;
-        exact = !processFront;
+        exact = true;
         glm::vec3 a, b, c;
         for (long i = (mesh->mesh.indices.size() - 1) / 3; i >= 0; i--) {
             if (!processFront) {
@@ -410,7 +455,6 @@ namespace mesh_builder {
         //fill triangle
         int count = 0;
         int passed = 0;
-        double tolerancy = draw ? 0 : 0.25;
         int memy = min * viewport_width;
         for (int y = min; y <= max; y++) {
             int x1 = fillCache1[y].first;
@@ -444,13 +488,13 @@ namespace mesh_builder {
                 int mem = x1 + memy;
                 for (; x >= 0; x--) {
                     if (exact) {
-                        if ((z1 > 0) && (fabs(buffer[mem] - z1) <= tolerancy)) {
+                        if ((z1 > 0) && (fabs(buffer[mem] - z1) <= 0.05)) {
                             if (draw)
                                 buffer[mem] = z1;
                             passed++;
                         }
                     } else {
-                        if ((z1 > 0) && (buffer[mem] >= z1 - tolerancy)) {
+                        if ((z1 > 0) && (buffer[mem] >= z1)) {
                             if (draw)
                                 buffer[mem] = z1;
                             passed++;

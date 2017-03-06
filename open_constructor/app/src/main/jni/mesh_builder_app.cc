@@ -472,8 +472,8 @@ namespace mesh_builder {
             glm::mat4 world2uv = glm::inverse(image_matrix);
             std::vector<std::pair<GridIndex, SingleDynamicMesh* > > toAdd;
             MaskProcessor mp(t3dr_image.width, t3dr_image.height, image_matrix, t3dr_intrinsics_);
-            mp.AddPointClound(front_cloud_, point_cloud_matrix_);
             mp.AddContext(t3dr_context_, t3dr_updated);
+            mp.DetectEdges();
 #ifdef DEBUG_TEXTURING
             RGBImage* color = textureProcessor->GetLastImage();
             RGBImage depth(t3dr_image.width, t3dr_image.height, mp.GetBuffer());
