@@ -29,7 +29,7 @@ namespace mesh_builder {
     MaskProcessor::MaskProcessor(int w, int h, glm::mat4 matrix, Tango3DR_CameraCalibration calib) {
         buffer = new double[w * h];
         calibration = calib;
-        camera = matrix[3] / matrix[3][3];
+        camera = matrix[3] / glm::abs(matrix[3][3]);
         draw = true;
         exact = false;
         viewport_width = w;
