@@ -26,3 +26,7 @@ android {
         }
     }
 }
+
+dependencies {
+    compile fileTree(dir: '../../TangoReleaseLibs/jar', include: ['**/*.jar'])
+}

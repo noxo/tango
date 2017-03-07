@@ -47,7 +47,7 @@ class TangoJNINative {
    * @param nativeTangoServiceBinder The native binder object.
    */
   public static native void onTangoServiceConnected(IBinder nativeTangoServiceBinder, double res,
-   double dmin, double dmax, int noise, boolean land, boolean photo, boolean textures);
+   double dmin, double dmax, int noise, boolean land, boolean photo, boolean textures, String temp);
 
   /**
    * Interfaces to native OnPause function.
@@ -73,7 +73,7 @@ class TangoJNINative {
   public static native void load(String name);
 
   // Save current 3D model
-  public static native void save(String name);
+  public static native void save(String name, String dataset);
 
   // Set view on 3D view
   public static native void setView(float pitch, float yaw, float x, float y, boolean gyro);

@@ -93,8 +93,9 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         }
 
         m3drRunning = !photo;
+        String t = getTempPath().getAbsolutePath();
         TangoJNINative.onCreate(OpenConstructorActivity.this);
-        TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, photo, txt);
+        TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, photo, txt, t);
         TangoJNINative.onToggleButtonClicked(m3drRunning);
         TangoJNINative.setView(0, 0, 0, 0, true);
         OpenConstructorActivity.this.runOnUiThread(new Runnable()
@@ -443,16 +444,22 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
               }
             }
             //save
+            String dataset = "";
             File file2save = new File(getPath(), input.getText().toString() + FILE_EXT[type]);
             final String filename = file2save.getAbsolutePath();
             if (isTexturingOn()) {
               long timestamp = System.currentTimeMillis();
               File obj = new File(getPath(), timestamp + FILE_EXT[type]);
-              TangoJNINative.save(obj.getAbsolutePath());
+              for (File f : getTempPath().listFiles())
+                if (f.isDirectory()) {
+                  dataset = f.toString();
+                  break;
+                }
+              TangoJNINative.save(obj.getAbsolutePath(), dataset);
               if (obj.renameTo(file2save))
                 Log.d(TAG, "Obj file " + file2save.toString() + " saved.");
             } else
-              TangoJNINative.save(filename);
+              TangoJNINative.save(filename, dataset);
             //open???
             OpenConstructorActivity.this.runOnUiThread(new Runnable()
             {

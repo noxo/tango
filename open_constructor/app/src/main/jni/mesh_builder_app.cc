@@ -178,7 +178,9 @@ namespace mesh_builder {
     }
 
     void MeshBuilderApp::OnTangoServiceConnected(JNIEnv *env, jobject binder, double res,
-               double dmin, double dmax, int noise, bool land, bool photo, bool textures) {
+               double dmin, double dmax, int noise, bool land, bool photo, bool textures,
+               std::string dataset) {
+        dataset_ = dataset;
         landscape = land;
         photoFinished = false;
         photoMode = photo;
@@ -231,6 +233,17 @@ namespace mesh_builder {
 
         // Enable color camera.
         ret = TangoConfig_setBool(tango_config_, "config_enable_color_camera", true);
+        if (ret != TANGO_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+
+        // Set datasets
+        ret = TangoConfig_setString(tango_config_, "config_datasets_path", dataset_.c_str());
+        if (ret != TANGO_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+        ret = TangoConfig_setBool(tango_config_, "config_enable_dataset_recording", true);
+        if (ret != TANGO_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+        ret = TangoConfig_setInt32(tango_config_, "config_dataset_recording_mode", TANGO_RECORDING_MODE_ALL);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
@@ -424,12 +437,51 @@ namespace mesh_builder {
         binder_mutex_.unlock();
     }
 
-    void MeshBuilderApp::Save(std::string filename)
-    {
+    void MeshBuilderApp::Save(std::string filename, std::string dataset) {
         binder_mutex_.lock();
         render_mutex_.lock();
-        ModelIO io(filename, true);
-        io.WriteModel(main_scene_.dynamic_meshes_);
+        if (textured) {
+            //get mesh to texture
+            Tango3DR_Mesh* mesh = 0;
+            Tango3DR_Status ret;
+            ret = Tango3DR_extractFullMesh(t3dr_context_, &mesh);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+
+            //get texturing context
+            Tango3DR_ConfigH textureConfig;
+            textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
+            ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", 0.01);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+            Tango3DR_Context context;
+            context = Tango3DR_createTexturingContext(textureConfig, dataset.c_str(), mesh);
+            if (context == nullptr)
+                std::exit(EXIT_SUCCESS);
+            Tango3DR_Config_destroy(textureConfig);
+
+            //texturize mesh
+            ret = Tango3DR_Mesh_destroy(mesh);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+            ret = Tango3DR_getTexturedMesh(context, &mesh);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+            ret = Tango3DR_Mesh_saveToObj(mesh, filename.c_str());
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+
+            //cleanup
+            ret = Tango3DR_Mesh_destroy(mesh);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+            ret = Tango3DR_destroyTexturingContext(context);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+        } else {
+            ModelIO io(filename, true);
+            io.WriteModel(main_scene_.dynamic_meshes_);
+        }
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }

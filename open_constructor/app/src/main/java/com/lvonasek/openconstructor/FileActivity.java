@@ -1,6 +1,7 @@
 package com.lvonasek.openconstructor;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -13,6 +14,8 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.google.atap.tangoservice.Tango;
+
 import java.io.File;
 import java.util.Arrays;
 
@@ -21,6 +24,7 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
   private LinearLayout mLayout;
   private ProgressBar mProgress;
   private TextView mText;
+  private boolean first = true;
 
   private static final int PERMISSIONS_CODE = 1987;
 
@@ -45,7 +49,11 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
     super.onResume();
     mLayout.setVisibility(View.VISIBLE);
     mProgress.setVisibility(View.GONE);
-    setupPermissions();
+    if (first) {
+      first = false;
+      startActivityForResult(Tango.getRequestPermissionIntent(Tango.PERMISSIONTYPE_DATASET),
+              Tango.TANGO_INTENT_ACTIVITYCODE);
+    }
   }
 
   public void refreshUI()
@@ -90,15 +98,26 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
   }
 
   @Override
+  protected void onActivityResult(int requestCode, int resultCode, Intent data)
+  {
+    super.onActivityResult(requestCode, resultCode, data);
+    if(resultCode == Activity.RESULT_OK)
+      setupPermissions();
+    else
+      finish();
+  }
+
+  @Override
   public synchronized void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults)
   {
     switch (requestCode)
     {
       case PERMISSIONS_CODE:
       {
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+          deleteRecursive(getTempPath());
           refreshUI();
-        else
+        } else
           finish();
         break;
       }
