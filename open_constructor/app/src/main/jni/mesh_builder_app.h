@@ -87,9 +87,7 @@ namespace mesh_builder {
         Scene main_scene_;
         TangoConfig tango_config_;
         TextureProcessor* textureProcessor;
-        std::vector<TextureProcessor*> toDelete;
         std::unordered_map<GridIndex, SingleDynamicMesh*, GridIndexHasher> meshes_;
-        std::unordered_map<GridIndex, std::vector<SingleDynamicMesh*>, GridIndexHasher> polygonUsage;
         bool gyro;
         bool landscape;
         bool photoFinished;

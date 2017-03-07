@@ -20,11 +20,8 @@
 #include <map>
 #include <sstream>
 
-#include "mask_processor.h"
+#include "math_utils.h"
 #include "mesh_builder_app.h"
-#include "vertex_processor.h"
-
-//#define DEBUG_TEXTURING
 
 namespace {
     const int kSubdivisionSize = 5000;
@@ -141,9 +138,6 @@ namespace mesh_builder {
             binder_mutex_.unlock();
             return;
         }
-
-        if (textured)
-            textureProcessor->Add(t3dr_image);
         MeshUpdate(t3dr_image, t3dr_updated);
         Tango3DR_GridIndexArray_destroy(t3dr_updated);
         point_cloud_available_ = false;
@@ -367,9 +361,6 @@ namespace mesh_builder {
 
     void MeshBuilderApp::OnDrawFrame() {
         render_mutex_.lock();
-        for (TextureProcessor* i : toDelete)
-            delete i;
-        toDelete.clear();
 
         //camera transformation
         if (!gyro) {
@@ -419,10 +410,7 @@ namespace mesh_builder {
         render_mutex_.lock();
         Tango3DR_clear(t3dr_context_);
         meshes_.clear();
-        polygonUsage.clear();
         main_scene_.ClearDynamicMeshes();
-        toDelete.push_back(textureProcessor);
-        textureProcessor = new TextureProcessor();
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -442,7 +430,6 @@ namespace mesh_builder {
         render_mutex_.lock();
         ModelIO io(filename, true);
         io.WriteModel(main_scene_.dynamic_meshes_);
-        textureProcessor->Save(filename);
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -466,129 +453,63 @@ namespace mesh_builder {
         if (photoMode)
             t3dr_is_running_ = false;
 
-        Tango3DR_Status ret;
-        if (textured) {
-            //extract textured mesh
-            glm::mat4 world2uv = glm::inverse(image_matrix);
-            std::vector<std::pair<GridIndex, SingleDynamicMesh* > > toAdd;
-            MaskProcessor mp(t3dr_image.width, t3dr_image.height, image_matrix, t3dr_intrinsics_);
-            mp.AddContext(t3dr_context_, t3dr_updated);
-            mp.DetectEdges();
-#ifdef DEBUG_TEXTURING
-            RGBImage* color = textureProcessor->GetLastImage();
-            RGBImage depth(t3dr_image.width, t3dr_image.height, mp.GetBuffer());
-            color->Write("/mnt/sdcard/color.png");
-            depth.Write("/mnt/sdcard/depth.png");
-#endif
-            for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
-                GridIndex updated_index;
-                updated_index.indices[0] = t3dr_updated->indices[it][0];
-                updated_index.indices[1] = t3dr_updated->indices[it][1];
-                updated_index.indices[2] = t3dr_updated->indices[it][2];
-                SingleDynamicMesh* dynamic_mesh = new SingleDynamicMesh();
-                VertexProcessor vp(t3dr_context_, updated_index.indices);
-                vp.GetMeshWithUV(world2uv, t3dr_intrinsics_, dynamic_mesh);
-                if (!dynamic_mesh->mesh.indices.empty()) {
-                    mp.MaskMesh(dynamic_mesh, true);
-                    dynamic_mesh->size = dynamic_mesh->mesh.indices.size();
-                    textureProcessor->ApplyInstance(dynamic_mesh);
-                    vp.Cleanup(&dynamic_mesh->mesh);
-                    toAdd.push_back(std::pair<GridIndex, SingleDynamicMesh* >(updated_index, dynamic_mesh));
-                    render_mutex_.lock();
-                    main_scene_.AddDynamicMesh(dynamic_mesh);
-                    render_mutex_.unlock();
+        for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
+            GridIndex updated_index;
+            updated_index.indices[0] = t3dr_updated->indices[it][0];
+            updated_index.indices[1] = t3dr_updated->indices[it][1];
+            updated_index.indices[2] = t3dr_updated->indices[it][2];
+
+            // Build a dynamic mesh and add it to the scene.
+            SingleDynamicMesh* dynamic_mesh = meshes_[updated_index];
+            if (dynamic_mesh == nullptr) {
+                dynamic_mesh = new SingleDynamicMesh();
+                dynamic_mesh->mesh.render_mode = GL_TRIANGLES;
+                dynamic_mesh->mesh.vertices.resize(kInitialVertexCount * 3);
+                dynamic_mesh->mesh.colors.resize(kInitialVertexCount * 3);
+                dynamic_mesh->mesh.indices.resize(kInitialIndexCount);
+                dynamic_mesh->tango_mesh = {
+                        /* timestamp */ 0.0,
+                        /* num_vertices */ 0u,
+                        /* num_faces */ 0u,
+                        /* num_textures */ 0u,
+                        /* max_num_vertices */ static_cast<uint32_t>(dynamic_mesh->mesh.vertices.capacity()),
+                        /* max_num_faces */ static_cast<uint32_t>(dynamic_mesh->mesh.indices.capacity() / 3),
+                        /* max_num_textures */ 0u,
+                        /* vertices */ reinterpret_cast<Tango3DR_Vector3 *>(dynamic_mesh->mesh.vertices.data()),
+                        /* faces */ reinterpret_cast<Tango3DR_Face *>(dynamic_mesh->mesh.indices.data()),
+                        /* normals */ nullptr,
+                        /* colors */ reinterpret_cast<Tango3DR_Color *>(dynamic_mesh->mesh.colors.data()),
+                        /* texture_coords */ nullptr,
+                        /* texture_ids */ nullptr,
+                        /* textures */ nullptr};
+                render_mutex_.lock();
+                main_scene_.AddDynamicMesh(dynamic_mesh);
+                render_mutex_.unlock();
+            }
+            dynamic_mesh->mutex.lock();
+
+            while (true) {
+                Tango3DR_Status ret;
+                ret = Tango3DR_extractPreallocatedMeshSegment(t3dr_context_, updated_index.indices,
+                                                              &dynamic_mesh->tango_mesh);
+                if (ret == TANGO_3DR_INSUFFICIENT_SPACE) {
+                    unsigned long new_vertex_size = dynamic_mesh->mesh.vertices.capacity() * kGrowthFactor;
+                    unsigned long new_index_size = dynamic_mesh->mesh.indices.capacity() * kGrowthFactor;
+                    new_index_size -= new_index_size % 3;
+                    dynamic_mesh->mesh.vertices.resize(new_vertex_size);
+                    dynamic_mesh->mesh.colors.resize(new_vertex_size);
+                    dynamic_mesh->mesh.indices.resize(new_index_size);
+                    dynamic_mesh->tango_mesh.max_num_vertices = static_cast<uint32_t>(dynamic_mesh->mesh.vertices.capacity());
+                    dynamic_mesh->tango_mesh.max_num_faces = static_cast<uint32_t>(dynamic_mesh->mesh.indices.capacity() / 3);
+                    dynamic_mesh->tango_mesh.vertices = reinterpret_cast<Tango3DR_Vector3 *>(dynamic_mesh->mesh.vertices.data());
+                    dynamic_mesh->tango_mesh.colors = reinterpret_cast<Tango3DR_Color *>(dynamic_mesh->mesh.colors.data());
+                    dynamic_mesh->tango_mesh.faces = reinterpret_cast<Tango3DR_Face *>(dynamic_mesh->mesh.indices.data());
                 } else
-                    delete dynamic_mesh;
+                    break;
             }
-
-            //get filter for old faces
-            std::vector<SingleDynamicMesh*> added;
-            for (std::pair<GridIndex, SingleDynamicMesh *> i : toAdd)
-                added.push_back(i.second);
-            MaskProcessor mpFilter(t3dr_image.width, t3dr_image.height, image_matrix, t3dr_intrinsics_);
-            mpFilter.AddVertices(added);
-
-            //remove old faces
-            for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
-                GridIndex updated_index;
-                updated_index.indices[0] = t3dr_updated->indices[it][0];
-                updated_index.indices[1] = t3dr_updated->indices[it][1];
-                updated_index.indices[2] = t3dr_updated->indices[it][2];
-                for (SingleDynamicMesh *mesh : polygonUsage[updated_index]) {
-                    mesh->mutex.lock();
-                    unsigned long size = mesh->mesh.indices.size();
-                    mpFilter.MaskMesh(mesh, false);
-                    VertexProcessor::Cleanup(&mesh->mesh);
-                    if ((size > 0) && mesh->mesh.indices.empty())
-                        textureProcessor->RemoveInstance(mesh);
-                    else if (size != mesh->mesh.indices.size())
-                        textureProcessor->MarkForUpdate(mesh->mesh.texture);
-                    mesh->mutex.unlock();
-                }
-            }
-
-            //add mesh into data structure
-            textureProcessor->UpdateTextures();
-            for (unsigned long it = 0; it < toAdd.size(); ++it)
-                polygonUsage[toAdd[it].first].push_back(toAdd[it].second);
-        } else {
-            for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
-                GridIndex updated_index;
-                updated_index.indices[0] = t3dr_updated->indices[it][0];
-                updated_index.indices[1] = t3dr_updated->indices[it][1];
-                updated_index.indices[2] = t3dr_updated->indices[it][2];
-
-                // Build a dynamic mesh and add it to the scene.
-                SingleDynamicMesh* dynamic_mesh = meshes_[updated_index];
-                if (dynamic_mesh == nullptr) {
-                    dynamic_mesh = new SingleDynamicMesh();
-                    dynamic_mesh->mesh.render_mode = GL_TRIANGLES;
-                    dynamic_mesh->mesh.vertices.resize(kInitialVertexCount * 3);
-                    dynamic_mesh->mesh.colors.resize(kInitialVertexCount * 3);
-                    dynamic_mesh->mesh.indices.resize(kInitialIndexCount);
-                    dynamic_mesh->tango_mesh = {
-                            /* timestamp */ 0.0,
-                            /* num_vertices */ 0u,
-                            /* num_faces */ 0u,
-                            /* num_textures */ 0u,
-                            /* max_num_vertices */ static_cast<uint32_t>(dynamic_mesh->mesh.vertices.capacity()),
-                            /* max_num_faces */ static_cast<uint32_t>(dynamic_mesh->mesh.indices.capacity() / 3),
-                            /* max_num_textures */ 0u,
-                            /* vertices */ reinterpret_cast<Tango3DR_Vector3 *>(dynamic_mesh->mesh.vertices.data()),
-                            /* faces */ reinterpret_cast<Tango3DR_Face *>(dynamic_mesh->mesh.indices.data()),
-                            /* normals */ nullptr,
-                            /* colors */ reinterpret_cast<Tango3DR_Color *>(dynamic_mesh->mesh.colors.data()),
-                            /* texture_coords */ nullptr,
-                            /* texture_ids */ nullptr,
-                            /* textures */ nullptr};
-                    render_mutex_.lock();
-                    main_scene_.AddDynamicMesh(dynamic_mesh);
-                    render_mutex_.unlock();
-                }
-                dynamic_mesh->mutex.lock();
-
-                while (true) {
-                    ret = Tango3DR_extractPreallocatedMeshSegment(t3dr_context_, updated_index.indices,
-                                                                  &dynamic_mesh->tango_mesh);
-                    if (ret == TANGO_3DR_INSUFFICIENT_SPACE) {
-                        unsigned long new_vertex_size = dynamic_mesh->mesh.vertices.capacity() * kGrowthFactor;
-                        unsigned long new_index_size = dynamic_mesh->mesh.indices.capacity() * kGrowthFactor;
-                        new_index_size -= new_index_size % 3;
-                        dynamic_mesh->mesh.vertices.resize(new_vertex_size);
-                        dynamic_mesh->mesh.colors.resize(new_vertex_size);
-                        dynamic_mesh->mesh.indices.resize(new_index_size);
-                        dynamic_mesh->tango_mesh.max_num_vertices = static_cast<uint32_t>(dynamic_mesh->mesh.vertices.capacity());
-                        dynamic_mesh->tango_mesh.max_num_faces = static_cast<uint32_t>(dynamic_mesh->mesh.indices.capacity() / 3);
-                        dynamic_mesh->tango_mesh.vertices = reinterpret_cast<Tango3DR_Vector3 *>(dynamic_mesh->mesh.vertices.data());
-                        dynamic_mesh->tango_mesh.colors = reinterpret_cast<Tango3DR_Color *>(dynamic_mesh->mesh.colors.data());
-                        dynamic_mesh->tango_mesh.faces = reinterpret_cast<Tango3DR_Face *>(dynamic_mesh->mesh.indices.data());
-                    } else
-                        break;
-                }
-                dynamic_mesh->size = dynamic_mesh->tango_mesh.num_faces * 3;
-                dynamic_mesh->mesh.texture = -1;
-                dynamic_mesh->mutex.unlock();
-            }
+            dynamic_mesh->size = dynamic_mesh->tango_mesh.num_faces * 3;
+            dynamic_mesh->mesh.texture = -1;
+            dynamic_mesh->mutex.unlock();
         }
         if (photoMode)
             photoFinished = true;
