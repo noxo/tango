@@ -29,7 +29,7 @@ private:
     glm::ivec3 DecodeColor(unsigned int c);
     void ParseOBJ(int subdivision, std::vector<tango_gl::StaticMesh> &output);
     void ParsePLYFaces(int subdivision, std::vector<tango_gl::StaticMesh> &output);
-    std::map<int, std::string> ReadHeader();
+    void ReadHeader();
     void ReadPLYVertices();
     unsigned int ScanDec(char *line, int offset);
     bool StartsWith(std::string s, std::string e);
@@ -44,6 +44,9 @@ private:
     unsigned int faceCount;
     FILE* file;
     tango_gl::StaticMesh data;
+    std::map<std::string, int> fileToIndex;
+    std::map<int, std::string> indexToFile;
+    std::map<std::string, std::string> keyToFile;
 };
 } // namespace mesh_builder
 

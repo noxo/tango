@@ -33,7 +33,7 @@ namespace mesh_builder {
 
     std::map<int, std::string> ModelIO::ReadModel(int subdivision, std::vector<tango_gl::StaticMesh>& output) {
         assert(!writeMode);
-        std::map<int, std::string> textures = ReadHeader();
+        ReadHeader();
         if (type == PLY) {
             ReadPLYVertices();
             ParsePLYFaces(subdivision, output);
@@ -41,7 +41,7 @@ namespace mesh_builder {
             ParseOBJ(subdivision, output);
         } else
             assert(false);
-        return textures;
+        return indexToFile;
     }
 
     void ModelIO::WriteModel(std::vector<SingleDynamicMesh*> model) {
@@ -103,15 +103,27 @@ namespace mesh_builder {
         unsigned long meshIndex = 0;
         int textureIndex = 0;
         glm::vec3 v;
+        glm::vec3 n;
         glm::vec2 t;
         std::vector<glm::vec3> vertices;
+        std::vector<glm::vec3> normals;
         std::vector<glm::vec2> uvs;
-        unsigned int a, aa, b, bb, c, cc;
+        bool hasNormals = false;
+        bool hasCoords = false;
+        unsigned int va, vna, vta, vb, vnb, vtb, vc, vnc, vtc;
         while (true) {
             if (!fgets(buffer, 1024, file))
                 break;
             if (buffer[0] == 'u') {
-                sscanf(buffer, "usemtl %d", &textureIndex);
+                char key[1024];
+                sscanf(buffer, "usemtl %s", key);
+                std::string file = keyToFile[std::string(key)];
+                if (fileToIndex.find(file) == fileToIndex.end()) {
+                    textureIndex = (int) fileToIndex.size();
+                    fileToIndex[file] = textureIndex;
+                    indexToFile[textureIndex] = file;
+                } else
+                    textureIndex = fileToIndex[file];
                 meshIndex = output.size();
                 output.push_back(tango_gl::StaticMesh());
                 output[meshIndex].render_mode = GL_TRIANGLES;
@@ -122,23 +134,43 @@ namespace mesh_builder {
             } else if ((buffer[0] == 'v') && (buffer[1] == 't')) {
                 sscanf(buffer, "vt %f %f", &t.x, &t.y);
                 uvs.push_back(t);
+                hasCoords = true;
+            } else if ((buffer[0] == 'v') && (buffer[1] == 'n')) {
+                sscanf(buffer, "vn %f %f %f", &n.x, &n.y, &n.z);
+                normals.push_back(n);
+                hasNormals = true;
             } else if ((buffer[0] == 'f') && (buffer[1] == ' ')) {
-                a = 0;
-                b = 0;
-                c = 0;
-                sscanf(buffer, "f %d/%d %d/%d %d/%d", &a, &aa, &b, &bb, &c, &cc);
+                va = 0;
+                vb = 0;
+                vc = 0;
+                if (!hasCoords && !hasNormals)
+                    sscanf(buffer, "f %d %d %d", &va, &vb, &vc);
+                else if (hasCoords && !hasNormals)
+                    sscanf(buffer, "f %d/%d %d/%d %d/%d", &va, &vta, &vb, &vtb, &vc, &vtc);
+                else if (hasCoords && hasNormals)
+                    sscanf(buffer, "f %d/%d/%d %d/%d/%d %d/%d/%d",
+                           &va, &vta, &vna, &vb, &vtb, &vnb, &vc, &vtc, &vnc);
+                else if (!hasCoords && hasNormals)
+                    sscanf(buffer, "f %d//%d %d//%d %d//%d", &va, &vna, &vb, &vnb, &vc, &vnc);
                 //broken topology ignored
-                if ((a == b) || (a == c) || (b == c))
+                if ((va == vb) || (va == vc) || (vb == vc))
                     continue;
                 //incomplete line ignored
-                if ((a == 0) || (b == 0) || (c == 0))
+                if ((va == 0) || (vb == 0) || (vc == 0))
                     continue;
-                output[meshIndex].vertices.push_back(vertices[a - 1]);
-                output[meshIndex].uv.push_back(uvs[aa - 1]);
-                output[meshIndex].vertices.push_back(vertices[b - 1]);
-                output[meshIndex].uv.push_back(uvs[bb - 1]);
-                output[meshIndex].vertices.push_back(vertices[c - 1]);
-                output[meshIndex].uv.push_back(uvs[cc - 1]);
+                output[meshIndex].vertices.push_back(vertices[va - 1]);
+                output[meshIndex].vertices.push_back(vertices[vb - 1]);
+                output[meshIndex].vertices.push_back(vertices[vc - 1]);
+                if (hasCoords) {
+                    output[meshIndex].uv.push_back(uvs[vta - 1]);
+                    output[meshIndex].uv.push_back(uvs[vtb - 1]);
+                    output[meshIndex].uv.push_back(uvs[vtc - 1]);
+                }
+                if (hasNormals) {
+                    output[meshIndex].normals.push_back(normals[vna - 1]);
+                    output[meshIndex].normals.push_back(normals[vnb - 1]);
+                    output[meshIndex].normals.push_back(normals[vnc - 1]);
+                }
                 if (output[meshIndex].vertices.size() >= subdivision * 3) {
                     meshIndex = output.size();
                     output.push_back(tango_gl::StaticMesh());
@@ -199,8 +231,7 @@ namespace mesh_builder {
         }
     }
 
-    std::map<int, std::string> ModelIO::ReadHeader() {
-        std::map<int, std::string> output;
+    void ModelIO::ReadHeader() {
         char buffer[1024];
         if (type == PLY) {
             while (true) {
@@ -228,24 +259,24 @@ namespace mesh_builder {
                 if (path[i] == '/')
                     index = (unsigned int) i;
             }
+            char key[1024];
+            char pngFile[1024];
             std::string data = path.substr(0, index + 1);
             FILE* mtl = fopen((data + mtlFile).c_str(), "r");
             while (true) {
-                char pngFile[1024];
                 if (!fgets(buffer, 1024, mtl))
                     break;
                 if (StartsWith(buffer, "newmtl")) {
-                    sscanf(buffer, "newmtl %d", &index);
+                    sscanf(buffer, "newmtl %s", key);
                 }
                 if (StartsWith(buffer, "map_Kd")) {
                     sscanf(buffer, "map_Kd %s", pngFile);
-                    output[index] = data + pngFile;
+                    keyToFile[std::string(key)] = data + pngFile;
                 }
             }
             fclose(mtl);
         } else
             assert(false);
-        return output;
     }
 
     unsigned int ModelIO::ScanDec(char *line, int offset) {
