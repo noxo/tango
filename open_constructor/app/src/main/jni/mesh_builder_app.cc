@@ -23,6 +23,8 @@
 #include "math_utils.h"
 #include "mesh_builder_app.h"
 
+//#define TEXTURING
+
 namespace {
     const int kSubdivisionSize = 5000;
     const int kInitialVertexCount = 30;
@@ -138,6 +140,7 @@ namespace mesh_builder {
             binder_mutex_.unlock();
             return;
         }
+#ifdef TEXTURING
         if (textured) {
             RGBImage frame(t3dr_image, 4);
             std::ostringstream ss;
@@ -149,6 +152,7 @@ namespace mesh_builder {
             poses_.push_back(t3dr_image_pose);
             timestamps_.push_back(t3dr_image.timestamp);
         }
+#endif
 
         MeshUpdate(t3dr_image, t3dr_updated);
         Tango3DR_GridIndexArray_destroy(t3dr_updated);
@@ -435,6 +439,10 @@ namespace mesh_builder {
         render_mutex_.lock();
         Tango3DR_clear(t3dr_context_);
         meshes_.clear();
+#ifdef TEXTURING
+        poses_.clear();
+        timestamps_.clear();
+#endif
         main_scene_.ClearDynamicMeshes();
         render_mutex_.unlock();
         binder_mutex_.unlock();
@@ -472,6 +480,7 @@ namespace mesh_builder {
                 std::exit(EXIT_SUCCESS);
             Tango3DR_Config_destroy(textureConfig);
 
+#ifdef TEXTURING
             //update texturing context using stored PNGs
             for (unsigned int i = 0; i < poses_.size(); i++) {
                 std::ostringstream ss;
@@ -491,6 +500,7 @@ namespace mesh_builder {
                 if (ret != TANGO_3DR_SUCCESS)
                     std::exit(EXIT_SUCCESS);
             }
+#endif
 
             //texturize mesh
             ret = Tango3DR_Mesh_destroy(mesh);
