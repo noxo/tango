@@ -138,6 +138,18 @@ namespace mesh_builder {
             binder_mutex_.unlock();
             return;
         }
+        if (textured) {
+            RGBImage frame(t3dr_image, 4);
+            std::ostringstream ss;
+            ss << dataset_.c_str();
+            ss << "/";
+            ss << poses_.size();
+            ss << ".png";
+            frame.Write(ss.str().c_str());
+            poses_.push_back(t3dr_image_pose);
+            timestamps_.push_back(t3dr_image.timestamp);
+        }
+
         MeshUpdate(t3dr_image, t3dr_updated);
         Tango3DR_GridIndexArray_destroy(t3dr_updated);
         point_cloud_available_ = false;
@@ -459,6 +471,26 @@ namespace mesh_builder {
             if (context == nullptr)
                 std::exit(EXIT_SUCCESS);
             Tango3DR_Config_destroy(textureConfig);
+
+            //update texturing context using stored PNGs
+            for (unsigned int i = 0; i < poses_.size(); i++) {
+                std::ostringstream ss;
+                ss << dataset_.c_str();
+                ss << "/";
+                ss << i;
+                ss << ".png";
+                RGBImage frame(ss.str());
+                Tango3DR_ImageBuffer image;
+                image.width = frame.GetWidth();
+                image.height = frame.GetHeight();
+                image.stride = frame.GetWidth() * 3;
+                image.timestamp = timestamps_[i];
+                image.format = TANGO_3DR_HAL_PIXEL_FORMAT_RGB_888;
+                image.data = frame.GetData();
+                ret = Tango3DR_updateTexture(context, &image, &poses_[i]);
+                if (ret != TANGO_3DR_SUCCESS)
+                    std::exit(EXIT_SUCCESS);
+            }
 
             //texturize mesh
             ret = Tango3DR_Mesh_destroy(mesh);

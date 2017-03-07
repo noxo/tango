@@ -89,7 +89,11 @@ namespace mesh_builder {
         TangoConfig tango_config_;
         TextureProcessor* textureProcessor;
         std::unordered_map<GridIndex, SingleDynamicMesh*, GridIndexHasher> meshes_;
+
         std::string dataset_;
+        std::vector<Tango3DR_Pose> poses_;
+        std::vector<long> timestamps_;
+
         bool gyro;
         bool landscape;
         bool photoFinished;
