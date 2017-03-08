@@ -76,8 +76,8 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       public void onServiceConnected(ComponentName name, IBinder srv) {
         double res      = mRes * 0.01;
         double dmin     = 0.6f;
-        double dmax     = mRes;
-        int noise       = isNoiseFilterOn() ? 9 : 0;
+        double dmax     = mRes * 1.5;
+        int noise       = isNoiseFilterOn() ? 9 : 1;
         boolean land    = !isPortrait(OpenConstructorActivity.this);
         boolean photo   = isPhotoModeOn();
         boolean txt     = isTexturingOn();
@@ -328,14 +328,14 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     text += getString(R.string.distance) + " ";
     if (isPhotoModeOn()) {
       if(mRes > 0)
-        text += "5 m, ";
+        text += "5.0 m, ";
       else if(mRes == 0)
-        text += "2 m, ";
+        text += "2.0 m, ";
     } else {
       if(mRes > 0)
-        text += mRes + " m, ";
+        text += (1.5f * mRes) + " m, ";
       else if(mRes == 0)
-        text += "1 m, ";
+        text += "1.0 m, ";
     }
     //3d resolution
     text += getString(R.string.resolution) + " ";

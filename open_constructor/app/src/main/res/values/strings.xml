@@ -12,13 +12,13 @@
     <string name="realtime_noise_filter_summary">Noise filter can improve quality of result a lot but it makes capturing slower</string>
     <string name="photomode">Photo mode</string>
     <string name="photomode_summary">This disables continuous scene capturing and increases record distance</string>
-    <string name="texture">Texture during capturing</string>
-    <string name="texture_summary">Texturing model improves visual quality and reduces model size</string>
+    <string name="texture">Optimize model</string>
+    <string name="texture_summary">Reduce model file size using OBJ file format</string>
     <string name="sketchfab">Sketchfab</string>
     <string name="capture">Capture</string>
     <string name="enter_filename">Enter file name</string>
     <string name="view">Saved. Do you want to view 3D model?</string>
-    <string name="distance">Max.distance:</string>
+    <string name="distance">Max.dist.:</string>
     <string name="resolution">3D grid:</string>
     <string name="data_lost">Motion tracking control lost</string>
     <string name="extreme">Warning, extreme settings!</string>
