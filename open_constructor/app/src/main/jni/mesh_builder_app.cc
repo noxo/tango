@@ -509,15 +509,15 @@ namespace mesh_builder {
             ret = Tango3DR_getTexturedMesh(context, &mesh);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
+
+            //save and cleanup
+            ret = Tango3DR_destroyTexturingContext(context);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
             ret = Tango3DR_Mesh_saveToObj(mesh, filename.c_str());
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
-
-            //cleanup
             ret = Tango3DR_Mesh_destroy(mesh);
-            if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-            ret = Tango3DR_destroyTexturingContext(context);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
         } else {

@@ -77,7 +77,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         double res      = mRes * 0.01;
         double dmin     = 0.6f;
         double dmax     = mRes * 1.5;
-        int noise       = isNoiseFilterOn() ? 9 : 1;
+        int noise       = isNoiseFilterOn() ? 9 : 0;
         boolean land    = !isPortrait(OpenConstructorActivity.this);
         boolean photo   = isPhotoModeOn();
         boolean txt     = isTexturingOn();
@@ -348,7 +348,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     if ((mRes <= 0) || ((mRes == 1) && isPhotoModeOn())) {
       text += getString(R.string.extreme);
       mResText.setTextColor(Color.RED);
-    } else if (freeMBs < 250)
+    } else if (freeMBs < 400)
       mResText.setTextColor(Color.RED);
     else
       mResText.setTextColor(Color.WHITE);
