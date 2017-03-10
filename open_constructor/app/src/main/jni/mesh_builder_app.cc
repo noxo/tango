@@ -56,7 +56,7 @@ namespace mesh_builder {
 
         TangoMatrixTransformData matrix_transform;
         TangoSupport_getMatrixTransformAtTime(
-                point_cloud->timestamp, TANGO_COORDINATE_FRAME_START_OF_SERVICE,
+                point_cloud->timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION,
                 TANGO_COORDINATE_FRAME_CAMERA_DEPTH, TANGO_SUPPORT_ENGINE_OPENGL,
                 TANGO_SUPPORT_ENGINE_TANGO, ROTATION_0, &matrix_transform);
         if (matrix_transform.status_code != TANGO_POSE_VALID)
@@ -85,7 +85,7 @@ namespace mesh_builder {
 
         TangoMatrixTransformData matrix_transform;
         TangoSupport_getMatrixTransformAtTime(
-                        buffer->timestamp, TANGO_COORDINATE_FRAME_START_OF_SERVICE,
+                        buffer->timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION,
                         TANGO_COORDINATE_FRAME_CAMERA_COLOR, TANGO_SUPPORT_ENGINE_OPENGL,
                         TANGO_SUPPORT_ENGINE_TANGO, ROTATION_0, &matrix_transform);
         if (matrix_transform.status_code != TANGO_POSE_VALID)
@@ -399,7 +399,7 @@ namespace mesh_builder {
         } else {
             TangoMatrixTransformData matrix_transform;
             TangoSupport_getMatrixTransformAtTime(
-                    0, TANGO_COORDINATE_FRAME_START_OF_SERVICE, TANGO_COORDINATE_FRAME_DEVICE,
+                    0, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION, TANGO_COORDINATE_FRAME_DEVICE,
                     TANGO_SUPPORT_ENGINE_OPENGL, TANGO_SUPPORT_ENGINE_OPENGL,
                     landscape ? ROTATION_90 : ROTATION_0, &matrix_transform);
             glm::mat4 start_service_T_device_;
