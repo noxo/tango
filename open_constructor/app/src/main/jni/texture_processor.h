@@ -4,6 +4,7 @@
 #include <vector>
 #include <mutex>
 #include <map>
+#include "model_io.h"
 #include "rgb_image.h"
 
 namespace mesh_builder {
@@ -14,6 +15,7 @@ namespace mesh_builder {
 
         void Add(Tango3DR_ImageBuffer t3dr_image);
         void Add(std::map<int, std::string> files);
+        void GenerateUV(glm::mat4 world2uv, Tango3DR_CameraCalibration c, SingleDynamicMesh* mesh);
         std::vector<unsigned int> TextureMap();
         bool UpdateGL();
 

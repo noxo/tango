@@ -20,10 +20,9 @@
 #include <map>
 #include <sstream>
 
+#include "mask_processor.h"
 #include "math_utils.h"
 #include "mesh_builder_app.h"
-
-//#define TEXTURING
 
 namespace {
     const int kSubdivisionSize = 5000;
@@ -140,7 +139,6 @@ namespace mesh_builder {
             binder_mutex_.unlock();
             return;
         }
-#ifdef TEXTURING
         if (textured) {
             RGBImage frame(t3dr_image, 4);
             std::ostringstream ss;
@@ -149,10 +147,9 @@ namespace mesh_builder {
             ss << poses_.size();
             ss << ".png";
             frame.Write(ss.str().c_str());
-            poses_.push_back(t3dr_image_pose);
+            poses_.push_back(image_matrix);
             timestamps_.push_back(t3dr_image.timestamp);
         }
-#endif
 
         MeshUpdate(t3dr_image, t3dr_updated);
         Tango3DR_GridIndexArray_destroy(t3dr_updated);
@@ -259,7 +256,7 @@ namespace mesh_builder {
         ret = TangoConfig_setBool(tango_config_, "config_enable_dataset_recording", true);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
-        ret = TangoConfig_setInt32(tango_config_, "config_dataset_recording_mode", TANGO_RECORDING_MODE_ALL);
+        ret = TangoConfig_setInt32(tango_config_, "config_dataset_recording_mode", TANGO_RECORDING_MODE_MOTION_TRACKING);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
@@ -438,11 +435,10 @@ namespace mesh_builder {
         binder_mutex_.lock();
         render_mutex_.lock();
         Tango3DR_clear(t3dr_context_);
+        instances_.clear();
         meshes_.clear();
-#ifdef TEXTURING
         poses_.clear();
         timestamps_.clear();
-#endif
         main_scene_.ClearDynamicMeshes();
         render_mutex_.unlock();
         binder_mutex_.unlock();
@@ -471,7 +467,7 @@ namespace mesh_builder {
             //get texturing context
             Tango3DR_ConfigH textureConfig;
             textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
-            ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", 0.01);
+            ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", 0.001);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
             Tango3DR_Context context;
@@ -480,27 +476,39 @@ namespace mesh_builder {
                 std::exit(EXIT_SUCCESS);
             Tango3DR_Config_destroy(textureConfig);
 
-#ifdef TEXTURING
-            //update texturing context using stored PNGs
-            for (unsigned int i = 0; i < poses_.size(); i++) {
+            //update textures
+            for (unsigned int index = 0; index < poses_.size(); index++) {
+                //get texture
                 std::ostringstream ss;
                 ss << dataset_.c_str();
                 ss << "/";
-                ss << i;
+                ss << index;
                 ss << ".png";
                 RGBImage frame(ss.str());
-                Tango3DR_ImageBuffer image;
-                image.width = frame.GetWidth();
-                image.height = frame.GetHeight();
-                image.stride = frame.GetWidth() * 3;
-                image.timestamp = timestamps_[i];
-                image.format = TANGO_3DR_HAL_PIXEL_FORMAT_RGB_888;
-                image.data = frame.GetData();
-                ret = Tango3DR_updateTexture(context, &image, &poses_[i]);
-                if (ret != TANGO_3DR_SUCCESS)
-                    std::exit(EXIT_SUCCESS);
+                int w = frame.GetWidth();
+                int h = frame.GetHeight();
+                unsigned char* data = frame.GetData();
+                //generate temp UVs
+                glm::mat4 world2uv = glm::inverse(poses_[index]);
+                for( SingleDynamicMesh* i : instances_[index] )
+                    textureProcessor->GenerateUV(world2uv, t3dr_intrinsics_, i);
+                //mask unused pixels
+                MaskProcessor mp(w, h);
+                mp.AddUVs(instances_[index]);
+                int i = 0;
+                for (int y = h - 1; y >= 0; y--) {
+                    for (int x = 0; x < w; x++) {
+                        if (mp.GetMask(x, y) > 1000) {
+                            data[i++] = 255;
+                            data[i++] = 0;
+                            data[i++] = 255;
+                        } else
+                            i+=3;
+                        }
+                    }
+                //save texture
+                frame.Write(ss.str().c_str());
             }
-#endif
 
             //texturize mesh
             ret = Tango3DR_Mesh_destroy(mesh);
@@ -547,6 +555,7 @@ namespace mesh_builder {
         if (photoMode)
             t3dr_is_running_ = false;
 
+        std::vector<SingleDynamicMesh*> instances;
         for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
             GridIndex updated_index;
             updated_index.indices[0] = t3dr_updated->indices[it][0];
@@ -577,6 +586,7 @@ namespace mesh_builder {
                         /* texture_ids */ nullptr,
                         /* textures */ nullptr};
                 render_mutex_.lock();
+                instances.push_back(dynamic_mesh);
                 main_scene_.AddDynamicMesh(dynamic_mesh);
                 render_mutex_.unlock();
             }
@@ -605,6 +615,7 @@ namespace mesh_builder {
             dynamic_mesh->mesh.texture = -1;
             dynamic_mesh->mutex.unlock();
         }
+        instances_.push_back(instances);
         if (photoMode)
             photoFinished = true;
     }

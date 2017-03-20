@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <tango-gl/util.h>
+#include "math_utils.h"
 #include "texture_processor.h"
 
 namespace mesh_builder {
@@ -43,6 +44,16 @@ namespace mesh_builder {
             toLoad[images.size()] = true;
             images.push_back(t);
             mutex.unlock();
+        }
+    }
+
+    void TextureProcessor::GenerateUV(glm::mat4 world2uv, Tango3DR_CameraCalibration calibration,
+                                      SingleDynamicMesh* mesh) {
+        mesh->mesh.uv.clear();
+        for (unsigned int i = 0; i < mesh->mesh.vertices.size(); i++) {
+            glm::vec4 v = glm::vec4(mesh->mesh.vertices[i], 1);
+            Math::convert2uv(v, world2uv, calibration);
+            mesh->mesh.uv.push_back(glm::vec2(v.x, v.y));
         }
     }
 

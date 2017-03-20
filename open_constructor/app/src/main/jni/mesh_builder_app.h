@@ -91,7 +91,8 @@ namespace mesh_builder {
         std::unordered_map<GridIndex, SingleDynamicMesh*, GridIndexHasher> meshes_;
 
         std::string dataset_;
-        std::vector<Tango3DR_Pose> poses_;
+        std::vector<std::vector<SingleDynamicMesh*> > instances_;
+        std::vector<glm::mat4> poses_;
         std::vector<long> timestamps_;
 
         bool gyro;
