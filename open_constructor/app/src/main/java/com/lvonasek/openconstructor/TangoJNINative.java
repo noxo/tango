@@ -86,4 +86,6 @@ class TangoJNINative {
 
   // Check if photo was finished
   public static native boolean isPhotoFinished();
+
+  public static native byte[] clientSecret();
 }

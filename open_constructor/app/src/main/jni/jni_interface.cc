@@ -108,6 +108,29 @@ Java_com_lvonasek_openconstructor_TangoJNINative_isPhotoFinished(JNIEnv*, jobjec
   return (jboolean) app.IsPhotoFinished();
 }
 
+#ifndef NDEBUG
+JNIEXPORT jbyteArray JNICALL
+Java_com_lvonasek_openconstructor_TangoJNINative_clientSecret(JNIEnv* env, jobject) {
+  std::string message = "NO SECRET";
+  int byteCount = message.length();
+  const jbyte* pNativeMessage = reinterpret_cast<const jbyte*>(message.c_str());
+  jbyteArray bytes = env->NewByteArray(byteCount);
+  env->SetByteArrayRegion(bytes, 0, byteCount, pNativeMessage);
+  return bytes;
+}
+#else
+#include "secret.h"
+JNIEXPORT jbyteArray JNICALL
+Java_com_lvonasek_openconstructor_TangoJNINative_clientSecret(JNIEnv* env, jobject) {
+  std::string message = secret();
+  int byteCount = message.length();
+  const jbyte* pNativeMessage = reinterpret_cast<const jbyte*>(message.c_str());
+  jbyteArray bytes = env->NewByteArray(byteCount);
+  env->SetByteArrayRegion(bytes, 0, byteCount, pNativeMessage);
+  return bytes;
+}
+#endif
+
 #ifdef __cplusplus
 }
 #endif

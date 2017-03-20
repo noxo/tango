@@ -54,11 +54,12 @@ public class SketchfabOAuthActivity extends AbstractActivity
           }
           code = url.substring(url.indexOf("code=") + 5);
 
+          String secret = new String(TangoJNINative.clientSecret());
           final ArrayList<NameValuePair> nameValuePairs = new ArrayList<>();
           nameValuePairs.add(new BasicNameValuePair("grant_type", "authorization_code"));
           nameValuePairs.add(new BasicNameValuePair("code", code));
           nameValuePairs.add(new BasicNameValuePair("client_id", CLIENT_ID));
-          nameValuePairs.add(new BasicNameValuePair("client_secret", getString(R.string.oath_secret)));
+          nameValuePairs.add(new BasicNameValuePair("client_secret", secret));
           nameValuePairs.add(new BasicNameValuePair("redirect_uri", REDIRECT));
 
           new Thread(new Runnable()
