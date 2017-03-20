@@ -134,7 +134,7 @@ class FileAdapter extends BaseAdapter
                     @Override
                     public void run()
                     {
-                      Intent i = new Intent(mContext, SketchfabActivity.class);
+                      Intent i = new Intent(mContext, SketchfabOAuthActivity.class);
                       i.putExtra(AbstractActivity.FILE_KEY, AbstractActivity.ZIP_TEMP);
                       mContext.startActivity(i);
                     }

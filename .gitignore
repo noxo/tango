@@ -9,3 +9,4 @@
 *gen/
 *local.properties
 .directory
+open_constructor/app/src/main/res/values-v11/secret.xml
