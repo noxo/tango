@@ -25,10 +25,9 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
     }
-
-    useLibrary 'org.apache.http.legacy'
 }
 
 dependencies {
     compile fileTree(dir: '../../TangoReleaseLibs/jar', include: ['**/*.jar'])
+    compile "cz.msebera.android:httpclient:4.4.1.2"
 }
