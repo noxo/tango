@@ -30,7 +30,7 @@ public abstract class AbstractActivity extends Activity
   protected static final String RESOLUTION_KEY = "RESOLUTION";
   protected static final String TAG = "tango_app";
   protected static final String TEMP_DIRECTORY = "temp";
-  protected static final String ZIP_TEMP = "upload.zip";
+  protected static final String URL_KEY = "URL2OPEN";
 
   public static boolean isPortrait(Context context) {
     SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);

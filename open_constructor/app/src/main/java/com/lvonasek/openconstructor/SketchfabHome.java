@@ -11,13 +11,14 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-public class SketchfabActivity extends AbstractActivity
+public class SketchfabHome extends AbstractActivity
 {
   private static final String SKETCHFAB_HOME = "https://sketchfab.com";
   private static final String SKETCHFAB_UPLOAD = "https://sketchfab.com/upload";
 
   private static final int PERMISSIONS_CODE = 1990;
 
+  private String mUrl;
   private Uri mUri;
   private WebView mWebView;
 
@@ -27,6 +28,7 @@ public class SketchfabActivity extends AbstractActivity
     setContentView(R.layout.activity_sketchfab);
 
     mUri = filename2Uri(getIntent().getStringExtra(FILE_KEY));
+    mUrl = getIntent().getStringExtra(URL_KEY);
     mWebView = (WebView) findViewById(R.id.webview);
     WebSettings webSettings = mWebView.getSettings();
     webSettings.setJavaScriptEnabled(true);
@@ -78,6 +80,8 @@ public class SketchfabActivity extends AbstractActivity
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
           if (mUri != null)
             mWebView.loadUrl(SKETCHFAB_UPLOAD);
+          else if (mUrl != null)
+            mWebView.loadUrl(mUrl);
           else
             mWebView.loadUrl(SKETCHFAB_HOME);
         }else

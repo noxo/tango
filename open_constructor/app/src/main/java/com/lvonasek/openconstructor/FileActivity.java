@@ -150,7 +150,7 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
         break;
       case R.id.sketchfab:
         showProgress();
-        startActivity(new Intent(this, SketchfabActivity.class));
+        startActivity(new Intent(this, SketchfabHome.class));
         break;
     }
   }

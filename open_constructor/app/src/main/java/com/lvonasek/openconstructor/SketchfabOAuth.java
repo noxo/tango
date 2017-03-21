@@ -12,7 +12,9 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import java.util.ArrayList;
+import java.util.Scanner;
 
+import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.HttpResponse;
 import cz.msebera.android.httpclient.NameValuePair;
 import cz.msebera.android.httpclient.client.HttpClient;
@@ -20,8 +22,9 @@ import cz.msebera.android.httpclient.client.entity.UrlEncodedFormEntity;
 import cz.msebera.android.httpclient.client.methods.HttpPost;
 import cz.msebera.android.httpclient.impl.client.DefaultHttpClient;
 import cz.msebera.android.httpclient.message.BasicNameValuePair;
+import cz.msebera.android.httpclient.util.EntityUtils;
 
-public class SketchfabOAuthActivity extends AbstractActivity
+public class SketchfabOAuth extends AbstractActivity
 {
   private static final String CLIENT_ID = "57kFPBj5OaSdKeroj1p2WQw7n11YFeDLea6sXnqi";
   private static final String OAUTH_URL = "https://sketchfab.com/oauth2/authorize/?response_type=code&client_id=";
@@ -29,9 +32,14 @@ public class SketchfabOAuthActivity extends AbstractActivity
   private static final String TOKEN_URL = "https://sketchfab.com/oauth2/token/";
   private static final int PERMISSIONS_CODE = 1989;
 
-  private static String code = null;
+  private static String token = null;
   private String mExtra;
   private WebView mWebView;
+
+  public static String getToken()
+  {
+    return token;
+  }
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -52,15 +60,15 @@ public class SketchfabOAuthActivity extends AbstractActivity
             finish();
             return true;
           }
-          code = url.substring(url.indexOf("code=") + 5);
+          String code = url.substring(url.indexOf("code=") + 5);
 
           String secret = new String(TangoJNINative.clientSecret());
-          final ArrayList<NameValuePair> nameValuePairs = new ArrayList<>();
-          nameValuePairs.add(new BasicNameValuePair("grant_type", "authorization_code"));
-          nameValuePairs.add(new BasicNameValuePair("code", code));
-          nameValuePairs.add(new BasicNameValuePair("client_id", CLIENT_ID));
-          nameValuePairs.add(new BasicNameValuePair("client_secret", secret));
-          nameValuePairs.add(new BasicNameValuePair("redirect_uri", REDIRECT));
+          final ArrayList<NameValuePair> authorize = new ArrayList<>();
+          authorize.add(new BasicNameValuePair("grant_type", "authorization_code"));
+          authorize.add(new BasicNameValuePair("code", code));
+          authorize.add(new BasicNameValuePair("client_id", CLIENT_ID));
+          authorize.add(new BasicNameValuePair("client_secret", secret));
+          authorize.add(new BasicNameValuePair("redirect_uri", REDIRECT));
 
           new Thread(new Runnable()
           {
@@ -70,14 +78,19 @@ public class SketchfabOAuthActivity extends AbstractActivity
               try{
                 HttpClient httpclient = new DefaultHttpClient();
                 HttpPost httppost = new HttpPost(TOKEN_URL);
-                httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+                httppost.setEntity(new UrlEncodedFormEntity(authorize));
                 HttpResponse response = httpclient.execute(httppost);
                 if(response.getStatusLine().getStatusCode() == 200)
                 {
-                  Activity activity = SketchfabOAuthActivity.this;
-                  Intent i = new Intent(activity, SketchfabActivity.class);
+                  token = EntityUtils.toString(response.getEntity());
+                  token = token.substring(token.indexOf("access_token"));
+                  token = token.substring(token.indexOf(":"));
+                  token = token.substring(token.indexOf("\""));
+                  token = token.substring(1, token.indexOf("\","));
+                  Activity activity = SketchfabOAuth.this;
+                  Intent i = new Intent(activity, SketchfabUploader.class);
                   i.putExtra(AbstractActivity.FILE_KEY, mExtra);
-                  SketchfabOAuthActivity.this.startActivity(i);
+                  SketchfabOAuth.this.startActivity(i);
                   finish();
                   return;
                 }

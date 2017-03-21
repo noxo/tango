@@ -114,37 +114,9 @@ class FileAdapter extends BaseAdapter
               Toast.makeText(mContext, R.string.invalid_name, Toast.LENGTH_LONG).show();
               break;
             }
-            mContext.showProgress();
-            new Thread(new Runnable() {
-              @Override
-              public void run()
-              {
-                try
-                {
-                  String zip = AbstractActivity.getPath() + AbstractActivity.ZIP_TEMP;
-                  File model2share = new File(AbstractActivity.getPath(), mItems.get(index));
-                  ArrayList<String> list = new ArrayList<>();
-                  if (AbstractActivity.getModelType(mItems.get(index)) == 0) //OBJ
-                    for (String s : AbstractActivity.getObjResources(model2share))
-                      list.add(new File(AbstractActivity.getPath(), s).getAbsolutePath());
-                  list.add(model2share.getAbsolutePath());
-                  mContext.zip(list.toArray(new String[list.size()]), zip);
-                  mContext.runOnUiThread(new Runnable()
-                  {
-                    @Override
-                    public void run()
-                    {
-                      Intent i = new Intent(mContext, SketchfabOAuthActivity.class);
-                      i.putExtra(AbstractActivity.FILE_KEY, AbstractActivity.ZIP_TEMP);
-                      mContext.startActivity(i);
-                    }
-                  });
-                } catch (Exception e)
-                {
-                  e.printStackTrace();
-                }
-              }
-            }).start();
+            Intent i = new Intent(mContext, SketchfabOAuth.class);
+            i.putExtra(AbstractActivity.FILE_KEY, mItems.get(index));
+            mContext.startActivity(i);
             break;
           case 2://rename
             AlertDialog.Builder renameDlg = new AlertDialog.Builder(mContext);
