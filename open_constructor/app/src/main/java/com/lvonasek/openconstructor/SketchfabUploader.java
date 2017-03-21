@@ -95,10 +95,10 @@ public class SketchfabUploader extends AbstractActivity implements OnClickListen
         {
           File model2share = new File(AbstractActivity.getPath(), mFile);
           ArrayList<String> list = new ArrayList<>();
+          list.add(model2share.getAbsolutePath());
           if (AbstractActivity.getModelType(mFile) == 0) //OBJ
             for (String s : AbstractActivity.getObjResources(model2share))
               list.add(new File(AbstractActivity.getPath(), s).getAbsolutePath());
-          list.add(model2share.getAbsolutePath());
           zipAndPublish(list.toArray(new String[list.size()]), mFilename.getText().toString());
         } catch (FileNotFoundException e)
         {
@@ -223,7 +223,7 @@ public class SketchfabUploader extends AbstractActivity implements OnClickListen
         multipart.addFormField("name", mFileName);
         multipart.addFormField("description", mDesc);
         multipart.addFormField("tags", mTag);
-        multipart.addFormField("source", "Open Constructor");
+        multipart.addFormField("source", "open-constructor");
         multipart.addFormField("isPublished", "false");
         multipart.addFilePart("modelFile", uploadFile);
         List<String> response = multipart.finish();

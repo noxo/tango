@@ -12,15 +12,12 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import java.util.ArrayList;
-import java.util.Scanner;
-
-import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.HttpResponse;
 import cz.msebera.android.httpclient.NameValuePair;
 import cz.msebera.android.httpclient.client.HttpClient;
 import cz.msebera.android.httpclient.client.entity.UrlEncodedFormEntity;
 import cz.msebera.android.httpclient.client.methods.HttpPost;
-import cz.msebera.android.httpclient.impl.client.DefaultHttpClient;
+import cz.msebera.android.httpclient.impl.client.HttpClientBuilder;
 import cz.msebera.android.httpclient.message.BasicNameValuePair;
 import cz.msebera.android.httpclient.util.EntityUtils;
 
@@ -76,7 +73,7 @@ public class SketchfabOAuth extends AbstractActivity
             public void run()
             {
               try{
-                HttpClient httpclient = new DefaultHttpClient();
+                HttpClient httpclient = HttpClientBuilder.create().build();
                 HttpPost httppost = new HttpPost(TOKEN_URL);
                 httppost.setEntity(new UrlEncodedFormEntity(authorize));
                 HttpResponse response = httpclient.execute(httppost);

@@ -33,6 +33,7 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="5dp"
             android:layout_marginRight="5dp"
+            android:maxLength="48"
             android:imeOptions="flagNoExtractUi"
             android:ems="10" />
 
@@ -55,6 +56,7 @@
             android:lines="8"
             android:minLines="8"
             android:maxLines="8"
+            android:maxLength="1024"
             android:scrollbars="vertical"
             android:imeOptions="flagNoExtractUi"
             android:inputType="textMultiLine" >
