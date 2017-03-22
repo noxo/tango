@@ -1,43 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Open Constructor</string>
-    <string name="pause">Pause</string>
-    <string name="resume">Resume</string>
-    <string name="clear">Clear</string>
-    <string name="save">Save</string>
+    <!-- File Manager !-->
+    <string name="new_name">Choose a new name</string>
+    <string name="no_data">No recorded models</string>
+    <string name="name_exists">A model with the entered name already exists</string>
+    <string name="invalid_name">Invalid file name!</string>
+    <string name="scene_res">Choose capturing resolution</string>
     <string name="settings">Settings</string>
+    <string name="sketchfab">Sketchfab</string>
+    <string name="capture">Capture</string>
+
+    <!-- Recording !-->
+    <string name="app_name">Open Constructor</string>
+    <string name="clear">Clear</string>
+    <string name="data_lost">Motion tracking control lost</string>
+    <string name="distance">Max. dist.:</string>
+    <string name="enter_filename">Enter the file name</string>
+    <string name="extreme">Warning, extreme settings!</string>
+    <string name="mb_free">MB RAM free</string>
+    <string name="pause">Pause</string>
+    <string name="postprocess">Do you want to apply textures on the model? (this operation can take a long time)</string>
+    <string name="resolution">3D grid:</string>
+    <string name="resume">Resume</string>
+    <string name="save">Save</string>
+    <string name="view">Saved. Do you want to finish the recording?</string>
+
+    <!-- Settings !-->
     <string name="landscape">Landscape mode</string>
     <string name="landscape_summary">Using the application in landscape is better on tablets</string>
     <string name="realtime_noise_filter">Realtime noise filter</string>
-    <string name="realtime_noise_filter_summary">Noise filter can improve quality of result a lot but it makes capturing slower</string>
+    <string name="realtime_noise_filter_summary">A noise filter can improve the quality a lot but it makes capturing slower</string>
     <string name="photomode">Photo mode</string>
     <string name="photomode_summary">This disables continuous scene capturing and increases record distance</string>
     <string name="texture">Optimize model</string>
     <string name="texture_summary">Reduce model file size using OBJ file format</string>
-    <string name="sketchfab">Sketchfab</string>
-    <string name="capture">Capture</string>
-    <string name="enter_filename">Enter file name</string>
-    <string name="view">Saved. Do you want to view 3D model?</string>
-    <string name="distance">Max.dist.:</string>
-    <string name="resolution">3D grid:</string>
-    <string name="data_lost">Motion tracking control lost</string>
-    <string name="extreme">Warning, extreme settings!</string>
-    <string name="no_data">No recorded meshes</string>
-    <string name="scene_res">Choose capturing resolution</string>
-    <string name="new_name">Choose new name</string>
-    <string name="name_exists">Model with entered name already exists</string>
-    <string name="mb_free">MB RAM free</string>
-    <string name="invalid_name">Invalid file name!</string>
 
     <!-- Sketchfab uploader !-->
-    <string name="compressing">Compressing the files…</string>
+    <string name="compressing">Compressing files…</string>
     <string name="continue_question">Do you want to continue?</string>
     <string name="description">Description:</string>
     <string name="model_name">Model Name:</string>
     <string name="sketchfab_dialog_title">Upload to Sketchfab</string>
     <string name="sketchfab_pro">Note that for size over 50 MB, a Sketchfab PRO account is required, otherwise the upload may fail.</string>
     <string name="sketchfab_upload_ready">Model is compressed and ready to upload!</string>
-    <string name="sketchfab_uploading">Uploading model to Sketchfab…</string>
+    <string name="sketchfab_uploading">Uploading the model to Sketchfab…</string>
     <string name="tags">Tags:</string>
     <string name="upload">Upload</string>
     <string name="upload_size_is">Total size to upload is</string>
@@ -50,11 +56,11 @@
     </string-array>
 
     <string-array name="resolutions">
-        <item>0.5 cm - Objects only</item>
-        <item>1 cm - Small room</item>
-        <item>2 cm - Big room</item>
-        <item>3 cm - Small interior</item>
-        <item>4 cm - Big interior</item>
-        <item>5 cm - Outside</item>
+        <item>0.5 cm - objects only</item>
+        <item>1 cm - small room</item>
+        <item>2 cm - big room</item>
+        <item>3 cm - small interior</item>
+        <item>4 cm - big interior</item>
+        <item>5 cm - outside</item>
     </string-array>
 </resources>
