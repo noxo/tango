@@ -469,7 +469,13 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                 mProgress.setVisibility(View.GONE);
                 AlertDialog.Builder builder = new AlertDialog.Builder(OpenConstructorActivity.this);
                 builder.setTitle(getString(R.string.view));
-                builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
+                builder.setPositiveButton(getString(R.string.yes), new DialogInterface.OnClickListener() {
+                  @Override
+                  public void onClick(DialogInterface dialog, int which) {
+                    dialog.cancel();
+                  }
+                });
+                builder.setNegativeButton(getString(R.string.no), new DialogInterface.OnClickListener() {
                   @Override
                   public void onClick(DialogInterface dialog, int which) {
                     setViewerMode();
@@ -488,17 +494,42 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                             public void run()
                             {
                               mProgress.setVisibility(View.GONE);
+                              AlertDialog.Builder builder = new AlertDialog.Builder(OpenConstructorActivity.this);
+                              builder.setTitle(getString(R.string.postprocess));
+                              builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                  mProgress.setVisibility(View.VISIBLE);
+                                  new Thread(new Runnable()
+                                  {
+                                    @Override
+                                    public void run()
+                                    {
+                                      TangoJNINative.texturize();
+                                      OpenConstructorActivity.this.runOnUiThread(new Runnable()
+                                      {
+                                        @Override
+                                        public void run()
+                                        {
+                                          mProgress.setVisibility(View.GONE);
+                                        }
+                                      });
+                                    }
+                                  }).start();
+                                }
+                              });
+                              builder.setNegativeButton(getString(android.R.string.cancel), new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                  dialog.cancel();
+                                }
+                              });
+                              builder.create().show();
                             }
                           });
                         }
                       }).start();
                     }
-                    dialog.cancel();
-                  }
-                });
-                builder.setNegativeButton(getString(android.R.string.cancel), new DialogInterface.OnClickListener() {
-                  @Override
-                  public void onClick(DialogInterface dialog, int which) {
                     dialog.cancel();
                   }
                 });

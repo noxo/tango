@@ -61,6 +61,7 @@ namespace mesh_builder {
         void SetView(float p, float y, float mx, float my, bool g) { pitch = p; yaw = y; gyro = g;
                                                                             movex = mx; movey = my;}
         void SetZoom(float value) { zoom = value; }
+        void Texturize();
 
     private:
         void TangoSetupConfig();

@@ -581,4 +581,8 @@ namespace mesh_builder {
         if (photoMode)
             photoFinished = true;
     }
+
+    void MeshBuilderApp::Texturize() {
+        //TODO:implement
+    }
 }  // namespace mesh_builder
