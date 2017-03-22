@@ -20,9 +20,9 @@
 #include <map>
 #include <sstream>
 
-#include "mask_processor.h"
 #include "math_utils.h"
 #include "mesh_builder_app.h"
+#include "texture_postprocessor.h"
 
 namespace {
     const int kSubdivisionSize = 5000;
