@@ -18,14 +18,6 @@ namespace mesh_builder {
         }
     }
 
-    void TextureProcessor::Add(Tango3DR_ImageBuffer t3dr_image) {
-        RGBImage* t = new RGBImage(t3dr_image, 4);
-        mutex.lock();
-        toLoad[images.size()] = true;
-        images.push_back(t);
-        mutex.unlock();
-    }
-
     void TextureProcessor::Add(std::map<int, std::string> files) {
         std::vector<std::string> pngFiles;
         for (std::pair<const int, std::string> i : files) {
@@ -44,16 +36,6 @@ namespace mesh_builder {
             toLoad[images.size()] = true;
             images.push_back(t);
             mutex.unlock();
-        }
-    }
-
-    void TextureProcessor::GenerateUV(glm::mat4 world2uv, Tango3DR_CameraCalibration calibration,
-                                      SingleDynamicMesh* mesh) {
-        mesh->mesh.uv.clear();
-        for (unsigned int i = 0; i < mesh->mesh.vertices.size(); i++) {
-            glm::vec4 v = glm::vec4(mesh->mesh.vertices[i], 1);
-            Math::convert2uv(v, world2uv, calibration);
-            mesh->mesh.uv.push_back(glm::vec2(v.x, v.y));
         }
     }
 

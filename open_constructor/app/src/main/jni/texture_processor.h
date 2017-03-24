@@ -13,9 +13,7 @@ namespace mesh_builder {
         TextureProcessor();
         ~TextureProcessor();
 
-        void Add(Tango3DR_ImageBuffer t3dr_image);
         void Add(std::map<int, std::string> files);
-        void GenerateUV(glm::mat4 world2uv, Tango3DR_CameraCalibration c, SingleDynamicMesh* mesh);
         RGBImage* GetTexture(int index) { return images[index]; }
         unsigned int TextureCount() { images.size(); }
         std::vector<unsigned int> TextureMap();
