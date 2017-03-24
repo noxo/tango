@@ -234,16 +234,19 @@ namespace mesh_builder {
 
                 //filling algorithm
                 x = glm::abs(x2 - x1);
-                int step = (x2 >= x1) ? 1 : -1;
+                int step = (x2 >= x1) ? 3 : -3;
                 z = (z2 - z1) / (float)x;
-                int mem = x1 + memy;
+                int mem = (x1 + memy) * 3;
                 int itx, ity;
+                glm::ivec3 color;
                 for (; x >= 0; x--) {
-                    itx = (int) (z1.x + 0.5f);
-                    ity = (int) (z1.y + 0.5f);
-                    if ((itx >= 0) && (itx < frame->GetWidth()))
-                      if ((ity >= 0) && (ity < frame->GetHeight()))
-                        buffer[mem] = frame->GetData()[ity * frame->GetWidth() + itx];
+                    if ((z1.x >= 0) && (z1.x < frame->GetWidth()))
+                      if ((z1.y >= 0) && (z1.y < frame->GetHeight())) {
+                        color = frame->GetValue(z1);
+                        buffer[mem + 0] = color.r;
+                        buffer[mem + 1] = color.g;
+                        buffer[mem + 2] = color.b;
+                      }
                     mem += step;
                     z1 += z;
                 }

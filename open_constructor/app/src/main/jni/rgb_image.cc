@@ -101,6 +101,38 @@ namespace mesh_builder {
         delete[] data;
     }
 
+    glm::vec3 RGBImage::GetValue(int x, int y) {
+      if (x < 0)
+        x = 0;
+      if (y < 0)
+        y = 0;
+      if (x >= width)
+        x = width - 1;
+      if (y >= height)
+        y = height - 1;
+      int index = (y * width + x) * 3;
+      glm::vec3 output;
+      output.r = data[index++];
+      output.g = data[index++];
+      output.b = data[index++];
+      return output;
+    }
+
+    glm::vec3 RGBImage::GetValue(glm::vec2 coord) {
+      float x = coord.x;
+      float y = coord.y;
+      int ix = (int) x;
+      int iy = (int) y;
+      float dx = x - ix;
+      float dy = y - iy;
+      glm::vec3 v = glm::vec3(0, 0, 0);
+      v += GetValue(ix, iy) * (1 - dx) * (1 - dy);
+      v += GetValue(ix, iy + 1) * (1 - dx) * dy;
+      v += GetValue(ix + 1, iy) * dx * (1 - dy);
+      v += GetValue(ix + 1, iy + 1) * dx * dy;
+      return v;
+    }
+
     void RGBImage::Write(const char *filename) {
         // Open file for writing (binary mode)
         FILE *fp = fopen(filename, "wb");
