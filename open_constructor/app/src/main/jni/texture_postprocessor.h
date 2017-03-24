@@ -11,7 +11,7 @@ namespace mesh_builder {
     public:
         TexturePostProcessor(RGBImage* img);
         void ApplyTriangle(glm::vec3 &va, glm::vec3 &vb, glm::vec3 &vc,
-                           glm::vec2 &ta, glm::vec2 &tb, glm::vec2 &tc, RGBImage* texture,
+                           glm::vec2 ta, glm::vec2 tb, glm::vec2 tc, RGBImage* texture,
                            glm::mat4 world2uv, Tango3DR_CameraCalibration calib);
 
     private:

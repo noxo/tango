@@ -18,10 +18,36 @@ namespace mesh_builder {
     }
 
     void TexturePostProcessor::ApplyTriangle(glm::vec3 &va, glm::vec3 &vb, glm::vec3 &vc,
-                                             glm::vec2 &ta, glm::vec2 &tb, glm::vec2 &tc,
+                                             glm::vec2 ta, glm::vec2 tb, glm::vec2 tc,
                                              RGBImage* texture, glm::mat4 world2uv,
-                                             Tango3DR_CameraCalibration calib) {
-        //TODO:implement
+                                             Tango3DR_CameraCalibration calibration) {
+        //unwrap coordinates
+        glm::vec2 a, b, c;
+        glm::vec4 vertex;
+        vertex = glm::vec4(va, 1.0f);
+        Math::convert2uv(vertex, world2uv, calibration);
+        a = glm::vec2(vertex.x, vertex.y);
+        a.x = (a.x + 1.0f) * 0.5f * (float)(viewport_width - 1);
+        a.y = (a.y + 1.0f) * 0.5f * (float)(viewport_height - 1);
+        vertex = glm::vec4(vb, 1.0f);
+        Math::convert2uv(vertex, world2uv, calibration);
+        b = glm::vec2(vertex.x, vertex.y);
+        b.x = (b.x + 1.0f) * 0.5f * (float)(viewport_width - 1);
+        b.y = (b.y + 1.0f) * 0.5f * (float)(viewport_height - 1);
+        vertex = glm::vec4(vc, 1.0f);
+        Math::convert2uv(vertex, world2uv, calibration);
+        c = glm::vec2(vertex.x, vertex.y);
+        c.x = (c.x + 1.0f) * 0.5f * (float)(viewport_width - 1);
+        c.y = (c.y + 1.0f) * 0.5f * (float)(viewport_height - 1);
+        //frame coordinate
+        ta.x *= texture->GetWidth() - 1;
+        ta.y *= texture->GetHeight() - 1;
+        tb.x *= texture->GetWidth() - 1;
+        tb.y *= texture->GetHeight() - 1;
+        tc.x *= texture->GetWidth() - 1;
+        tc.y *= texture->GetHeight() - 1;
+        //render
+        Triangle(a, b, c, ta, tb, tc);
     }
 
     bool TexturePostProcessor::Line(int x1, int y1, int x2, int y2, glm::vec2 z1, glm::vec2 z2,

@@ -18,11 +18,13 @@ namespace mesh_builder {
         int GetWidth() { return width; }
         int GetHeight() { return height; }
         unsigned char* GetData() { return data; }
+        std::string GetName() { return name; }
 
     private:
         int width;
         int height;
         unsigned char* data;
+        std::string name;
     };
 } // namespace mesh_builder
 

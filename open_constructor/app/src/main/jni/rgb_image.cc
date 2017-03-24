@@ -14,6 +14,7 @@ namespace mesh_builder {
         width = 1;
         height = 1;
         data = new unsigned char[3];
+        name = "";
     }
 
     RGBImage::RGBImage(Tango3DR_ImageBuffer t3dr_image, int scale) {
@@ -48,6 +49,7 @@ namespace mesh_builder {
         }
         width = t3dr_image.width / scale;
         height = t3dr_image.height / scale;
+        name = "photo";
     }
 
     RGBImage::RGBImage(std::string file) {
@@ -77,12 +79,14 @@ namespace mesh_builder {
 
         png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
         fclose(temp);
+        name = file;
     }
 
     RGBImage::RGBImage(int w, int h, double *buffer) {
         width = w;
         height = h;
         data = new unsigned char[w * h * 3];
+        name = "buffer";
         int index = 0;
         for(int y = h - 1; y >= 0; y--) {
             for(int x = 0; x < w; x++) {
