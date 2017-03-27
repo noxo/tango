@@ -27,27 +27,33 @@ namespace mesh_builder {
         vertex = glm::vec4(va, 1.0f);
         Math::convert2uv(vertex, world2uv, calibration);
         a = glm::vec2(vertex.x, vertex.y);
-        a.x = (a.x + 1.0f) * 0.5f * (float)(viewport_width - 1);
-        a.y = (a.y + 1.0f) * 0.5f * (float)(viewport_height - 1);
+        a.y = 1.0f - a.y;
+        a.x *= texture->GetWidth()  - 1;
+        a.y *= texture->GetHeight() - 1;
         vertex = glm::vec4(vb, 1.0f);
         Math::convert2uv(vertex, world2uv, calibration);
         b = glm::vec2(vertex.x, vertex.y);
-        b.x = (b.x + 1.0f) * 0.5f * (float)(viewport_width - 1);
-        b.y = (b.y + 1.0f) * 0.5f * (float)(viewport_height - 1);
+        b.y = 1.0f - b.y;
+        b.x *= texture->GetWidth()  - 1;
+        b.y *= texture->GetHeight() - 1;
         vertex = glm::vec4(vc, 1.0f);
         Math::convert2uv(vertex, world2uv, calibration);
         c = glm::vec2(vertex.x, vertex.y);
-        c.x = (c.x + 1.0f) * 0.5f * (float)(viewport_width - 1);
-        c.y = (c.y + 1.0f) * 0.5f * (float)(viewport_height - 1);
+        c.y = 1.0f - c.y;
+        c.x *= texture->GetWidth()  - 1;
+        c.y *= texture->GetHeight() - 1;
         //frame coordinate
-        ta.x *= texture->GetWidth() - 1;
-        ta.y *= texture->GetHeight() - 1;
-        tb.x *= texture->GetWidth() - 1;
-        tb.y *= texture->GetHeight() - 1;
-        tc.x *= texture->GetWidth() - 1;
-        tc.y *= texture->GetHeight() - 1;
+        ta.y = 1.0f - ta.y;
+        tb.y = 1.0f - tb.y;
+        tc.y = 1.0f - tc.y;
+        ta.x *= viewport_width - 1;
+        ta.y *= viewport_height - 1;
+        tb.x *= viewport_width - 1;
+        tb.y *= viewport_height - 1;
+        tc.x *= viewport_width - 1;
+        tc.y *= viewport_height - 1;
         //render
-        Triangle(a, b, c, ta, tb, tc);
+        Triangle(ta, tb, tc, a, b, c, texture);
     }
 
     bool TexturePostProcessor::Line(int x1, int y1, int x2, int y2, glm::vec2 z1, glm::vec2 z2,
@@ -178,7 +184,7 @@ namespace mesh_builder {
 
 
     void TexturePostProcessor::Triangle(glm::vec2 &a, glm::vec2 &b, glm::vec2 &c,
-                                        glm::vec2 &ta, glm::vec2 &tb, glm::vec2 &tc) {
+                                        glm::vec2 &ta, glm::vec2 &tb, glm::vec2 &tc, RGBImage* frame) {
 
         //create markers for filling
         int min, max;

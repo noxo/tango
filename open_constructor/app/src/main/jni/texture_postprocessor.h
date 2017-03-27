@@ -19,10 +19,9 @@ namespace mesh_builder {
                   std::pair<int, glm::vec2>* fillCache);
         bool Test(double p, double q, double &t1, double &t2);
         void Triangle(glm::vec2 &a, glm::vec2 &b, glm::vec2 &c,
-                      glm::vec2 &ta, glm::vec2 &tb, glm::vec2 &tc);
+                      glm::vec2 &ta, glm::vec2 &tb, glm::vec2 &tc, RGBImage* frame);
 
         unsigned char* buffer;
-        RGBImage* frame;
         int viewport_width, viewport_height;
     };
 } // namespace mesh_builder

@@ -93,7 +93,6 @@ namespace mesh_builder {
 
         std::string dataset_;
         std::vector<glm::mat4> poses_;
-        std::vector<long> timestamps_;
 
         bool gyro;
         bool landscape;

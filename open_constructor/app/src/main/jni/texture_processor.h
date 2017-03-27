@@ -14,10 +14,11 @@ namespace mesh_builder {
         ~TextureProcessor();
 
         void Add(std::map<int, std::string> files);
-        RGBImage* GetTexture(int index) { return images[index]; }
-        unsigned int TextureCount() { images.size(); }
+        RGBImage* GetTexture(unsigned int index);
+        unsigned int TextureCount();
         std::vector<unsigned int> TextureMap();
         bool UpdateGL();
+        void UpdateTexture(int index);
 
     private:
         std::vector<RGBImage*> images;

@@ -148,7 +148,6 @@ namespace mesh_builder {
             ss << ".png";
             frame.Write(ss.str().c_str());
             poses_.push_back(image_matrix);
-            timestamps_.push_back(t3dr_image.timestamp);
         }
 
         MeshUpdate(t3dr_image, t3dr_updated);
@@ -436,8 +435,6 @@ namespace mesh_builder {
         render_mutex_.lock();
         Tango3DR_clear(t3dr_context_);
         meshes_.clear();
-        poses_.clear();
-        timestamps_.clear();
         main_scene_.ClearDynamicMeshes();
         render_mutex_.unlock();
         binder_mutex_.unlock();
@@ -583,6 +580,86 @@ namespace mesh_builder {
     }
 
     void MeshBuilderApp::Texturize() {
-        //TODO:implement
+        //prepare
+        std::vector<glm::mat4> inverse;
+        for (unsigned int j = 0; j < poses_.size(); j++) {
+            inverse.push_back(glm::inverse(poses_[j]));
+        }
+        //analyze
+        float nearestDst;
+        int nearestIndex;
+        glm::vec3 a, b, c, d, p;
+        glm::vec4 vertex;
+        std::vector<std::vector<int> > bestPose;
+        for (unsigned int m = 0; m < main_scene_.static_meshes_.size(); m++) {
+             std::vector<int> result;
+             for (unsigned int k = 0; k < main_scene_.static_meshes_[m].vertices.size() / 3; k++) {
+                  a = main_scene_.static_meshes_[m].vertices[k * 3 + 0];
+                  b = main_scene_.static_meshes_[m].vertices[k * 3 + 1];
+                  c = main_scene_.static_meshes_[m].vertices[k * 3 + 2];
+                  nearestDst = INT_MAX;
+                  nearestIndex = 0;
+                  for (unsigned int j = 0; j < poses_.size(); j++) {
+                      //the first point inside pose frame
+                      vertex = glm::vec4(a, 1.0f);
+                      Math::convert2uv(vertex, inverse[j], t3dr_intrinsics_);
+                      if ((vertex.x < 0.0) || (vertex.x >= 1.0))
+                          continue;
+                      if ((vertex.y < 0.0) || (vertex.y >= 1.0))
+                          continue;
+                      //the second point inside pose frame
+                      vertex = glm::vec4(b, 1.0f);
+                      Math::convert2uv(vertex, inverse[j], t3dr_intrinsics_);
+                      if ((vertex.x < 0.0) || (vertex.x >= 1.0))
+                          continue;
+                      if ((vertex.y < 0.0) || (vertex.y >= 1.0))
+                          continue;
+                      //the third point inside pose frame
+                      vertex = glm::vec4(c, 1.0f);
+                      Math::convert2uv(vertex, inverse[j], t3dr_intrinsics_);
+                      if ((vertex.x < 0.0) || (vertex.x >= 1.0))
+                          continue;
+                      if ((vertex.y < 0.0) || (vertex.y >= 1.0))
+                          continue;
+                      //get the closest
+                      p = glm::vec3(poses_[j][3][0], poses_[j][3][1], poses_[j][3][2]);
+                      d = glm::abs(p - a) + glm::abs(p - b) + glm::abs(p - c);
+                      if (nearestDst > d.x + d.y + d.z) {
+                          nearestDst = d.x + d.y + d.z;
+                          nearestIndex = j;
+                      }
+                  }
+                  result.push_back(nearestIndex);
+             }
+             bestPose.push_back(result);
+        }
+        //apply
+        for (unsigned int i = 0; i < textureProcessor->TextureCount(); i++) {
+            RGBImage* img = textureProcessor->GetTexture(i);
+            TexturePostProcessor tpp(img);
+            for (unsigned int j = 0; j < poses_.size(); j++) {
+                std::ostringstream ss;
+                ss << dataset_.c_str();
+                ss << "/";
+                ss << j;
+                ss << ".png";
+                RGBImage frame(ss.str().c_str());
+                for (unsigned int m = 0; m < main_scene_.static_meshes_.size(); m++) {
+                    for (unsigned int k = 0; k < main_scene_.static_meshes_[m].vertices.size() / 3; k++) {
+                        if (bestPose[m][k] != j)
+                            continue;
+                        tpp.ApplyTriangle(main_scene_.static_meshes_[m].vertices[k * 3 + 0],
+                                          main_scene_.static_meshes_[m].vertices[k * 3 + 1],
+                                          main_scene_.static_meshes_[m].vertices[k * 3 + 2],
+                                          main_scene_.static_meshes_[m].uv[k * 3 + 0],
+                                          main_scene_.static_meshes_[m].uv[k * 3 + 1],
+                                          main_scene_.static_meshes_[m].uv[k * 3 + 2],
+                                          &frame, inverse[j], t3dr_intrinsics_);
+                    }
+                }
+                textureProcessor->UpdateTexture(i);
+            }
+            img->Write(img->GetName().c_str());
+        }
     }
 }  // namespace mesh_builder

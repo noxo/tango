@@ -39,6 +39,20 @@ namespace mesh_builder {
         }
     }
 
+    RGBImage* TextureProcessor::GetTexture(unsigned int index) {
+        mutex.lock();
+        RGBImage* output = images[index];
+        mutex.unlock();
+        return output;
+    }
+
+    unsigned int TextureProcessor::TextureCount() {
+        mutex.lock();
+        unsigned int output = images.size();
+        mutex.unlock();
+        return output;
+    }
+
     std::vector<unsigned int> TextureProcessor::TextureMap() {
         mutex.lock();
         std::vector<unsigned int> output = textureMap;
@@ -67,5 +81,11 @@ namespace mesh_builder {
         toLoad.clear();
         mutex.unlock();
         return updated;
+    }
+
+    void TextureProcessor::UpdateTexture(int index) {
+        mutex.lock();
+        toLoad[index] = true;
+        mutex.unlock();
     }
 }
