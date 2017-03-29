@@ -663,8 +663,9 @@ namespace mesh_builder {
                                           &frame, inverse[j], t3dr_intrinsics_);
                     }
                 }
-                textureProcessor->UpdateTexture(i);
             }
+            tpp.Merge();
+            textureProcessor->UpdateTexture(i);
             img->Write(img->GetName().c_str());
         }
     }

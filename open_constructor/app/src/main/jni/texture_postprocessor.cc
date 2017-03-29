@@ -4,18 +4,11 @@
 std::vector<std::pair<int, glm::vec2> > fillCache1;
 std::vector<std::pair<int, glm::vec2> > fillCache2;
 
-
-bool comparator(const glm::ivec3& a, const glm::ivec3& b)
-{
-    return 4 * (a.x - b.x) + 2 * (a.y - b.y) + 2 * (a.z - b.z);
-}
-
 namespace mesh_builder {
 
     TexturePostProcessor::TexturePostProcessor(RGBImage* img) {
-        analyze = false;
-        analyzePose = -1;
         buffer = img->GetData();
+        render = new unsigned char[img->GetWidth() * img->GetHeight() * 3];
         viewport_width = img->GetWidth();
         viewport_height = img->GetHeight();
 
@@ -23,6 +16,12 @@ namespace mesh_builder {
             fillCache1.resize((unsigned long) (viewport_height + 1));
         if (fillCache2.empty())
             fillCache2.resize((unsigned long) (viewport_height + 1));
+        for (int i = 0; i < img->GetWidth() * img->GetHeight() * 3; i++)
+            render[i] = 0;
+    }
+
+    TexturePostProcessor::~TexturePostProcessor() {
+        delete[] render;
     }
 
     void TexturePostProcessor::ApplyTriangle(glm::vec3 &va, glm::vec3 &vb, glm::vec3 &vc,
@@ -62,6 +61,22 @@ namespace mesh_builder {
         tc.y *= viewport_height - 1;
         //render
         Triangle(ta, tb, tc, a, b, c, texture);
+    }
+
+    void TexturePostProcessor::Merge() {
+        for (int i = 0; i < viewport_width * viewport_height * 3; i += 3) {
+            if ((render[i + 0] == 0) || (render[i + 1] == 0) || (render[i + 2] == 0))
+                continue;
+            if (abs(buffer[i + 0] - render[i + 0]) > 64)
+                continue;
+            if (abs(buffer[i + 1] - render[i + 1]) > 64)
+                continue;
+            if (abs(buffer[i + 2] - render[i + 2]) > 64)
+                continue;
+            buffer[i + 0] = buffer[i + 0] * 0.5f + render[i + 0] * 0.5f;
+            buffer[i + 1] = buffer[i + 1] * 0.5f + render[i + 1] * 0.5f;
+            buffer[i + 2] = buffer[i + 2] * 0.5f + render[i + 2] * 0.5f;
+        }
     }
 
     bool TexturePostProcessor::Line(int x1, int y1, int x2, int y2, glm::vec2 z1, glm::vec2 z2,
@@ -220,154 +235,65 @@ namespace mesh_builder {
         }
 
         //fill triangle
-        int memy = min * viewport_width;
-        for (int y = min; y <= max; y++) {
-            int x1 = fillCache1[y].first;
-            int x2 = fillCache2[y].first;
-            glm::vec2 z1 = fillCache1[y].second;
-            glm::vec2 z2 = fillCache2[y].second;
+        glm::dvec3 average = glm::dvec3(0, 0, 0);
+        int count = 0;
+        glm::ivec3 diff;
+        for (int pass = 0; pass < 2; pass++) {
+            int memy = min * viewport_width;
+            for (int y = min; y <= max; y++) {
+                int x1 = fillCache1[y].first;
+                int x2 = fillCache2[y].first;
+                glm::vec2 z1 = fillCache1[y].second;
+                glm::vec2 z2 = fillCache2[y].second;
 
-            //Liang & Barsky clipping
-            double t1 = 0;
-            double t2 = 1;
-            int x = x2 - x1;
-            if (Test(-x, x1, t1, t2) && Test(x, viewport_width - 1 - x1, t1, t2)) {
+                //Liang & Barsky clipping
+                double t1 = 0;
+                double t2 = 1;
+                int x = x2 - x1;
+                if (Test(-x, x1, t1, t2) && Test(x, viewport_width - 1 - x1, t1, t2)) {
 
-                //clip line
-                glm::vec2 z = z2 - z1;
-                if (t1 > 0) {
-                    x1 += t1 * x;
-                    z1 += (float)t1 * z;
-                } else
-                    t1 = 0;
-                if (t2 < 1) {
-                    t2 -= t1;
-                    x2 = (int) (x1 + t2 * x);
-                    z2 = (float)t2 * z + z1;
-                }
+                    //clip line
+                    glm::vec2 z = z2 - z1;
+                    if (t1 > 0) {
+                        x1 += t1 * x;
+                        z1 += (float)t1 * z;
+                    } else
+                        t1 = 0;
+                    if (t2 < 1) {
+                        t2 -= t1;
+                        x2 = (int) (x1 + t2 * x);
+                        z2 = (float)t2 * z + z1;
+                    }
 
-                //filling algorithm
-                x = glm::abs(x2 - x1);
-                int step = (x2 >= x1) ? 3 : -3;
-                z = (z2 - z1) / (float)x;
-                int mem = (x1 + memy) * 3;
-                int itx, ity;
-                glm::ivec3 color;
-                for (; x >= 0; x--) {
-                    if ((z1.x >= 0) && (z1.x < frame->GetWidth()))
-                        if ((z1.y >= 0) && (z1.y < frame->GetHeight())) {
-                            if (analyze) {
-                                color = glm::ivec3(buffer[mem + 0], buffer[mem + 1], buffer[mem + 2]);
-                                color = RGB2HSV(color);
-                                color -= frame->GetValue(z1);
-                                while (color.x < -180)
-                                    color.x += 360;
-                                while (color.x > 180)
-                                    color.x -= 360;
-                                diff[analyzePose].push_back(color);
-                            } else {
-                                color = frame->GetValue(z1);
-                                color = RGB2HSV(color);
-                                //TODO:color correction
-                                color = HSV2RGB(color);
-                                buffer[mem + 0] = color.r;
-                                buffer[mem + 1] = color.g;
-                                buffer[mem + 2] = color.b;
+                    //filling algorithm
+                    x = glm::abs(x2 - x1);
+                    int step = (x2 >= x1) ? 3 : -3;
+                    z = (z2 - z1) / (float)x;
+                    int mem = (x1 + memy) * 3;
+                    int itx, ity;
+                    glm::ivec3 color;
+                    for (; x >= 0; x--) {
+                        if ((z1.x >= 0) && (z1.x < frame->GetWidth()))
+                            if ((z1.y >= 0) && (z1.y < frame->GetHeight())) {
+                                if (pass == 0) {
+                                     color = glm::ivec3(buffer[mem + 0], buffer[mem + 1], buffer[mem + 2]);
+                                     color -= glm::ivec3(frame->GetValue(z1));
+                                     count++;
+                                     average += glm::dvec3(color);
+                                } else {
+                                    color = glm::ivec3(frame->GetValue(z1)) + diff;
+                                    render[mem + 0] = color.r;
+                                    render[mem + 1] = color.g;
+                                    render[mem + 2] = color.b;
+                                }
                             }
-                        }
-                    mem += step;
-                    z1 += z;
+                        mem += step;
+                        z1 += z;
+                    }
                 }
+                memy += viewport_width;
             }
-            memy += viewport_width;
-        }
-    }
-
-    glm::ivec3 TexturePostProcessor::HSV2RGB(glm::ivec3 hsv)
-    {
-        //gray-scale
-        glm::ivec3 rgb;
-        if (hsv.y == 0) {
-            rgb.r = hsv.z;
-            rgb.g = hsv.z;
-            rgb.b = hsv.z;
-            return rgb;
-        }
-
-        //get parameters
-        unsigned char region, remainder, p, q, t;
-        region = hsv.x / 43;
-        remainder = (hsv.x - (region * 43)) * 6;
-        p = (hsv.z * (255 - hsv.y)) >> 8;
-        q = (hsv.z * (255 - ((hsv.y * remainder) >> 8))) >> 8;
-        t = (hsv.z * (255 - ((hsv.y * (255 - remainder)) >> 8))) >> 8;
-
-        //all cases
-        switch (region) {
-        case 0:
-            rgb.r = hsv.z; rgb.g = t; rgb.b = p;
-            break;
-        case 1:
-            rgb.r = q; rgb.g = hsv.z; rgb.b = p;
-            break;
-        case 2:
-            rgb.r = p; rgb.g = hsv.z; rgb.b = t;
-            break;
-        case 3:
-            rgb.r = p; rgb.g = q; rgb.b = hsv.z;
-            break;
-        case 4:
-            rgb.r = t; rgb.g = p; rgb.b = hsv.z;
-            break;
-        default:
-            rgb.r = hsv.z; rgb.g = p; rgb.b = q;
-            break;
-        }
-        return rgb;
-    }
-
-    glm::ivec3 TexturePostProcessor::RGB2HSV(glm::ivec3 rgb)
-    {
-        //find extremes
-        unsigned char rgbMin, rgbMax;
-        rgbMin = rgb.r < rgb.g ? (rgb.r < rgb.b ? rgb.r : rgb.b) : (rgb.g < rgb.b ? rgb.g : rgb.b);
-        rgbMax = rgb.r > rgb.g ? (rgb.r > rgb.b ? rgb.r : rgb.b) : (rgb.g > rgb.b ? rgb.g : rgb.b);
-
-        //get value
-        glm::ivec3 hsv;
-        hsv.z = rgbMax;
-        if (hsv.z == 0) {
-            hsv.x = 0;
-            hsv.y = 0;
-            return hsv;
-        }
-
-        //get saturation
-        hsv.y = 255 * long(rgbMax - rgbMin) / hsv.z;
-        if (hsv.y == 0) {
-            hsv.x = 0;
-            return hsv;
-        }
-
-        //get hue
-        if (rgbMax == rgb.r)
-            hsv.x = 0 + 43 * (rgb.g - rgb.b) / (rgbMax - rgbMin);
-        else if (rgbMax == rgb.g)
-            hsv.x = 85 + 43 * (rgb.b - rgb.r) / (rgbMax - rgbMin);
-        else
-            hsv.x = 171 + 43 * (rgb.r - rgb.g) / (rgbMax - rgbMin);
-        return hsv;
-    }
-
-    void TexturePostProcessor::SetAnalyze(bool on, int pose) {
-        if (on) {
-            analyze = true;
-            analyzePose = pose;
-            diff[pose] = std::vector<glm::ivec3>();
-        } else {
-            analyze = false;
-            analyzePose = diff[pose].size() / 2;
-            std::sort(diff[pose].begin(), diff[pose].end(), comparator);
+            diff = glm::ivec3(average / (double)count);
         }
     }
 }
