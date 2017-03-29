@@ -4,9 +4,17 @@
 std::vector<std::pair<int, glm::vec2> > fillCache1;
 std::vector<std::pair<int, glm::vec2> > fillCache2;
 
+
+bool comparator(const glm::ivec3& a, const glm::ivec3& b)
+{
+    return 4 * (a.x - b.x) + 2 * (a.y - b.y) + 2 * (a.z - b.z);
+}
+
 namespace mesh_builder {
 
     TexturePostProcessor::TexturePostProcessor(RGBImage* img) {
+        analyze = false;
+        analyzePose = -1;
         buffer = img->GetData();
         viewport_width = img->GetWidth();
         viewport_height = img->GetHeight();
@@ -247,17 +255,119 @@ namespace mesh_builder {
                 glm::ivec3 color;
                 for (; x >= 0; x--) {
                     if ((z1.x >= 0) && (z1.x < frame->GetWidth()))
-                      if ((z1.y >= 0) && (z1.y < frame->GetHeight())) {
-                        color = frame->GetValue(z1);
-                        buffer[mem + 0] = color.r;
-                        buffer[mem + 1] = color.g;
-                        buffer[mem + 2] = color.b;
-                      }
+                        if ((z1.y >= 0) && (z1.y < frame->GetHeight())) {
+                            if (analyze) {
+                                color = glm::ivec3(buffer[mem + 0], buffer[mem + 1], buffer[mem + 2]);
+                                color = RGB2HSV(color);
+                                color -= frame->GetValue(z1);
+                                while (color.x < -180)
+                                    color.x += 360;
+                                while (color.x > 180)
+                                    color.x -= 360;
+                                diff[analyzePose].push_back(color);
+                            } else {
+                                color = frame->GetValue(z1);
+                                color = RGB2HSV(color);
+                                //TODO:color correction
+                                color = HSV2RGB(color);
+                                buffer[mem + 0] = color.r;
+                                buffer[mem + 1] = color.g;
+                                buffer[mem + 2] = color.b;
+                            }
+                        }
                     mem += step;
                     z1 += z;
                 }
             }
             memy += viewport_width;
+        }
+    }
+
+    glm::ivec3 TexturePostProcessor::HSV2RGB(glm::ivec3 hsv)
+    {
+        //gray-scale
+        glm::ivec3 rgb;
+        if (hsv.y == 0) {
+            rgb.r = hsv.z;
+            rgb.g = hsv.z;
+            rgb.b = hsv.z;
+            return rgb;
+        }
+
+        //get parameters
+        unsigned char region, remainder, p, q, t;
+        region = hsv.x / 43;
+        remainder = (hsv.x - (region * 43)) * 6;
+        p = (hsv.z * (255 - hsv.y)) >> 8;
+        q = (hsv.z * (255 - ((hsv.y * remainder) >> 8))) >> 8;
+        t = (hsv.z * (255 - ((hsv.y * (255 - remainder)) >> 8))) >> 8;
+
+        //all cases
+        switch (region) {
+        case 0:
+            rgb.r = hsv.z; rgb.g = t; rgb.b = p;
+            break;
+        case 1:
+            rgb.r = q; rgb.g = hsv.z; rgb.b = p;
+            break;
+        case 2:
+            rgb.r = p; rgb.g = hsv.z; rgb.b = t;
+            break;
+        case 3:
+            rgb.r = p; rgb.g = q; rgb.b = hsv.z;
+            break;
+        case 4:
+            rgb.r = t; rgb.g = p; rgb.b = hsv.z;
+            break;
+        default:
+            rgb.r = hsv.z; rgb.g = p; rgb.b = q;
+            break;
+        }
+        return rgb;
+    }
+
+    glm::ivec3 TexturePostProcessor::RGB2HSV(glm::ivec3 rgb)
+    {
+        //find extremes
+        unsigned char rgbMin, rgbMax;
+        rgbMin = rgb.r < rgb.g ? (rgb.r < rgb.b ? rgb.r : rgb.b) : (rgb.g < rgb.b ? rgb.g : rgb.b);
+        rgbMax = rgb.r > rgb.g ? (rgb.r > rgb.b ? rgb.r : rgb.b) : (rgb.g > rgb.b ? rgb.g : rgb.b);
+
+        //get value
+        glm::ivec3 hsv;
+        hsv.z = rgbMax;
+        if (hsv.z == 0) {
+            hsv.x = 0;
+            hsv.y = 0;
+            return hsv;
+        }
+
+        //get saturation
+        hsv.y = 255 * long(rgbMax - rgbMin) / hsv.z;
+        if (hsv.y == 0) {
+            hsv.x = 0;
+            return hsv;
+        }
+
+        //get hue
+        if (rgbMax == rgb.r)
+            hsv.x = 0 + 43 * (rgb.g - rgb.b) / (rgbMax - rgbMin);
+        else if (rgbMax == rgb.g)
+            hsv.x = 85 + 43 * (rgb.b - rgb.r) / (rgbMax - rgbMin);
+        else
+            hsv.x = 171 + 43 * (rgb.r - rgb.g) / (rgbMax - rgbMin);
+        return hsv;
+    }
+
+    void TexturePostProcessor::SetAnalyze(bool on, int pose) {
+        if (on) {
+            analyze = true;
+            analyzePose = pose;
+            diff[pose] = std::vector<glm::ivec3>();
+        } else {
+            analyze = false;
+            analyzePose = diff[pose].size() / 2;
+            std::sort(diff[pose].begin(), diff[pose].end(), comparator);
         }
     }
 }
