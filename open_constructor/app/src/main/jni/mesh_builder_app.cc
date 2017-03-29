@@ -598,7 +598,7 @@ namespace mesh_builder {
                   b = main_scene_.static_meshes_[m].vertices[k * 3 + 1];
                   c = main_scene_.static_meshes_[m].vertices[k * 3 + 2];
                   nearestDst = INT_MAX;
-                  nearestIndex = 0;
+                  nearestIndex = -1;
                   for (unsigned int j = 0; j < poses_.size(); j++) {
                       //the first point inside pose frame
                       vertex = glm::vec4(a, 1.0f);
@@ -607,6 +607,8 @@ namespace mesh_builder {
                           continue;
                       if ((vertex.y < 0.0) || (vertex.y >= 1.0))
                           continue;
+                      if (vertex.z < 0.0)
+                          continue;
                       //the second point inside pose frame
                       vertex = glm::vec4(b, 1.0f);
                       Math::convert2uv(vertex, inverse[j], t3dr_intrinsics_);
@@ -614,12 +616,16 @@ namespace mesh_builder {
                           continue;
                       if ((vertex.y < 0.0) || (vertex.y >= 1.0))
                           continue;
+                      if (vertex.z < 0.0)
+                          continue;
                       //the third point inside pose frame
                       vertex = glm::vec4(c, 1.0f);
                       Math::convert2uv(vertex, inverse[j], t3dr_intrinsics_);
                       if ((vertex.x < 0.0) || (vertex.x >= 1.0))
                           continue;
                       if ((vertex.y < 0.0) || (vertex.y >= 1.0))
+                          continue;
+                      if (vertex.z < 0.0)
                           continue;
                       //get the closest
                       p = glm::vec3(poses_[j][3][0], poses_[j][3][1], poses_[j][3][2]);
