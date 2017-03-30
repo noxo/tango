@@ -585,13 +585,13 @@ namespace mesh_builder {
         for (unsigned int j = 0; j < poses_.size(); j++) {
             inverse.push_back(glm::inverse(poses_[j]));
         }
-        //analyze
+
+        //analyze poses
         float nearestDst;
         int nearestIndex;
         glm::vec3 a, b, c, d, p;
         glm::vec4 vertex;
         std::vector<std::vector<int> > bestPose;
-        std::map<std::string, std::vector<glm::ivec3> > vertices;
         for (unsigned int m = 0; m < main_scene_.static_meshes_.size(); m++) {
              std::vector<int> result;
              for (unsigned int k = 0; k < main_scene_.static_meshes_[m].vertices.size() / 3; k++) {
@@ -640,7 +640,9 @@ namespace mesh_builder {
              }
              bestPose.push_back(result);
         }
-        //apply
+
+        //render frames
+        std::map<std::string, std::vector<glm::ivec3> > vertices;
         for (unsigned int i = 0; i < textureProcessor->TextureCount(); i++) {
             RGBImage* img = textureProcessor->GetTexture(i);
             TexturePostProcessor tpp(img);
@@ -655,6 +657,8 @@ namespace mesh_builder {
                     for (unsigned int k = 0; k < main_scene_.static_meshes_[m].vertices.size() / 3; k++) {
                         if (bestPose[m][k] != j)
                             continue;
+                        if (main_scene_.static_meshes_[m].texture != i)
+                            continue;
                         tpp.ApplyTriangle(main_scene_.static_meshes_[m].vertices[k * 3 + 0],
                                           main_scene_.static_meshes_[m].vertices[k * 3 + 1],
                                           main_scene_.static_meshes_[m].vertices[k * 3 + 2],
@@ -666,18 +670,43 @@ namespace mesh_builder {
                 }
             }
             tpp.Merge();
-            textureProcessor->UpdateTexture(i);
-            img->Write(img->GetName().c_str());
         }
+
         //analyze vertex colors for blending
         std::map<std::string, std::vector<glm::ivec3> >::iterator it;
         for (it = vertices.begin(); it != vertices.end(); ++it ) {
-            glm::ivec3 average;
+            glm::vec3 average = glm::vec3(0, 0, 0);
             for (glm::ivec3 &c : it->second)
                 average += c;
-            average /= it->second.size();
-            for (glm::ivec3 &c : it->second)
-                c -= average;
+            average /= (float)it->second.size();
+            for (unsigned int i = 0; i < it->second.size(); i++)
+                it->second[i] -= average;
+        }
+
+        //apply color blending
+        for (unsigned int i = 0; i < textureProcessor->TextureCount(); i++) {
+            RGBImage* img = textureProcessor->GetTexture(i);
+            TexturePostProcessor tpp(img);
+            for (unsigned int j = 0; j < poses_.size(); j++) {
+                for (unsigned int m = 0; m < main_scene_.static_meshes_.size(); m++) {
+                    for (unsigned int k = 0; k < main_scene_.static_meshes_[m].vertices.size() / 3; k++) {
+                        if (bestPose[m][k] != j)
+                            continue;
+                        if (main_scene_.static_meshes_[m].texture != i)
+                            continue;
+                        tpp.FixTriangle(main_scene_.static_meshes_[m].vertices[k * 3 + 0],
+                                        main_scene_.static_meshes_[m].vertices[k * 3 + 1],
+                                        main_scene_.static_meshes_[m].vertices[k * 3 + 2],
+                                        main_scene_.static_meshes_[m].uv[k * 3 + 0],
+                                        main_scene_.static_meshes_[m].uv[k * 3 + 1],
+                                        main_scene_.static_meshes_[m].uv[k * 3 + 2],
+                                        vertices);
+                    }
+                }
+            }
+            tpp.Merge();
+            textureProcessor->UpdateTexture(i);
+            img->Write(img->GetName().c_str());
         }
     }
 }  // namespace mesh_builder

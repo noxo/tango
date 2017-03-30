@@ -50,6 +50,7 @@ namespace mesh_builder {
         c.y = 1.0f - c.y;
         c.x *= texture->GetWidth()  - 1;
         c.y *= texture->GetHeight() - 1;
+
         //frame coordinates
         ta.y = 1.0f - ta.y;
         tb.y = 1.0f - tb.y;
@@ -60,34 +61,54 @@ namespace mesh_builder {
         tb.y *= viewport_height - 1;
         tc.x *= viewport_width - 1;
         tc.y *= viewport_height - 1;
+
         //render
-        Triangle(ta, tb, tc, a, b, c, texture);
+        Triangle(ta, tb, tc, a, b, c, texture, true);
+
         //get vertex colors
-        if ((a.x < 0) || (a.x >= texture->GetWidth()))
-            return;
-        if ((a.y < 0) || (a.y >= texture->GetHeight()))
-            return;
-        if ((b.x < 0) || (b.x >= texture->GetWidth()))
-            return;
-        if ((b.y < 0) || (b.y >= texture->GetHeight()))
-            return;
-        if ((c.x < 0) || (c.x >= texture->GetWidth()))
-            return;
-        if ((c.y < 0) || (c.y >= texture->GetHeight()))
-            return;
         char buffer[1024];
-        sprintf(buffer, "%.3f,%.3f,%.3f", va.x, va.y, va.z);
+        sprintf(buffer, "%.2f,%.2f,%.2f", va.x, va.y, va.z);
         if (vertices.find(std::string(buffer)) == vertices.end())
             vertices[std::string(buffer)] = std::vector<glm::ivec3>();
-        vertices[std::string(buffer)].push_back(GetPixel(((int)a.y * viewport_width + (int)a.x) * 3));
-        sprintf(buffer, "%.3f,%.3f,%.3f", vb.x, vb.y, vb.z);
+        vertices[std::string(buffer)].push_back(GetPixel(((int)ta.y * viewport_width + (int)ta.x) * 3));
+        sprintf(buffer, "%.2f,%.2f,%.2f", vb.x, vb.y, vb.z);
         if (vertices.find(std::string(buffer)) == vertices.end())
             vertices[std::string(buffer)] = std::vector<glm::ivec3>();
-        vertices[std::string(buffer)].push_back(GetPixel(((int)b.y * viewport_width + (int)b.x) * 3));
-        sprintf(buffer, "%.3f,%.3f,%.3f", vc.x, vc.y, vc.z);
+        vertices[std::string(buffer)].push_back(GetPixel(((int)tb.y * viewport_width + (int)tb.x) * 3));
+        sprintf(buffer, "%.2f,%.2f,%.2f", vc.x, vc.y, vc.z);
         if (vertices.find(std::string(buffer)) == vertices.end())
             vertices[std::string(buffer)] = std::vector<glm::ivec3>();
-        vertices[std::string(buffer)].push_back(GetPixel(((int)c.y * viewport_width + (int)c.x) * 3));
+        vertices[std::string(buffer)].push_back(GetPixel(((int)tc.y * viewport_width + (int)tc.x) * 3));
+    }
+
+    void TexturePostProcessor::FixTriangle(glm::vec3 &va, glm::vec3 &vb, glm::vec3 &vc,
+                                           glm::vec2 ta, glm::vec2 tb, glm::vec2 tc,
+                                           std::map<std::string, std::vector<glm::ivec3> >& vertices) {
+        //get vertex blending
+        char buffer[1024];
+        sprintf(buffer, "%.2f,%.2f,%.2f", va.x, va.y, va.z);
+        glm::vec3 ca = glm::vec3(vertices[std::string(buffer)][0]);
+        vertices[std::string(buffer)].erase(vertices[std::string(buffer)].begin());
+        sprintf(buffer, "%.2f,%.2f,%.2f", vb.x, vb.y, vb.z);
+        glm::vec3 cb = glm::vec3(vertices[std::string(buffer)][0]);
+        vertices[std::string(buffer)].erase(vertices[std::string(buffer)].begin());
+        sprintf(buffer, "%.2f,%.2f,%.2f", vc.x, vc.y, vc.z);
+        glm::vec3 cc = glm::vec3(vertices[std::string(buffer)][0]);
+        vertices[std::string(buffer)].erase(vertices[std::string(buffer)].begin());
+
+        //frame coordinates
+        ta.y = 1.0f - ta.y;
+        tb.y = 1.0f - tb.y;
+        tc.y = 1.0f - tc.y;
+        ta.x *= viewport_width - 1;
+        ta.y *= viewport_height - 1;
+        tb.x *= viewport_width - 1;
+        tb.y *= viewport_height - 1;
+        tc.x *= viewport_width - 1;
+        tc.y *= viewport_height - 1;
+
+        //blending
+        Triangle(ta, tb, tc, ca, cb, cc, 0, false);
     }
 
     void TexturePostProcessor::Merge() {
@@ -241,7 +262,8 @@ namespace mesh_builder {
 
 
     void TexturePostProcessor::Triangle(glm::vec2 &a, glm::vec2 &b, glm::vec2 &c,
-                                        glm::vec3 &ta, glm::vec3 &tb, glm::vec3 &tc, RGBImage* frame) {
+                                        glm::vec3 &ta, glm::vec3 &tb, glm::vec3 &tc,
+                                        RGBImage* frame, bool renderMode) {
 
         //create markers for filling
         int min, max;
@@ -272,7 +294,7 @@ namespace mesh_builder {
         glm::dvec3 average = glm::dvec3(0, 0, 0);
         int count = 0;
         glm::ivec3 diff;
-        for (int pass = 0; pass < 2; pass++) {
+        for (int pass = 0; pass < (renderMode ? 2 : 1); pass++) {
             int memy = min * viewport_width;
             for (int y = min; y <= max; y++) {
                 int x1 = fillCache1[y].first;
@@ -307,19 +329,25 @@ namespace mesh_builder {
                     int itx, ity;
                     glm::ivec3 color;
                     for (; x >= 0; x--) {
-                        if ((z1.x >= 0) && (z1.x < frame->GetWidth()))
-                            if ((z1.y >= 0) && (z1.y < frame->GetHeight())) {
-                                if (pass == 0) {
-                                     color = glm::ivec3(buffer[mem + 0], buffer[mem + 1], buffer[mem + 2]);
-                                     color -= glm::ivec3(frame->GetValue(glm::vec2(z1.x, z1.y)));
-                                     count++;
-                                     average += glm::dvec3(color);
-                                } else {
-                                     color = glm::ivec3(frame->GetValue(glm::vec2(z1.x, z1.y))) + diff;
-                                     render[mem + 0] = color.r;
-                                     render[mem + 1] = color.g;
-                                     render[mem + 2] = color.b;
+                        if (renderMode) {
+                            if ((z1.x >= 0) && (z1.x < frame->GetWidth()))
+                                if ((z1.y >= 0) && (z1.y < frame->GetHeight())) {
+                                    if (pass == 0) {
+                                        color = glm::ivec3(buffer[mem + 0], buffer[mem + 1], buffer[mem + 2]);
+                                        color -= glm::ivec3(frame->GetValue(glm::vec2(z1.x, z1.y)));
+                                        count++;
+                                        average += glm::dvec3(color);
+                                    } else {
+                                        color = glm::ivec3(frame->GetValue(glm::vec2(z1.x, z1.y))) + diff;
+                                        render[mem + 0] = color.r;
+                                        render[mem + 1] = color.g;
+                                        render[mem + 2] = color.b;
+                                    }
                                 }
+                            } else {
+                                render[mem + 0] = glm::clamp((float)buffer[mem + 0] - z1.r, 0.0f, 255.0f);
+                                render[mem + 1] = glm::clamp((float)buffer[mem + 1] - z1.g, 0.0f, 255.0f);
+                                render[mem + 2] = glm::clamp((float)buffer[mem + 2] - z1.b, 0.0f, 255.0f);
                             }
                         mem += step;
                         z1 += z;
