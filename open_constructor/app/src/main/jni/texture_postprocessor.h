@@ -16,11 +16,12 @@ namespace mesh_builder {
                            glm::mat4 world2uv, Tango3DR_CameraCalibration calib);
         void Merge();
     private:
-        bool Line(int x1, int y1, int x2, int y2, glm::vec2 z1, glm::vec2 z2,
-                  std::pair<int, glm::vec2>* fillCache);
+        glm::ivec3 GetPixel(int mem);
+        bool Line(int x1, int y1, int x2, int y2, glm::vec3 z1, glm::vec3 z2,
+                  std::pair<int, glm::vec3>* fillCache);
         bool Test(double p, double q, double &t1, double &t2);
         void Triangle(glm::vec2 &a, glm::vec2 &b, glm::vec2 &c,
-                      glm::vec2 &ta, glm::vec2 &tb, glm::vec2 &tc, RGBImage* frame);
+                      glm::vec3 &ta, glm::vec3 &tb, glm::vec3 &tc, RGBImage* frame);
 
         unsigned char* buffer;
         unsigned char* render;

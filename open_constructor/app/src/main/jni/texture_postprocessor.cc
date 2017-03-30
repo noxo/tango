@@ -1,8 +1,8 @@
 #include "texture_postprocessor.h"
 #include <queue>
 
-std::vector<std::pair<int, glm::vec2> > fillCache1;
-std::vector<std::pair<int, glm::vec2> > fillCache2;
+std::vector<std::pair<int, glm::vec3> > fillCache1;
+std::vector<std::pair<int, glm::vec3> > fillCache2;
 
 namespace mesh_builder {
 
@@ -29,23 +29,23 @@ namespace mesh_builder {
                                              RGBImage* texture, glm::mat4 world2uv,
                                              Tango3DR_CameraCalibration calibration) {
         //unwrap coordinates
-        glm::vec2 a, b, c;
+        glm::vec3 a, b, c;
         glm::vec4 vertex;
         vertex = glm::vec4(va, 1.0f);
         Math::convert2uv(vertex, world2uv, calibration);
-        a = glm::vec2(vertex.x, vertex.y);
+        a = glm::vec3(vertex.x, vertex.y, 0.0f);
         a.y = 1.0f - a.y;
         a.x *= texture->GetWidth()  - 1;
         a.y *= texture->GetHeight() - 1;
         vertex = glm::vec4(vb, 1.0f);
         Math::convert2uv(vertex, world2uv, calibration);
-        b = glm::vec2(vertex.x, vertex.y);
+        b = glm::vec3(vertex.x, vertex.y, 0.0f);
         b.y = 1.0f - b.y;
         b.x *= texture->GetWidth()  - 1;
         b.y *= texture->GetHeight() - 1;
         vertex = glm::vec4(vc, 1.0f);
         Math::convert2uv(vertex, world2uv, calibration);
-        c = glm::vec2(vertex.x, vertex.y);
+        c = glm::vec3(vertex.x, vertex.y, 0.0f);
         c.y = 1.0f - c.y;
         c.x *= texture->GetWidth()  - 1;
         c.y *= texture->GetHeight() - 1;
@@ -64,29 +64,36 @@ namespace mesh_builder {
     }
 
     void TexturePostProcessor::Merge() {
+        glm::ivec3 color;
         for (int i = 0; i < viewport_width * viewport_height * 3; i += 3) {
-            if ((render[i + 0] == 0) || (render[i + 1] == 0) || (render[i + 2] == 0))
-                continue;
-            if (abs(buffer[i + 0] - render[i + 0]) > 64)
-                continue;
-            if (abs(buffer[i + 1] - render[i + 1]) > 64)
-                continue;
-            if (abs(buffer[i + 2] - render[i + 2]) > 64)
-                continue;
-            buffer[i + 0] = buffer[i + 0] * 0.5f + render[i + 0] * 0.5f;
-            buffer[i + 1] = buffer[i + 1] * 0.5f + render[i + 1] * 0.5f;
-            buffer[i + 2] = buffer[i + 2] * 0.5f + render[i + 2] * 0.5f;
+            color = GetPixel(i);
+            buffer[i + 0] = color.r;
+            buffer[i + 1] = color.g;
+            buffer[i + 2] = color.b;
         }
     }
 
-    bool TexturePostProcessor::Line(int x1, int y1, int x2, int y2, glm::vec2 z1, glm::vec2 z2,
-                             std::pair<int, glm::vec2>* fillCache) {
+    glm::ivec3 TexturePostProcessor::GetPixel(int mem) {
+        if ((render[mem + 0] == 0) || (render[mem + 1] == 0) || (render[mem + 2] == 0))
+            return glm::ivec3(buffer[mem + 0], buffer[mem + 1], buffer[mem + 2]);
+        else if (abs(buffer[mem + 0] - render[mem + 0]) > 64)
+            return glm::ivec3(buffer[mem + 0], buffer[mem + 1], buffer[mem + 2]);
+        else if (abs(buffer[mem + 1] - render[mem + 1]) > 64)
+            return glm::ivec3(buffer[mem + 0], buffer[mem + 1], buffer[mem + 2]);
+        else if (abs(buffer[mem + 2] - render[mem + 2]) > 64)
+            return glm::ivec3(buffer[mem + 0], buffer[mem + 1], buffer[mem + 2]);
+        else
+            return glm::ivec3(render[mem + 0], render[mem + 1], render[mem + 2]);
+    }
+
+    bool TexturePostProcessor::Line(int x1, int y1, int x2, int y2, glm::vec3 z1, glm::vec3 z2,
+                             std::pair<int, glm::vec3>* fillCache) {
 
         //Liang & Barsky clipping (only top-bottom)
         int h = y2 - y1;
         double t1 = 0, t2 = 1;
         if (Test(-h, y1, t1, t2) && Test(h, viewport_height - 1 - y1, t1, t2) ) {
-            glm::vec2 z;
+            glm::vec3 z;
             int c0, c1, xp0, xp1, yp0, yp1, y, p, w;
             bool wp, hp;
 
@@ -207,7 +214,7 @@ namespace mesh_builder {
 
 
     void TexturePostProcessor::Triangle(glm::vec2 &a, glm::vec2 &b, glm::vec2 &c,
-                                        glm::vec2 &ta, glm::vec2 &tb, glm::vec2 &tc, RGBImage* frame) {
+                                        glm::vec3 &ta, glm::vec3 &tb, glm::vec3 &tc, RGBImage* frame) {
 
         //create markers for filling
         int min, max;
@@ -243,8 +250,8 @@ namespace mesh_builder {
             for (int y = min; y <= max; y++) {
                 int x1 = fillCache1[y].first;
                 int x2 = fillCache2[y].first;
-                glm::vec2 z1 = fillCache1[y].second;
-                glm::vec2 z2 = fillCache2[y].second;
+                glm::vec3 z1 = fillCache1[y].second;
+                glm::vec3 z2 = fillCache2[y].second;
 
                 //Liang & Barsky clipping
                 double t1 = 0;
@@ -253,7 +260,7 @@ namespace mesh_builder {
                 if (Test(-x, x1, t1, t2) && Test(x, viewport_width - 1 - x1, t1, t2)) {
 
                     //clip line
-                    glm::vec2 z = z2 - z1;
+                    glm::vec3 z = z2 - z1;
                     if (t1 > 0) {
                         x1 += t1 * x;
                         z1 += (float)t1 * z;
@@ -277,14 +284,14 @@ namespace mesh_builder {
                             if ((z1.y >= 0) && (z1.y < frame->GetHeight())) {
                                 if (pass == 0) {
                                      color = glm::ivec3(buffer[mem + 0], buffer[mem + 1], buffer[mem + 2]);
-                                     color -= glm::ivec3(frame->GetValue(z1));
+                                     color -= glm::ivec3(frame->GetValue(glm::vec2(z1.x, z1.y)));
                                      count++;
                                      average += glm::dvec3(color);
                                 } else {
-                                    color = glm::ivec3(frame->GetValue(z1)) + diff;
-                                    render[mem + 0] = color.r;
-                                    render[mem + 1] = color.g;
-                                    render[mem + 2] = color.b;
+                                     color = glm::ivec3(frame->GetValue(glm::vec2(z1.x, z1.y))) + diff;
+                                     render[mem + 0] = color.r;
+                                     render[mem + 1] = color.g;
+                                     render[mem + 2] = color.b;
                                 }
                             }
                         mem += step;
