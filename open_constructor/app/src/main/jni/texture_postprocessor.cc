@@ -27,8 +27,9 @@ namespace mesh_builder {
     void TexturePostProcessor::ApplyTriangle(glm::vec3 &va, glm::vec3 &vb, glm::vec3 &vc,
                                              glm::vec2 ta, glm::vec2 tb, glm::vec2 tc,
                                              RGBImage* texture, glm::mat4 world2uv,
-                                             Tango3DR_CameraCalibration calibration) {
-        //unwrap coordinates
+                                             Tango3DR_CameraCalibration calibration,
+                                             std::map<std::string, std::vector<glm::ivec3> >& vertices) {
+        //unwrapped coordinates
         glm::vec3 a, b, c;
         glm::vec4 vertex;
         vertex = glm::vec4(va, 1.0f);
@@ -49,7 +50,7 @@ namespace mesh_builder {
         c.y = 1.0f - c.y;
         c.x *= texture->GetWidth()  - 1;
         c.y *= texture->GetHeight() - 1;
-        //frame coordinate
+        //frame coordinates
         ta.y = 1.0f - ta.y;
         tb.y = 1.0f - tb.y;
         tc.y = 1.0f - tc.y;
@@ -61,6 +62,32 @@ namespace mesh_builder {
         tc.y *= viewport_height - 1;
         //render
         Triangle(ta, tb, tc, a, b, c, texture);
+        //get vertex colors
+        if ((a.x < 0) || (a.x >= texture->GetWidth()))
+            return;
+        if ((a.y < 0) || (a.y >= texture->GetHeight()))
+            return;
+        if ((b.x < 0) || (b.x >= texture->GetWidth()))
+            return;
+        if ((b.y < 0) || (b.y >= texture->GetHeight()))
+            return;
+        if ((c.x < 0) || (c.x >= texture->GetWidth()))
+            return;
+        if ((c.y < 0) || (c.y >= texture->GetHeight()))
+            return;
+        char buffer[1024];
+        sprintf(buffer, "%.3f,%.3f,%.3f", va.x, va.y, va.z);
+        if (vertices.find(std::string(buffer)) == vertices.end())
+            vertices[std::string(buffer)] = std::vector<glm::ivec3>();
+        vertices[std::string(buffer)].push_back(GetPixel(((int)a.y * viewport_width + (int)a.x) * 3));
+        sprintf(buffer, "%.3f,%.3f,%.3f", vb.x, vb.y, vb.z);
+        if (vertices.find(std::string(buffer)) == vertices.end())
+            vertices[std::string(buffer)] = std::vector<glm::ivec3>();
+        vertices[std::string(buffer)].push_back(GetPixel(((int)b.y * viewport_width + (int)b.x) * 3));
+        sprintf(buffer, "%.3f,%.3f,%.3f", vc.x, vc.y, vc.z);
+        if (vertices.find(std::string(buffer)) == vertices.end())
+            vertices[std::string(buffer)] = std::vector<glm::ivec3>();
+        vertices[std::string(buffer)].push_back(GetPixel(((int)c.y * viewport_width + (int)c.x) * 3));
     }
 
     void TexturePostProcessor::Merge() {

@@ -591,6 +591,7 @@ namespace mesh_builder {
         glm::vec3 a, b, c, d, p;
         glm::vec4 vertex;
         std::vector<std::vector<int> > bestPose;
+        std::map<std::string, std::vector<glm::ivec3> > vertices;
         for (unsigned int m = 0; m < main_scene_.static_meshes_.size(); m++) {
              std::vector<int> result;
              for (unsigned int k = 0; k < main_scene_.static_meshes_[m].vertices.size() / 3; k++) {
@@ -660,13 +661,23 @@ namespace mesh_builder {
                                           main_scene_.static_meshes_[m].uv[k * 3 + 0],
                                           main_scene_.static_meshes_[m].uv[k * 3 + 1],
                                           main_scene_.static_meshes_[m].uv[k * 3 + 2],
-                                          &frame, inverse[j], t3dr_intrinsics_);
+                                          &frame, inverse[j], t3dr_intrinsics_, vertices);
                     }
                 }
             }
             tpp.Merge();
             textureProcessor->UpdateTexture(i);
             img->Write(img->GetName().c_str());
+        }
+        //analyze vertex colors for blending
+        std::map<std::string, std::vector<glm::ivec3> >::iterator it;
+        for (it = vertices.begin(); it != vertices.end(); ++it ) {
+            glm::ivec3 average;
+            for (glm::ivec3 &c : it->second)
+                average += c;
+            average /= it->second.size();
+            for (glm::ivec3 &c : it->second)
+                c -= average;
         }
     }
 }  // namespace mesh_builder
