@@ -636,7 +636,7 @@ namespace mesh_builder {
                       //get the best pose index
                       p = glm::vec3(poses_[j][3][0], poses_[j][3][1], poses_[j][3][2]);
                       d = glm::abs(p - a) + glm::abs(p - b) + glm::abs(p - c);
-                      d *= glm::length(v - p) - glm::length(v + n * 0.1f - p);
+                      d *= (glm::length(v - p) - glm::length(v + n * 0.1f - p)) * 10.0f;
                       if ((nearestDst > d.x + d.y + d.z) && (d.x + d.y + d.z > 0)) {
                           nearestDst = d.x + d.y + d.z;
                           nearestIndex = j;
@@ -711,8 +711,9 @@ namespace mesh_builder {
                 }
             }
             tpp.Merge();
-            textureProcessor->UpdateTexture(i);
+            img->Merge(RGBImage(img->GetName().c_str()).GetData());
             img->Write(img->GetName().c_str());
+            textureProcessor->UpdateTexture(i);
         }
     }
 }  // namespace mesh_builder

@@ -67,15 +67,16 @@ namespace mesh_builder {
 
         //get vertex colors
         char buffer[1024];
-        sprintf(buffer, "%.2f,%.2f,%.2f", va.x, va.y, va.z);
+        float e = 0.005f;
+        sprintf(buffer, "%.2f,%.2f,%.2f", va.x + e, va.y + e, va.z + e);
         if (vertices.find(std::string(buffer)) == vertices.end())
             vertices[std::string(buffer)] = std::vector<glm::ivec3>();
         vertices[std::string(buffer)].push_back(GetPixel(((int)ta.y * viewport_width + (int)ta.x) * 3));
-        sprintf(buffer, "%.2f,%.2f,%.2f", vb.x, vb.y, vb.z);
+        sprintf(buffer, "%.2f,%.2f,%.2f", vb.x + e, vb.y + e, vb.z + e);
         if (vertices.find(std::string(buffer)) == vertices.end())
             vertices[std::string(buffer)] = std::vector<glm::ivec3>();
         vertices[std::string(buffer)].push_back(GetPixel(((int)tb.y * viewport_width + (int)tb.x) * 3));
-        sprintf(buffer, "%.2f,%.2f,%.2f", vc.x, vc.y, vc.z);
+        sprintf(buffer, "%.2f,%.2f,%.2f", vc.x + e, vc.y + e, vc.z + e);
         if (vertices.find(std::string(buffer)) == vertices.end())
             vertices[std::string(buffer)] = std::vector<glm::ivec3>();
         vertices[std::string(buffer)].push_back(GetPixel(((int)tc.y * viewport_width + (int)tc.x) * 3));
@@ -86,13 +87,14 @@ namespace mesh_builder {
                                            std::map<std::string, std::vector<glm::ivec3> >& vertices) {
         //get vertex blending
         char buffer[1024];
-        sprintf(buffer, "%.2f,%.2f,%.2f", va.x, va.y, va.z);
+        float e = 0.005f;
+        sprintf(buffer, "%.2f,%.2f,%.2f", va.x + e, va.y + e, va.z + e);
         glm::vec3 ca = glm::vec3(vertices[std::string(buffer)][0]);
         vertices[std::string(buffer)].erase(vertices[std::string(buffer)].begin());
-        sprintf(buffer, "%.2f,%.2f,%.2f", vb.x, vb.y, vb.z);
+        sprintf(buffer, "%.2f,%.2f,%.2f", vb.x + e, vb.y + e, vb.z + e);
         glm::vec3 cb = glm::vec3(vertices[std::string(buffer)][0]);
         vertices[std::string(buffer)].erase(vertices[std::string(buffer)].begin());
-        sprintf(buffer, "%.2f,%.2f,%.2f", vc.x, vc.y, vc.z);
+        sprintf(buffer, "%.2f,%.2f,%.2f", vc.x + e, vc.y + e, vc.z + e);
         glm::vec3 cc = glm::vec3(vertices[std::string(buffer)][0]);
         vertices[std::string(buffer)].erase(vertices[std::string(buffer)].begin());
 
@@ -124,11 +126,11 @@ namespace mesh_builder {
     glm::ivec3 TexturePostProcessor::GetPixel(int mem) {
         if ((render[mem + 0] == 0) || (render[mem + 1] == 0) || (render[mem + 2] == 0))
             return glm::ivec3(buffer[mem + 0], buffer[mem + 1], buffer[mem + 2]);
-        else if (abs(buffer[mem + 0] - render[mem + 0]) > 64)
+        else if (abs(buffer[mem + 0] - render[mem + 0]) > 48)
             return glm::ivec3(buffer[mem + 0], buffer[mem + 1], buffer[mem + 2]);
-        else if (abs(buffer[mem + 1] - render[mem + 1]) > 64)
+        else if (abs(buffer[mem + 1] - render[mem + 1]) > 48)
             return glm::ivec3(buffer[mem + 0], buffer[mem + 1], buffer[mem + 2]);
-        else if (abs(buffer[mem + 2] - render[mem + 2]) > 64)
+        else if (abs(buffer[mem + 2] - render[mem + 2]) > 48)
             return glm::ivec3(buffer[mem + 0], buffer[mem + 1], buffer[mem + 2]);
         else
             return glm::ivec3(render[mem + 0], render[mem + 1], render[mem + 2]);

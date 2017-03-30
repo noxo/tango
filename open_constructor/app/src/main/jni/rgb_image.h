@@ -15,6 +15,7 @@ namespace mesh_builder {
         ~RGBImage();
         glm::vec3 GetValue(int x, int y);
         glm::vec3 GetValue(glm::vec2 coord);
+        void Merge(unsigned char* values);
         void Write(const char* filename);
 
         int GetWidth() { return width; }
