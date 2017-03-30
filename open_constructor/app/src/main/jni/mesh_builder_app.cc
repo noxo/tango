@@ -589,7 +589,7 @@ namespace mesh_builder {
         //analyze poses
         float nearestDst;
         int nearestIndex;
-        glm::vec3 a, b, c, d, p;
+        glm::vec3 a, b, c, d, p, n, v;
         glm::vec4 vertex;
         std::vector<std::vector<int> > bestPose;
         for (unsigned int m = 0; m < main_scene_.static_meshes_.size(); m++) {
@@ -598,6 +598,11 @@ namespace mesh_builder {
                   a = main_scene_.static_meshes_[m].vertices[k * 3 + 0];
                   b = main_scene_.static_meshes_[m].vertices[k * 3 + 1];
                   c = main_scene_.static_meshes_[m].vertices[k * 3 + 2];
+                  n = main_scene_.static_meshes_[m].normals[k * 3 + 0];
+                  n += main_scene_.static_meshes_[m].normals[k * 3 + 1];
+                  n += main_scene_.static_meshes_[m].normals[k * 3 + 2];
+                  n = glm::normalize(n);
+                  v = (a + b + c) / 3.0f;
                   nearestDst = INT_MAX;
                   nearestIndex = -1;
                   for (unsigned int j = 0; j < poses_.size(); j++) {
@@ -628,10 +633,11 @@ namespace mesh_builder {
                           continue;
                       if (vertex.z < 0.0)
                           continue;
-                      //get the closest
+                      //get the best pose index
                       p = glm::vec3(poses_[j][3][0], poses_[j][3][1], poses_[j][3][2]);
                       d = glm::abs(p - a) + glm::abs(p - b) + glm::abs(p - c);
-                      if (nearestDst > d.x + d.y + d.z) {
+                      d *= glm::length(v - p) - glm::length(v + n * 0.1f - p);
+                      if ((nearestDst > d.x + d.y + d.z) && (d.x + d.y + d.z > 0)) {
                           nearestDst = d.x + d.y + d.z;
                           nearestIndex = j;
                       }
