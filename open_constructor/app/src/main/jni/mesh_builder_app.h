@@ -61,7 +61,6 @@ namespace mesh_builder {
         void SetView(float p, float y, float mx, float my, bool g) { pitch = p; yaw = y; gyro = g;
                                                                             movex = mx; movey = my;}
         void SetZoom(float value) { zoom = value; }
-        void Texturize();
 
     private:
         void TangoSetupConfig();
@@ -92,7 +91,8 @@ namespace mesh_builder {
         std::unordered_map<GridIndex, SingleDynamicMesh*, GridIndexHasher> meshes_;
 
         std::string dataset_;
-        std::vector<glm::mat4> poses_;
+        std::vector<Tango3DR_Pose> poses_;
+        std::vector<long> timestamps_;
 
         bool gyro;
         bool landscape;

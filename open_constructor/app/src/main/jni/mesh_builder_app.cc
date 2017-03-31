@@ -22,7 +22,10 @@
 
 #include "math_utils.h"
 #include "mesh_builder_app.h"
-#include "texture_postprocessor.h"
+
+//#define COLOR_CONVERTER_TEST1
+//#define COLOR_CONVERTER_TEST2
+#define PNG_TEXTURE_SCALE 4
 
 namespace {
     const int kSubdivisionSize = 5000;
@@ -108,6 +111,10 @@ namespace mesh_builder {
         t3dr_image.timestamp = buffer->timestamp;
         t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(buffer->format);
         t3dr_image.data = buffer->data;
+#ifdef COLOR_CONVERTER_TEST1
+        t3dr_image.data = RGBImage(t3dr_image, PNG_TEXTURE_SCALE).ExtractYUV(PNG_TEXTURE_SCALE);
+#endif
+
         Tango3DR_Pose t3dr_image_pose = Math::extract3DRPose(image_matrix);
         if(!photoMode) {
             glm::quat rot = glm::quat((float) t3dr_image_pose.orientation[0],
@@ -134,22 +141,36 @@ namespace mesh_builder {
         Tango3DR_Status t3dr_err =
                 Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image,
                                 &t3dr_image_pose, &t3dr_updated);
+#ifdef COLOR_CONVERTER_TEST1
+        delete[] t3dr_image.data;
+        t3dr_image.data = buffer->data;
+#endif
         if (t3dr_err != TANGO_3DR_SUCCESS)
         {
             binder_mutex_.unlock();
             return;
         }
         if (textured) {
-            RGBImage frame(t3dr_image, 4);
+            RGBImage frame(t3dr_image, PNG_TEXTURE_SCALE);
             std::ostringstream ss;
             ss << dataset_.c_str();
             ss << "/";
             ss << poses_.size();
             ss << ".png";
             frame.Write(ss.str().c_str());
-            poses_.push_back(image_matrix);
+#ifdef COLOR_CONVERTER_TEST2
+            t3dr_image.data = RGBImage(t3dr_image, PNG_TEXTURE_SCALE).ExtractYUV(PNG_TEXTURE_SCALE);
+            RGBImage frame2(t3dr_image, PNG_TEXTURE_SCALE);
+            ss << ".png";
+            frame2.Write(ss.str().c_str());
+            RGBImage frame3(ss.str().c_str());
+            ss << ".png";
+            frame3.Write(ss.str().c_str());
+            delete[] t3dr_image.data;
+#endif
+            poses_.push_back(t3dr_image_pose);
+            timestamps_.push_back(t3dr_image.timestamp);
         }
-
         MeshUpdate(t3dr_image, t3dr_updated);
         Tango3DR_GridIndexArray_destroy(t3dr_updated);
         point_cloud_available_ = false;
@@ -472,6 +493,27 @@ namespace mesh_builder {
                 std::exit(EXIT_SUCCESS);
             Tango3DR_Config_destroy(textureConfig);
 
+            //update texturing context using stored PNGs
+            for (unsigned int i = 0; i < poses_.size(); i++) {
+                std::ostringstream ss;
+                ss << dataset_.c_str();
+                ss << "/";
+                ss << i;
+                ss << ".png";
+                RGBImage frame(ss.str());
+                Tango3DR_ImageBuffer image;
+                image.width = frame.GetWidth() * PNG_TEXTURE_SCALE;
+                image.height = frame.GetHeight() * PNG_TEXTURE_SCALE;
+                image.stride = frame.GetWidth() * PNG_TEXTURE_SCALE;
+                image.timestamp = timestamps_[i];
+                image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
+                image.data = frame.ExtractYUV(PNG_TEXTURE_SCALE);
+                ret = Tango3DR_updateTexture(context, &image, &poses_[i]);
+                if (ret != TANGO_3DR_SUCCESS)
+                    std::exit(EXIT_SUCCESS);
+                delete[] image.data;
+            }
+
             //texturize mesh
             ret = Tango3DR_Mesh_destroy(mesh);
             if (ret != TANGO_3DR_SUCCESS)
@@ -577,143 +619,5 @@ namespace mesh_builder {
         }
         if (photoMode)
             photoFinished = true;
-    }
-
-    void MeshBuilderApp::Texturize() {
-        //prepare
-        std::vector<glm::mat4> inverse;
-        for (unsigned int j = 0; j < poses_.size(); j++) {
-            inverse.push_back(glm::inverse(poses_[j]));
-        }
-
-        //analyze poses
-        float nearestDst;
-        int nearestIndex;
-        glm::vec3 a, b, c, d, p, n, v;
-        glm::vec4 vertex;
-        std::vector<std::vector<int> > bestPose;
-        for (unsigned int m = 0; m < main_scene_.static_meshes_.size(); m++) {
-             std::vector<int> result;
-             for (unsigned int k = 0; k < main_scene_.static_meshes_[m].vertices.size() / 3; k++) {
-                  a = main_scene_.static_meshes_[m].vertices[k * 3 + 0];
-                  b = main_scene_.static_meshes_[m].vertices[k * 3 + 1];
-                  c = main_scene_.static_meshes_[m].vertices[k * 3 + 2];
-                  n = main_scene_.static_meshes_[m].normals[k * 3 + 0];
-                  n += main_scene_.static_meshes_[m].normals[k * 3 + 1];
-                  n += main_scene_.static_meshes_[m].normals[k * 3 + 2];
-                  n = glm::normalize(n);
-                  v = (a + b + c) / 3.0f;
-                  nearestDst = INT_MAX;
-                  nearestIndex = -1;
-                  for (unsigned int j = 0; j < poses_.size(); j++) {
-                      //the first point inside pose frame
-                      vertex = glm::vec4(a, 1.0f);
-                      Math::convert2uv(vertex, inverse[j], t3dr_intrinsics_);
-                      if ((vertex.x < 0.0) || (vertex.x >= 1.0))
-                          continue;
-                      if ((vertex.y < 0.0) || (vertex.y >= 1.0))
-                          continue;
-                      if (vertex.z < 0.0)
-                          continue;
-                      //the second point inside pose frame
-                      vertex = glm::vec4(b, 1.0f);
-                      Math::convert2uv(vertex, inverse[j], t3dr_intrinsics_);
-                      if ((vertex.x < 0.0) || (vertex.x >= 1.0))
-                          continue;
-                      if ((vertex.y < 0.0) || (vertex.y >= 1.0))
-                          continue;
-                      if (vertex.z < 0.0)
-                          continue;
-                      //the third point inside pose frame
-                      vertex = glm::vec4(c, 1.0f);
-                      Math::convert2uv(vertex, inverse[j], t3dr_intrinsics_);
-                      if ((vertex.x < 0.0) || (vertex.x >= 1.0))
-                          continue;
-                      if ((vertex.y < 0.0) || (vertex.y >= 1.0))
-                          continue;
-                      if (vertex.z < 0.0)
-                          continue;
-                      //get the best pose index
-                      p = glm::vec3(poses_[j][3][0], poses_[j][3][1], poses_[j][3][2]);
-                      d = glm::abs(p - a) + glm::abs(p - b) + glm::abs(p - c);
-                      d *= (glm::length(v - p) - glm::length(v + n * 0.1f - p)) * 10.0f;
-                      if ((nearestDst > d.x + d.y + d.z) && (d.x + d.y + d.z > 0)) {
-                          nearestDst = d.x + d.y + d.z;
-                          nearestIndex = j;
-                      }
-                  }
-                  result.push_back(nearestIndex);
-             }
-             bestPose.push_back(result);
-        }
-
-        //render frames
-        std::map<std::string, std::vector<glm::ivec3> > vertices;
-        for (unsigned int i = 0; i < textureProcessor->TextureCount(); i++) {
-            RGBImage* img = textureProcessor->GetTexture(i);
-            TexturePostProcessor tpp(img);
-            for (unsigned int j = 0; j < poses_.size(); j++) {
-                std::ostringstream ss;
-                ss << dataset_.c_str();
-                ss << "/";
-                ss << j;
-                ss << ".png";
-                RGBImage frame(ss.str().c_str());
-                for (unsigned int m = 0; m < main_scene_.static_meshes_.size(); m++) {
-                    for (unsigned int k = 0; k < main_scene_.static_meshes_[m].vertices.size() / 3; k++) {
-                        if (bestPose[m][k] != j)
-                            continue;
-                        if (main_scene_.static_meshes_[m].texture != i)
-                            continue;
-                        tpp.ApplyTriangle(main_scene_.static_meshes_[m].vertices[k * 3 + 0],
-                                          main_scene_.static_meshes_[m].vertices[k * 3 + 1],
-                                          main_scene_.static_meshes_[m].vertices[k * 3 + 2],
-                                          main_scene_.static_meshes_[m].uv[k * 3 + 0],
-                                          main_scene_.static_meshes_[m].uv[k * 3 + 1],
-                                          main_scene_.static_meshes_[m].uv[k * 3 + 2],
-                                          &frame, inverse[j], t3dr_intrinsics_, vertices);
-                    }
-                }
-            }
-            tpp.Merge();
-        }
-
-        //analyze vertex colors for blending
-        std::map<std::string, std::vector<glm::ivec3> >::iterator it;
-        for (it = vertices.begin(); it != vertices.end(); ++it ) {
-            glm::vec3 average = glm::vec3(0, 0, 0);
-            for (glm::ivec3 &c : it->second)
-                average += c;
-            average /= (float)it->second.size();
-            for (unsigned int i = 0; i < it->second.size(); i++)
-                it->second[i] -= average;
-        }
-
-        //apply color blending
-        for (unsigned int i = 0; i < textureProcessor->TextureCount(); i++) {
-            RGBImage* img = textureProcessor->GetTexture(i);
-            TexturePostProcessor tpp(img);
-            for (unsigned int j = 0; j < poses_.size(); j++) {
-                for (unsigned int m = 0; m < main_scene_.static_meshes_.size(); m++) {
-                    for (unsigned int k = 0; k < main_scene_.static_meshes_[m].vertices.size() / 3; k++) {
-                        if (bestPose[m][k] != j)
-                            continue;
-                        if (main_scene_.static_meshes_[m].texture != i)
-                            continue;
-                        tpp.FixTriangle(main_scene_.static_meshes_[m].vertices[k * 3 + 0],
-                                        main_scene_.static_meshes_[m].vertices[k * 3 + 1],
-                                        main_scene_.static_meshes_[m].vertices[k * 3 + 2],
-                                        main_scene_.static_meshes_[m].uv[k * 3 + 0],
-                                        main_scene_.static_meshes_[m].uv[k * 3 + 1],
-                                        main_scene_.static_meshes_[m].uv[k * 3 + 2],
-                                        vertices);
-                    }
-                }
-            }
-            tpp.Merge();
-            img->Merge(RGBImage(img->GetName().c_str()).GetData());
-            img->Write(img->GetName().c_str());
-            textureProcessor->UpdateTexture(i);
-        }
     }
 }  // namespace mesh_builder

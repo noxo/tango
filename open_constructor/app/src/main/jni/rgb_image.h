@@ -13,6 +13,7 @@ namespace mesh_builder {
         RGBImage(std::string file);
         RGBImage(int w, int h, double* buffer);
         ~RGBImage();
+        unsigned char* ExtractYUV(int s);
         glm::vec3 GetValue(int x, int y);
         glm::vec3 GetValue(glm::vec2 coord);
         void Merge(unsigned char* values);

@@ -98,11 +98,6 @@ Java_com_lvonasek_openconstructor_TangoJNINative_setZoom(JNIEnv*, jobject, jfloa
   app.SetZoom(value);
 }
 
-JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_texturize(JNIEnv*, jobject) {
-  app.Texturize();
-}
-
 JNIEXPORT jfloat JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_centerOfStaticModel(JNIEnv*, jobject, jboolean h) {
   return app.CenterOfStaticModel(h);

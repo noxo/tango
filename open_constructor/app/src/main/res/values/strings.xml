@@ -19,7 +19,6 @@
     <string name="extreme">Warning, extreme settings!</string>
     <string name="mb_free">MB RAM free</string>
     <string name="pause">Pause</string>
-    <string name="postprocess">Do you want to apply textures on the model? (this operation can take a long time)</string>
     <string name="resolution">3D grid:</string>
     <string name="resume">Resume</string>
     <string name="save">Save</string>

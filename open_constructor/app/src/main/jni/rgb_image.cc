@@ -21,7 +21,7 @@ namespace mesh_builder {
         data = new unsigned char[(t3dr_image.width / scale) * (t3dr_image.height / scale) * 3];
         int index = 0;
         int frameSize = t3dr_image.width * t3dr_image.height;
-        for (int y = t3dr_image.height - 1; y >= 0; y-=scale) {
+        for (int y = 0; y < t3dr_image.height; y+=scale) {
             for (int x = 0; x < t3dr_image.width; x+=scale) {
                 int xby2 = x/2;
                 int yby2 = y/2;
@@ -74,7 +74,7 @@ namespace mesh_builder {
         png_size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
         data = new unsigned char[row_bytes * height];
         png_bytepp row_pointers = png_get_rows(png_ptr, info_ptr);
-        for (unsigned int i = 0; i < height; i++)
+        for (int i = 0; i < height; i++)
             memcpy(data+(row_bytes * i), row_pointers[i], row_bytes);
 
         png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
@@ -88,7 +88,7 @@ namespace mesh_builder {
         data = new unsigned char[w * h * 3];
         name = "buffer";
         int index = 0;
-        for(int y = h - 1; y >= 0; y--) {
+        for(int y = 0; y < h; y++) {
             for(int x = 0; x < w; x++) {
                 data[index++] = (unsigned char) glm::clamp(buffer[y * w + x] * 128.0, 0.0, 255.0);
                 data[index++] = (unsigned char) glm::clamp(buffer[y * w + x] * 128.0, 0.0, 255.0);
@@ -99,6 +99,39 @@ namespace mesh_builder {
 
     RGBImage::~RGBImage() {
         delete[] data;
+    }
+
+    unsigned char* RGBImage::ExtractYUV(int s) {
+        int yIndex = 0;
+        int uvIndex = width * s * height * s;
+        int R, G, B, Y, U, V;
+        int index = 0;
+        unsigned int xRGBIndex, yRGBIndex;
+        unsigned char* output = new unsigned char[uvIndex * 2];
+        for (int y = 0; y < height * s; y++) {
+            xRGBIndex = 0;
+            yRGBIndex = (y / s) * width * 3;
+            for (unsigned int x = 0; x < width; x++) {
+                B = data[yRGBIndex + xRGBIndex++];
+                G = data[yRGBIndex + xRGBIndex++];
+                R = data[yRGBIndex + xRGBIndex++];
+
+                //RGB to YUV algorithm
+                Y = ( (  66 * R + 129 * G +  25 * B + 128) >> 8) +  16;
+                V = ( ( -38 * R -  74 * G + 112 * B + 128) >> 8) + 128;
+                U = ( ( 112 * R -  94 * G -  18 * B + 128) >> 8) + 128;
+
+                for (int xs = 0; xs < s; xs++) {
+                    output[yIndex++] = (uint8_t) ((Y < 0) ? 0 : ((Y > 255) ? 255 : Y));
+                    if (y % 2 == 0 && index % 2 == 0) {
+                        output[uvIndex++] = (uint8_t)((V<0) ? 0 : ((V > 255) ? 255 : V));
+                        output[uvIndex++] = (uint8_t)((U<0) ? 0 : ((U > 255) ? 255 : U));
+                    }
+                    index++;
+                }
+            }
+        }
+        return output;
     }
 
     glm::vec3 RGBImage::GetValue(int x, int y) {
@@ -155,7 +188,7 @@ namespace mesh_builder {
         // write image data
         png_bytep row = (png_bytep) malloc(3 * width * sizeof(png_byte));
         for (int y = 0; y < height; y++) {
-            for (int x=0; x < width; x++) {
+            for (int x = 0; x < width; x++) {
                 row[x * 3 + 0] = data[(y * width + x) * 3 + 0];
                 row[x * 3 + 1] = data[(y * width + x) * 3 + 1];
                 row[x * 3 + 2] = data[(y * width + x) * 3 + 2];

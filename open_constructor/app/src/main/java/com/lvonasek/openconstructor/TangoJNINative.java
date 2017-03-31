@@ -81,9 +81,6 @@ class TangoJNINative {
   // Set zoom of view
   public static native void setZoom(float value);
 
-  // Texturize the model
-  public static native void texturize();
-
   // Get center of loaded 3D model
   public static native float centerOfStaticModel(boolean horizontal);
 
