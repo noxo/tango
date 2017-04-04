@@ -487,7 +487,7 @@ namespace mesh_builder {
             ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", 0.01);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
-            Tango3DR_Context context;
+            Tango3DR_TexturingContext context;
             context = Tango3DR_createTexturingContext(textureConfig, dataset.c_str(), mesh);
             if (context == nullptr)
                 std::exit(EXIT_SUCCESS);
@@ -518,15 +518,16 @@ namespace mesh_builder {
             ret = Tango3DR_Mesh_destroy(mesh);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
+            mesh = 0;
             ret = Tango3DR_getTexturedMesh(context, &mesh);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
 
             //save and cleanup
-            ret = Tango3DR_destroyTexturingContext(context);
+            ret = Tango3DR_Mesh_saveToObj(mesh, filename.c_str());
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
-            ret = Tango3DR_Mesh_saveToObj(mesh, filename.c_str());
+            ret = Tango3DR_destroyTexturingContext(context);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
             ret = Tango3DR_Mesh_destroy(mesh);
