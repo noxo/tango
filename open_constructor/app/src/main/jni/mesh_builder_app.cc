@@ -255,7 +255,7 @@ namespace mesh_builder {
             std::exit(EXIT_SUCCESS);
 
         // Enable drift correction.
-        ret = TangoConfig_setBool(tango_config_, "config_enable_drift_correction", true);
+        ret = TangoConfig_setBool(tango_config_, "config_enable_drift_correction", true);//false in Tango Constructor
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
@@ -276,7 +276,13 @@ namespace mesh_builder {
         ret = TangoConfig_setBool(tango_config_, "config_enable_dataset_recording", true);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
-        ret = TangoConfig_setInt32(tango_config_, "config_dataset_recording_mode", TANGO_RECORDING_MODE_MOTION_TRACKING);
+        ret = TangoConfig_setInt32(tango_config_, "config_dataset_recording_mode", TANGO_RECORDING_MODE_SCENE_RECONSTRUCTION);
+        if (ret != TANGO_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+        ret = TangoConfig_setBool(tango_config_, "config_experimental_enable_scene_reconstruction", false);
+        if (ret != TANGO_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+        ret = TangoConfig_setBool(tango_config_, "config_smooth_pose", false);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
@@ -485,6 +491,9 @@ namespace mesh_builder {
             Tango3DR_ConfigH textureConfig;
             textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
             ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", 0.01);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+            ret = Tango3DR_Config_setInt32(textureConfig, "texturing_backend", TANGO_3DR_GL_TEXTURING);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
             Tango3DR_TexturingContext context;
