@@ -92,7 +92,8 @@ namespace mesh_builder {
         std::unordered_map<GridIndex, SingleDynamicMesh*, GridIndexHasher> meshes_;
 
         std::string dataset_;
-        std::vector<glm::mat4> poses_;
+        int lastPoses_;
+        int poses_;
 
         bool gyro;
         bool landscape;
