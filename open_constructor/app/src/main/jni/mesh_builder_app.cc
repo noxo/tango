@@ -25,6 +25,7 @@
 
 //#define COLOR_CONVERTER_TEST1
 //#define COLOR_CONVERTER_TEST2
+#define COORDINATE_BUG
 #define PNG_TEXTURE_SCALE 4
 
 namespace {
@@ -167,6 +168,14 @@ namespace mesh_builder {
             ss << ".png";
             frame3.Write(ss.str().c_str());
             delete[] t3dr_image.data;
+#endif
+#ifdef COORDINATE_BUG
+            TangoSupport_getMatrixTransformAtTime(
+                        buffer->timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION,
+                        TANGO_COORDINATE_FRAME_DEVICE, TANGO_SUPPORT_ENGINE_OPENGL,
+                        TANGO_SUPPORT_ENGINE_TANGO, ROTATION_0, &matrix_transform);
+            if (matrix_transform.status_code == TANGO_POSE_VALID)
+                t3dr_image_pose = Math::extract3DRPose(glm::make_mat4(matrix_transform.matrix));
 #endif
             poses_.push_back(t3dr_image_pose);
             timestamps_.push_back(t3dr_image.timestamp);
