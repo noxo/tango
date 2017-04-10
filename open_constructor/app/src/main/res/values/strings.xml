@@ -33,8 +33,8 @@
     <string name="realtime_noise_filter_summary">A noise filter can improve the quality a lot but it makes capturing slower</string>
     <string name="photomode">Photo mode</string>
     <string name="photomode_summary">This disables continuous scene capturing and increases record distance</string>
-    <string name="texture">Optimize model</string>
-    <string name="texture_summary">Reduce model file size using OBJ file format</string>
+    <string name="texture">Texture model</string>
+    <string name="texture_summary">Texturing of a model improves visual quality and reduces the result size</string>
 
     <!-- Sketchfab uploader !-->
     <string name="compressing">Compressing files…</string>
