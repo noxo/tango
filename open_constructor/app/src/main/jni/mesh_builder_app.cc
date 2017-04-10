@@ -456,8 +456,8 @@ namespace mesh_builder {
         render_mutex_.lock();
         Tango3DR_clear(t3dr_context_);
         meshes_.clear();
-        lastPoses_ = poses_;
-        poses_ = 0;
+        poses_.clear();
+        timestamps_.clear();
         main_scene_.ClearDynamicMeshes();
         render_mutex_.unlock();
         binder_mutex_.unlock();
