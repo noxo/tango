@@ -174,8 +174,11 @@ namespace mesh_builder {
                         buffer->timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION,
                         TANGO_COORDINATE_FRAME_DEVICE, TANGO_SUPPORT_ENGINE_OPENGL,
                         TANGO_SUPPORT_ENGINE_TANGO, ROTATION_0, &matrix_transform);
-            if (matrix_transform.status_code == TANGO_POSE_VALID)
-                t3dr_image_pose = Math::extract3DRPose(glm::make_mat4(matrix_transform.matrix));
+            if (matrix_transform.status_code == TANGO_POSE_VALID) {
+                glm::mat4 pose = glm::make_mat4(matrix_transform.matrix);
+                pose = glm::rotate(pose, glm::radians(90.0f), glm::vec3(0, 0, 1));
+                t3dr_image_pose = Math::extract3DRPose(pose);
+            }
 #endif
             poses_.push_back(t3dr_image_pose);
             timestamps_.push_back(t3dr_image.timestamp);
