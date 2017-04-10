@@ -23,8 +23,6 @@
 #include "math_utils.h"
 #include "mesh_builder_app.h"
 
-//#define COLOR_CONVERTER_TEST1
-//#define COLOR_CONVERTER_TEST2
 #define COORDINATE_BUG
 #define PNG_TEXTURE_SCALE 4
 
@@ -112,9 +110,6 @@ namespace mesh_builder {
         t3dr_image.timestamp = buffer->timestamp;
         t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(buffer->format);
         t3dr_image.data = buffer->data;
-#ifdef COLOR_CONVERTER_TEST1
-        t3dr_image.data = RGBImage(t3dr_image, PNG_TEXTURE_SCALE).ExtractYUV(PNG_TEXTURE_SCALE);
-#endif
 
         Tango3DR_Pose t3dr_image_pose = Math::extract3DRPose(image_matrix);
         if(!photoMode) {
@@ -142,10 +137,6 @@ namespace mesh_builder {
         Tango3DR_Status t3dr_err =
                 Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image,
                                 &t3dr_image_pose, &t3dr_updated);
-#ifdef COLOR_CONVERTER_TEST1
-        delete[] t3dr_image.data;
-        t3dr_image.data = buffer->data;
-#endif
         if (t3dr_err != TANGO_3DR_SUCCESS)
         {
             binder_mutex_.unlock();
@@ -159,16 +150,6 @@ namespace mesh_builder {
             ss << poses_.size();
             ss << ".png";
             frame.Write(ss.str().c_str());
-#ifdef COLOR_CONVERTER_TEST2
-            t3dr_image.data = RGBImage(t3dr_image, PNG_TEXTURE_SCALE).ExtractYUV(PNG_TEXTURE_SCALE);
-            RGBImage frame2(t3dr_image, PNG_TEXTURE_SCALE);
-            ss << ".png";
-            frame2.Write(ss.str().c_str());
-            RGBImage frame3(ss.str().c_str());
-            ss << ".png";
-            frame3.Write(ss.str().c_str());
-            delete[] t3dr_image.data;
-#endif
 #ifdef COORDINATE_BUG
             TangoSupport_getMatrixTransformAtTime(
                         buffer->timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION,
@@ -196,6 +177,7 @@ namespace mesh_builder {
                                         photoFinished(false),
                                         photoMode(false),
                                         point_cloud_available_(false),
+                                        poses_(0),
                                         textured(false),
                                         scale(1),
                                         zoom(0)
@@ -474,6 +456,8 @@ namespace mesh_builder {
         render_mutex_.lock();
         Tango3DR_clear(t3dr_context_);
         meshes_.clear();
+        lastPoses_ = poses_;
+        poses_ = 0;
         main_scene_.ClearDynamicMeshes();
         render_mutex_.unlock();
         binder_mutex_.unlock();
