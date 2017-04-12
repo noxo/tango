@@ -46,7 +46,7 @@ namespace mesh_builder {
         void OnPause();
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin,
                                      double dmax, int noise, bool land, bool photo, bool textures,
-                                     std::string dataset);
+                                     std::string dataset, float deviceMatrixRotation);
         void onPointCloudAvailable(TangoPointCloud *point_cloud);
         void onFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer);
         void OnSurfaceCreated();
@@ -70,6 +70,7 @@ namespace mesh_builder {
         void TangoDisconnect();
         void DeleteResources();
         void MeshUpdate(Tango3DR_ImageBuffer t3dr_image, Tango3DR_GridIndexArray *t3dr_updated);
+        std::string GetFileName(int index, std::string extension);
 
         bool t3dr_is_running_;
         Tango3DR_Context t3dr_context_;
@@ -91,15 +92,14 @@ namespace mesh_builder {
         std::unordered_map<GridIndex, SingleDynamicMesh*, GridIndexHasher> meshes_;
 
         std::string dataset_;
-        std::vector<Tango3DR_Pose> poses_;
-        std::vector<long> timestamps_;
+        int poses_;
+        float deviceMatrixRotation_;
 
         bool gyro;
         bool landscape;
         bool photoFinished;
         bool photoMode;
         bool textured;
-        float scale;
         float movex;
         float movey;
         float pitch;

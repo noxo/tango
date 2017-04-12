@@ -65,16 +65,6 @@ namespace mesh_builder {
 
         binder_mutex_.lock();
         point_cloud_matrix_ = glm::make_mat4(matrix_transform.matrix);
-        point_cloud_matrix_[3][0] *= scale;
-        point_cloud_matrix_[3][1] *= scale;
-        point_cloud_matrix_[3][2] *= scale;
-        if (glm::abs(1 - scale) > 0.005f) {
-            for (unsigned int i = 0; i < point_cloud->num_points; i++) {
-                point_cloud->points[i][0] *= scale;
-                point_cloud->points[i][1] *= scale;
-                point_cloud->points[i][2] *= scale;
-            }
-        }
         TangoSupport_updatePointCloud(point_cloud_manager_, point_cloud);
         point_cloud_available_ = true;
         binder_mutex_.unlock();
@@ -99,10 +89,6 @@ namespace mesh_builder {
         }
 
         image_matrix = glm::make_mat4(matrix_transform.matrix);
-        image_matrix[3][0] *= scale;
-        image_matrix[3][1] *= scale;
-        image_matrix[3][2] *= scale;
-
         Tango3DR_ImageBuffer t3dr_image;
         t3dr_image.width = buffer->width;
         t3dr_image.height = buffer->height;
@@ -144,12 +130,7 @@ namespace mesh_builder {
         }
         if (textured) {
             RGBImage frame(t3dr_image, PNG_TEXTURE_SCALE);
-            std::ostringstream ss;
-            ss << dataset_.c_str();
-            ss << "/";
-            ss << poses_.size();
-            ss << ".png";
-            frame.Write(ss.str().c_str());
+            frame.Write(GetFileName(poses_, ".png").c_str());
 #ifdef COORDINATE_BUG
             TangoSupport_getMatrixTransformAtTime(
                         buffer->timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION,
@@ -157,12 +138,18 @@ namespace mesh_builder {
                         TANGO_SUPPORT_ENGINE_TANGO, ROTATION_0, &matrix_transform);
             if (matrix_transform.status_code == TANGO_POSE_VALID) {
                 glm::mat4 pose = glm::make_mat4(matrix_transform.matrix);
-                pose = glm::rotate(pose, glm::radians(90.0f), glm::vec3(0, 0, 1));
+                pose = glm::rotate(pose, glm::radians(deviceMatrixRotation_), glm::vec3(0, 0, 1));
                 t3dr_image_pose = Math::extract3DRPose(pose);
+                image_matrix = pose;
             }
 #endif
-            poses_.push_back(t3dr_image_pose);
-            timestamps_.push_back(t3dr_image.timestamp);
+            FILE* file = fopen(GetFileName(poses_, ".txt").c_str(), "w");
+            for (int i = 0; i < 4; i++)
+                fprintf(file, "%f %f %f %f\n", image_matrix[i][0], image_matrix[i][1],
+                                               image_matrix[i][2], image_matrix[i][3]);
+            fprintf(file, "%lf\n", t3dr_image.timestamp);
+            fclose(file);
+            poses_++;
         }
         MeshUpdate(t3dr_image, t3dr_updated);
         Tango3DR_GridIndexArray_destroy(t3dr_updated);
@@ -179,7 +166,6 @@ namespace mesh_builder {
                                         point_cloud_available_(false),
                                         poses_(0),
                                         textured(false),
-                                        scale(1),
                                         zoom(0)
     {
         textureProcessor = new TextureProcessor();
@@ -206,16 +192,13 @@ namespace mesh_builder {
 
     void MeshBuilderApp::OnTangoServiceConnected(JNIEnv *env, jobject binder, double res,
                double dmin, double dmax, int noise, bool land, bool photo, bool textures,
-               std::string dataset) {
+               std::string dataset, float deviceMatrixRotation) {
         dataset_ = dataset;
         landscape = land;
         photoFinished = false;
         photoMode = photo;
         textured = textures;
-        if (res < 0.00999)
-            scale = 10;
-        else
-            scale = 1;
+        deviceMatrixRotation_ = deviceMatrixRotation;
 
         TangoService_setBinder(env, binder);
         TangoSetupConfig();
@@ -270,10 +253,7 @@ namespace mesh_builder {
         ret = TangoConfig_setBool(tango_config_, "config_enable_dataset_recording", true);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
-        ret = TangoConfig_setInt32(tango_config_, "config_dataset_recording_mode", TANGO_RECORDING_MODE_SCENE_RECONSTRUCTION);
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-        ret = TangoConfig_setBool(tango_config_, "config_experimental_enable_scene_reconstruction", false);
+        ret = TangoConfig_setInt32(tango_config_, "config_dataset_recording_mode", TANGO_RECORDING_MODE_MOTION_TRACKING);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
         ret = TangoConfig_setBool(tango_config_, "config_smooth_pose", false);
@@ -299,7 +279,7 @@ namespace mesh_builder {
     Tango3DR_Context MeshBuilderApp::TangoSetup3DR(double res, double dmin, double dmax, int noise) {
         Tango3DR_ConfigH t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_CONTEXT);
         Tango3DR_Status t3dr_err;
-        t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "resolution", res * scale);
+        t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "resolution", res);
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
@@ -307,7 +287,7 @@ namespace mesh_builder {
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
-        t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "max_depth", dmax * scale);
+        t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "max_depth", dmax);
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
@@ -422,9 +402,6 @@ namespace mesh_builder {
             glm::mat4 start_service_T_device_;
             if (matrix_transform.status_code == TANGO_POSE_VALID)
                 start_service_T_device_ = glm::make_mat4(matrix_transform.matrix);
-            start_service_T_device_[3][0] *= scale;
-            start_service_T_device_[3][1] *= scale;
-            start_service_T_device_[3][2] *= scale;
             main_scene_.camera_->SetTransformationMatrix(start_service_T_device_);
             main_scene_.UpdateFrustum(main_scene_.camera_->GetPosition(), zoom);
         }
@@ -456,8 +433,7 @@ namespace mesh_builder {
         render_mutex_.lock();
         Tango3DR_clear(t3dr_context_);
         meshes_.clear();
-        poses_.clear();
-        timestamps_.clear();
+        poses_ = 0;
         main_scene_.ClearDynamicMeshes();
         render_mutex_.unlock();
         binder_mutex_.unlock();
@@ -499,21 +475,25 @@ namespace mesh_builder {
             Tango3DR_Config_destroy(textureConfig);
 
             //update texturing context using stored PNGs
-            for (unsigned int i = 0; i < poses_.size(); i++) {
-                std::ostringstream ss;
-                ss << dataset_.c_str();
-                ss << "/";
-                ss << i;
-                ss << ".png";
-                RGBImage frame(ss.str());
+            for (unsigned int i = 0; i < poses_; i++) {
+                glm::mat4 mat;
+                long timestamp;
+                FILE* file = fopen(GetFileName(i, ".txt").c_str(), "r");
+                for (int i = 0; i < 4; i++)
+                  fscanf(file, "%f %f %f %f\n", &mat[i][0], &mat[i][1], &mat[i][2], &mat[i][3]);
+                fscanf(file, "%lf\n", &timestamp);
+                fclose(file);
+
+                RGBImage frame(GetFileName(i, ".png"));
                 Tango3DR_ImageBuffer image;
                 image.width = frame.GetWidth() * PNG_TEXTURE_SCALE;
                 image.height = frame.GetHeight() * PNG_TEXTURE_SCALE;
                 image.stride = frame.GetWidth() * PNG_TEXTURE_SCALE;
-                image.timestamp = timestamps_[i];
+                image.timestamp = timestamp;
                 image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
                 image.data = frame.ExtractYUV(PNG_TEXTURE_SCALE);
-                ret = Tango3DR_updateTexture(context, &image, &poses_[i]);
+                Tango3DR_Pose t3dr_image_pose = Math::extract3DRPose(mat);
+                ret = Tango3DR_updateTexture(context, &image, &t3dr_image_pose);
                 if (ret != TANGO_3DR_SUCCESS)
                     std::exit(EXIT_SUCCESS);
                 delete[] image.data;
@@ -559,6 +539,15 @@ namespace mesh_builder {
             }
         }
         return (min + max) * 0.5f;
+    }
+
+    std::string MeshBuilderApp::GetFileName(int index, std::string extension) {
+        std::ostringstream ss;
+        ss << dataset_.c_str();
+        ss << "/";
+        ss << index;
+        ss << extension.c_str();
+        return ss.str();
     }
 
     void MeshBuilderApp::MeshUpdate(Tango3DR_ImageBuffer t3dr_image, Tango3DR_GridIndexArray *t3dr_updated) {
