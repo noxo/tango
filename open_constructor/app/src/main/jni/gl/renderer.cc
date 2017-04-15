@@ -1,15 +1,11 @@
-#define GLM_FORCE_RADIANS
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #include "gl/renderer.h"
-
 
 std::string RTTFragmentShader() {
   return "uniform sampler2D color_texture;\n"
          "varying vec2 texture_coordinate;\n"
          "void main() {\n"
          "  gl_FragColor.rgb = texture2D(color_texture, texture_coordinate).rgb;\n"
-         "};\n";
+         "}\n";
 }
 
 std::string RTTVertexShader() {
@@ -98,16 +94,24 @@ namespace oc {
             std::exit(EXIT_SUCCESS);
 
         //set viewport
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glViewport (0, 0, (GLsizei) width, (GLsizei) height);
         glClear(GL_COLOR_BUFFER_BIT);
         glActiveTexture( GL_TEXTURE0 );
 
-        //set shaders
+        //set objects
+        camera.projection = glm::perspective(glm::radians(45.0f), w / (float)h, 0.1f, 100.0f);
         scene = new GLSL(RTTVertexShader(), RTTFragmentShader());
     }
 
-    void GLRenderer::Render(GLMesh m, unsigned int size) {
-        //TODO:add code
+    void GLRenderer::Render(GLMesh m, int size) {
+        GLSL::CurrentShader()->UniformMatrix("MVP", glm::value_ptr(camera.projection * camera.GetView()));
+        GLSL::CurrentShader()->Attrib(m.vertices.data(), m.normals.data(), m.uv.data(), m.colors.data());
+
+        if (size >= 0)
+          glDrawElements(GL_TRIANGLES, size, GL_UNSIGNED_INT, m.indices.data());
+        else if (!m.vertices.empty())
+          glDrawArrays(GL_TRIANGLES, 0, m.vertices.size());
     }
 
     void GLRenderer::Rtt(bool enable) {
@@ -124,23 +128,23 @@ namespace oc {
             glViewport (0, 0, width, height);
 
             /// vertices
-            float vertices[] = {
-                -1, +1, 0,
-                -1, -1, 0,
-                +1, -1, 0,
-                -1, +1, 0,
-                +1, -1, 0,
-                +1, +1, 0,
+            glm::vec3 vertices[] = {
+                glm::vec3(-1, +1, 0),
+                glm::vec3(-1, -1, 0),
+                glm::vec3(+1, -1, 0),
+                glm::vec3(-1, +1, 0),
+                glm::vec3(+1, -1, 0),
+                glm::vec3(+1, +1, 0),
             };
 
             /// coords
-            float coords[] = {
-                0, aliasing,
-                0, 0,
-                aliasing, 0,
-                0, aliasing,
-                aliasing, 0,
-                aliasing, aliasing,
+            glm::vec2 coords[] = {
+                glm::vec2(0, aliasing),
+                glm::vec2(0, 0),
+                glm::vec2(aliasing, 0),
+                glm::vec2(0, aliasing),
+                glm::vec2(aliasing, 0),
+                glm::vec2(aliasing, aliasing),
             };
 
             scene->Bind();
@@ -150,7 +154,7 @@ namespace oc {
             glDepthMask(false);
 
             /// render
-            scene->Attrib(vertices, 0, coords);
+            scene->Attrib(vertices, 0, coords, 0);
             glDrawArrays(GL_TRIANGLES, 0, 6);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glDepthMask(true);

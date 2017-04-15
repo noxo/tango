@@ -1,7 +1,6 @@
 #ifndef MODEL_IO_H
 #define MODEL_IO_H
 
-#include <glm/glm.hpp>
 #include <map>
 #include <mutex>
 #include <string>

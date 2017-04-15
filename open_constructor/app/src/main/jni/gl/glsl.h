@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include "utils/math.h"
 
 namespace oc {
     class GLSL {
@@ -17,23 +18,20 @@ namespace oc {
         ~GLSL();
 
         /**
-         * @brief it sets pointer to geometry
-         * @param size is amount of data
-         */
-        void Attrib(unsigned int size);
-
-        /**
          * @brief it sends geometry into GPU
          * @param vertices is vertices
          * @param normals is normals
          * @param coords is texture coords
+         * @param colors is vertex colors
          */
-        void Attrib(float* vertices, float* normals, float* coords);
+        void Attrib(glm::vec3* vertices, glm::vec3* normals, glm::vec2* coords, unsigned int* colors);
 
         /**
          * @brief it binds shader
          */
         void Bind();
+
+        static GLSL* CurrentShader();
 
         /**
          * @brief initShader creates shader from code
@@ -60,15 +58,16 @@ namespace oc {
          * @param name is uniform name
          * @param value is uniform value
          */
-        void UniformMatrix(const char* name, float* value);
+        void UniformMatrix(const char* name, const float* value);
 
     private:
         unsigned int id;          ///< Shader id
         unsigned int shader_vp;   ///< Vertex shader
         unsigned int shader_fp;   ///< Fragment shader
-        int attribute_v_vertex;   ///< VBO vertices
-        int attribute_v_coord;    ///< VBO coords
-        int attribute_v_normal;   ///< VBO normals
+        int attribute_v_vertex;   ///< Pointer to vertices on GPU
+        int attribute_v_coord;    ///< Pointer to coords on GPU
+        int attribute_v_normal;   ///< Pointer to normals on GPU
+        int attribute_v_color;    ///< Pointer to colors on GPU
     };
 }
 #endif

@@ -1,7 +1,6 @@
 #ifndef MESH_BUILDER_APP_H
 #define MESH_BUILDER_APP_H
 
-#include <glm/gtc/quaternion.hpp>
 #include <jni.h>
 #include <memory>
 #include <mutex>

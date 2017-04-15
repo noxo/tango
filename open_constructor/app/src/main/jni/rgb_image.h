@@ -1,7 +1,6 @@
 #ifndef RGB_IMAGE_H
 #define RGB_IMAGE_H
 
-#include <glm/glm.hpp>
 #include <tango_3d_reconstruction_api.h>
 #include <string>
 
@@ -12,12 +11,8 @@ namespace oc {
         RGBImage();
         RGBImage(Tango3DR_ImageBuffer t3dr_image, int scale);
         RGBImage(std::string file);
-        RGBImage(int w, int h, double* buffer);
         ~RGBImage();
         unsigned char* ExtractYUV(int s);
-        glm::vec3 GetValue(int x, int y);
-        glm::vec3 GetValue(glm::vec2 coord);
-        void Merge(unsigned char* values);
         void Write(const char* filename);
 
         int GetWidth() { return width; }

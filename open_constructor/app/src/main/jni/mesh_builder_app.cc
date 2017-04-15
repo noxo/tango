@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/transform.hpp>
 #include <map>
 #include "mesh_builder_app.h"
 #include "utils/io.h"
@@ -385,31 +383,29 @@ namespace oc {
 
     void MeshBuilderApp::OnDrawFrame() {
         render_mutex_.lock();
-        //TODO:
         //camera transformation
-        /*if (!gyro) {
-            main_scene_.camera_->SetPosition(glm::vec3(movex, 0, movey));
-            main_scene_.camera_->SetRotation(glm::quat(glm::vec3(yaw, pitch, 0)));
-            main_scene_.camera_->SetScale(glm::vec3(1, 1, 1));
+        if (!gyro) {
+            main_scene_.renderer->camera.position = glm::vec3(movex, 0, movey);
+            main_scene_.renderer->camera.rotation = glm::quat(glm::vec3(yaw, pitch, 0));
+            main_scene_.renderer->camera.scale    = glm::vec3(1, 1, 1);
         } else {
-            TangoMatrixTransformData matrix_transform;
+            TangoMatrixTransformData transform;
             TangoSupport_getMatrixTransformAtTime(
                     0, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION, TANGO_COORDINATE_FRAME_DEVICE,
                     TANGO_SUPPORT_ENGINE_OPENGL, TANGO_SUPPORT_ENGINE_OPENGL,
-                    landscape ? ROTATION_90 : ROTATION_0, &matrix_transform);
-            glm::mat4 start_service_T_device_;
-            if (matrix_transform.status_code == TANGO_POSE_VALID)
-                start_service_T_device_ = glm::make_mat4(matrix_transform.matrix);
-            main_scene_.camera_->SetTransformationMatrix(start_service_T_device_);
-            main_scene_.UpdateFrustum(main_scene_.camera_->GetPosition(), zoom);
+                    landscape ? ROTATION_90 : ROTATION_0, &transform);
+            if (transform.status_code == TANGO_POSE_VALID) {
+                main_scene_.renderer->camera.SetTransformation(glm::make_mat4(transform.matrix));
+                main_scene_.UpdateFrustum(main_scene_.renderer->camera.position, zoom);
+            }
         }
         //zoom
-        glm::vec4 move = main_scene_.camera_->GetTransformationMatrix() * glm::vec4(0, 0, zoom, 0);
-        main_scene_.camera_->Translate(glm::vec3(move.x, move.y, move.z));
+        glm::vec4 move = main_scene_.renderer->camera.GetTransformation() * glm::vec4(0, 0, zoom, 0);
+        main_scene_.renderer->camera.position += glm::vec3(move.x, move.y, move.z);
         //render
         if (textures->UpdateGL())
           main_scene_.textureMap = textures->TextureMap();
-        main_scene_.Render(gyro);*/
+        main_scene_.Render(gyro);
         render_mutex_.unlock();
     }
 

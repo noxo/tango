@@ -1,23 +1,18 @@
 #ifndef GL_RENDERER_H
 #define GL_RENDERER_H
 
-#include <glm/glm.hpp>
 #include <stack>
 #include <vector>
+#include "gl/camera.h"
 #include "gl/glsl.h"
 #include "gl/mesh.h"
 #include "gl/opengl.h"
+#include "utils/math.h"
 
 namespace oc {
     class GLRenderer {
 
     public:
-        GLSL* current;                        ///< Current binded shader
-        GLSL* scene;                          ///< Scene shader
-        unsigned int* rendertexture;          ///< Texture for color buffer
-        unsigned int* fboID;                  ///< Frame buffer object id
-        unsigned int* rboID;                  ///< Render buffer object id
-
         /**
          * @brief constructor
          */
@@ -41,7 +36,7 @@ namespace oc {
          * @param m is instance of model to render
          * @param size is amount of indices to render indexed geometry or -1 to render vertex array
          */
-        void Render(GLMesh m, unsigned int size);
+        void Render(GLMesh m, int size);
 
         /**
          * @brief Rtt enables rendering into FBO which makes posible to do reflections
@@ -49,12 +44,19 @@ namespace oc {
          */
         void Rtt(bool enable);
 
+        GLCamera camera;
+
     private:
         void Cleanup();
 
-        float aliasing;      ///< Screen detail
-        int width;           ///< Screen width
-        int height;          ///< Screen height
+        float aliasing;                       ///< Screen detail
+        int width;                            ///< Screen width
+        int height;                           ///< Screen height
+        GLSL* scene;                          ///< Scene shader
+        unsigned int* rendertexture;          ///< Texture for color buffer
+        unsigned int* fboID;                  ///< Frame buffer object id
+        unsigned int* rboID;                  ///< Render buffer object id
+
     };
 }
 

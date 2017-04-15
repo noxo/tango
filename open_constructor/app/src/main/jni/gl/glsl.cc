@@ -3,7 +3,7 @@
 #include "gl/opengl.h"
 #include "utils/io.h"
 
-unsigned int gl_last_shader = -1;
+oc::GLSL* gl_last_shader = 0;
 
 namespace oc {
     GLSL::GLSL(std::string vert, std::string frag) {
@@ -19,6 +19,7 @@ namespace oc {
         attribute_v_vertex = glGetAttribLocation(id, "v_vertex");
         attribute_v_coord = glGetAttribLocation(id, "v_coord");
         attribute_v_normal = glGetAttribLocation(id, "v_normal");
+        attribute_v_color = glGetAttribLocation(id, "v_color");
     }
 
     GLSL::~GLSL() {
@@ -30,36 +31,23 @@ namespace oc {
         glDeleteProgram(id);
     }
 
-    void GLSL::Attrib(unsigned int size) {
-        /// apply attributes
-        glVertexAttribPointer(attribute_v_vertex, 4, GL_FLOAT, GL_FALSE, 0, ( const void *) 0);
-        unsigned int len = 4;
-        if (attribute_v_normal != -1)
-        {
-            glVertexAttribPointer(attribute_v_normal, 4, GL_FLOAT, GL_FALSE, 0, ( const void *) (intptr_t)(size * len));
-            len += 4;
-        }
-        if (attribute_v_coord != -1)
-        {
-            glVertexAttribPointer(attribute_v_coord, 2, GL_FLOAT, GL_FALSE, 0, ( const void *) (intptr_t)(size * len));
-            len += 2;
-        }
-    }
-
-    void GLSL::Attrib(float* vertices, float* normals, float* coords) {
+    void GLSL::Attrib(glm::vec3* vertices, glm::vec3* normals, glm::vec2* coords, unsigned int* colors) {
         /// send attributes to GPU
-        glVertexAttribPointer(attribute_v_vertex, 3, GL_FLOAT, GL_FALSE, 0, vertices);
+        glVertexAttribPointer(attribute_v_vertex, 3, GL_FLOAT, GL_FALSE, 0, &vertices[0].x);
         if ((attribute_v_normal != -1) && (normals != 0))
-          glVertexAttribPointer(attribute_v_normal, 3, GL_FLOAT, GL_FALSE, 0, normals);
+          glVertexAttribPointer(attribute_v_normal, 3, GL_FLOAT, GL_FALSE, 0, &normals[0].x);
         if ((attribute_v_coord != -1) && (coords != 0))
-          glVertexAttribPointer(attribute_v_coord, 2, GL_FLOAT, GL_FALSE, 0, coords);
+          glVertexAttribPointer(attribute_v_coord, 2, GL_FLOAT, GL_FALSE, 0, &coords[0].x);
+        if ((attribute_v_color != -1) && (colors != 0))
+          glVertexAttribPointer(attribute_v_color, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, colors);
     }
 
     void GLSL::Bind() {
         /// bind shader
-        if (gl_last_shader == id)
+        if (gl_last_shader == this)
             return;
         glUseProgram(id);
+        gl_last_shader = this;
 
         /// set attributes
         glEnableVertexAttribArray(attribute_v_vertex);
@@ -67,6 +55,12 @@ namespace oc {
             glEnableVertexAttribArray(attribute_v_normal);
         if (attribute_v_coord != -1)
             glEnableVertexAttribArray(attribute_v_coord);
+        if (attribute_v_color != -1)
+            glEnableVertexAttribArray(attribute_v_color);
+    }
+
+    GLSL* GLSL::CurrentShader() {
+        return gl_last_shader;
     }
 
     unsigned int GLSL::InitShader(const char *vs, const char *fs) {
@@ -86,11 +80,11 @@ namespace oc {
         glCompileShader(shader_vp);
         glGetShaderInfoLog(shader_vp, BUFFER_SIZE, &length, buffer);
         if (length > 0)
-            LOGI("GLSL compile log: %s", buffer);
+            LOGI("GLSL compile log: %s\n%s", buffer, vs);
         glCompileShader(shader_fp);
         glGetShaderInfoLog(shader_fp, BUFFER_SIZE, &length, buffer);
         if (length > 0)
-            LOGI("GLSL compile log: %s", buffer);
+            LOGI("GLSL compile log: %s\n%s", buffer, fs);
 
         /// Link program
         unsigned int shader_id = glCreateProgram();
@@ -111,7 +105,7 @@ namespace oc {
     }
 
     void GLSL::Unbind() {
-        gl_last_shader = -1;
+        gl_last_shader = 0;
         glUseProgram(0);
     }
 
@@ -119,7 +113,7 @@ namespace oc {
         glUniform1f(glGetUniformLocation(id, name), value);
     }
 
-    void GLSL::UniformMatrix(const char* name, float* value) {
+    void GLSL::UniformMatrix(const char* name, const float* value) {
         glUniformMatrix4fv(glGetUniformLocation(id,name),1, GL_FALSE, value);
     }
 }

@@ -83,21 +83,6 @@ namespace oc {
         name = file;
     }
 
-    RGBImage::RGBImage(int w, int h, double *buffer) {
-        width = w;
-        height = h;
-        data = new unsigned char[w * h * 3];
-        name = "buffer";
-        int index = 0;
-        for(int y = 0; y < h; y++) {
-            for(int x = 0; x < w; x++) {
-                data[index++] = (unsigned char) glm::clamp(buffer[y * w + x] * 128.0, 0.0, 255.0);
-                data[index++] = (unsigned char) glm::clamp(buffer[y * w + x] * 128.0, 0.0, 255.0);
-                data[index++] = (unsigned char) glm::clamp(buffer[y * w + x] * 512.0, 0.0, 255.0);
-            }
-        }
-    }
-
     RGBImage::~RGBImage() {
         delete[] data;
     }
@@ -133,43 +118,6 @@ namespace oc {
             }
         }
         return output;
-    }
-
-    glm::vec3 RGBImage::GetValue(int x, int y) {
-        if (x < 0)
-            x = 0;
-        if (y < 0)
-            y = 0;
-        if (x >= width)
-            x = width - 1;
-        if (y >= height)
-            y = height - 1;
-        int index = (y * width + x) * 3;
-        glm::vec3 output;
-        output.r = data[index++];
-        output.g = data[index++];
-        output.b = data[index++];
-        return output;
-    }
-
-    glm::vec3 RGBImage::GetValue(glm::vec2 coord) {
-        float x = coord.x;
-        float y = coord.y;
-        int ix = (int) x;
-        int iy = (int) y;
-        float dx = x - ix;
-        float dy = y - iy;
-        glm::vec3 v = glm::vec3(0, 0, 0);
-        v += GetValue(ix, iy) * (1 - dx) * (1 - dy);
-        v += GetValue(ix, iy + 1) * (1 - dx) * dy;
-        v += GetValue(ix + 1, iy) * dx * (1 - dy);
-        v += GetValue(ix + 1, iy + 1) * dx * dy;
-        return v;
-    }
-
-    void RGBImage::Merge(unsigned char* values) {
-        for (unsigned int i = 0; i < width * height * 3; i++)
-            data[i] = data[i] * 0.5f + values[i] * 0.5f;
     }
 
     void RGBImage::Write(const char *filename) {

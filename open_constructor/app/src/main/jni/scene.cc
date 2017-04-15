@@ -2,20 +2,20 @@
 #include "scene.h"
 
 std::string ColorFragmentShader() {
-  return "varying vec4 v_color;\n"
+  return "varying vec4 f_color;\n"
          "void main() {\n"
-         "  gl_FragColor = v_color;\n"
+         "  gl_FragColor = f_color;\n"
          "}\n";
 }
 
 std::string ColorVertexShader() {
   return "attribute vec4 v_vertex;\n"
-         "attribute vec4 v_normal;\n"
+         "attribute vec4 v_color;\n"
          "uniform mat4 MVP;\n"
-         "varying vec4 v_color;\n"
+         "varying vec4 f_color;\n"
          "void main() {\n"
          "  gl_Position = MVP * v_vertex;\n"
-         "  v_color = v_normal;\n"
+         "  f_color = v_color;\n"
          "}\n";
 }
 
@@ -84,25 +84,12 @@ namespace oc {
                 renderer->Render(mesh, -1);
             }
         }
+        color_vertex_shader->Bind();
         for (SingleDynamicMesh *mesh : dynamic_meshes_) {
             mesh->mutex.lock();
-            if (mesh->mesh.texture == -1) {
-                color_vertex_shader->Bind();
-                renderer->Render(mesh->mesh, mesh->size);
-            } else {
-                unsigned int texture = textureMap[mesh->mesh.texture];
-                if (lastTexture != texture) {
-                    lastTexture = texture;
-                    glBindTexture(GL_TEXTURE_2D, texture);
-                }
-                textured_shader->Bind();
-                renderer->Render(mesh->mesh, mesh->size);
-            }
+            renderer->Render(mesh->mesh, mesh->size);
             mesh->mutex.unlock();
         }
-        color_vertex_shader->Bind();
-        for (GLMesh mesh : debug_meshes_)
-            renderer->Render(mesh, -1);
         if(!frustum_.vertices.empty() && frustum)
             renderer->Render(frustum_, frustum_.indices.size());
     }

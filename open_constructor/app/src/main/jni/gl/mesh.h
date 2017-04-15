@@ -1,6 +1,8 @@
 #ifndef GL_MESH_H
 #define GL_MESH_H
 
+#include "utils/math.h"
+
 namespace oc {
     class GLMesh {
 

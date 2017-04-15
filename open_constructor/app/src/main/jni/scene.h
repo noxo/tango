@@ -22,7 +22,6 @@ namespace oc {
         GLMesh frustum_;
         std::vector<unsigned int> textureMap;
         std::vector<GLMesh> static_meshes_;
-        std::vector<GLMesh> debug_meshes_;
         std::vector<SingleDynamicMesh*> dynamic_meshes_;
         GLSL* color_vertex_shader;
         GLSL* textured_shader;

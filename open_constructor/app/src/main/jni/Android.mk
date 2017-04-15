@@ -31,6 +31,7 @@ LOCAL_SRC_FILES := jni_interface.cc \
                    model_io.cc \
                    rgb_image.cc \
                    scene.cc \
+                   gl/camera.cc \
                    gl/glsl.cc \
                    gl/renderer.cc \
                    gl/textures.cc
