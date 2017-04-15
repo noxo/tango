@@ -14,7 +14,7 @@ struct SingleDynamicMesh {
     unsigned long size;
 };
 
-namespace mesh_builder {
+namespace oc {
 
 class ModelIO {
 public:
@@ -48,7 +48,6 @@ private:
     std::map<int, std::string> indexToFile;
     std::map<std::string, std::string> keyToFile;
 };
-} // namespace mesh_builder
+}
 
-
-#endif //OPEN_CONSTRUCTOR_MODEL_IO_H
+#endif

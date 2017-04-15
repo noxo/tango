@@ -1,17 +1,16 @@
-#ifndef TEXTURE_PROCESSOR_H
-#define TEXTURE_PROCESSOR_H
+#ifndef GL_TEXTURES_H
+#define GL_TEXTURES_H
 
 #include <vector>
 #include <mutex>
 #include <map>
-#include "model_io.h"
 #include "rgb_image.h"
 
-namespace mesh_builder {
-    class TextureProcessor {
+namespace oc {
+    class GLTextures {
     public:
-        TextureProcessor();
-        ~TextureProcessor();
+        GLTextures();
+        ~GLTextures();
 
         void Add(std::map<int, std::string> files);
         RGBImage* GetTexture(unsigned int index);
@@ -26,6 +25,6 @@ namespace mesh_builder {
         std::mutex mutex;
         std::vector<unsigned int> textureMap;
     };
-} // namespace mesh_builder
+}
 
 #endif

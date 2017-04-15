@@ -1,5 +1,5 @@
-#ifndef MESH_BUILDER_SCENE_H_
-#define MESH_BUILDER_SCENE_H_
+#ifndef SCENE_H
+#define SCENE_H
 
 #include <memory>
 #include <vector>
@@ -12,7 +12,7 @@
 #include <tango_3d_reconstruction_api.h>
 #include "model_io.h"
 
-namespace mesh_builder {
+namespace oc {
 
 class Scene {
  public:
@@ -35,6 +35,6 @@ class Scene {
   tango_gl::Material* color_vertex_shader;
   tango_gl::Material* textured_shader;
 };
-}  // namespace mesh_builder
+}
 
-#endif  // MESH_BUILDER_SCENE_H_
+#endif

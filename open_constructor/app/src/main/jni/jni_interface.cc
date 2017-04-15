@@ -17,7 +17,7 @@
 #include <jni.h>
 #include "mesh_builder_app.h"
 
-static mesh_builder::MeshBuilderApp app;
+static oc::MeshBuilderApp app;
 
 std::string jstring2string(JNIEnv* env, jstring name)
 {

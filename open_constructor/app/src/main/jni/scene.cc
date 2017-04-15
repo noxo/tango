@@ -20,7 +20,7 @@
 
 #include "scene.h"
 
-namespace mesh_builder {
+namespace oc {
 
     Scene::Scene() { }
 
@@ -143,4 +143,4 @@ namespace mesh_builder {
         textureMap.clear();
     }
 
-}  // namespace mesh_builder
+}

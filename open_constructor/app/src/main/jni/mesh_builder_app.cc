@@ -34,17 +34,17 @@ namespace {
     constexpr int kTangoCoreMinimumVersion = 9377;
 
     void onPointCloudAvailableRouter(void *context, const TangoPointCloud *point_cloud) {
-        mesh_builder::MeshBuilderApp *app = static_cast<mesh_builder::MeshBuilderApp *>(context);
+        oc::MeshBuilderApp *app = static_cast<oc::MeshBuilderApp *>(context);
         app->onPointCloudAvailable((TangoPointCloud*)point_cloud);
     }
 
     void onFrameAvailableRouter(void *context, TangoCameraId id, const TangoImageBuffer *buffer) {
-        mesh_builder::MeshBuilderApp *app = static_cast<mesh_builder::MeshBuilderApp *>(context);
+        oc::MeshBuilderApp *app = static_cast<oc::MeshBuilderApp *>(context);
         app->onFrameAvailable(id, buffer);
     }
-}  // namespace
+}
 
-namespace mesh_builder {
+namespace oc {
 
     bool GridIndex::operator==(const GridIndex &other) const {
         return indices[0] == other.indices[0] && indices[1] == other.indices[1] &&
@@ -168,7 +168,7 @@ namespace mesh_builder {
                                         textured(false),
                                         zoom(0)
     {
-        textureProcessor = new TextureProcessor();
+        textures = new GLTextures();
     }
 
 
@@ -409,8 +409,8 @@ namespace mesh_builder {
         glm::vec4 move = main_scene_.camera_->GetTransformationMatrix() * glm::vec4(0, 0, zoom, 0);
         main_scene_.camera_->Translate(glm::vec3(move.x, move.y, move.z));
         //render
-        if (textureProcessor->UpdateGL())
-          main_scene_.textureMap = textureProcessor->TextureMap();
+        if (textures->UpdateGL())
+          main_scene_.textureMap = textures->TextureMap();
         main_scene_.Render(gyro);
         render_mutex_.unlock();
     }
@@ -443,7 +443,7 @@ namespace mesh_builder {
         binder_mutex_.lock();
         render_mutex_.lock();
         ModelIO io(filename, false);
-        textureProcessor->Add(io.ReadModel(kSubdivisionSize, main_scene_.static_meshes_));
+        textures->Add(io.ReadModel(kSubdivisionSize, main_scene_.static_meshes_));
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -615,4 +615,4 @@ namespace mesh_builder {
         if (photoMode)
             photoFinished = true;
     }
-}  // namespace mesh_builder
+}

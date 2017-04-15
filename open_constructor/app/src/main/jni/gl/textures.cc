@@ -1,15 +1,10 @@
-#include <cstdlib>
-#include <tango_3d_reconstruction_api.h>
-#include <string>
-#include <sstream>
-#include <tango-gl/util.h>
-#include "math_utils.h"
-#include "texture_processor.h"
+#include "gl/opengl.h"
+#include "gl/textures.h"
 
-namespace mesh_builder {
-    TextureProcessor::TextureProcessor() {}
+namespace oc {
+    GLTextures::GLTextures() {}
 
-    TextureProcessor::~TextureProcessor() {
+    GLTextures::~GLTextures() {
         for (RGBImage* t : images) {
             delete t;
         }
@@ -18,7 +13,7 @@ namespace mesh_builder {
         }
     }
 
-    void TextureProcessor::Add(std::map<int, std::string> files) {
+    void GLTextures::Add(std::map<int, std::string> files) {
         std::vector<std::string> pngFiles;
         for (std::pair<const int, std::string> i : files) {
             while(i.first >= pngFiles.size()) {
@@ -39,28 +34,28 @@ namespace mesh_builder {
         }
     }
 
-    RGBImage* TextureProcessor::GetTexture(unsigned int index) {
+    RGBImage* GLTextures::GetTexture(unsigned int index) {
         mutex.lock();
         RGBImage* output = images[index];
         mutex.unlock();
         return output;
     }
 
-    unsigned int TextureProcessor::TextureCount() {
+    unsigned int GLTextures::TextureCount() {
         mutex.lock();
         unsigned int output = images.size();
         mutex.unlock();
         return output;
     }
 
-    std::vector<unsigned int> TextureProcessor::TextureMap() {
+    std::vector<unsigned int> GLTextures::TextureMap() {
         mutex.lock();
         std::vector<unsigned int> output = textureMap;
         mutex.unlock();
         return output;
     }
 
-    bool TextureProcessor::UpdateGL() {
+    bool GLTextures::UpdateGL() {
         mutex.lock();
         bool updated = !toLoad.empty();
         for(std::pair<const int, bool> i : toLoad ) {
@@ -83,7 +78,7 @@ namespace mesh_builder {
         return updated;
     }
 
-    void TextureProcessor::UpdateTexture(int index) {
+    void GLTextures::UpdateTexture(int index) {
         mutex.lock();
         toLoad[index] = true;
         mutex.unlock();

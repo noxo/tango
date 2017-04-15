@@ -8,7 +8,7 @@ void png_read_file(png_structp, png_bytep data, png_size_t length)
     fread(data, length, 1, temp);
 }
 
-namespace mesh_builder {
+namespace oc {
 
     RGBImage::RGBImage() {
         width = 1;

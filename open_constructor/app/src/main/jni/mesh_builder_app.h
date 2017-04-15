@@ -1,5 +1,5 @@
-#ifndef MESH_BUILDER_MESH_BUILDER_APP_H_
-#define MESH_BUILDER_MESH_BUILDER_APP_H_
+#ifndef MESH_BUILDER_APP_H
+#define MESH_BUILDER_APP_H
 
 #include <jni.h>
 #include <memory>
@@ -15,9 +15,9 @@
 #include <tango_support_api.h>
 
 #include "scene.h"
-#include "texture_processor.h"
+#include "gl/textures.h"
 
-namespace mesh_builder {
+namespace oc {
 
     struct GridIndex {
         Tango3DR_GridIndex indices;
@@ -26,7 +26,7 @@ namespace mesh_builder {
     };
 
     struct GridIndexHasher {
-        std::size_t operator()(const mesh_builder::GridIndex &index) const {
+        std::size_t operator()(const oc::GridIndex &index) const {
             std::size_t val = std::hash<int>()(index.indices[0]);
             val = hash_combine(val, std::hash<int>()(index.indices[1]));
             val = hash_combine(val, std::hash<int>()(index.indices[2]));
@@ -88,7 +88,7 @@ namespace mesh_builder {
 
         Scene main_scene_;
         TangoConfig tango_config_;
-        TextureProcessor* textureProcessor;
+        GLTextures* textures;
         std::unordered_map<GridIndex, SingleDynamicMesh*, GridIndexHasher> meshes_;
 
         std::string dataset_;
@@ -106,6 +106,6 @@ namespace mesh_builder {
         float yaw;
         float zoom;
     };
-}  // namespace mesh_builder
+}
 
-#endif  // MESH_BUILDER_MESH_BUILDER_APP_H_
+#endif

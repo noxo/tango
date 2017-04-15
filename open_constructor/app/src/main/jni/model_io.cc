@@ -2,7 +2,7 @@
 #include "model_io.h"
 #include <sstream>
 
-namespace mesh_builder {
+namespace oc {
 
     ModelIO::ModelIO(std::string filename, bool writeAccess) {
         path = filename;
@@ -373,4 +373,4 @@ namespace mesh_builder {
                 fprintf(file, "f %d/%d %d/%d %d/%d\n", i.x, i.x, i.y, i.y, i.z, i.z);
         }
     }
-} // namespace mesh_builder
+}

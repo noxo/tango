@@ -1,10 +1,11 @@
 #ifndef RGB_IMAGE_H
 #define RGB_IMAGE_H
 
+#include <glm/glm.hpp>
 #include <tango_3d_reconstruction_api.h>
 #include <string>
 
-namespace mesh_builder {
+namespace oc {
 
     class RGBImage {
     public:
@@ -30,6 +31,6 @@ namespace mesh_builder {
         unsigned char* data;
         std::string name;
     };
-} // namespace mesh_builder
+}
 
 #endif
