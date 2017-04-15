@@ -477,7 +477,7 @@ namespace mesh_builder {
             //update texturing context using stored PNGs
             for (unsigned int i = 0; i < poses_; i++) {
                 glm::mat4 mat;
-                long timestamp;
+                double timestamp;
                 FILE* file = fopen(GetFileName(i, ".txt").c_str(), "r");
                 for (int i = 0; i < 4; i++)
                   fscanf(file, "%f %f %f %f\n", &mat[i][0], &mat[i][1], &mat[i][2], &mat[i][3]);
