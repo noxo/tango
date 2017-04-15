@@ -33,6 +33,7 @@ LOCAL_SRC_FILES := jni_interface.cc \
                    model_io.cc \
                    rgb_image.cc \
                    scene.cc \
+                   gl/glsl.cc \
                    gl/textures.cc \
                    $(PROJECT_ROOT_FROM_JNI)/tango_gl/camera.cc \
                    $(PROJECT_ROOT_FROM_JNI)/tango_gl/conversions.cc \

@@ -70,7 +70,6 @@ namespace oc {
         void TangoDisconnect();
         void DeleteResources();
         void MeshUpdate(Tango3DR_ImageBuffer t3dr_image, Tango3DR_GridIndexArray *t3dr_updated);
-        std::string GetFileName(int index, std::string extension);
 
         bool t3dr_is_running_;
         Tango3DR_Context t3dr_context_;

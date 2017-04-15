@@ -18,10 +18,10 @@
 #include <tango-gl/conversions.h>
 #include <tango-gl/util.h>
 #include <map>
-#include <sstream>
 
-#include "math_utils.h"
 #include "mesh_builder_app.h"
+#include "utils/io.h"
+#include "utils/math.h"
 
 #define COORDINATE_BUG
 #define PNG_TEXTURE_SCALE 4
@@ -130,7 +130,7 @@ namespace oc {
         }
         if (textured) {
             RGBImage frame(t3dr_image, PNG_TEXTURE_SCALE);
-            frame.Write(GetFileName(poses_, ".png").c_str());
+            frame.Write(IO::GetFileName(dataset_, poses_, ".png").c_str());
 #ifdef COORDINATE_BUG
             TangoSupport_getMatrixTransformAtTime(
                         buffer->timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION,
@@ -143,7 +143,7 @@ namespace oc {
                 image_matrix = pose;
             }
 #endif
-            FILE* file = fopen(GetFileName(poses_, ".txt").c_str(), "w");
+            FILE* file = fopen(IO::GetFileName(dataset_, poses_, ".txt").c_str(), "w");
             for (int i = 0; i < 4; i++)
                 fprintf(file, "%f %f %f %f\n", image_matrix[i][0], image_matrix[i][1],
                                                image_matrix[i][2], image_matrix[i][3]);
@@ -478,13 +478,13 @@ namespace oc {
             for (unsigned int i = 0; i < poses_; i++) {
                 glm::mat4 mat;
                 double timestamp;
-                FILE* file = fopen(GetFileName(i, ".txt").c_str(), "r");
+                FILE* file = fopen(IO::GetFileName(dataset_, i, ".txt").c_str(), "r");
                 for (int i = 0; i < 4; i++)
                   fscanf(file, "%f %f %f %f\n", &mat[i][0], &mat[i][1], &mat[i][2], &mat[i][3]);
                 fscanf(file, "%lf\n", &timestamp);
                 fclose(file);
 
-                RGBImage frame(GetFileName(i, ".png"));
+                RGBImage frame(IO::GetFileName(dataset_, i, ".png"));
                 Tango3DR_ImageBuffer image;
                 image.width = frame.GetWidth() * PNG_TEXTURE_SCALE;
                 image.height = frame.GetHeight() * PNG_TEXTURE_SCALE;
@@ -539,15 +539,6 @@ namespace oc {
             }
         }
         return (min + max) * 0.5f;
-    }
-
-    std::string MeshBuilderApp::GetFileName(int index, std::string extension) {
-        std::ostringstream ss;
-        ss << dataset_.c_str();
-        ss << "/";
-        ss << index;
-        ss << extension.c_str();
-        return ss.str();
     }
 
     void MeshBuilderApp::MeshUpdate(Tango3DR_ImageBuffer t3dr_image, Tango3DR_GridIndexArray *t3dr_updated) {
