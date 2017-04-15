@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/transform.hpp>
-#include <tango-gl/conversions.h>
-#include <tango-gl/util.h>
 #include <map>
-
 #include "mesh_builder_app.h"
 #include "utils/io.h"
 #include "utils/math.h"
@@ -97,13 +95,13 @@ namespace oc {
         t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(buffer->format);
         t3dr_image.data = buffer->data;
 
-        Tango3DR_Pose t3dr_image_pose = Math::extract3DRPose(image_matrix);
+        Tango3DR_Pose t3dr_image_pose = Math::Extract3DRPose(image_matrix);
         if(!photoMode) {
             glm::quat rot = glm::quat((float) t3dr_image_pose.orientation[0],
                                       (float) t3dr_image_pose.orientation[1],
                                       (float) t3dr_image_pose.orientation[2],
                                       (float) t3dr_image_pose.orientation[3]);
-            float diff = Math::diff(rot, image_rotation);
+            float diff = Math::Diff(rot, image_rotation);
             image_rotation = rot;
             int limit = textured ? 1 : 5;
             if (diff > limit) {
@@ -118,7 +116,7 @@ namespace oc {
         t3dr_depth.num_points = front_cloud_->num_points;
         t3dr_depth.points = front_cloud_->points;
 
-        Tango3DR_Pose t3dr_depth_pose = Math::extract3DRPose(point_cloud_matrix_);
+        Tango3DR_Pose t3dr_depth_pose = Math::Extract3DRPose(point_cloud_matrix_);
         Tango3DR_GridIndexArray* t3dr_updated;
         Tango3DR_Status t3dr_err =
                 Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image,
@@ -139,7 +137,7 @@ namespace oc {
             if (matrix_transform.status_code == TANGO_POSE_VALID) {
                 glm::mat4 pose = glm::make_mat4(matrix_transform.matrix);
                 pose = glm::rotate(pose, glm::radians(deviceMatrixRotation_), glm::vec3(0, 0, 1));
-                t3dr_image_pose = Math::extract3DRPose(pose);
+                t3dr_image_pose = Math::Extract3DRPose(pose);
                 image_matrix = pose;
             }
 #endif
@@ -387,9 +385,9 @@ namespace oc {
 
     void MeshBuilderApp::OnDrawFrame() {
         render_mutex_.lock();
-
+        //TODO:
         //camera transformation
-        if (!gyro) {
+        /*if (!gyro) {
             main_scene_.camera_->SetPosition(glm::vec3(movex, 0, movey));
             main_scene_.camera_->SetRotation(glm::quat(glm::vec3(yaw, pitch, 0)));
             main_scene_.camera_->SetScale(glm::vec3(1, 1, 1));
@@ -411,7 +409,7 @@ namespace oc {
         //render
         if (textures->UpdateGL())
           main_scene_.textureMap = textures->TextureMap();
-        main_scene_.Render(gyro);
+        main_scene_.Render(gyro);*/
         render_mutex_.unlock();
     }
 
@@ -492,7 +490,7 @@ namespace oc {
                 image.timestamp = timestamp;
                 image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
                 image.data = frame.ExtractYUV(PNG_TEXTURE_SCALE);
-                Tango3DR_Pose t3dr_image_pose = Math::extract3DRPose(mat);
+                Tango3DR_Pose t3dr_image_pose = Math::Extract3DRPose(mat);
                 ret = Tango3DR_updateTexture(context, &image, &t3dr_image_pose);
                 if (ret != TANGO_3DR_SUCCESS)
                     std::exit(EXIT_SUCCESS);
@@ -529,7 +527,7 @@ namespace oc {
     float MeshBuilderApp::CenterOfStaticModel(bool horizontal) {
         float min = 99999999;
         float max = -99999999;
-        for (tango_gl::StaticMesh mesh : main_scene_.static_meshes_) {
+        for (GLMesh mesh : main_scene_.static_meshes_) {
             for (glm::vec3 vec : mesh.vertices) {
                 float value = horizontal ? vec.x : vec.z;
                 if (min > value)
@@ -555,7 +553,6 @@ namespace oc {
             SingleDynamicMesh* dynamic_mesh = meshes_[updated_index];
             if (dynamic_mesh == nullptr) {
                 dynamic_mesh = new SingleDynamicMesh();
-                dynamic_mesh->mesh.render_mode = GL_TRIANGLES;
                 dynamic_mesh->mesh.vertices.resize(kInitialVertexCount * 3);
                 dynamic_mesh->mesh.colors.resize(kInitialVertexCount * 3);
                 dynamic_mesh->mesh.indices.resize(kInitialIndexCount);

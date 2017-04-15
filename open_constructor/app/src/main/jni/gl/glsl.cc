@@ -3,36 +3,17 @@
 #include "gl/opengl.h"
 #include "utils/io.h"
 
+unsigned int gl_last_shader = -1;
+
 namespace oc {
-    GLSL::GLSL(std::vector<std::string> vert, std::vector<std::string> frag) {
-        /// convert vertex shader source code
+    GLSL::GLSL(std::string vert, std::string frag) {
+        /// add header
         std::string header = "#version 100\nprecision highp float;\n";
-        int size = header.length();
-        for (unsigned int i = 0; i < vert.size(); i++)
-            size += vert[i].length() + 2;
-
-        char vs[size];
-        strcpy(vs, header.c_str());
-        for (unsigned int i = 0; i < vert.size(); i++)
-        {
-            strcat(vs, vert[i].c_str());
-            strcat(vs, "\n");
-        }
-
-        /// convert fragment shader source code
-        size = header.length();
-        for (unsigned int i = 0; i < frag.size(); i++)
-            size += frag[i].length() + 2;
-        char fs[size];
-        strcpy(fs, header.c_str());
-        for (unsigned int i = 0; i < frag.size(); i++)
-        {
-            strcat(fs, frag[i].c_str());
-            strcat(fs, "\n");
-        }
+        vert = header + vert;
+        frag = header + frag;
 
         /// compile shader
-        id = initShader(vs, fs);
+        id = InitShader(vert.c_str(), frag.c_str());
 
         /// Attach VBO attributes
         attribute_v_vertex = glGetAttribLocation(id, "v_vertex");
@@ -49,14 +30,14 @@ namespace oc {
         glDeleteProgram(id);
     }
 
-    void GLSL::attrib(unsigned int size) {
+    void GLSL::Attrib(unsigned int size) {
         /// apply attributes
-        glVertexAttribPointer(attribute_v_vertex, 3, GL_FLOAT, GL_FALSE, 0, ( const void *) 0);
-        unsigned int len = 3;
+        glVertexAttribPointer(attribute_v_vertex, 4, GL_FLOAT, GL_FALSE, 0, ( const void *) 0);
+        unsigned int len = 4;
         if (attribute_v_normal != -1)
         {
-            glVertexAttribPointer(attribute_v_normal, 3, GL_FLOAT, GL_FALSE, 0, ( const void *) (intptr_t)(size * len));
-            len += 3;
+            glVertexAttribPointer(attribute_v_normal, 4, GL_FLOAT, GL_FALSE, 0, ( const void *) (intptr_t)(size * len));
+            len += 4;
         }
         if (attribute_v_coord != -1)
         {
@@ -65,7 +46,7 @@ namespace oc {
         }
     }
 
-    void GLSL::attrib(float* vertices, float* normals, float* coords) {
+    void GLSL::Attrib(float* vertices, float* normals, float* coords) {
         /// send attributes to GPU
         glVertexAttribPointer(attribute_v_vertex, 3, GL_FLOAT, GL_FALSE, 0, vertices);
         if ((attribute_v_normal != -1) && (normals != 0))
@@ -74,8 +55,10 @@ namespace oc {
           glVertexAttribPointer(attribute_v_coord, 2, GL_FLOAT, GL_FALSE, 0, coords);
     }
 
-    void GLSL::bind() {
+    void GLSL::Bind() {
         /// bind shader
+        if (gl_last_shader == id)
+            return;
         glUseProgram(id);
 
         /// set attributes
@@ -86,7 +69,7 @@ namespace oc {
             glEnableVertexAttribArray(attribute_v_coord);
     }
 
-    unsigned int GLSL::initShader(const char *vs, const char *fs) {
+    unsigned int GLSL::InitShader(const char *vs, const char *fs) {
         /// Load shader
         shader_vp = glCreateShader(GL_VERTEX_SHADER);
         shader_fp = glCreateShader(GL_FRAGMENT_SHADER);
@@ -127,15 +110,16 @@ namespace oc {
         return shader_id;
     }
 
-    void GLSL::unbind() {
+    void GLSL::Unbind() {
+        gl_last_shader = -1;
         glUseProgram(0);
     }
 
-    void GLSL::uniformFloat(const char* name, float value) {
+    void GLSL::UniformFloat(const char* name, float value) {
         glUniform1f(glGetUniformLocation(id, name), value);
     }
 
-    void GLSL::uniformMatrix(const char* name, float* value) {
+    void GLSL::UniformMatrix(const char* name, float* value) {
         glUniformMatrix4fv(glGetUniformLocation(id,name),1, GL_FALSE, value);
     }
 }

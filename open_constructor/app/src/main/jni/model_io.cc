@@ -1,6 +1,7 @@
 #include <tango_3d_reconstruction_api.h>
-#include "model_io.h"
 #include <sstream>
+#include "model_io.h"
+#include "utils/io.h"
 
 namespace oc {
 
@@ -31,7 +32,7 @@ namespace oc {
         fclose(file);
     }
 
-    std::map<int, std::string> ModelIO::ReadModel(int subdivision, std::vector<tango_gl::StaticMesh>& output) {
+    std::map<int, std::string> ModelIO::ReadModel(int subdivision, std::vector<GLMesh>& output) {
         assert(!writeMode);
         ReadHeader();
         if (type == PLY) {
@@ -98,7 +99,7 @@ namespace oc {
         return output;
     }
 
-    void ModelIO::ParseOBJ(int subdivision, std::vector<tango_gl::StaticMesh> &output) {
+    void ModelIO::ParseOBJ(int subdivision, std::vector<GLMesh> &output) {
         char buffer[1024];
         unsigned long meshIndex = 0;
         int textureIndex = 0;
@@ -125,8 +126,7 @@ namespace oc {
                 } else
                     textureIndex = fileToIndex[file];
                 meshIndex = output.size();
-                output.push_back(tango_gl::StaticMesh());
-                output[meshIndex].render_mode = GL_TRIANGLES;
+                output.push_back(GLMesh());
                 output[meshIndex].texture = textureIndex;
             } else if ((buffer[0] == 'v') && (buffer[1] == ' ')) {
                 sscanf(buffer, "v %f %f %f", &v.x, &v.y, &v.z);
@@ -173,15 +173,14 @@ namespace oc {
                 }
                 if (output[meshIndex].vertices.size() >= subdivision * 3) {
                     meshIndex = output.size();
-                    output.push_back(tango_gl::StaticMesh());
-                    output[meshIndex].render_mode = GL_TRIANGLES;
+                    output.push_back(GLMesh());
                     output[meshIndex].texture = textureIndex;
                 }
             }
         }
     }
 
-    void ModelIO::ParsePLYFaces(int subdivision, std::vector<tango_gl::StaticMesh> &output) {
+    void ModelIO::ParsePLYFaces(int subdivision, std::vector<GLMesh> &output) {
         unsigned int offset = 0;
         int parts = faceCount / subdivision;
         if(faceCount % subdivision > 0)
@@ -194,9 +193,8 @@ namespace oc {
             if (j == parts - 1)
                 count = faceCount % subdivision;
 
-                output.push_back(tango_gl::StaticMesh());
+                output.push_back(GLMesh());
                 unsigned long meshIndex = output.size() - 1;
-                output[meshIndex].render_mode = GL_TRIANGLES;
                 output[meshIndex].texture = -1;
 
                 //face cycle

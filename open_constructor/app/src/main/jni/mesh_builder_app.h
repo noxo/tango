@@ -1,16 +1,16 @@
 #ifndef MESH_BUILDER_APP_H
 #define MESH_BUILDER_APP_H
 
+#include <glm/gtc/quaternion.hpp>
 #include <jni.h>
 #include <memory>
 #include <mutex>
 #include <pthread.h>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <tango_client_api.h>  // NOLINT
-#include <tango-gl/tango-gl.h>
-#include <tango-gl/util.h>
 #include <tango_3d_reconstruction_api.h>
 #include <tango_support_api.h>
 

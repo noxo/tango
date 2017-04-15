@@ -1,24 +1,43 @@
-/*
- * Copyright 2016 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-#include <tango-gl/conversions.h>
-#include <tango-gl/shaders.h>
-#include <tango-gl/tango-gl.h>
-
+#include "gl/opengl.h"
 #include "scene.h"
+
+std::string ColorFragmentShader() {
+  return "varying vec4 v_color;\n"
+         "void main() {\n"
+         "  gl_FragColor = v_color;\n"
+         "}\n";
+}
+
+std::string ColorVertexShader() {
+  return "attribute vec4 v_vertex;\n"
+         "attribute vec4 v_normal;\n"
+         "uniform mat4 MVP;\n"
+         "varying vec4 v_color;\n"
+         "void main() {\n"
+         "  gl_Position = MVP * v_vertex;\n"
+         "  v_color = v_normal;\n"
+         "}\n";
+}
+
+std::string TexturedFragmentShader() {
+  return "uniform sampler2D u_texture;\n"
+         "varying vec2 v_uv;\n"
+         "void main() {\n"
+         "  gl_FragColor = texture2D(u_texture, v_uv);\n"
+         "}\n";
+}
+
+std::string TexturedVertexShader() {
+  return "attribute vec4 v_vertex;\n"
+         "attribute vec2 v_coord;\n"
+         "varying vec2 v_uv;\n"
+         "uniform mat4 MVP;\n"
+         "void main() {\n"
+         "  v_uv.x = v_coord.x;\n"
+         "  v_uv.y = 1.0 - v_coord.y;\n"
+         "  gl_Position = MVP * v_vertex;\n"
+         "}\n";
+}
 
 namespace oc {
 
@@ -27,13 +46,9 @@ namespace oc {
     Scene::~Scene() { }
 
     void Scene::InitGLContent() {
-        camera_ = new tango_gl::Camera();
-        color_vertex_shader = new tango_gl::Material();
-        color_vertex_shader->SetShader(tango_gl::shaders::GetColorVertexShader().c_str(),
-                                          tango_gl::shaders::GetBasicFragmentShader().c_str());
-        textured_shader = new tango_gl::Material();
-        textured_shader->SetShader(tango_gl::shaders::GetTexturedVertexShader().c_str(),
-                                       tango_gl::shaders::GetTexturedFragmentShader().c_str());
+        renderer = new GLRenderer();
+        color_vertex_shader = new GLSL(ColorVertexShader(), ColorFragmentShader());
+        textured_shader = new GLSL(TexturedVertexShader(), TexturedFragmentShader());
     }
 
     void Scene::DeleteResources() {
@@ -44,11 +59,8 @@ namespace oc {
     }
 
     void Scene::SetupViewPort(int w, int h) {
-        if (h == 0) {
-            LOGE("Setup graphic height not valid");
-        }
-        camera_->SetAspectRatio(static_cast<float>(w) / static_cast<float>(h));
         glViewport(0, 0, w, h);
+        renderer->Init(w, h, 1);
     }
 
     void Scene::Render(bool frustum) {
@@ -58,43 +70,45 @@ namespace oc {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
         unsigned int lastTexture = INT_MAX;
-        for (tango_gl::StaticMesh mesh : static_meshes_) {
-            if (mesh.texture == -1)
-                tango_gl::Render(mesh, *color_vertex_shader, tango_gl::Transform(), *camera_, -1);
-            else {
+        for (GLMesh mesh : static_meshes_) {
+            if (mesh.texture == -1) {
+                color_vertex_shader->Bind();
+                renderer->Render(mesh, -1);
+            } else {
                 unsigned int texture = textureMap[mesh.texture];
                 if (lastTexture != texture) {
                     lastTexture = texture;
                     glBindTexture(GL_TEXTURE_2D, texture);
                 }
-                tango_gl::Render(mesh, *textured_shader, tango_gl::Transform(), *camera_, -1);
+                textured_shader->Bind();
+                renderer->Render(mesh, -1);
             }
         }
         for (SingleDynamicMesh *mesh : dynamic_meshes_) {
             mesh->mutex.lock();
-            if (mesh->mesh.texture == -1)
-                tango_gl::Render(mesh->mesh, *color_vertex_shader, tango_gl::Transform(), *camera_, mesh->size);
-            else {
+            if (mesh->mesh.texture == -1) {
+                color_vertex_shader->Bind();
+                renderer->Render(mesh->mesh, mesh->size);
+            } else {
                 unsigned int texture = textureMap[mesh->mesh.texture];
                 if (lastTexture != texture) {
                     lastTexture = texture;
                     glBindTexture(GL_TEXTURE_2D, texture);
                 }
-                tango_gl::Render(mesh->mesh, *textured_shader, tango_gl::Transform(), *camera_, mesh->size);
+                textured_shader->Bind();
+                renderer->Render(mesh->mesh, mesh->size);
             }
             mesh->mutex.unlock();
         }
-        for (tango_gl::StaticMesh mesh : debug_meshes_) {
-            tango_gl::Render(mesh, *color_vertex_shader, tango_gl::Transform(), *camera_, -1);
-        }
+        color_vertex_shader->Bind();
+        for (GLMesh mesh : debug_meshes_)
+            renderer->Render(mesh, -1);
         if(!frustum_.vertices.empty() && frustum)
-            tango_gl::Render(frustum_, *color_vertex_shader, tango_gl::Transform(), *camera_,
-                             (const int) frustum_.indices.size());
+            renderer->Render(frustum_, frustum_.indices.size());
     }
 
     void Scene::UpdateFrustum(glm::vec3 pos, float zoom) {
         if(frustum_.colors.empty()) {
-            frustum_.render_mode = GL_TRIANGLES;
             frustum_.colors.push_back(0xFFFFFF00);
             frustum_.colors.push_back(0xFFFFFF00);
             frustum_.colors.push_back(0xFFFFFF00);
@@ -142,5 +156,4 @@ namespace oc {
         dynamic_meshes_.clear();
         textureMap.clear();
     }
-
 }
