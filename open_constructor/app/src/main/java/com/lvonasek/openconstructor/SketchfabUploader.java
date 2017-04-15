@@ -29,7 +29,7 @@ import android.widget.Toast;
 
 public class SketchfabUploader extends AbstractActivity implements OnClickListener
 {
-
+  private static final String UPLOADER_TAG = "openconstructor";
   private static final String UPLOAD_URL = "https://api.sketchfab.com/v3/models";
 
   private ProgressDialog mProgressDialog;
@@ -222,7 +222,7 @@ public class SketchfabUploader extends AbstractActivity implements OnClickListen
         MultipartUtility multipart = new MultipartUtility(UPLOAD_URL, token, charset);
         multipart.addFormField("name", mFileName);
         multipart.addFormField("description", mDesc);
-        multipart.addFormField("tags", mTag);
+        multipart.addFormField("tags", UPLOADER_TAG + " " + mTag);
         multipart.addFormField("source", "open-constructor");
         multipart.addFormField("isPublished", "false");
         multipart.addFilePart("modelFile", uploadFile);
