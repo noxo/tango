@@ -3,9 +3,9 @@
 
 #include <stack>
 #include <vector>
+#include "data/mesh.h"
 #include "gl/camera.h"
 #include "gl/glsl.h"
-#include "gl/mesh.h"
 #include "gl/opengl.h"
 
 namespace oc {
@@ -35,7 +35,7 @@ namespace oc {
          * @param m is instance of model to render
          * @param size is amount of indices to render indexed geometry or -1 to render vertex array
          */
-        void Render(GLMesh m, int size);
+        void Render(Mesh m, int size);
 
         /**
          * @brief Rtt enables rendering into FBO which makes posible to do reflections

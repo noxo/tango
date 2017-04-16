@@ -104,7 +104,7 @@ namespace oc {
         scene = new GLSL(RTTVertexShader(), RTTFragmentShader());
     }
 
-    void GLRenderer::Render(GLMesh m, int size) {
+    void GLRenderer::Render(Mesh m, int size) {
         GLSL::CurrentShader()->UniformMatrix("MVP", glm::value_ptr(camera.projection * camera.GetView()));
         GLSL::CurrentShader()->Attrib(m.vertices.data(), m.normals.data(), m.uv.data(), m.colors.data());
 

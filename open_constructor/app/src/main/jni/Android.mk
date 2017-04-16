@@ -28,12 +28,12 @@ LOCAL_C_INCLUDES := $(PROJECT_ROOT)/third_party/glm/ \
 
 LOCAL_SRC_FILES := jni_interface.cc \
                    mesh_builder_app.cc \
-                   model_io.cc \
-                   rgb_image.cc \
                    scene.cc \
+                   data/file3d.cc \
+                   data/image.cc \
+                   data/mesh.cc \
                    gl/camera.cc \
                    gl/glsl.cc \
-                   gl/mesh.cc \
                    gl/renderer.cc
 
 LOCAL_LDLIBS    := -llog -lGLESv2 -L$(SYSROOT)/usr/lib -lz -landroid

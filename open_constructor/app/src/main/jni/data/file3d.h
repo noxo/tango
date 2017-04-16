@@ -1,34 +1,34 @@
-#ifndef MODEL_IO_H
-#define MODEL_IO_H
+#ifndef DATA_FILE3D_H
+#define DATA_FILE3D_H
 
 #include <map>
 #include <mutex>
 #include <string>
 #include <tango_3d_reconstruction_api.h>
-#include "gl/mesh.h"
+#include "data/mesh.h"
 
 struct SingleDynamicMesh {
     Tango3DR_Mesh tango_mesh;
-    oc::GLMesh mesh;
+    oc::Mesh mesh;
     std::mutex mutex;
     unsigned long size;
 };
 
 namespace oc {
 
-class ModelIO {
+class File3d {
 public:
-    ModelIO(std::string filename, bool writeAccess);
-    ~ModelIO();
-    void ReadModel(int subdivision, std::vector<oc::GLMesh>& output);
+    File3d(std::string filename, bool writeAccess);
+    ~File3d();
+    void ReadModel(int subdivision, std::vector<oc::Mesh>& output);
     void WriteModel(std::vector<SingleDynamicMesh*> model);
 
     enum TYPE{OBJ, PLY};
 
 private:
     glm::ivec3 DecodeColor(unsigned int c);
-    void ParseOBJ(int subdivision, std::vector<oc::GLMesh> &output);
-    void ParsePLYFaces(int subdivision, std::vector<oc::GLMesh> &output);
+    void ParseOBJ(int subdivision, std::vector<oc::Mesh> &output);
+    void ParsePLYFaces(int subdivision, std::vector<oc::Mesh> &output);
     void ReadHeader();
     void ReadPLYVertices();
     unsigned int ScanDec(char *line, int offset);
@@ -43,7 +43,7 @@ private:
     unsigned int vertexCount;
     unsigned int faceCount;
     FILE* file;
-    GLMesh data;
+    Mesh data;
     std::map<std::string, std::string> keyToFile;
 };
 }

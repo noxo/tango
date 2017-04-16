@@ -1,7 +1,6 @@
 #include <png.h>
-#include <tango_3d_reconstruction_api.h>
+#include "data/image.h"
 #include "gl/opengl.h"
-#include "rgb_image.h"
 
 FILE* temp;
 void png_read_file(png_structp, png_bytep data, png_size_t length)
@@ -11,14 +10,14 @@ void png_read_file(png_structp, png_bytep data, png_size_t length)
 
 namespace oc {
 
-    RGBImage::RGBImage() {
+    Image::Image() {
         width = 1;
         height = 1;
         data = new unsigned char[3];
         name = "";
     }
 
-    RGBImage::RGBImage(Tango3DR_ImageBuffer t3dr_image, int scale) {
+    Image::Image(Tango3DR_ImageBuffer t3dr_image, int scale) {
         data = new unsigned char[(t3dr_image.width / scale) * (t3dr_image.height / scale) * 3];
         int index = 0;
         int frameSize = t3dr_image.width * t3dr_image.height;
@@ -53,7 +52,7 @@ namespace oc {
         name = "photo";
     }
 
-    RGBImage::RGBImage(std::string file) {
+    Image::Image(std::string file) {
         LOGI("Reading %s", file.c_str());
         temp = fopen(file.c_str(), "r");
         unsigned int sig_read = 0;
@@ -83,11 +82,11 @@ namespace oc {
         name = file;
     }
 
-    RGBImage::~RGBImage() {
+    Image::~Image() {
         delete[] data;
     }
 
-    unsigned char* RGBImage::ExtractYUV(int s) {
+    unsigned char* Image::ExtractYUV(int s) {
         int yIndex = 0;
         int uvIndex = width * s * height * s;
         int R, G, B, Y, U, V;
@@ -120,7 +119,7 @@ namespace oc {
         return output;
     }
 
-    void RGBImage::Write(const char *filename) {
+    void Image::Write(const char *filename) {
         // Open file for writing (binary mode)
         FILE *fp = fopen(filename, "wb");
 

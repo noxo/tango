@@ -1,17 +1,17 @@
-#ifndef RGB_IMAGE_H
-#define RGB_IMAGE_H
+#ifndef DATA_IMAGE_H
+#define DATA_IMAGE_H
 
 #include <tango_3d_reconstruction_api.h>
 #include <string>
 
 namespace oc {
 
-    class RGBImage {
+    class Image {
     public:
-        RGBImage();
-        RGBImage(Tango3DR_ImageBuffer t3dr_image, int scale);
-        RGBImage(std::string file);
-        ~RGBImage();
+        Image();
+        Image(Tango3DR_ImageBuffer t3dr_image, int scale);
+        Image(std::string file);
+        ~Image();
         unsigned char* ExtractYUV(int s);
         void Write(const char* filename);
 

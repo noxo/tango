@@ -124,7 +124,7 @@ namespace oc {
             return;
         }
         if (textured) {
-            RGBImage frame(t3dr_image, PNG_TEXTURE_SCALE);
+            Image frame(t3dr_image, PNG_TEXTURE_SCALE);
             frame.Write(GetFileName(poses_, ".png").c_str());
 #ifdef COORDINATE_BUG
             TangoSupport_getMatrixTransformAtTime(
@@ -430,7 +430,7 @@ namespace oc {
     void MeshBuilderApp::Load(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
-        ModelIO io(filename, false);
+        File3d io(filename, false);
         io.ReadModel(kSubdivisionSize, main_scene_.static_meshes_);
         render_mutex_.unlock();
         binder_mutex_.unlock();
@@ -452,7 +452,7 @@ namespace oc {
                 ret = Tango3DR_Mesh_destroy(mesh);
                 if (ret != TANGO_3DR_SUCCESS)
                     std::exit(EXIT_SUCCESS);
-                ModelIO io(filename, true);
+                File3d io(filename, true);
                 io.WriteModel(main_scene_.dynamic_meshes_);
                 render_mutex_.unlock();
                 binder_mutex_.unlock();
@@ -484,7 +484,7 @@ namespace oc {
                 fscanf(file, "%lf\n", &timestamp);
                 fclose(file);
 
-                RGBImage frame(GetFileName(i, ".png"));
+                Image frame(GetFileName(i, ".png"));
                 Tango3DR_ImageBuffer image;
                 image.width = frame.GetWidth() * PNG_TEXTURE_SCALE;
                 image.height = frame.GetHeight() * PNG_TEXTURE_SCALE;
@@ -519,7 +519,7 @@ namespace oc {
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
         } else {
-            ModelIO io(filename, true);
+            File3d io(filename, true);
             io.WriteModel(main_scene_.dynamic_meshes_);
         }
         render_mutex_.unlock();
@@ -529,7 +529,7 @@ namespace oc {
     float MeshBuilderApp::CenterOfStaticModel(bool horizontal) {
         float min = 99999999;
         float max = -99999999;
-        for (GLMesh mesh : main_scene_.static_meshes_) {
+        for (Mesh& mesh : main_scene_.static_meshes_) {
             for (glm::vec3 vec : mesh.vertices) {
                 float value = horizontal ? vec.x : vec.z;
                 if (min > value)

@@ -1,14 +1,14 @@
-#ifndef GL_MESH_H
-#define GL_MESH_H
+#ifndef DATA_MESH_H
+#define DATA_MESH_H
 
+#include "data/image.h"
 #include "gl/opengl.h"
-#include "rgb_image.h"
 
 namespace oc {
-    class GLMesh {
+    class Mesh {
     public:
 
-        GLMesh();
+        Mesh();
         void Destroy();
         static std::vector<unsigned int> texturesToDelete();
 
@@ -17,7 +17,7 @@ namespace oc {
         std::vector<unsigned int> colors;
         std::vector<unsigned int> indices;
         std::vector<glm::vec2> uv;
-        RGBImage* image;
+        Image* image;
         bool imageOwner;
         long texture;
     };

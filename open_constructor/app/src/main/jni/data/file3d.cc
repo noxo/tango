@@ -1,9 +1,9 @@
 #include <tango_3d_reconstruction_api.h>
-#include "model_io.h"
+#include "data/file3d.h"
 
 namespace oc {
 
-    ModelIO::ModelIO(std::string filename, bool writeAccess) {
+    File3d::File3d(std::string filename, bool writeAccess) {
         path = filename;
         writeMode = writeAccess;
         vertexCount = 0;
@@ -26,11 +26,11 @@ namespace oc {
             file = fopen(filename.c_str(), "r");
     }
 
-    ModelIO::~ModelIO() {
+    File3d::~File3d() {
         fclose(file);
     }
 
-    void ModelIO::ReadModel(int subdivision, std::vector<GLMesh>& output) {
+    void File3d::ReadModel(int subdivision, std::vector<Mesh>& output) {
         assert(!writeMode);
         ReadHeader();
         if (type == PLY) {
@@ -42,7 +42,7 @@ namespace oc {
             assert(false);
     }
 
-    void ModelIO::WriteModel(std::vector<SingleDynamicMesh*> model) {
+    void File3d::WriteModel(std::vector<SingleDynamicMesh*> model) {
         assert(writeMode);
         //count vertices and faces
         faceCount = 0;
@@ -88,7 +88,7 @@ namespace oc {
             assert(false);
     }
 
-    glm::ivec3 ModelIO::DecodeColor(unsigned int c) {
+    glm::ivec3 File3d::DecodeColor(unsigned int c) {
         glm::ivec3 output;
         output.r = (c & 0x000000FF);
         output.g = (c & 0x0000FF00) >> 8;
@@ -96,7 +96,7 @@ namespace oc {
         return output;
     }
 
-    void ModelIO::ParseOBJ(int subdivision, std::vector<GLMesh> &output) {
+    void File3d::ParseOBJ(int subdivision, std::vector<Mesh> &output) {
         char buffer[1024];
         unsigned long meshIndex = 0;
         glm::vec3 v;
@@ -115,8 +115,8 @@ namespace oc {
                 char key[1024];
                 sscanf(buffer, "usemtl %s", key);
                 meshIndex = output.size();
-                output.push_back(GLMesh());
-                output[meshIndex].image = new RGBImage(keyToFile[std::string(key)]);
+                output.push_back(Mesh());
+                output[meshIndex].image = new Image(keyToFile[std::string(key)]);
             } else if ((buffer[0] == 'v') && (buffer[1] == ' ')) {
                 sscanf(buffer, "v %f %f %f", &v.x, &v.y, &v.z);
                 vertices.push_back(v);
@@ -162,7 +162,7 @@ namespace oc {
                 }
                 if (output[meshIndex].vertices.size() >= subdivision * 3) {
                     meshIndex = output.size();
-                    output.push_back(GLMesh());
+                    output.push_back(Mesh());
                     output[meshIndex].image = output[meshIndex - 1].image;
                     output[meshIndex].imageOwner = false;
                 }
@@ -170,7 +170,7 @@ namespace oc {
         }
     }
 
-    void ModelIO::ParsePLYFaces(int subdivision, std::vector<GLMesh> &output) {
+    void File3d::ParsePLYFaces(int subdivision, std::vector<Mesh> &output) {
         unsigned int offset = 0;
         int parts = faceCount / subdivision;
         if(faceCount % subdivision > 0)
@@ -183,7 +183,7 @@ namespace oc {
             if (j == parts - 1)
                 count = faceCount % subdivision;
                 unsigned long meshIndex = output.size();
-                output.push_back(GLMesh());
+                output.push_back(Mesh());
 
                 //face cycle
                 for (int i = 0; i < count; i++)  {
@@ -205,7 +205,7 @@ namespace oc {
         }
     }
 
-    void ModelIO::ReadPLYVertices() {
+    void File3d::ReadPLYVertices() {
         assert(!writeMode);
         unsigned int a, b, c;
         glm::vec3 v;
@@ -217,7 +217,7 @@ namespace oc {
         }
     }
 
-    void ModelIO::ReadHeader() {
+    void File3d::ReadHeader() {
         char buffer[1024];
         if (type == PLY) {
             while (true) {
@@ -265,7 +265,7 @@ namespace oc {
             assert(false);
     }
 
-    unsigned int ModelIO::ScanDec(char *line, int offset) {
+    unsigned int File3d::ScanDec(char *line, int offset) {
         unsigned int number = 0;
         for (int i = offset; i < 1024; i++) {
             char c = line[i];
@@ -277,14 +277,14 @@ namespace oc {
         return number;
     }
 
-    bool ModelIO::StartsWith(std::string s, std::string e) {
+    bool File3d::StartsWith(std::string s, std::string e) {
         if (s.size() >= e.size())
         if (s.substr(0, e.size()).compare(e) == 0)
             return true;
         return false;
     }
 
-    void ModelIO::WriteHeader(std::vector<SingleDynamicMesh*> model) {
+    void File3d::WriteHeader(std::vector<SingleDynamicMesh*> model) {
         if (type == PLY) {
             fprintf(file, "ply\nformat ascii 1.0\ncomment ---\n");
             fprintf(file, "element vertex %d\n", vertexCount);
@@ -327,7 +327,7 @@ namespace oc {
         }
     }
 
-    void ModelIO::WritePointCloud(SingleDynamicMesh *mesh, int size) {
+    void File3d::WritePointCloud(SingleDynamicMesh *mesh, int size) {
         glm::vec3 v;
         glm::vec2 t;
         glm::ivec3 c;
@@ -344,7 +344,7 @@ namespace oc {
         }
     }
 
-    void ModelIO::WriteFaces(SingleDynamicMesh *mesh, int offset) {
+    void File3d::WriteFaces(SingleDynamicMesh *mesh, int offset) {
         glm::ivec3 i;
         for (unsigned int j = 0; j < mesh->size; j+=3) {
             i.x = mesh->mesh.indices[j + 0] + offset;

@@ -1,12 +1,12 @@
-#include "gl/mesh.h"
+#include "data/mesh.h"
 
 std::vector<unsigned int> mesh_textureToDelete;
 
 namespace oc {
 
-    GLMesh::GLMesh() : image(NULL), imageOwner(true), texture(-1) {}
+    Mesh::Mesh() : image(NULL), imageOwner(true), texture(-1) {}
 
-    void GLMesh::Destroy() {
+    void Mesh::Destroy() {
         if (image)
             if (imageOwner) {
                 delete image;
@@ -15,7 +15,7 @@ namespace oc {
             }
     }
 
-    std::vector<unsigned int> GLMesh::texturesToDelete() {
+    std::vector<unsigned int> Mesh::texturesToDelete() {
         std::vector<unsigned int> output;
         for (unsigned int i : mesh_textureToDelete)
             output.push_back(i);

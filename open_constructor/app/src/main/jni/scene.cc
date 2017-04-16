@@ -70,7 +70,7 @@ namespace oc {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
         long lastTexture = INT_MAX;
-        for (GLMesh &mesh : static_meshes_) {
+        for (Mesh& mesh : static_meshes_) {
             if (mesh.image && (mesh.texture == -1)) {
                 GLuint textureID;
                 glGenTextures(1, &textureID);
@@ -104,7 +104,7 @@ namespace oc {
         if(!frustum_.vertices.empty() && frustum)
             renderer->Render(frustum_, frustum_.indices.size());
 
-        for (unsigned int i : GLMesh::texturesToDelete())
+        for (unsigned int i : Mesh::texturesToDelete())
             glDeleteTextures(1, &i);
     }
 
