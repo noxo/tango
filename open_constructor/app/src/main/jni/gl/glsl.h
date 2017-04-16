@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include "utils/math.h"
+#include "gl/opengl.h"
 
 namespace oc {
     class GLSL {

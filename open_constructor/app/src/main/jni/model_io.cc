@@ -1,7 +1,6 @@
 #include <tango_3d_reconstruction_api.h>
 #include <sstream>
 #include "model_io.h"
-#include "utils/io.h"
 
 namespace oc {
 

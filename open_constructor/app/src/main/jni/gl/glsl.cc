@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include "gl/glsl.h"
 #include "gl/opengl.h"
-#include "utils/io.h"
 
 oc::GLSL* gl_last_shader = 0;
 

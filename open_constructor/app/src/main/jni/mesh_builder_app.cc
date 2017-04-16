@@ -15,9 +15,8 @@
  */
 
 #include <map>
+#include <sstream>
 #include "mesh_builder_app.h"
-#include "utils/io.h"
-#include "utils/math.h"
 
 #define COORDINATE_BUG
 #define PNG_TEXTURE_SCALE 4
@@ -93,13 +92,13 @@ namespace oc {
         t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(buffer->format);
         t3dr_image.data = buffer->data;
 
-        Tango3DR_Pose t3dr_image_pose = Math::Extract3DRPose(image_matrix);
+        Tango3DR_Pose t3dr_image_pose = GLCamera::Extract3DRPose(image_matrix);
         if(!photoMode) {
             glm::quat rot = glm::quat((float) t3dr_image_pose.orientation[0],
                                       (float) t3dr_image_pose.orientation[1],
                                       (float) t3dr_image_pose.orientation[2],
                                       (float) t3dr_image_pose.orientation[3]);
-            float diff = Math::Diff(rot, image_rotation);
+            float diff = GLCamera::Diff(rot, image_rotation);
             image_rotation = rot;
             int limit = textured ? 1 : 5;
             if (diff > limit) {
@@ -114,7 +113,7 @@ namespace oc {
         t3dr_depth.num_points = front_cloud_->num_points;
         t3dr_depth.points = front_cloud_->points;
 
-        Tango3DR_Pose t3dr_depth_pose = Math::Extract3DRPose(point_cloud_matrix_);
+        Tango3DR_Pose t3dr_depth_pose = GLCamera::Extract3DRPose(point_cloud_matrix_);
         Tango3DR_GridIndexArray* t3dr_updated;
         Tango3DR_Status t3dr_err =
                 Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image,
@@ -126,7 +125,7 @@ namespace oc {
         }
         if (textured) {
             RGBImage frame(t3dr_image, PNG_TEXTURE_SCALE);
-            frame.Write(IO::GetFileName(dataset_, poses_, ".png").c_str());
+            frame.Write(GetFileName(poses_, ".png").c_str());
 #ifdef COORDINATE_BUG
             TangoSupport_getMatrixTransformAtTime(
                         buffer->timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION,
@@ -135,11 +134,11 @@ namespace oc {
             if (matrix_transform.status_code == TANGO_POSE_VALID) {
                 glm::mat4 pose = glm::make_mat4(matrix_transform.matrix);
                 pose = glm::rotate(pose, glm::radians(deviceMatrixRotation_), glm::vec3(0, 0, 1));
-                t3dr_image_pose = Math::Extract3DRPose(pose);
+                t3dr_image_pose = GLCamera::Extract3DRPose(pose);
                 image_matrix = pose;
             }
 #endif
-            FILE* file = fopen(IO::GetFileName(dataset_, poses_, ".txt").c_str(), "w");
+            FILE* file = fopen(GetFileName(poses_, ".txt").c_str(), "w");
             for (int i = 0; i < 4; i++)
                 fprintf(file, "%f %f %f %f\n", image_matrix[i][0], image_matrix[i][1],
                                                image_matrix[i][2], image_matrix[i][3]);
@@ -484,13 +483,13 @@ namespace oc {
             for (unsigned int i = 0; i < poses_; i++) {
                 glm::mat4 mat;
                 double timestamp;
-                FILE* file = fopen(IO::GetFileName(dataset_, i, ".txt").c_str(), "r");
+                FILE* file = fopen(GetFileName(i, ".txt").c_str(), "r");
                 for (int i = 0; i < 4; i++)
                   fscanf(file, "%f %f %f %f\n", &mat[i][0], &mat[i][1], &mat[i][2], &mat[i][3]);
                 fscanf(file, "%lf\n", &timestamp);
                 fclose(file);
 
-                RGBImage frame(IO::GetFileName(dataset_, i, ".png"));
+                RGBImage frame(GetFileName(i, ".png"));
                 Tango3DR_ImageBuffer image;
                 image.width = frame.GetWidth() * PNG_TEXTURE_SCALE;
                 image.height = frame.GetHeight() * PNG_TEXTURE_SCALE;
@@ -498,7 +497,7 @@ namespace oc {
                 image.timestamp = timestamp;
                 image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
                 image.data = frame.ExtractYUV(PNG_TEXTURE_SCALE);
-                Tango3DR_Pose t3dr_image_pose = Math::Extract3DRPose(mat);
+                Tango3DR_Pose t3dr_image_pose = GLCamera::Extract3DRPose(mat);
                 ret = Tango3DR_updateTexture(context, &image, &t3dr_image_pose);
                 if (ret != TANGO_3DR_SUCCESS)
                     std::exit(EXIT_SUCCESS);
@@ -610,5 +609,14 @@ namespace oc {
         }
         if (photoMode)
             photoFinished = true;
+    }
+
+    std::string MeshBuilderApp::GetFileName(int index, std::string extension) {
+        std::ostringstream ss;
+        ss << dataset_.c_str();
+        ss << "/";
+        ss << index;
+        ss << extension.c_str();
+        return ss.str();
     }
 }

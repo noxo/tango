@@ -1,7 +1,7 @@
 #include <png.h>
 #include <tango_3d_reconstruction_api.h>
+#include "gl/opengl.h"
 #include "rgb_image.h"
-#include "utils/io.h"
 
 FILE* temp;
 void png_read_file(png_structp, png_bytep data, png_size_t length)

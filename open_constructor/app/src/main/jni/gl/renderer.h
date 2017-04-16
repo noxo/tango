@@ -7,7 +7,6 @@
 #include "gl/glsl.h"
 #include "gl/mesh.h"
 #include "gl/opengl.h"
-#include "utils/math.h"
 
 namespace oc {
     class GLRenderer {
