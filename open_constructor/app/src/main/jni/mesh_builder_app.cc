@@ -459,6 +459,18 @@ namespace mesh_builder {
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
 
+            //prevent crash on saving empty model
+            if (mesh->num_faces == 0) {
+                ret = Tango3DR_Mesh_destroy(mesh);
+                if (ret != TANGO_3DR_SUCCESS)
+                    std::exit(EXIT_SUCCESS);
+                ModelIO io(filename, true);
+                io.WriteModel(main_scene_.dynamic_meshes_);
+                render_mutex_.unlock();
+                binder_mutex_.unlock();
+                return;
+            }
+
             //get texturing context
             Tango3DR_ConfigH textureConfig;
             textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
