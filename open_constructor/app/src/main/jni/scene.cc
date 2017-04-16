@@ -69,16 +69,27 @@ namespace oc {
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-        unsigned int lastTexture = INT_MAX;
-        for (GLMesh mesh : static_meshes_) {
+        long lastTexture = INT_MAX;
+        for (GLMesh &mesh : static_meshes_) {
+            if (mesh.image && (mesh.texture == -1)) {
+                GLuint textureID;
+                glGenTextures(1, &textureID);
+                mesh.texture = textureID;
+                glBindTexture(GL_TEXTURE_2D, textureID);
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, mesh.image->GetWidth(), mesh.image->GetHeight(),
+                             0, GL_RGB, GL_UNSIGNED_BYTE, mesh.image->GetData());
+            }
             if (mesh.texture == -1) {
                 color_vertex_shader->Bind();
                 renderer->Render(mesh, -1);
             } else {
-                unsigned int texture = textureMap[mesh.texture];
-                if (lastTexture != texture) {
-                    lastTexture = texture;
-                    glBindTexture(GL_TEXTURE_2D, texture);
+                if (lastTexture != mesh.texture) {
+                    lastTexture = (unsigned int)mesh.texture;
+                    glBindTexture(GL_TEXTURE_2D, (unsigned int)mesh.texture);
                 }
                 textured_shader->Bind();
                 renderer->Render(mesh, -1);
@@ -92,6 +103,9 @@ namespace oc {
         }
         if(!frustum_.vertices.empty() && frustum)
             renderer->Render(frustum_, frustum_.indices.size());
+
+        for (unsigned int i : GLMesh::texturesToDelete())
+            glDeleteTextures(1, &i);
     }
 
     void Scene::UpdateFrustum(glm::vec3 pos, float zoom) {
@@ -141,6 +155,5 @@ namespace oc {
             delete dynamic_meshes_[i];
         }
         dynamic_meshes_.clear();
-        textureMap.clear();
     }
 }

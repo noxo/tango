@@ -20,7 +20,7 @@ class ModelIO {
 public:
     ModelIO(std::string filename, bool writeAccess);
     ~ModelIO();
-    std::map<int, std::string> ReadModel(int subdivision, std::vector<oc::GLMesh>& output);
+    void ReadModel(int subdivision, std::vector<oc::GLMesh>& output);
     void WriteModel(std::vector<SingleDynamicMesh*> model);
 
     enum TYPE{OBJ, PLY};
@@ -44,8 +44,6 @@ private:
     unsigned int faceCount;
     FILE* file;
     GLMesh data;
-    std::map<std::string, int> fileToIndex;
-    std::map<int, std::string> indexToFile;
     std::map<std::string, std::string> keyToFile;
 };
 }

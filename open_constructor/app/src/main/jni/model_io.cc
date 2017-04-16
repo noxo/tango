@@ -1,5 +1,4 @@
 #include <tango_3d_reconstruction_api.h>
-#include <sstream>
 #include "model_io.h"
 
 namespace oc {
@@ -31,7 +30,7 @@ namespace oc {
         fclose(file);
     }
 
-    std::map<int, std::string> ModelIO::ReadModel(int subdivision, std::vector<GLMesh>& output) {
+    void ModelIO::ReadModel(int subdivision, std::vector<GLMesh>& output) {
         assert(!writeMode);
         ReadHeader();
         if (type == PLY) {
@@ -41,7 +40,6 @@ namespace oc {
             ParseOBJ(subdivision, output);
         } else
             assert(false);
-        return indexToFile;
     }
 
     void ModelIO::WriteModel(std::vector<SingleDynamicMesh*> model) {
@@ -101,7 +99,6 @@ namespace oc {
     void ModelIO::ParseOBJ(int subdivision, std::vector<GLMesh> &output) {
         char buffer[1024];
         unsigned long meshIndex = 0;
-        int textureIndex = 0;
         glm::vec3 v;
         glm::vec3 n;
         glm::vec2 t;
@@ -117,16 +114,9 @@ namespace oc {
             if (buffer[0] == 'u') {
                 char key[1024];
                 sscanf(buffer, "usemtl %s", key);
-                std::string file = keyToFile[std::string(key)];
-                if (fileToIndex.find(file) == fileToIndex.end()) {
-                    textureIndex = (int) fileToIndex.size();
-                    fileToIndex[file] = textureIndex;
-                    indexToFile[textureIndex] = file;
-                } else
-                    textureIndex = fileToIndex[file];
                 meshIndex = output.size();
                 output.push_back(GLMesh());
-                output[meshIndex].texture = textureIndex;
+                output[meshIndex].image = new RGBImage(keyToFile[std::string(key)]);
             } else if ((buffer[0] == 'v') && (buffer[1] == ' ')) {
                 sscanf(buffer, "v %f %f %f", &v.x, &v.y, &v.z);
                 vertices.push_back(v);
@@ -173,7 +163,8 @@ namespace oc {
                 if (output[meshIndex].vertices.size() >= subdivision * 3) {
                     meshIndex = output.size();
                     output.push_back(GLMesh());
-                    output[meshIndex].texture = textureIndex;
+                    output[meshIndex].image = output[meshIndex - 1].image;
+                    output[meshIndex].imageOwner = false;
                 }
             }
         }
@@ -191,10 +182,8 @@ namespace oc {
             int count = subdivision;
             if (j == parts - 1)
                 count = faceCount % subdivision;
-
+                unsigned long meshIndex = output.size();
                 output.push_back(GLMesh());
-                unsigned long meshIndex = output.size() - 1;
-                output[meshIndex].texture = -1;
 
                 //face cycle
                 for (int i = 0; i < count; i++)  {
@@ -318,14 +307,11 @@ namespace oc {
             std::string shortBase = base.substr(index + 1, base.length());
             fprintf(file, "mtllib %s.mtl\n", shortBase.c_str());
             FILE* mtl = fopen((base + ".mtl").c_str(), "w");
-            std::map<int, bool> stored;
             for (unsigned int i = 0; i < model.size(); i++) {
                 if (model[i]->mesh.indices.empty())
                     continue;
-                if (stored.find(model[i]->mesh.texture) != stored.end())
-                    continue;
 
-                fprintf(mtl, "newmtl %d\n", model[i]->mesh.texture);
+                fprintf(mtl, "newmtl %d\n", i);
                 fprintf(mtl, "Ns 96.078431\n");
                 fprintf(mtl, "Ka 1.000000 1.000000 1.000000\n");
                 fprintf(mtl, "Kd 0.640000 0.640000 0.640000\n");
@@ -334,8 +320,8 @@ namespace oc {
                 fprintf(mtl, "Ni 1.000000\n");
                 fprintf(mtl, "d 1.000000\n");
                 fprintf(mtl, "illum 2\n");
-                fprintf(mtl, "map_Kd %s_%d.png\n\n", shortBase.c_str(), model[i]->mesh.texture);
-                stored[model[i]->mesh.texture] = true;
+                if (model[i]->mesh.image)
+                    fprintf(mtl, "map_Kd %s_%d.png\n\n", shortBase.c_str(), i);
             }
             fclose(mtl);
         }

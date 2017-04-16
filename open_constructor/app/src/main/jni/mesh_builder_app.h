@@ -14,7 +14,6 @@
 #include <tango_support_api.h>
 
 #include "scene.h"
-#include "gl/textures.h"
 
 namespace oc {
 
@@ -87,7 +86,6 @@ namespace oc {
 
         Scene main_scene_;
         TangoConfig tango_config_;
-        GLTextures* textures;
         std::unordered_map<GridIndex, SingleDynamicMesh*, GridIndexHasher> meshes_;
 
         std::string dataset_;

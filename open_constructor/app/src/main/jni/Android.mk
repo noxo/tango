@@ -33,8 +33,8 @@ LOCAL_SRC_FILES := jni_interface.cc \
                    scene.cc \
                    gl/camera.cc \
                    gl/glsl.cc \
-                   gl/renderer.cc \
-                   gl/textures.cc
+                   gl/mesh.cc \
+                   gl/renderer.cc
 
 LOCAL_LDLIBS    := -llog -lGLESv2 -L$(SYSROOT)/usr/lib -lz -landroid
 include $(BUILD_SHARED_LIBRARY)

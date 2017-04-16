@@ -161,10 +161,7 @@ namespace oc {
                                         point_cloud_available_(false),
                                         poses_(0),
                                         textured(false),
-                                        zoom(0)
-    {
-        textures = new GLTextures();
-    }
+                                        zoom(0) {}
 
 
     MeshBuilderApp::~MeshBuilderApp() {
@@ -402,8 +399,6 @@ namespace oc {
         glm::vec4 move = main_scene_.renderer->camera.GetTransformation() * glm::vec4(0, 0, zoom, 0);
         main_scene_.renderer->camera.position += glm::vec3(move.x, move.y, move.z);
         //render
-        if (textures->UpdateGL())
-          main_scene_.textureMap = textures->TextureMap();
         main_scene_.Render(gyro);
         render_mutex_.unlock();
     }
@@ -436,7 +431,7 @@ namespace oc {
         binder_mutex_.lock();
         render_mutex_.lock();
         ModelIO io(filename, false);
-        textures->Add(io.ReadModel(kSubdivisionSize, main_scene_.static_meshes_));
+        io.ReadModel(kSubdivisionSize, main_scene_.static_meshes_);
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
