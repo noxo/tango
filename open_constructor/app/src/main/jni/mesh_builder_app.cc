@@ -23,7 +23,7 @@
 #include "math_utils.h"
 #include "mesh_builder_app.h"
 
-#define COORDINATE_BUG
+//#define COORDINATE_BUG
 #define PNG_TEXTURE_SCALE 4
 
 namespace {
@@ -119,11 +119,11 @@ namespace mesh_builder {
         t3dr_depth.points = front_cloud_->points;
 
         Tango3DR_Pose t3dr_depth_pose = Math::extract3DRPose(point_cloud_matrix_);
-        Tango3DR_GridIndexArray* t3dr_updated;
-        Tango3DR_Status t3dr_err =
-                Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image,
-                                &t3dr_image_pose, &t3dr_updated);
-        if (t3dr_err != TANGO_3DR_SUCCESS)
+        Tango3DR_GridIndexArray t3dr_updated;
+        Tango3DR_Status ret;
+        ret = Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose,
+                              &t3dr_image, &t3dr_image_pose, &t3dr_updated);
+        if (ret != TANGO_3DR_SUCCESS)
         {
             binder_mutex_.unlock();
             return;
@@ -151,8 +151,8 @@ namespace mesh_builder {
             fclose(file);
             poses_++;
         }
-        MeshUpdate(t3dr_image, t3dr_updated);
-        Tango3DR_GridIndexArray_destroy(t3dr_updated);
+        MeshUpdate(t3dr_image, &t3dr_updated);
+        Tango3DR_GridIndexArray_destroy(&t3dr_updated);
         point_cloud_available_ = false;
         binder_mutex_.unlock();
     }
@@ -276,8 +276,8 @@ namespace mesh_builder {
         }
     }
 
-    Tango3DR_Context MeshBuilderApp::TangoSetup3DR(double res, double dmin, double dmax, int noise) {
-        Tango3DR_ConfigH t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_CONTEXT);
+    Tango3DR_ReconstructionContext MeshBuilderApp::TangoSetup3DR(double res, double dmin, double dmax, int noise) {
+        Tango3DR_Config t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_RECONSTRUCTION);
         Tango3DR_Status t3dr_err;
         t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "resolution", res);
         if (t3dr_err != TANGO_3DR_SUCCESS)
@@ -302,7 +302,7 @@ namespace mesh_builder {
         Tango3DR_Config_setInt32(t3dr_config, "min_num_vertices", noise);
         Tango3DR_Config_setInt32(t3dr_config, "update_method", TANGO_3DR_PROJECTIVE_UPDATE);
 
-        Tango3DR_Context output = Tango3DR_create(t3dr_config);
+        Tango3DR_ReconstructionContext output = Tango3DR_ReconstructionContext_create(t3dr_config);
         if (output == nullptr)
             std::exit(EXIT_SUCCESS);
         Tango3DR_Config_destroy(t3dr_config);
@@ -453,15 +453,18 @@ namespace mesh_builder {
         render_mutex_.lock();
         if (textured) {
             //get mesh to texture
-            Tango3DR_Mesh* mesh = 0;
+            Tango3DR_Mesh mesh;
             Tango3DR_Status ret;
+            ret = Tango3DR_Mesh_initEmpty(&mesh);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
             ret = Tango3DR_extractFullMesh(t3dr_context_, &mesh);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
 
             //prevent crash on saving empty model
-            if (mesh->num_faces == 0) {
-                ret = Tango3DR_Mesh_destroy(mesh);
+            if (mesh.num_faces == 0) {
+                ret = Tango3DR_Mesh_destroy(&mesh);
                 if (ret != TANGO_3DR_SUCCESS)
                     std::exit(EXIT_SUCCESS);
                 ModelIO io(filename, true);
@@ -472,7 +475,7 @@ namespace mesh_builder {
             }
 
             //get texturing context
-            Tango3DR_ConfigH textureConfig;
+            Tango3DR_Config textureConfig;
             textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
             ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", 0.01);
             if (ret != TANGO_3DR_SUCCESS)
@@ -481,7 +484,7 @@ namespace mesh_builder {
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
             Tango3DR_TexturingContext context;
-            context = Tango3DR_createTexturingContext(textureConfig, dataset.c_str(), mesh);
+            context = Tango3DR_TexturingContext_create(textureConfig, dataset.c_str(), &mesh);
             if (context == nullptr)
                 std::exit(EXIT_SUCCESS);
             Tango3DR_Config_destroy(textureConfig);
@@ -512,22 +515,18 @@ namespace mesh_builder {
             }
 
             //texturize mesh
-            ret = Tango3DR_Mesh_destroy(mesh);
-            if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-            mesh = 0;
             ret = Tango3DR_getTexturedMesh(context, &mesh);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
 
             //save and cleanup
-            ret = Tango3DR_Mesh_saveToObj(mesh, filename.c_str());
+            ret = Tango3DR_Mesh_saveToObj(&mesh, filename.c_str());
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
-            ret = Tango3DR_destroyTexturingContext(context);
+            ret = Tango3DR_TexturingContext_destroy(context);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
-            ret = Tango3DR_Mesh_destroy(mesh);
+            ret = Tango3DR_Mesh_destroy(&mesh);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
         } else {
