@@ -75,7 +75,6 @@ namespace mesh_builder {
         bool t3dr_is_running_;
         Tango3DR_ReconstructionContext t3dr_context_;
         Tango3DR_CameraCalibration t3dr_intrinsics_;
-        Tango3DR_CameraCalibration t3dr_intrinsics_depth;
         glm::mat4 image_matrix;
         glm::quat image_rotation;
         std::mutex binder_mutex_;
