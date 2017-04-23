@@ -46,7 +46,7 @@ namespace mesh_builder {
         void OnPause();
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin,
                                      double dmax, int noise, bool land, bool photo, bool textures,
-                                     std::string dataset, float deviceMatrixRotation);
+                                     std::string dataset);
         void onPointCloudAvailable(TangoPointCloud *point_cloud);
         void onFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer);
         void OnSurfaceCreated();
@@ -93,7 +93,6 @@ namespace mesh_builder {
 
         std::string dataset_;
         int poses_;
-        float deviceMatrixRotation_;
 
         bool gyro;
         bool landscape;

@@ -23,7 +23,6 @@
 #include "math_utils.h"
 #include "mesh_builder_app.h"
 
-//#define COORDINATE_BUG
 #define PNG_TEXTURE_SCALE 4
 
 namespace {
@@ -131,18 +130,6 @@ namespace mesh_builder {
         if (textured) {
             RGBImage frame(t3dr_image, PNG_TEXTURE_SCALE);
             frame.Write(GetFileName(poses_, ".png").c_str());
-#ifdef COORDINATE_BUG
-            TangoSupport_getMatrixTransformAtTime(
-                        buffer->timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION,
-                        TANGO_COORDINATE_FRAME_DEVICE, TANGO_SUPPORT_ENGINE_OPENGL,
-                        TANGO_SUPPORT_ENGINE_TANGO, ROTATION_0, &matrix_transform);
-            if (matrix_transform.status_code == TANGO_POSE_VALID) {
-                glm::mat4 pose = glm::make_mat4(matrix_transform.matrix);
-                pose = glm::rotate(pose, glm::radians(deviceMatrixRotation_), glm::vec3(0, 0, 1));
-                t3dr_image_pose = Math::extract3DRPose(pose);
-                image_matrix = pose;
-            }
-#endif
             FILE* file = fopen(GetFileName(poses_, ".txt").c_str(), "w");
             for (int i = 0; i < 4; i++)
                 fprintf(file, "%f %f %f %f\n", image_matrix[i][0], image_matrix[i][1],
@@ -192,13 +179,12 @@ namespace mesh_builder {
 
     void MeshBuilderApp::OnTangoServiceConnected(JNIEnv *env, jobject binder, double res,
                double dmin, double dmax, int noise, bool land, bool photo, bool textures,
-               std::string dataset, float deviceMatrixRotation) {
+               std::string dataset) {
         dataset_ = dataset;
         landscape = land;
         photoFinished = false;
         photoMode = photo;
         textured = textures;
-        deviceMatrixRotation_ = deviceMatrixRotation;
 
         TangoService_setBinder(env, binder);
         TangoSetupConfig();
@@ -451,7 +437,7 @@ namespace mesh_builder {
     void MeshBuilderApp::Save(std::string filename, std::string dataset) {
         binder_mutex_.lock();
         render_mutex_.lock();
-        if (textured) {
+        if (textured && !dataset.empty()) {
             //get mesh to texture
             Tango3DR_Mesh mesh;
             Tango3DR_Status ret;
