@@ -112,7 +112,7 @@ namespace oc {
         t3dr_depth.num_points = front_cloud_->num_points;
         t3dr_depth.points = front_cloud_->points;
 
-        Tango3DR_Pose t3dr_depth_pose = GLCamera::extract3DRPose(point_cloud_matrix_);
+        Tango3DR_Pose t3dr_depth_pose = GLCamera::Extract3DRPose(point_cloud_matrix_);
         Tango3DR_GridIndexArray t3dr_updated;
         Tango3DR_Status ret;
         ret = Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose,
