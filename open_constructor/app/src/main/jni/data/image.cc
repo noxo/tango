@@ -16,7 +16,7 @@ namespace oc {
         data = new unsigned char[3];
         name = "";
     }
-
+#ifndef NOTANGO
     Image::Image(Tango3DR_ImageBuffer t3dr_image, int scale) {
         data = new unsigned char[(t3dr_image.width / scale) * (t3dr_image.height / scale) * 3];
         int index = 0;
@@ -51,6 +51,7 @@ namespace oc {
         height = t3dr_image.height / scale;
         name = "photo";
     }
+#endif
 
     Image::Image(std::string file) {
         LOGI("Reading %s", file.c_str());

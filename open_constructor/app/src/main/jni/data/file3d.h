@@ -4,11 +4,15 @@
 #include <map>
 #include <mutex>
 #include <string>
+#ifndef NOTANGO
 #include <tango_3d_reconstruction_api.h>
+#endif
 #include "data/mesh.h"
 
 struct SingleDynamicMesh {
+#ifndef NOTANGO
     Tango3DR_Mesh tango_mesh;
+#endif
     oc::Mesh mesh;
     std::mutex mutex;
     unsigned long size;

@@ -1,4 +1,3 @@
-#include <tango_3d_reconstruction_api.h>
 #include "data/file3d.h"
 
 namespace oc {
