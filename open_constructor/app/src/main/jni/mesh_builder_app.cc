@@ -18,7 +18,6 @@
 #include <sstream>
 #include "mesh_builder_app.h"
 
-#define COORDINATE_BUG
 #define PNG_TEXTURE_SCALE 4
 
 namespace {
@@ -113,12 +112,12 @@ namespace oc {
         t3dr_depth.num_points = front_cloud_->num_points;
         t3dr_depth.points = front_cloud_->points;
 
-        Tango3DR_Pose t3dr_depth_pose = GLCamera::Extract3DRPose(point_cloud_matrix_);
-        Tango3DR_GridIndexArray* t3dr_updated;
-        Tango3DR_Status t3dr_err =
-                Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose, &t3dr_image,
-                                &t3dr_image_pose, &t3dr_updated);
-        if (t3dr_err != TANGO_3DR_SUCCESS)
+        Tango3DR_Pose t3dr_depth_pose = GLCamera::extract3DRPose(point_cloud_matrix_);
+        Tango3DR_GridIndexArray t3dr_updated;
+        Tango3DR_Status ret;
+        ret = Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose,
+                              &t3dr_image, &t3dr_image_pose, &t3dr_updated);
+        if (ret != TANGO_3DR_SUCCESS)
         {
             binder_mutex_.unlock();
             return;
@@ -126,18 +125,6 @@ namespace oc {
         if (textured) {
             Image frame(t3dr_image, PNG_TEXTURE_SCALE);
             frame.Write(GetFileName(poses_, ".png").c_str());
-#ifdef COORDINATE_BUG
-            TangoSupport_getMatrixTransformAtTime(
-                        buffer->timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION,
-                        TANGO_COORDINATE_FRAME_DEVICE, TANGO_SUPPORT_ENGINE_OPENGL,
-                        TANGO_SUPPORT_ENGINE_TANGO, ROTATION_0, &matrix_transform);
-            if (matrix_transform.status_code == TANGO_POSE_VALID) {
-                glm::mat4 pose = glm::make_mat4(matrix_transform.matrix);
-                pose = glm::rotate(pose, glm::radians(deviceMatrixRotation_), glm::vec3(0, 0, 1));
-                t3dr_image_pose = GLCamera::Extract3DRPose(pose);
-                image_matrix = pose;
-            }
-#endif
             FILE* file = fopen(GetFileName(poses_, ".txt").c_str(), "w");
             for (int i = 0; i < 4; i++)
                 fprintf(file, "%f %f %f %f\n", image_matrix[i][0], image_matrix[i][1],
@@ -146,8 +133,8 @@ namespace oc {
             fclose(file);
             poses_++;
         }
-        MeshUpdate(t3dr_image, t3dr_updated);
-        Tango3DR_GridIndexArray_destroy(t3dr_updated);
+        MeshUpdate(t3dr_image, &t3dr_updated);
+        Tango3DR_GridIndexArray_destroy(&t3dr_updated);
         point_cloud_available_ = false;
         binder_mutex_.unlock();
     }
@@ -184,13 +171,12 @@ namespace oc {
 
     void MeshBuilderApp::OnTangoServiceConnected(JNIEnv *env, jobject binder, double res,
                double dmin, double dmax, int noise, bool land, bool photo, bool textures,
-               std::string dataset, float deviceMatrixRotation) {
+               std::string dataset) {
         dataset_ = dataset;
         landscape = land;
         photoFinished = false;
         photoMode = photo;
         textured = textures;
-        deviceMatrixRotation_ = deviceMatrixRotation;
 
         TangoService_setBinder(env, binder);
         TangoSetupConfig();
@@ -268,8 +254,8 @@ namespace oc {
         }
     }
 
-    Tango3DR_Context MeshBuilderApp::TangoSetup3DR(double res, double dmin, double dmax, int noise) {
-        Tango3DR_ConfigH t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_CONTEXT);
+    Tango3DR_ReconstructionContext MeshBuilderApp::TangoSetup3DR(double res, double dmin, double dmax, int noise) {
+        Tango3DR_Config t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_RECONSTRUCTION);
         Tango3DR_Status t3dr_err;
         t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "resolution", res);
         if (t3dr_err != TANGO_3DR_SUCCESS)
@@ -292,15 +278,13 @@ namespace oc {
             std::exit(EXIT_SUCCESS);
 
         Tango3DR_Config_setInt32(t3dr_config, "min_num_vertices", noise);
-        Tango3DR_Config_setInt32(t3dr_config, "update_method", TANGO_3DR_PROJECTIVE_UPDATE);
 
-        Tango3DR_Context output = Tango3DR_create(t3dr_config);
+        Tango3DR_ReconstructionContext output = Tango3DR_ReconstructionContext_create(t3dr_config);
         if (output == nullptr)
             std::exit(EXIT_SUCCESS);
         Tango3DR_Config_destroy(t3dr_config);
 
         Tango3DR_setColorCalibration(output, &t3dr_intrinsics_);
-        Tango3DR_setDepthCalibration(output, &t3dr_intrinsics_depth);
         return output;
     }
 
@@ -337,21 +321,6 @@ namespace oc {
         t3dr_intrinsics_.cy = intrinsics.cy;
         std::copy(std::begin(intrinsics.distortion), std::end(intrinsics.distortion),
                   std::begin(t3dr_intrinsics_.distortion));
-
-        // Update the depth intrinsics too.
-        err = TangoService_getCameraIntrinsics(TANGO_CAMERA_DEPTH, &intrinsics);
-        if (err != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-        t3dr_intrinsics_depth.calibration_type =
-                static_cast<Tango3DR_TangoCalibrationType>(intrinsics.calibration_type);
-        t3dr_intrinsics_depth.width = intrinsics.width;
-        t3dr_intrinsics_depth.height = intrinsics.height;
-        t3dr_intrinsics_depth.fx = intrinsics.fx;
-        t3dr_intrinsics_depth.fy = intrinsics.fy;
-        t3dr_intrinsics_depth.cx = intrinsics.cx;
-        t3dr_intrinsics_depth.cy = intrinsics.cy;
-        std::copy(std::begin(intrinsics.distortion), std::end(intrinsics.distortion),
-                  std::begin(t3dr_intrinsics_depth.distortion));
     }
 
     void MeshBuilderApp::TangoDisconnect() {
@@ -439,17 +408,20 @@ namespace oc {
     void MeshBuilderApp::Save(std::string filename, std::string dataset) {
         binder_mutex_.lock();
         render_mutex_.lock();
-        if (textured) {
+        if (textured && !dataset.empty()) {
             //get mesh to texture
-            Tango3DR_Mesh* mesh = 0;
+            Tango3DR_Mesh mesh;
             Tango3DR_Status ret;
+            ret = Tango3DR_Mesh_initEmpty(&mesh);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
             ret = Tango3DR_extractFullMesh(t3dr_context_, &mesh);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
 
             //prevent crash on saving empty model
-            if (mesh->num_faces == 0) {
-                ret = Tango3DR_Mesh_destroy(mesh);
+            if (mesh.num_faces == 0) {
+                ret = Tango3DR_Mesh_destroy(&mesh);
                 if (ret != TANGO_3DR_SUCCESS)
                     std::exit(EXIT_SUCCESS);
                 File3d io(filename, true);
@@ -460,7 +432,7 @@ namespace oc {
             }
 
             //get texturing context
-            Tango3DR_ConfigH textureConfig;
+            Tango3DR_Config textureConfig;
             textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
             ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", 0.01);
             if (ret != TANGO_3DR_SUCCESS)
@@ -469,7 +441,7 @@ namespace oc {
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
             Tango3DR_TexturingContext context;
-            context = Tango3DR_createTexturingContext(textureConfig, dataset.c_str(), mesh);
+            context = Tango3DR_TexturingContext_create(textureConfig, dataset.c_str(), &mesh);
             if (context == nullptr)
                 std::exit(EXIT_SUCCESS);
             Tango3DR_Config_destroy(textureConfig);
@@ -500,22 +472,18 @@ namespace oc {
             }
 
             //texturize mesh
-            ret = Tango3DR_Mesh_destroy(mesh);
-            if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-            mesh = 0;
             ret = Tango3DR_getTexturedMesh(context, &mesh);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
 
             //save and cleanup
-            ret = Tango3DR_Mesh_saveToObj(mesh, filename.c_str());
+            ret = Tango3DR_Mesh_saveToObj(&mesh, filename.c_str());
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
-            ret = Tango3DR_destroyTexturingContext(context);
+            ret = Tango3DR_TexturingContext_destroy(context);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
-            ret = Tango3DR_Mesh_destroy(mesh);
+            ret = Tango3DR_Mesh_destroy(&mesh);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
         } else {

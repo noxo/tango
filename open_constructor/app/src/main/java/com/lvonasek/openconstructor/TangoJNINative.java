@@ -47,8 +47,7 @@ class TangoJNINative {
    * @param nativeTangoServiceBinder The native binder object.
    */
   public static native void onTangoServiceConnected(IBinder nativeTangoServiceBinder, double res,
-   double dmin, double dmax, int noise, boolean land, boolean photo, boolean textures, String temp,
-   float deviceMatrixRotation);
+   double dmin, double dmax, int noise, boolean land, boolean photo, boolean textures, String temp);
 
   /**
    * Interfaces to native OnPause function.

@@ -44,7 +44,7 @@ namespace oc {
         void OnPause();
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin,
                                      double dmax, int noise, bool land, bool photo, bool textures,
-                                     std::string dataset, float deviceMatrixRotation);
+                                     std::string dataset);
         void onPointCloudAvailable(TangoPointCloud *point_cloud);
         void onFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer);
         void OnSurfaceCreated();
@@ -62,7 +62,7 @@ namespace oc {
 
     private:
         void TangoSetupConfig();
-        Tango3DR_Context TangoSetup3DR(double res, double dmin, double dmax, int noise);
+        Tango3DR_ReconstructionContext TangoSetup3DR(double res, double dmin, double dmax, int noise);
         void TangoConnectCallbacks();
         void TangoConnect();
         void TangoDisconnect();
@@ -71,9 +71,8 @@ namespace oc {
         std::string GetFileName(int index, std::string extension);
 
         bool t3dr_is_running_;
-        Tango3DR_Context t3dr_context_;
+        Tango3DR_ReconstructionContext t3dr_context_;
         Tango3DR_CameraCalibration t3dr_intrinsics_;
-        Tango3DR_CameraCalibration t3dr_intrinsics_depth;
         glm::mat4 image_matrix;
         glm::quat image_rotation;
         std::mutex binder_mutex_;
@@ -90,7 +89,6 @@ namespace oc {
 
         std::string dataset_;
         int poses_;
-        float deviceMatrixRotation_;
 
         bool gyro;
         bool landscape;
