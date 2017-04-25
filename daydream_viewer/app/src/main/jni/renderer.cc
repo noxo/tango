@@ -315,6 +315,8 @@ void Renderer::DrawFrame() {
     modelview_projection_cursor_[eye] = MatrixMul(perspective, MatrixMul(eye_views[eye], model_cursor_));
   }
 
+  cur_position = 0.95f * cur_position + 0.05f * dst_position;
+
   glEnable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
   glDisable(GL_SCISSOR_TEST);
@@ -405,7 +407,6 @@ void Renderer::DrawWorld(ViewType view) {
 void Renderer::DrawModel(ViewType view) {
   glUseProgram(model_program_);
   float* matrix = MatrixToGLArray(modelview_projection_model_[view]).data();
-  cur_position = 0.98f * cur_position + 0.02f * dst_position;
   glUniform1f(model_translatex_param_, cur_position.x);
   glUniform1f(model_translatey_param_, cur_position.y);
   glUniform1f(model_translatez_param_, cur_position.z);
