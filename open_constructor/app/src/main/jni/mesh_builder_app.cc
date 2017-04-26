@@ -14,13 +14,8 @@
  * limitations under the License.
  */
 
-#include <glm/gtx/transform.hpp>
-#include <tango-gl/conversions.h>
-#include <tango-gl/util.h>
 #include <map>
 #include <sstream>
-
-#include "math_utils.h"
 #include "mesh_builder_app.h"
 
 #define PNG_TEXTURE_SCALE 4
@@ -33,17 +28,17 @@ namespace {
     constexpr int kTangoCoreMinimumVersion = 9377;
 
     void onPointCloudAvailableRouter(void *context, const TangoPointCloud *point_cloud) {
-        mesh_builder::MeshBuilderApp *app = static_cast<mesh_builder::MeshBuilderApp *>(context);
+        oc::MeshBuilderApp *app = static_cast<oc::MeshBuilderApp *>(context);
         app->onPointCloudAvailable((TangoPointCloud*)point_cloud);
     }
 
     void onFrameAvailableRouter(void *context, TangoCameraId id, const TangoImageBuffer *buffer) {
-        mesh_builder::MeshBuilderApp *app = static_cast<mesh_builder::MeshBuilderApp *>(context);
+        oc::MeshBuilderApp *app = static_cast<oc::MeshBuilderApp *>(context);
         app->onFrameAvailable(id, buffer);
     }
-}  // namespace
+}
 
-namespace mesh_builder {
+namespace oc {
 
     bool GridIndex::operator==(const GridIndex &other) const {
         return indices[0] == other.indices[0] && indices[1] == other.indices[1] &&
@@ -96,13 +91,13 @@ namespace mesh_builder {
         t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(buffer->format);
         t3dr_image.data = buffer->data;
 
-        Tango3DR_Pose t3dr_image_pose = Math::extract3DRPose(image_matrix);
+        Tango3DR_Pose t3dr_image_pose = GLCamera::Extract3DRPose(image_matrix);
         if(!photoMode) {
             glm::quat rot = glm::quat((float) t3dr_image_pose.orientation[0],
                                       (float) t3dr_image_pose.orientation[1],
                                       (float) t3dr_image_pose.orientation[2],
                                       (float) t3dr_image_pose.orientation[3]);
-            float diff = Math::diff(rot, image_rotation);
+            float diff = GLCamera::Diff(rot, image_rotation);
             image_rotation = rot;
             int limit = textured ? 1 : 5;
             if (diff > limit) {
@@ -117,7 +112,7 @@ namespace mesh_builder {
         t3dr_depth.num_points = front_cloud_->num_points;
         t3dr_depth.points = front_cloud_->points;
 
-        Tango3DR_Pose t3dr_depth_pose = Math::extract3DRPose(point_cloud_matrix_);
+        Tango3DR_Pose t3dr_depth_pose = GLCamera::Extract3DRPose(point_cloud_matrix_);
         Tango3DR_GridIndexArray t3dr_updated;
         Tango3DR_Status ret;
         ret = Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose,
@@ -128,7 +123,7 @@ namespace mesh_builder {
             return;
         }
         if (textured) {
-            RGBImage frame(t3dr_image, PNG_TEXTURE_SCALE);
+            Image frame(t3dr_image, PNG_TEXTURE_SCALE);
             frame.Write(GetFileName(poses_, ".png").c_str());
             FILE* file = fopen(GetFileName(poses_, ".txt").c_str(), "w");
             for (int i = 0; i < 4; i++)
@@ -153,10 +148,7 @@ namespace mesh_builder {
                                         point_cloud_available_(false),
                                         poses_(0),
                                         textured(false),
-                                        zoom(0)
-    {
-        textureProcessor = new TextureProcessor();
-    }
+                                        zoom(0) {}
 
 
     MeshBuilderApp::~MeshBuilderApp() {
@@ -356,30 +348,26 @@ namespace mesh_builder {
 
     void MeshBuilderApp::OnDrawFrame() {
         render_mutex_.lock();
-
         //camera transformation
         if (!gyro) {
-            main_scene_.camera_->SetPosition(glm::vec3(movex, 0, movey));
-            main_scene_.camera_->SetRotation(glm::quat(glm::vec3(yaw, pitch, 0)));
-            main_scene_.camera_->SetScale(glm::vec3(1, 1, 1));
+            main_scene_.renderer->camera.position = glm::vec3(movex, 0, movey);
+            main_scene_.renderer->camera.rotation = glm::quat(glm::vec3(yaw, pitch, 0));
+            main_scene_.renderer->camera.scale    = glm::vec3(1, 1, 1);
         } else {
-            TangoMatrixTransformData matrix_transform;
+            TangoMatrixTransformData transform;
             TangoSupport_getMatrixTransformAtTime(
                     0, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION, TANGO_COORDINATE_FRAME_DEVICE,
                     TANGO_SUPPORT_ENGINE_OPENGL, TANGO_SUPPORT_ENGINE_OPENGL,
-                    landscape ? ROTATION_90 : ROTATION_0, &matrix_transform);
-            glm::mat4 start_service_T_device_;
-            if (matrix_transform.status_code == TANGO_POSE_VALID)
-                start_service_T_device_ = glm::make_mat4(matrix_transform.matrix);
-            main_scene_.camera_->SetTransformationMatrix(start_service_T_device_);
-            main_scene_.UpdateFrustum(main_scene_.camera_->GetPosition(), zoom);
+                    landscape ? ROTATION_90 : ROTATION_0, &transform);
+            if (transform.status_code == TANGO_POSE_VALID) {
+                main_scene_.renderer->camera.SetTransformation(glm::make_mat4(transform.matrix));
+                main_scene_.UpdateFrustum(main_scene_.renderer->camera.position, zoom);
+            }
         }
         //zoom
-        glm::vec4 move = main_scene_.camera_->GetTransformationMatrix() * glm::vec4(0, 0, zoom, 0);
-        main_scene_.camera_->Translate(glm::vec3(move.x, move.y, move.z));
+        glm::vec4 move = main_scene_.renderer->camera.GetTransformation() * glm::vec4(0, 0, zoom, 0);
+        main_scene_.renderer->camera.position += glm::vec3(move.x, move.y, move.z);
         //render
-        if (textureProcessor->UpdateGL())
-          main_scene_.textureMap = textureProcessor->TextureMap();
         main_scene_.Render(gyro);
         render_mutex_.unlock();
     }
@@ -411,8 +399,8 @@ namespace mesh_builder {
     void MeshBuilderApp::Load(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
-        ModelIO io(filename, false);
-        textureProcessor->Add(io.ReadModel(kSubdivisionSize, main_scene_.static_meshes_));
+        File3d io(filename, false);
+        io.ReadModel(kSubdivisionSize, main_scene_.static_meshes_);
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -436,7 +424,7 @@ namespace mesh_builder {
                 ret = Tango3DR_Mesh_destroy(&mesh);
                 if (ret != TANGO_3DR_SUCCESS)
                     std::exit(EXIT_SUCCESS);
-                ModelIO io(filename, true);
+                File3d io(filename, true);
                 io.WriteModel(main_scene_.dynamic_meshes_);
                 render_mutex_.unlock();
                 binder_mutex_.unlock();
@@ -468,7 +456,7 @@ namespace mesh_builder {
                 fscanf(file, "%lf\n", &timestamp);
                 fclose(file);
 
-                RGBImage frame(GetFileName(i, ".png"));
+                Image frame(GetFileName(i, ".png"));
                 Tango3DR_ImageBuffer image;
                 image.width = frame.GetWidth() * PNG_TEXTURE_SCALE;
                 image.height = frame.GetHeight() * PNG_TEXTURE_SCALE;
@@ -476,7 +464,7 @@ namespace mesh_builder {
                 image.timestamp = timestamp;
                 image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
                 image.data = frame.ExtractYUV(PNG_TEXTURE_SCALE);
-                Tango3DR_Pose t3dr_image_pose = Math::extract3DRPose(mat);
+                Tango3DR_Pose t3dr_image_pose = GLCamera::Extract3DRPose(mat);
                 ret = Tango3DR_updateTexture(context, &image, &t3dr_image_pose);
                 if (ret != TANGO_3DR_SUCCESS)
                     std::exit(EXIT_SUCCESS);
@@ -499,7 +487,7 @@ namespace mesh_builder {
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
         } else {
-            ModelIO io(filename, true);
+            File3d io(filename, true);
             io.WriteModel(main_scene_.dynamic_meshes_);
         }
         render_mutex_.unlock();
@@ -509,7 +497,7 @@ namespace mesh_builder {
     float MeshBuilderApp::CenterOfStaticModel(bool horizontal) {
         float min = 99999999;
         float max = -99999999;
-        for (tango_gl::StaticMesh mesh : main_scene_.static_meshes_) {
+        for (Mesh& mesh : main_scene_.static_meshes_) {
             for (glm::vec3 vec : mesh.vertices) {
                 float value = horizontal ? vec.x : vec.z;
                 if (min > value)
@@ -519,15 +507,6 @@ namespace mesh_builder {
             }
         }
         return (min + max) * 0.5f;
-    }
-
-    std::string MeshBuilderApp::GetFileName(int index, std::string extension) {
-        std::ostringstream ss;
-        ss << dataset_.c_str();
-        ss << "/";
-        ss << index;
-        ss << extension.c_str();
-        return ss.str();
     }
 
     void MeshBuilderApp::MeshUpdate(Tango3DR_ImageBuffer t3dr_image, Tango3DR_GridIndexArray *t3dr_updated) {
@@ -544,7 +523,6 @@ namespace mesh_builder {
             SingleDynamicMesh* dynamic_mesh = meshes_[updated_index];
             if (dynamic_mesh == nullptr) {
                 dynamic_mesh = new SingleDynamicMesh();
-                dynamic_mesh->mesh.render_mode = GL_TRIANGLES;
                 dynamic_mesh->mesh.vertices.resize(kInitialVertexCount * 3);
                 dynamic_mesh->mesh.colors.resize(kInitialVertexCount * 3);
                 dynamic_mesh->mesh.indices.resize(kInitialIndexCount);
@@ -595,4 +573,13 @@ namespace mesh_builder {
         if (photoMode)
             photoFinished = true;
     }
-}  // namespace mesh_builder
+
+    std::string MeshBuilderApp::GetFileName(int index, std::string extension) {
+        std::ostringstream ss;
+        ss << dataset_.c_str();
+        ss << "/";
+        ss << index;
+        ss << extension.c_str();
+        return ss.str();
+    }
+}

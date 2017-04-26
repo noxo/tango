@@ -23,28 +23,18 @@ LOCAL_SHARED_LIBRARIES := tango_client_api tango_3d_reconstruction tango_support
 LOCAL_STATIC_LIBRARIES := png
 LOCAL_CFLAGS    := -std=c++11
 
-LOCAL_C_INCLUDES := $(PROJECT_ROOT)/tango-service-sdk/include/ \
-                    $(PROJECT_ROOT)/tango_gl/include \
-                    $(PROJECT_ROOT)/third_party/glm/ \
+LOCAL_C_INCLUDES := $(PROJECT_ROOT)/third_party/glm/ \
                     $(PROJECT_ROOT)/third_party/libpng/include/
 
 LOCAL_SRC_FILES := jni_interface.cc \
                    mesh_builder_app.cc \
-                   model_io.cc \
-                   rgb_image.cc \
                    scene.cc \
-                   texture_processor.cc \
-                   $(PROJECT_ROOT_FROM_JNI)/tango_gl/camera.cc \
-                   $(PROJECT_ROOT_FROM_JNI)/tango_gl/conversions.cc \
-                   $(PROJECT_ROOT_FROM_JNI)/tango_gl/drawable_object.cc \
-                   $(PROJECT_ROOT_FROM_JNI)/tango_gl/gesture_camera.cc \
-                   $(PROJECT_ROOT_FROM_JNI)/tango_gl/grid.cc \
-                   $(PROJECT_ROOT_FROM_JNI)/tango_gl/line.cc \
-                   $(PROJECT_ROOT_FROM_JNI)/tango_gl/shaders.cc \
-                   $(PROJECT_ROOT_FROM_JNI)/tango_gl/tango_gl.cc \
-                   $(PROJECT_ROOT_FROM_JNI)/tango_gl/transform.cc \
-                   $(PROJECT_ROOT_FROM_JNI)/tango_gl/texture.cc \
-                   $(PROJECT_ROOT_FROM_JNI)/tango_gl/util.cc
+                   data/file3d.cc \
+                   data/image.cc \
+                   data/mesh.cc \
+                   gl/camera.cc \
+                   gl/glsl.cc \
+                   gl/renderer.cc
 
 LOCAL_LDLIBS    := -llog -lGLESv2 -L$(SYSROOT)/usr/lib -lz -landroid
 include $(BUILD_SHARED_LIBRARY)

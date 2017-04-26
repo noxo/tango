@@ -1,40 +1,31 @@
-#ifndef MESH_BUILDER_SCENE_H_
-#define MESH_BUILDER_SCENE_H_
+#ifndef SCENE_H
+#define SCENE_H
 
-#include <memory>
 #include <vector>
+#include "data/file3d.h"
+#include "gl/glsl.h"
+#include "gl/renderer.h"
 
-#include <tango_client_api.h>  // NOLINT
-#include <tango-gl/gesture_camera.h>
-#include <tango-gl/grid.h>
-#include <tango-gl/tango-gl.h>
-#include <tango-gl/util.h>
-#include <tango_3d_reconstruction_api.h>
-#include "model_io.h"
+namespace oc {
+    class Scene {
+    public:
+        Scene();
+        ~Scene();
+        void InitGLContent();
+        void DeleteResources();
+        void SetupViewPort(int w, int h);
+        void Render(bool frustum);
+        void UpdateFrustum(glm::vec3 pos, float zoom);
+        void AddDynamicMesh(SingleDynamicMesh* mesh);
+        void ClearDynamicMeshes();
 
-namespace mesh_builder {
+        Mesh frustum_;
+        std::vector<Mesh> static_meshes_;
+        std::vector<SingleDynamicMesh*> dynamic_meshes_;
+        GLSL* color_vertex_shader;
+        GLSL* textured_shader;
+        GLRenderer* renderer;
+    };
+}
 
-class Scene {
- public:
-  Scene();
-  ~Scene();
-  void InitGLContent();
-  void DeleteResources();
-  void SetupViewPort(int w, int h);
-  void Render(bool frustum);
-  void UpdateFrustum(glm::vec3 pos, float zoom);
-  void AddDynamicMesh(SingleDynamicMesh* mesh);
-  void ClearDynamicMeshes();
-
-  tango_gl::Camera* camera_;
-  tango_gl::StaticMesh frustum_;
-  std::vector<unsigned int> textureMap;
-  std::vector<tango_gl::StaticMesh> static_meshes_;
-  std::vector<tango_gl::StaticMesh> debug_meshes_;
-  std::vector<SingleDynamicMesh*> dynamic_meshes_;
-  tango_gl::Material* color_vertex_shader;
-  tango_gl::Material* textured_shader;
-};
-}  // namespace mesh_builder
-
-#endif  // MESH_BUILDER_SCENE_H_
+#endif
