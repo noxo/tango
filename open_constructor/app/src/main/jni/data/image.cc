@@ -73,11 +73,39 @@ namespace oc {
 
         /// load PNG
         png_size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
-        data = new unsigned char[row_bytes * height];
         png_bytepp row_pointers = png_get_rows(png_ptr, info_ptr);
-        for (int i = 0; i < height; i++)
-            memcpy(data+(row_bytes * i), row_pointers[i], row_bytes);
-
+        data = new unsigned char[3 * w * h];
+        switch (color_type) {
+            case PNG_COLOR_TYPE_RGBA:
+                for (unsigned int i = 0; i < height; i++)
+                    for (unsigned int j = 0; j < w; j++) {
+                        data[3 * (i * w + j) + 0] = row_pointers[i][j * 4 + 0];
+                        data[3 * (i * w + j) + 1] = row_pointers[i][j * 4 + 1];
+                        data[3 * (i * w + j) + 2] = row_pointers[i][j * 4 + 2];
+                    }
+                break;
+            case PNG_COLOR_TYPE_RGB:
+                for (int i = 0; i < h; i++)
+                    memcpy(data+(row_bytes * i), row_pointers[i], row_bytes);
+                break;
+            case PNG_COLOR_TYPE_PALETTE:
+                int num_palette;
+                png_colorp palette;
+                png_get_PLTE(png_ptr, info_ptr, &palette, &num_palette);
+                for (unsigned int i = 0; i < h; i++)
+                    for (unsigned int j = 0; j < row_bytes; j++) {
+                        data[3 * (i * row_bytes + j) + 0] = palette[row_pointers[i][j]].red;
+                        data[3 * (i * row_bytes + j) + 1] = palette[row_pointers[i][j]].green;
+                        data[3 * (i * row_bytes + j) + 2] = palette[row_pointers[i][j]].blue;
+                    }
+            break;
+            case PNG_COLOR_TYPE_GRAY:
+                for (unsigned int i = 0; i < height; i++)
+                    for (unsigned int j = 0; j < row_bytes; j++)
+                        for (unsigned int k = 0; k < 3; k++)
+                            data[3 * (i * row_bytes + j) + k] = row_pointers[i][j];
+                break;
+        }
         png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
         fclose(temp);
         name = file;
