@@ -21,9 +21,11 @@ import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.net.Uri;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -60,6 +62,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private Button mToggleButton;
   private LinearLayout mLayoutRecTop;
   private TextView mResText;
+  private Button mCardboard;
   private int mRes = 3;
 
   private GestureDetector mGestureDetector;
@@ -129,6 +132,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     mToggleButton = (Button) findViewById(R.id.toggle_button);
     mToggleButton.setOnClickListener(this);
 
+    mCardboard = (Button) findViewById(R.id.cardboard_button);
     mLayoutRecTop = (LinearLayout) findViewById(R.id.layout_rec_top);
     mResText = (TextView) findViewById(R.id.res_text);
 
@@ -196,8 +200,8 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     if ((filename != null) && (filename.length() > 0))
     {
       m3drRunning = false;
-      setViewerMode();
       mToLoad = new File(getPath(), filename).toString();
+      setViewerMode(mToLoad);
     }
     else
       mRes = getIntent().getIntExtra(RESOLUTION_KEY, 3);
@@ -375,10 +379,25 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     return 2.0f / (size.x + size.y) * (float)Math.pow(mZoom, 0.5f) * 2.0f;
   }
 
-  private void setViewerMode()
+  private void setViewerMode(final String filename)
   {
     mLayoutRecBottom.setVisibility(View.GONE);
     mLayoutRecTop.setVisibility(View.GONE);
+    if (isCardboardEnabled(this)) {
+      mCardboard.setVisibility(View.VISIBLE);
+      mCardboard.setOnClickListener(new View.OnClickListener()
+      {
+        @Override
+        public void onClick(View view)
+        {
+          Intent i = new Intent();
+          i.setAction(Intent.ACTION_VIEW);
+          i.setDataAndType(Uri.parse("file://" + filename), "application/" + CARDBOARD_APP);
+          startActivity(i);
+          System.exit(0);
+        }
+      });
+    }
     mSeekbar.setVisibility(View.VISIBLE);
     mMoveX = 0;
     mMoveY = 0;
@@ -478,7 +497,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                 builder.setNegativeButton(getString(R.string.no), new DialogInterface.OnClickListener() {
                   @Override
                   public void onClick(DialogInterface dialog, int which) {
-                    setViewerMode();
+                    setViewerMode(filename);
                     if (isTexturingOn()) {
                       mProgress.setVisibility(View.VISIBLE);
                       new Thread(new Runnable()

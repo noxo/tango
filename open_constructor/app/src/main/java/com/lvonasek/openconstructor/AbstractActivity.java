@@ -2,8 +2,10 @@ package com.lvonasek.openconstructor;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Environment;
 import android.preference.PreferenceManager;
@@ -24,6 +26,7 @@ import java.util.zip.ZipOutputStream;
 public abstract class AbstractActivity extends Activity
 {
   protected static final int BUFFER_SIZE = 65536;
+  protected static final String CARDBOARD_APP = "com.lvonasek.daydreamOBJ";
   protected static final String[] FILE_EXT = {".obj", ".ply"};
   protected static final String FILE_KEY = "FILE2OPEN";
   protected static final String MODEL_DIRECTORY = "/Models/";
@@ -31,6 +34,32 @@ public abstract class AbstractActivity extends Activity
   protected static final String TAG = "tango_app";
   protected static final String TEMP_DIRECTORY = "temp";
   protected static final String URL_KEY = "URL2OPEN";
+
+  public static void installCardboardApp(Context context)
+  {
+    Intent i = new Intent(Intent.ACTION_VIEW);
+    i.setData(Uri.parse("https://play.google.com/store/apps/details?id=" + CARDBOARD_APP));
+    context.startActivity(i);
+  }
+
+  public static boolean isCardboardAppInstalled(Context context)
+  {
+    try {
+      context.getPackageManager().getPackageInfo(CARDBOARD_APP, 0);
+      return true;
+    } catch (PackageManager.NameNotFoundException e) {
+      return false;
+    }
+  }
+
+  public static boolean isCardboardEnabled(Context context)
+  {
+    if (!isCardboardAppInstalled(context))
+      return false;
+    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
+    String key = context.getString(R.string.pref_cardboard);
+    return pref.getBoolean(key, false);
+  }
 
   public static boolean isPortrait(Context context) {
     SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);

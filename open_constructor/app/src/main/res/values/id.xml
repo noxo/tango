@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pref_cardboard">pref_cardboard</string>
     <string name="pref_landscape">pref_landscape</string>
     <string name="pref_noisefilter">pref_noisefilter</string>
     <string name="pref_photomode">pref_photomode</string>

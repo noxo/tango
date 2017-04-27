@@ -73,4 +73,15 @@
         android:id="@+id/seekBar"
         android:visibility="gone" />
 
+    <Button
+        android:id="@+id/cardboard_button"
+        android:layout_width="90dp"
+        android:layout_height="60dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_margin="10dp"
+        android:visibility="gone"
+        android:background="@drawable/ic_cardboard"
+        android:text="" />
+
 </RelativeLayout>

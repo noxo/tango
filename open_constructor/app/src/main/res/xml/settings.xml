@@ -7,6 +7,13 @@
 
         <CheckBoxPreference
             android:defaultValue="false"
+            android:key="@string/pref_cardboard"
+            android:summary="@string/cardboard_summary"
+            android:title="@string/cardboard">
+        </CheckBoxPreference>
+
+        <CheckBoxPreference
+            android:defaultValue="false"
             android:key="@string/pref_landscape"
             android:summary="@string/landscape_summary"
             android:title="@string/landscape">
