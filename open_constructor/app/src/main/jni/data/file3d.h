@@ -19,15 +19,15 @@ struct SingleDynamicMesh {
 };
 
 namespace oc {
+    enum TYPE{OBJ, PLY};
 
 class File3d {
 public:
     File3d(std::string filename, bool writeAccess);
     ~File3d();
+    TYPE GetType() { return type; }
     void ReadModel(int subdivision, std::vector<oc::Mesh>& output);
     void WriteModel(std::vector<SingleDynamicMesh*> model);
-
-    enum TYPE{OBJ, PLY};
 
 private:
     glm::ivec3 DecodeColor(unsigned int c);

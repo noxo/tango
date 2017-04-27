@@ -168,6 +168,7 @@ Renderer::Renderer(gvr_context* gvr_context, std::string filename)
   }
 
   oc::File3d io(filename, false);
+  textured_ = io.GetType() == oc::OBJ;
   io.ReadModel(5000, static_meshes_);
 }
 
@@ -177,12 +178,12 @@ Renderer::~Renderer() {
 void Renderer::InitializeGl() {
   gvr_api_->InitializeGl();
 
-  int index = 0;
+  int index = textured_ ? 0 : 1;
   const int vertex_shader = LoadGLShader(GL_VERTEX_SHADER, &kTextureVertexShaders[index]);
   const int fragment_shader = LoadGLShader(GL_FRAGMENT_SHADER, &kTextureFragmentShaders[index]);
-  const int pass_through_shader = LoadGLShader(GL_FRAGMENT_SHADER, &kPassthroughFragmentShaders[index]);
-  const int reticle_vertex_shader = LoadGLShader(GL_VERTEX_SHADER, &kReticleVertexShaders[index]);
-  const int reticle_fragment_shader = LoadGLShader(GL_FRAGMENT_SHADER, &kReticleFragmentShaders[index]);
+  const int pass_through_shader = LoadGLShader(GL_FRAGMENT_SHADER, &kPassthroughFragmentShaders[0]);
+  const int reticle_vertex_shader = LoadGLShader(GL_VERTEX_SHADER, &kReticleVertexShaders[0]);
+  const int reticle_fragment_shader = LoadGLShader(GL_FRAGMENT_SHADER, &kReticleFragmentShaders[0]);
 
   model_program_ = glCreateProgram();
   glAttachShader(model_program_, vertex_shader);
@@ -191,7 +192,10 @@ void Renderer::InitializeGl() {
   glUseProgram(model_program_);
 
   model_position_param_ = glGetAttribLocation(model_program_, "a_Position");
-  model_uv_param_ = glGetAttribLocation(model_program_, "a_UV");
+  if (textured_)
+    model_uv_param_ = glGetAttribLocation(model_program_, "a_UV");
+  else
+    model_uv_param_ = glGetAttribLocation(model_program_, "a_Color");
   model_modelview_projection_param_ = glGetUniformLocation(model_program_, "u_MVP");
   model_translatex_param_ = glGetUniformLocation(model_program_, "u_X");
   model_translatey_param_ = glGetUniformLocation(model_program_, "u_Y");
@@ -380,6 +384,14 @@ int Renderer::LoadGLShader(int type, const char** shadercode) {
   glShaderSource(shader, 1, shadercode, nullptr);
   glCompileShader(shader);
 
+  const unsigned int BUFFER_SIZE = 512;
+  char buffer[BUFFER_SIZE];
+  memset(buffer, 0, BUFFER_SIZE);
+  GLsizei length = 0;
+  glGetShaderInfoLog(shader, BUFFER_SIZE, &length, buffer);
+  if (length > 0)
+    LOGI("GLSL compile log: %s\n%s", buffer, *shadercode);
+
   // Get the compilation status.
   int compileStatus;
   glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
@@ -426,10 +438,18 @@ void Renderer::DrawModel(ViewType view) {
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, mesh.image->GetWidth(), mesh.image->GetHeight(),
                              0, GL_RGB, GL_UNSIGNED_BYTE, mesh.image->GetData());
     }
-    glBindTexture(GL_TEXTURE_2D, (unsigned int)mesh.texture);
     glVertexAttribPointer(model_position_param_, 3, GL_FLOAT, false, 0, mesh.vertices.data());
-    glVertexAttribPointer(model_uv_param_, 2, GL_FLOAT, false, 0, mesh.uv.data());
-    glDrawArrays(GL_TRIANGLES, 0, mesh.vertices.size());
+    if (textured_)
+    {
+      glBindTexture(GL_TEXTURE_2D, (unsigned int)mesh.texture);
+      glVertexAttribPointer(model_uv_param_, 2, GL_FLOAT, false, 0, mesh.uv.data());
+      glDrawArrays(GL_TRIANGLES, 0, mesh.vertices.size());
+    }
+    else
+    {
+      glVertexAttribPointer(model_uv_param_, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, mesh.colors.data());
+      glDrawArrays(GL_TRIANGLES, 0, mesh.vertices.size());
+    }
   }
   glDisableVertexAttribArray(model_position_param_);
 }

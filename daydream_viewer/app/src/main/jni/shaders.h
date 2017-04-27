@@ -1,5 +1,5 @@
-#ifndef TREASUREHUNT_APP_SRC_MAIN_JNI_TREASUREHUNTSHADERS_H_  // NOLINT
-#define TREASUREHUNT_APP_SRC_MAIN_JNI_TREASUREHUNTSHADERS_H_  // NOLINT
+#ifndef SHADERS_H
+#define SHADERS_H
 
 
 static const char* kTextureVertexShaders[] = {
@@ -20,6 +20,23 @@ static const char* kTextureVertexShaders[] = {
       pos.y += u_Y;
       pos.z += u_Z;
       gl_Position = u_MVP * pos;
+    })glsl",
+    R"glsl(
+    uniform mat4 u_MVP;
+    uniform float u_X;
+    uniform float u_Y;
+    uniform float u_Z;
+    attribute vec4 a_Position;
+    attribute vec4 a_Color;
+    varying vec4 v_Color;
+
+    void main() {
+      v_Color = a_Color;
+      vec4 pos = a_Position;
+      pos.x += u_X;
+      pos.y += u_Y;
+      pos.z += u_Z;
+      gl_Position = u_MVP * pos;
     })glsl"
 };
 
@@ -31,6 +48,13 @@ static const char* kTextureFragmentShaders[] = {
 
     void main() {
       gl_FragColor = texture2D(color_texture, v_UV);
+    })glsl",
+    R"glsl(
+    precision mediump float;
+    varying vec4 v_Color;
+
+    void main() {
+      gl_FragColor = v_Color;
     })glsl"
 };
 
