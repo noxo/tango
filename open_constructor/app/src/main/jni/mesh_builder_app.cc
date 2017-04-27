@@ -92,18 +92,16 @@ namespace oc {
         t3dr_image.data = buffer->data;
 
         Tango3DR_Pose t3dr_image_pose = GLCamera::Extract3DRPose(image_matrix);
-        if(!photoMode) {
-            glm::quat rot = glm::quat((float) t3dr_image_pose.orientation[0],
-                                      (float) t3dr_image_pose.orientation[1],
-                                      (float) t3dr_image_pose.orientation[2],
-                                      (float) t3dr_image_pose.orientation[3]);
-            float diff = GLCamera::Diff(rot, image_rotation);
-            image_rotation = rot;
-            int limit = textured ? 1 : 5;
-            if (diff > limit) {
-                binder_mutex_.unlock();
-                return;
-            }
+        glm::quat rot = glm::quat((float) t3dr_image_pose.orientation[0],
+                                  (float) t3dr_image_pose.orientation[1],
+                                  (float) t3dr_image_pose.orientation[2],
+                                  (float) t3dr_image_pose.orientation[3]);
+        float diff = GLCamera::Diff(rot, image_rotation);
+        image_rotation = rot;
+        int limit = textured ? 1 : 5;
+        if (diff > limit) {
+            binder_mutex_.unlock();
+            return;
         }
 
         Tango3DR_PointCloud t3dr_depth;
@@ -143,8 +141,6 @@ namespace oc {
     MeshBuilderApp::MeshBuilderApp() :  t3dr_is_running_(false),
                                         gyro(false),
                                         landscape(false),
-                                        photoFinished(false),
-                                        photoMode(false),
                                         point_cloud_available_(false),
                                         poses_(0),
                                         textured(false),
@@ -170,12 +166,9 @@ namespace oc {
     }
 
     void MeshBuilderApp::OnTangoServiceConnected(JNIEnv *env, jobject binder, double res,
-               double dmin, double dmax, int noise, bool land, bool photo, bool textures,
-               std::string dataset) {
+               double dmin, double dmax, int noise, bool land, bool textures, std::string dataset) {
         dataset_ = dataset;
         landscape = land;
-        photoFinished = false;
-        photoMode = photo;
         textured = textures;
 
         TangoService_setBinder(env, binder);
@@ -381,7 +374,6 @@ namespace oc {
     void MeshBuilderApp::OnToggleButtonClicked(bool t3dr_is_running) {
         binder_mutex_.lock();
         t3dr_is_running_ = t3dr_is_running;
-        photoFinished = false;
         binder_mutex_.unlock();
     }
 
@@ -510,9 +502,6 @@ namespace oc {
     }
 
     void MeshBuilderApp::MeshUpdate(Tango3DR_ImageBuffer t3dr_image, Tango3DR_GridIndexArray *t3dr_updated) {
-        if (photoMode)
-            t3dr_is_running_ = false;
-
         for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
             GridIndex updated_index;
             updated_index.indices[0] = t3dr_updated->indices[it][0];
@@ -570,11 +559,9 @@ namespace oc {
             dynamic_mesh->mesh.texture = -1;
             dynamic_mesh->mutex.unlock();
         }
-        if (photoMode)
-            photoFinished = true;
     }
 
-    std::string MeshBuilderApp::GetFileName(int index, std::string extension) {
+    std::string MeshBuilderA/p::GetFileName(int index, std::string extension) {
         std::ostringstream ss;
         ss << dataset_.c_str();
         ss << "/";

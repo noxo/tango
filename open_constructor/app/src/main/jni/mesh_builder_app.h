@@ -42,9 +42,8 @@ namespace oc {
         ~MeshBuilderApp();
         void OnCreate(JNIEnv *env, jobject caller_activity);
         void OnPause();
-        void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin,
-                                     double dmax, int noise, bool land, bool photo, bool textures,
-                                     std::string dataset);
+        void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin, double dmax,
+                                     int noise, bool land, bool textures, std::string dataset);
         void onPointCloudAvailable(TangoPointCloud *point_cloud);
         void onFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer);
         void OnSurfaceCreated();
@@ -55,7 +54,6 @@ namespace oc {
         void Load(std::string filename);
         void Save(std::string filename, std::string dataset);
         float CenterOfStaticModel(bool horizontal);
-        bool IsPhotoFinished() { return photoFinished; }
         void SetView(float p, float y, float mx, float my, bool g) { pitch = p; yaw = y; gyro = g;
                                                                             movex = mx; movey = my;}
         void SetZoom(float value) { zoom = value; }
@@ -92,8 +90,6 @@ namespace oc {
 
         bool gyro;
         bool landscape;
-        bool photoFinished;
-        bool photoMode;
         bool textured;
         float movex;
         float movey;

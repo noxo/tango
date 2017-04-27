@@ -47,7 +47,7 @@ public class TangoJNINative {
    * @param nativeTangoServiceBinder The native binder object.
    */
   public static native void onTangoServiceConnected(IBinder nativeTangoServiceBinder, double res,
-   double dmin, double dmax, int noise, boolean land, boolean photo, boolean textures, String temp);
+   double dmin, double dmax, int noise, boolean land, boolean textures, String temp);
 
   /**
    * Interfaces to native OnPause function.
@@ -83,9 +83,6 @@ public class TangoJNINative {
 
   // Get center of loaded 3D model
   public static native float centerOfStaticModel(boolean horizontal);
-
-  // Check if photo was finished
-  public static native boolean isPhotoFinished();
 
   public static native byte[] clientSecret();
 }

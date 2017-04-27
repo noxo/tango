@@ -82,23 +82,20 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         double dmax     = mRes * 1.5;
         int noise       = isNoiseFilterOn() ? 9 : 0;
         boolean land    = !isPortrait(OpenConstructorActivity.this);
-        boolean photo   = isPhotoModeOn();
         boolean txt     = isTexturingOn();
 
         if (android.os.Build.DEVICE.toLowerCase().startsWith("yellowstone"))
           land = !land;
 
-        if (photo && (mRes > 0))
-            dmax = 5.0;
         if(mRes == 0) {
             res = 0.005;
-            dmax = photo ? 2.0 : 1.0;
+            dmax = 1.0;
         }
 
-        m3drRunning = !photo;
+        m3drRunning = true;
         String t = getTempPath().getAbsolutePath();
         TangoJNINative.onCreate(OpenConstructorActivity.this);
-        TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, photo, txt, t);
+        TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, txt, t);
         TangoJNINative.onToggleButtonClicked(m3drRunning);
         TangoJNINative.setView(0, 0, 0, 0, true);
         OpenConstructorActivity.this.runOnUiThread(new Runnable()
@@ -213,40 +210,11 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   public synchronized void onClick(View v) {
     switch (v.getId()) {
     case R.id.toggle_button:
-      if (isPhotoModeOn()) {
-        m3drRunning = true;
-        mProgress.setVisibility(View.VISIBLE);
-      }
-      else
-        m3drRunning = !m3drRunning;
+      m3drRunning = !m3drRunning;
       mGLView.queueEvent(new Runnable() {
           @Override
           public void run() {
             TangoJNINative.onToggleButtonClicked(m3drRunning);
-            new Thread(new Runnable() {
-              @Override
-              public void run() {
-                if (isPhotoModeOn()) {
-                  while(!TangoJNINative.isPhotoFinished()) {
-                    try
-                    {
-                      Thread.sleep(10);
-                    } catch (InterruptedException e)
-                    {
-                      e.printStackTrace();
-                    }
-                  }
-                  OpenConstructorActivity.this.runOnUiThread(new Runnable()
-                  {
-                    @Override
-                    public void run()
-                    {
-                      mProgress.setVisibility(View.GONE);
-                    }
-                  });
-                }
-              }
-            }).start();
           }
         });
       break;
@@ -320,8 +288,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
 
   private void refreshUi() {
     int textId = m3drRunning ? R.string.pause : R.string.resume;
-    if (isPhotoModeOn())
-      textId = R.string.capture;
     mToggleButton.setText(textId);
     mLayoutRecBottom.setVisibility(View.VISIBLE);
     //memory info
@@ -330,17 +296,10 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     String text = freeMBs + " " + getString(R.string.mb_free) + ", ";
     //max distance
     text += getString(R.string.distance) + " ";
-    if (isPhotoModeOn()) {
-      if(mRes > 0)
-        text += "5.0 m, ";
-      else if(mRes == 0)
-        text += "2.0 m, ";
-    } else {
-      if(mRes > 0)
-        text += (1.5f * mRes) + " m, ";
-      else if(mRes == 0)
-        text += "1.0 m, ";
-    }
+    if(mRes > 0)
+      text += (1.5f * mRes) + " m, ";
+    else if(mRes == 0)
+      text += "1.0 m, ";
     //3d resolution
     text += getString(R.string.resolution) + " ";
     if(mRes > 0)
@@ -349,7 +308,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       text += "0.5 cm";
     text += " ";
     //warning
-    if ((mRes <= 0) || ((mRes == 1) && isPhotoModeOn())) {
+    if (mRes <= 0) {
       text += getString(R.string.extreme);
       mResText.setTextColor(Color.RED);
     } else if (freeMBs < 400)

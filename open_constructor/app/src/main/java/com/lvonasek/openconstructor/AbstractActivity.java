@@ -74,13 +74,6 @@ public abstract class AbstractActivity extends Activity
     return pref.getBoolean(key, false);
   }
 
-  public boolean isPhotoModeOn()
-  {
-    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
-    String key = getString(R.string.pref_photomode);
-    return pref.getBoolean(key, false);
-  }
-
   public boolean isTexturingOn()
   {
     SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
