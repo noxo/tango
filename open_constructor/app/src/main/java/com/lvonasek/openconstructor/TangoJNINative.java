@@ -23,7 +23,7 @@ import android.util.Log;
 /**
  * Interfaces between native C++ code and Java code.
  */
-class TangoJNINative {
+public class TangoJNINative {
   static {
     // This project depends on tango_client_api, so we need to make sure we load
     // the correct library first.

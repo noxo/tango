@@ -1,4 +1,4 @@
-package com.lvonasek.openconstructor;
+package com.lvonasek.openconstructor.sketchfab;
 
 import java.io.BufferedReader;
 

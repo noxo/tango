@@ -13,6 +13,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.lvonasek.openconstructor.sketchfab.OAuth;
+
 import java.io.File;
 import java.util.ArrayList;
 
@@ -114,7 +116,7 @@ class FileAdapter extends BaseAdapter
               Toast.makeText(mContext, R.string.invalid_name, Toast.LENGTH_LONG).show();
               break;
             }
-            Intent i = new Intent(mContext, SketchfabOAuth.class);
+            Intent i = new Intent(mContext, OAuth.class);
             i.putExtra(AbstractActivity.FILE_KEY, mItems.get(index));
             mContext.startActivity(i);
             break;

@@ -15,6 +15,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.google.atap.tangoservice.Tango;
+import com.lvonasek.openconstructor.sketchfab.Home;
 
 import java.io.File;
 import java.util.Arrays;
@@ -150,7 +151,7 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
         break;
       case R.id.sketchfab:
         showProgress();
-        startActivity(new Intent(this, SketchfabHome.class));
+        startActivity(new Intent(this, Home.class));
         break;
     }
   }

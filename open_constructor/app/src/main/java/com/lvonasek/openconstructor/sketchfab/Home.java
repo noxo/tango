@@ -1,4 +1,4 @@
-package com.lvonasek.openconstructor;
+package com.lvonasek.openconstructor.sketchfab;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
@@ -11,10 +11,13 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-public class SketchfabHome extends AbstractActivity
+import com.lvonasek.openconstructor.AbstractActivity;
+import com.lvonasek.openconstructor.R;
+
+public class Home extends AbstractActivity
 {
-  private static final String SKETCHFAB_HOME = "https://sketchfab.com";
-  private static final String SKETCHFAB_UPLOAD = "https://sketchfab.com/upload";
+  private static final String SKETCHFAB_HOME = "https://sketchfab.com/login";
+  private static final String SKETCHFAB_UPLOAD = "https://sketchfab.com/upload"; //deprecated(unused)
 
   private static final int PERMISSIONS_CODE = 1990;
 

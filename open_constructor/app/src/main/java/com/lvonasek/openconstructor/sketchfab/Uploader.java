@@ -4,7 +4,7 @@
  * https://github.com/introlab/rtabmap
  */
 
-package com.lvonasek.openconstructor;
+package com.lvonasek.openconstructor.sketchfab;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -27,7 +27,10 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-public class SketchfabUploader extends AbstractActivity implements OnClickListener
+import com.lvonasek.openconstructor.AbstractActivity;
+import com.lvonasek.openconstructor.R;
+
+public class Uploader extends AbstractActivity implements OnClickListener
 {
   private static final String UPLOADER_TAG = "openconstructor";
   private static final String UPLOAD_URL = "https://api.sketchfab.com/v3/models";
@@ -131,7 +134,7 @@ public class SketchfabUploader extends AbstractActivity implements OnClickListen
               File f = new File(zipOutput);
 
               // Continue?
-              AlertDialog.Builder builder = new AlertDialog.Builder(SketchfabUploader.this);
+              AlertDialog.Builder builder = new AlertDialog.Builder(Uploader.this);
               builder.setTitle(R.string.sketchfab_upload_ready);
 
               final int fileSizeMB = (int) f.length() / (1024 * 1024);
@@ -202,9 +205,9 @@ public class SketchfabUploader extends AbstractActivity implements OnClickListen
       //onPostExecute is called after doInBackground finishes its task.
       if (mModelUri != null)
       {
-        Intent i = new Intent(SketchfabUploader.this, SketchfabHome.class);
+        Intent i = new Intent(Uploader.this, Home.class);
         i.putExtra(AbstractActivity.URL_KEY, "https://sketchfab.com/models/" + mModelUri);
-        SketchfabUploader.this.startActivity(i);
+        Uploader.this.startActivity(i);
         finish();
       } else
         Toast.makeText(getApplicationContext(), "Upload failed!", Toast.LENGTH_LONG).show();
@@ -218,7 +221,7 @@ public class SketchfabUploader extends AbstractActivity implements OnClickListen
       mFileName = files[1];
       try
       {
-        String token = SketchfabOAuth.getToken();
+        String token = OAuth.getToken();
         MultipartUtility multipart = new MultipartUtility(UPLOAD_URL, token, charset);
         multipart.addFormField("name", mFileName);
         multipart.addFormField("description", mDesc);

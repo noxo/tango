@@ -30,9 +30,9 @@
         </activity>
         <activity android:name=".OpenConstructorActivity"/>
         <activity android:name=".SettingsActivity"/>
-        <activity android:name=".SketchfabHome"/>
-        <activity android:name=".SketchfabOAuth"/>
-        <activity android:name=".SketchfabUploader"/>
+        <activity android:name=".sketchfab.Home"/>
+        <activity android:name=".sketchfab.OAuth"/>
+        <activity android:name=".sketchfab.Uploader"/>
     </application>
 
 </manifest>

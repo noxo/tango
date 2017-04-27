@@ -1,4 +1,4 @@
-package com.lvonasek.openconstructor;
+package com.lvonasek.openconstructor.sketchfab;
 
 import android.Manifest;
 import android.app.Activity;
@@ -11,6 +11,10 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import com.lvonasek.openconstructor.AbstractActivity;
+import com.lvonasek.openconstructor.R;
+import com.lvonasek.openconstructor.TangoJNINative;
+
 import java.util.ArrayList;
 import cz.msebera.android.httpclient.HttpResponse;
 import cz.msebera.android.httpclient.NameValuePair;
@@ -21,7 +25,7 @@ import cz.msebera.android.httpclient.impl.client.HttpClientBuilder;
 import cz.msebera.android.httpclient.message.BasicNameValuePair;
 import cz.msebera.android.httpclient.util.EntityUtils;
 
-public class SketchfabOAuth extends AbstractActivity
+public class OAuth extends AbstractActivity
 {
   private static final String CLIENT_ID = "57kFPBj5OaSdKeroj1p2WQw7n11YFeDLea6sXnqi";
   private static final String OAUTH_URL = "https://sketchfab.com/oauth2/authorize/?response_type=code&client_id=";
@@ -84,10 +88,10 @@ public class SketchfabOAuth extends AbstractActivity
                   token = token.substring(token.indexOf(":"));
                   token = token.substring(token.indexOf("\""));
                   token = token.substring(1, token.indexOf("\","));
-                  Activity activity = SketchfabOAuth.this;
-                  Intent i = new Intent(activity, SketchfabUploader.class);
+                  Activity activity = OAuth.this;
+                  Intent i = new Intent(activity, Uploader.class);
                   i.putExtra(AbstractActivity.FILE_KEY, mExtra);
-                  SketchfabOAuth.this.startActivity(i);
+                  OAuth.this.startActivity(i);
                   finish();
                   return;
                 }
