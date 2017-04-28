@@ -28,6 +28,7 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: '../../TangoReleaseLibs/jar', include: ['**/*.jar'])
+    apply from: '../../version.gradle'
+    compile "com.google.tango:sdk-base:${release_version}"
     compile "cz.msebera.android:httpclient:4.4.1.2"
 }

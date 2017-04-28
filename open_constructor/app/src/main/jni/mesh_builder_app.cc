@@ -561,7 +561,7 @@ namespace oc {
         }
     }
 
-    std::string MeshBuilderA/p::GetFileName(int index, std::string extension) {
+    std::string MeshBuilderApp::GetFileName(int index, std::string extension) {
         std::ostringstream ss;
         ss << dataset_.c_str();
         ss << "/";
