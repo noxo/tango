@@ -32,7 +32,7 @@ public abstract class AbstractActivity extends Activity
   protected static final String MODEL_DIRECTORY = "/Models/";
   protected static final String RESOLUTION_KEY = "RESOLUTION";
   protected static final String TAG = "tango_app";
-  protected static final String TEMP_DIRECTORY = "temp";
+  protected static final String TEMP_DIRECTORY = "dataset";
   protected static final String URL_KEY = "URL2OPEN";
 
   public static void installCardboardApp(Context context)

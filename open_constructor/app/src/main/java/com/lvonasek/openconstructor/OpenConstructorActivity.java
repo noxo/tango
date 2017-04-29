@@ -454,24 +454,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
               @Override
               public void onClick(DialogInterface dialog, int which) {
                 setViewerMode(filename);
-                mProgress.setVisibility(View.VISIBLE);
-                new Thread(new Runnable()
-                {
-                  @Override
-                  public void run()
-                  {
-                    TangoJNINative.onClearButtonClicked();
-                    TangoJNINative.load(filename);
-                    OpenConstructorActivity.this.runOnUiThread(new Runnable()
-                    {
-                      @Override
-                      public void run()
-                      {
-                        mProgress.setVisibility(View.GONE);
-                      }
-                    });
-                  }
-                }).start();
                 dialog.cancel();
               }
             });
