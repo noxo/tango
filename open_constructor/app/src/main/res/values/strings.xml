@@ -34,8 +34,6 @@
     <string name="landscape_summary">Using the application in landscape is better on tablets</string>
     <string name="realtime_noise_filter">Realtime noise filter</string>
     <string name="realtime_noise_filter_summary">A noise filter can improve the quality a lot but it makes capturing slower</string>
-    <string name="texture">Texture model</string>
-    <string name="texture_summary">Texturing of a model improves visual quality and reduces the result size</string>
 
     <!-- Sketchfab uploader !-->
     <string name="compressing">Compressing files…</string>

@@ -98,8 +98,7 @@ namespace oc {
                                   (float) t3dr_image_pose.orientation[3]);
         float diff = GLCamera::Diff(rot, image_rotation);
         image_rotation = rot;
-        int limit = textured ? 1 : 5;
-        if (diff > limit) {
+        if (diff > 1) {
             binder_mutex_.unlock();
             return;
         }
@@ -120,17 +119,17 @@ namespace oc {
             binder_mutex_.unlock();
             return;
         }
-        if (textured) {
-            Image frame(t3dr_image, PNG_TEXTURE_SCALE);
-            frame.Write(GetFileName(poses_, ".png").c_str());
-            FILE* file = fopen(GetFileName(poses_, ".txt").c_str(), "w");
-            for (int i = 0; i < 4; i++)
-                fprintf(file, "%f %f %f %f\n", image_matrix[i][0], image_matrix[i][1],
-                                               image_matrix[i][2], image_matrix[i][3]);
-            fprintf(file, "%lf\n", t3dr_image.timestamp);
-            fclose(file);
-            poses_++;
-        }
+
+        Image frame(t3dr_image, PNG_TEXTURE_SCALE);
+        frame.Write(GetFileName(poses_, ".png").c_str());
+        FILE* file = fopen(GetFileName(poses_, ".txt").c_str(), "w");
+        for (int i = 0; i < 4; i++)
+            fprintf(file, "%f %f %f %f\n", image_matrix[i][0], image_matrix[i][1],
+                                           image_matrix[i][2], image_matrix[i][3]);
+        fprintf(file, "%lf\n", t3dr_image.timestamp);
+        fclose(file);
+        poses_++;
+
         MeshUpdate(t3dr_image, &t3dr_updated);
         Tango3DR_GridIndexArray_destroy(&t3dr_updated);
         point_cloud_available_ = false;
@@ -143,7 +142,6 @@ namespace oc {
                                         landscape(false),
                                         point_cloud_available_(false),
                                         poses_(0),
-                                        textured(false),
                                         zoom(0) {}
 
 
@@ -166,10 +164,9 @@ namespace oc {
     }
 
     void MeshBuilderApp::OnTangoServiceConnected(JNIEnv *env, jobject binder, double res,
-               double dmin, double dmax, int noise, bool land, bool textures, std::string dataset) {
+               double dmin, double dmax, int noise, bool land, std::string dataset) {
         dataset_ = dataset;
         landscape = land;
-        textured = textures;
 
         TangoService_setBinder(env, binder);
         TangoSetupConfig();
@@ -400,7 +397,7 @@ namespace oc {
     void MeshBuilderApp::Save(std::string filename, std::string dataset) {
         binder_mutex_.lock();
         render_mutex_.lock();
-        if (textured && !dataset.empty()) {
+        if (!dataset.empty()) {
             //get mesh to texture
             Tango3DR_Mesh mesh;
             Tango3DR_Status ret;

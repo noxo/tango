@@ -1,19 +1,3 @@
-/*
- * Copyright 2016 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.lvonasek.openconstructor;
 
 import android.app.ActivityManager;
@@ -82,7 +66,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         double dmax     = mRes * 1.5;
         int noise       = isNoiseFilterOn() ? 9 : 0;
         boolean land    = !isPortrait(OpenConstructorActivity.this);
-        boolean txt     = isTexturingOn();
 
         if (android.os.Build.DEVICE.toLowerCase().startsWith("yellowstone"))
           land = !land;
@@ -95,7 +78,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         m3drRunning = true;
         String t = getTempPath().getAbsolutePath();
         TangoJNINative.onCreate(OpenConstructorActivity.this);
-        TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, txt, t);
+        TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, t);
         TangoJNINative.onToggleButtonClicked(m3drRunning);
         TangoJNINative.setView(0, 0, 0, 0, true);
         OpenConstructorActivity.this.runOnUiThread(new Runnable()
@@ -409,35 +392,29 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
           public void run()
           {
             //delete old during overwrite
-            int type = isTexturingOn() ? 0 : 1;
-            File file = new File(getPath(), input.getText().toString() + FILE_EXT[type]);
-            if (isTexturingOn()) {
-              try {
-                if (file.exists())
-                  for(String s : getObjResources(file))
-                    if (new File(getPath(), s).delete())
-                      Log.d(AbstractActivity.TAG, "File " + s + " deleted");
-              } catch(Exception e) {
-                e.printStackTrace();
-              }
+            File file = new File(getPath(), input.getText().toString() + FILE_EXT[0]);
+            try {
+              if (file.exists())
+                for(String s : getObjResources(file))
+                  if (new File(getPath(), s).delete())
+                    Log.d(AbstractActivity.TAG, "File " + s + " deleted");
+            } catch(Exception e) {
+              e.printStackTrace();
             }
             //save
             String dataset = "";
-            File file2save = new File(getPath(), input.getText().toString() + FILE_EXT[type]);
+            File file2save = new File(getPath(), input.getText().toString() + FILE_EXT[0]);
             final String filename = file2save.getAbsolutePath();
-            if (isTexturingOn()) {
-              long timestamp = System.currentTimeMillis();
-              File obj = new File(getPath(), timestamp + FILE_EXT[type]);
-              for (File f : getTempPath().listFiles())
-                if (f.isDirectory()) {
-                  dataset = f.toString();
-                  break;
-                }
-              TangoJNINative.save(obj.getAbsolutePath(), dataset);
-              if (obj.renameTo(file2save))
-                Log.d(TAG, "Obj file " + file2save.toString() + " saved.");
-            } else
-              TangoJNINative.save(filename, dataset);
+            long timestamp = System.currentTimeMillis();
+            File obj = new File(getPath(), timestamp + FILE_EXT[0]);
+            for (File f : getTempPath().listFiles())
+              if (f.isDirectory()) {
+                dataset = f.toString();
+                break;
+              }
+            TangoJNINative.save(obj.getAbsolutePath(), dataset);
+            if (obj.renameTo(file2save))
+              Log.d(TAG, "Obj file " + file2save.toString() + " saved.");
             //open???
             OpenConstructorActivity.this.runOnUiThread(new Runnable()
             {
@@ -457,26 +434,24 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                   @Override
                   public void onClick(DialogInterface dialog, int which) {
                     setViewerMode(filename);
-                    if (isTexturingOn()) {
-                      mProgress.setVisibility(View.VISIBLE);
-                      new Thread(new Runnable()
+                    mProgress.setVisibility(View.VISIBLE);
+                    new Thread(new Runnable()
+                    {
+                      @Override
+                      public void run()
                       {
-                        @Override
-                        public void run()
+                        TangoJNINative.onClearButtonClicked();
+                        TangoJNINative.load(filename);
+                        OpenConstructorActivity.this.runOnUiThread(new Runnable()
                         {
-                          TangoJNINative.onClearButtonClicked();
-                          TangoJNINative.load(filename);
-                          OpenConstructorActivity.this.runOnUiThread(new Runnable()
+                          @Override
+                          public void run()
                           {
-                            @Override
-                            public void run()
-                            {
-                              mProgress.setVisibility(View.GONE);
-                            }
-                          });
-                        }
-                      }).start();
-                    }
+                            mProgress.setVisibility(View.GONE);
+                          }
+                        });
+                      }
+                    }).start();
                     dialog.cancel();
                   }
                 });

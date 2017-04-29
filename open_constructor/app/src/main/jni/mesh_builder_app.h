@@ -43,7 +43,7 @@ namespace oc {
         void OnCreate(JNIEnv *env, jobject caller_activity);
         void OnPause();
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin, double dmax,
-                                     int noise, bool land, bool textures, std::string dataset);
+                                     int noise, bool land, std::string dataset);
         void onPointCloudAvailable(TangoPointCloud *point_cloud);
         void onFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer);
         void OnSurfaceCreated();
@@ -90,7 +90,6 @@ namespace oc {
 
         bool gyro;
         bool landscape;
-        bool textured;
         float movex;
         float movey;
         float pitch;
