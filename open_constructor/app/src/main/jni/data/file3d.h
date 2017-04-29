@@ -9,15 +9,6 @@
 #endif
 #include "data/mesh.h"
 
-struct SingleDynamicMesh {
-#ifndef NOTANGO
-    Tango3DR_Mesh tango_mesh;
-#endif
-    oc::Mesh mesh;
-    std::mutex mutex;
-    unsigned long size;
-};
-
 namespace oc {
     enum TYPE{OBJ, PLY};
 
@@ -27,7 +18,7 @@ public:
     ~File3d();
     TYPE GetType() { return type; }
     void ReadModel(int subdivision, std::vector<oc::Mesh>& output);
-    void WriteModel(std::vector<SingleDynamicMesh*> model);
+    void WriteModel(std::vector<Mesh>& model);
 
 private:
     glm::ivec3 DecodeColor(unsigned int c);
@@ -37,9 +28,9 @@ private:
     void ReadPLYVertices();
     unsigned int ScanDec(char *line, int offset);
     bool StartsWith(std::string s, std::string e);
-    void WriteHeader(std::vector<SingleDynamicMesh*> model);
-    void WritePointCloud(SingleDynamicMesh *mesh, int size);
-    void WriteFaces(SingleDynamicMesh *mesh, int offset);
+    void WriteHeader(std::vector<Mesh>& model);
+    void WritePointCloud(Mesh& mesh, int size);
+    void WriteFaces(Mesh& mesh, int offset);
 
     TYPE type;
     std::string path;
@@ -48,6 +39,7 @@ private:
     unsigned int faceCount;
     FILE* file;
     Mesh data;
+    std::map<std::string, int> fileToIndex;
     std::map<std::string, std::string> keyToFile;
 };
 }

@@ -87,6 +87,7 @@ namespace oc {
 
         std::string dataset_;
         int poses_;
+        int lastSavedPose_;
 
         bool gyro;
         bool landscape;

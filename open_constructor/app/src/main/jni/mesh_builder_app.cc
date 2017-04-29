@@ -141,6 +141,7 @@ namespace oc {
                                         gyro(false),
                                         landscape(false),
                                         point_cloud_available_(false),
+                                        lastSavedPose_(0),
                                         poses_(0),
                                         zoom(0) {}
 
@@ -380,6 +381,7 @@ namespace oc {
         Tango3DR_clear(t3dr_context_);
         meshes_.clear();
         poses_ = 0;
+        lastSavedPose_ = 0;
         main_scene_.ClearDynamicMeshes();
         render_mutex_.unlock();
         binder_mutex_.unlock();
@@ -413,8 +415,6 @@ namespace oc {
                 ret = Tango3DR_Mesh_destroy(&mesh);
                 if (ret != TANGO_3DR_SUCCESS)
                     std::exit(EXIT_SUCCESS);
-                File3d io(filename, true);
-                io.WriteModel(main_scene_.dynamic_meshes_);
                 render_mutex_.unlock();
                 binder_mutex_.unlock();
                 return;
@@ -436,7 +436,7 @@ namespace oc {
             Tango3DR_Config_destroy(textureConfig);
 
             //update texturing context using stored PNGs
-            for (unsigned int i = 0; i < poses_; i++) {
+            for (unsigned int i = lastSavedPose_; i < poses_; i++) {
                 glm::mat4 mat;
                 double timestamp;
                 FILE* file = fopen(GetFileName(i, ".txt").c_str(), "r");
@@ -475,9 +475,25 @@ namespace oc {
             ret = Tango3DR_Mesh_destroy(&mesh);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
-        } else {
+
+            //empty context and merge with previous OBJ
+            Tango3DR_clear(t3dr_context_);
+            {
+                File3d io(filename, false);
+                io.ReadModel(kSubdivisionSize, main_scene_.static_meshes_);
+            }
+            for (unsigned int i = 0; i < main_scene_.static_meshes_.size(); i++)
+            {
+              main_scene_.static_meshes_[i].indices.clear();
+              for (unsigned int j = 0; j < main_scene_.static_meshes_[i].vertices.size(); j++)
+                  main_scene_.static_meshes_[i].indices.push_back(j);
+            }
             File3d io(filename, true);
-            io.WriteModel(main_scene_.dynamic_meshes_);
+            io.WriteModel(main_scene_.static_meshes_);
+            for (unsigned int i = 0; i < main_scene_.static_meshes_.size(); i++)
+                main_scene_.static_meshes_[i].indices.clear();
+            main_scene_.ClearDynamicMeshes();
+            lastSavedPose_ = poses_;
         }
         render_mutex_.unlock();
         binder_mutex_.unlock();

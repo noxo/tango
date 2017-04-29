@@ -83,20 +83,29 @@ public abstract class AbstractActivity extends Activity
 
   public static ArrayList<String> getObjResources(File file) throws FileNotFoundException
   {
+    ArrayList<String> output = new ArrayList<>();
     Scanner sc = new Scanner(new FileInputStream(file.getAbsolutePath()));
-    String filter = "xxx" + System.currentTimeMillis(); //not possible filter
+    String mtlLib = null;
     while(sc.hasNext()) {
       String line = sc.nextLine();
       if (line.startsWith("mtllib")) {
-        filter = line.substring(7, line.lastIndexOf('.'));
+        mtlLib = line.substring(7);
+        output.add(mtlLib);
         break;
       }
     }
     sc.close();
-    ArrayList<String> output = new ArrayList<>();
-    for(String s : new File(getPath()).list())
-      if(s.startsWith(filter))
-        output.add(s);
+    if (mtlLib != null) {
+      mtlLib = file.getParent() + "/" + mtlLib;
+      sc = new Scanner(new FileInputStream(mtlLib));
+      while(sc.hasNext()) {
+        String line = sc.nextLine();
+        if (line.startsWith("map_Kd")) {
+          output.add(line.substring(7));
+        }
+      }
+      sc.close();
+    }
     return output;
   }
 

@@ -41,7 +41,7 @@ namespace oc {
             assert(false);
     }
 
-    void File3d::WriteModel(std::vector<SingleDynamicMesh*> model) {
+    void File3d::WriteModel(std::vector<Mesh>& model) {
         assert(writeMode);
         //count vertices and faces
         faceCount = 0;
@@ -50,13 +50,13 @@ namespace oc {
         for(unsigned int i = 0; i < model.size(); i++) {
             unsigned int max = 0;
             unsigned int value = 0;
-            for(unsigned int j = 0; j < model[i]->size; j++) {
-                value = model[i]->mesh.indices[j];
+            for(unsigned int j = 0; j < model[i].indices.size(); j++) {
+                value = model[i].indices[j];
                 if(max < value)
                     max = value;
             }
             max++;
-            faceCount += model[i]->size / 3;
+            faceCount += model[i].indices.size() / 3;
             vertexCount += max;
             vectorSize.push_back(max);
         }
@@ -70,15 +70,12 @@ namespace oc {
                 offset++;
             int texture = -1;
             for (unsigned int i = 0; i < model.size(); i++) {
-                if (model[i]->mesh.indices.empty()) {
+                if (model[i].indices.empty()) {
                     offset += vectorSize[i];
                     continue;
                 }
                 if (type == OBJ) {
-                    if (texture != model[i]->mesh.texture) {
-                        texture = model[i]->mesh.texture;
-                        fprintf(file, "usemtl %d\n", texture);
-                    }
+                    fprintf(file, "usemtl %d\n", fileToIndex[model[i].image->GetName()]);
                 }
                 WriteFaces(model[i], offset);
                 offset += vectorSize[i];
@@ -283,7 +280,7 @@ namespace oc {
         return false;
     }
 
-    void File3d::WriteHeader(std::vector<SingleDynamicMesh*> model) {
+    void File3d::WriteHeader(std::vector<Mesh>& model) {
         if (type == PLY) {
             fprintf(file, "ply\nformat ascii 1.0\ncomment ---\n");
             fprintf(file, "element vertex %d\n", vertexCount);
@@ -307,7 +304,7 @@ namespace oc {
             fprintf(file, "mtllib %s.mtl\n", shortBase.c_str());
             FILE* mtl = fopen((base + ".mtl").c_str(), "w");
             for (unsigned int i = 0; i < model.size(); i++) {
-                if (model[i]->mesh.indices.empty())
+                if (model[i].indices.empty())
                     continue;
 
                 fprintf(mtl, "newmtl %d\n", i);
@@ -319,40 +316,53 @@ namespace oc {
                 fprintf(mtl, "Ni 1.000000\n");
                 fprintf(mtl, "d 1.000000\n");
                 fprintf(mtl, "illum 2\n");
-                if (model[i]->mesh.image)
-                    fprintf(mtl, "map_Kd %s_%d.png\n\n", shortBase.c_str(), i);
+                //write texture name
+                std::string name = model[i].image->GetName();
+                fileToIndex[name] = i;
+
+                int start = 0;
+                for (unsigned int j = 0; j < name.size(); j++)
+                {
+                    char c = name[j];
+                    if (c == '/')
+                        start = j + 1;
+                }
+                fprintf(mtl, "map_Kd %s\n\n", name.substr(start, name.size()).c_str());
             }
             fclose(mtl);
         }
     }
 
-    void File3d::WritePointCloud(SingleDynamicMesh *mesh, int size) {
+    void File3d::WritePointCloud(Mesh& mesh, int size) {
         glm::vec3 v;
+        glm::vec3 n;
         glm::vec2 t;
         glm::ivec3 c;
         for(unsigned int j = 0; j < size; j++) {
-            v = mesh->mesh.vertices[j];
+            v = mesh.vertices[j];
             if (type == PLY) {
-                c = DecodeColor(mesh->mesh.colors[j]);
+                c = DecodeColor(mesh.colors[j]);
                 fprintf(file, "%f %f %f %d %d %d\n", -v.x, v.z, v.y, c.r, c.g, c.b);
             } else if (type == OBJ) {
-                t = mesh->mesh.uv[j];
+                n = mesh.normals[j];
+                t = mesh.uv[j];
                 fprintf(file, "v %f %f %f\n", v.x, v.y, v.z);
+                fprintf(file, "vn %f %f %f\n", n.x, n.y, n.z);
                 fprintf(file, "vt %f %f\n", t.x, t.y);
             }
         }
     }
 
-    void File3d::WriteFaces(SingleDynamicMesh *mesh, int offset) {
+    void File3d::WriteFaces(Mesh& mesh, int offset) {
         glm::ivec3 i;
-        for (unsigned int j = 0; j < mesh->size; j+=3) {
-            i.x = mesh->mesh.indices[j + 0] + offset;
-            i.y = mesh->mesh.indices[j + 1] + offset;
-            i.z = mesh->mesh.indices[j + 2] + offset;
+        for (unsigned int j = 0; j < mesh.indices.size(); j+=3) {
+            i.x = mesh.indices[j + 0] + offset;
+            i.y = mesh.indices[j + 1] + offset;
+            i.z = mesh.indices[j + 2] + offset;
             if (type == PLY)
                 fprintf(file, "3 %d %d %d\n", i.x, i.y, i.z);
             else if (type == OBJ)
-                fprintf(file, "f %d/%d %d/%d %d/%d\n", i.x, i.x, i.y, i.y, i.z, i.z);
+                fprintf(file, "f %d/%d/%d %d/%d/%d %d/%d/%d\n", i.x, i.x, i.x, i.y, i.y, i.y, i.z, i.z, i.z);
         }
     }
 }

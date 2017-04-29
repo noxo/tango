@@ -41,6 +41,9 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private boolean m3drRunning = false;
   private boolean mViewMode = false;
   private long mTimestamp = 0;
+  private boolean mFirstSave = true;
+  private String mLastMtl = null;
+  private String mSaveFilename = "";
 
   private LinearLayout mLayoutRecBottom;
   private Button mToggleButton;
@@ -378,92 +381,104 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
 
   private void save() {
     //filename dialog
-    final Context context = OpenConstructorActivity.this;
-    AlertDialog.Builder builder = new AlertDialog.Builder(context);
-    builder.setTitle(getString(R.string.enter_filename));
-    final EditText input = new EditText(context);
-    builder.setView(input);
-    builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
+    if (mFirstSave) {
+      final Context context = OpenConstructorActivity.this;
+      AlertDialog.Builder builder = new AlertDialog.Builder(context);
+      builder.setTitle(getString(R.string.enter_filename));
+      final EditText input = new EditText(context);
+      builder.setView(input);
+      builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
+        @Override
+        public void onClick(DialogInterface dialog, int which) {
+          //delete old during overwrite
+          File file = new File(getPath(), input.getText().toString() + FILE_EXT[0]);
+          try {
+            if (file.exists())
+              for(String s : getObjResources(file))
+                if (new File(getPath(), s).delete())
+                  Log.d(AbstractActivity.TAG, "File " + s + " deleted");
+          } catch(Exception e) {
+            e.printStackTrace();
+          }
+          mSaveFilename = input.getText().toString();
+          saveObj();
+          dialog.cancel();
+        }
+      });
+      builder.setNegativeButton(getString(android.R.string.cancel), null);
+      builder.create().show();
+    } else
+      saveObj();
+  }
+
+  private void saveObj()
+  {
+    mProgress.setVisibility(View.VISIBLE);
+    new Thread(new Runnable(){
       @Override
-      public void onClick(DialogInterface dialog, int which) {
-        mProgress.setVisibility(View.VISIBLE);
-        new Thread(new Runnable(){
+      public void run()
+      {
+        if (mLastMtl != null)
+          new File(mLastMtl).delete();
+        mFirstSave = false;
+        String dataset = "";
+        File file2save = new File(getPath(), mSaveFilename + FILE_EXT[0]);
+        final String filename = file2save.getAbsolutePath();
+        long timestamp = System.currentTimeMillis();
+        File obj = new File(getPath(), timestamp + FILE_EXT[0]);
+        for (File f : getTempPath().listFiles())
+          if (f.isDirectory()) {
+            dataset = f.toString();
+            break;
+          }
+        TangoJNINative.save(obj.getAbsolutePath(), dataset);
+        mLastMtl = obj.getAbsolutePath().replace(".obj", ".mtl");
+        if (obj.renameTo(file2save))
+          Log.d(TAG, "Obj file " + file2save.toString() + " saved.");
+        //open???
+        OpenConstructorActivity.this.runOnUiThread(new Runnable()
+        {
           @Override
           public void run()
           {
-            //delete old during overwrite
-            File file = new File(getPath(), input.getText().toString() + FILE_EXT[0]);
-            try {
-              if (file.exists())
-                for(String s : getObjResources(file))
-                  if (new File(getPath(), s).delete())
-                    Log.d(AbstractActivity.TAG, "File " + s + " deleted");
-            } catch(Exception e) {
-              e.printStackTrace();
-            }
-            //save
-            String dataset = "";
-            File file2save = new File(getPath(), input.getText().toString() + FILE_EXT[0]);
-            final String filename = file2save.getAbsolutePath();
-            long timestamp = System.currentTimeMillis();
-            File obj = new File(getPath(), timestamp + FILE_EXT[0]);
-            for (File f : getTempPath().listFiles())
-              if (f.isDirectory()) {
-                dataset = f.toString();
-                break;
-              }
-            TangoJNINative.save(obj.getAbsolutePath(), dataset);
-            if (obj.renameTo(file2save))
-              Log.d(TAG, "Obj file " + file2save.toString() + " saved.");
-            //open???
-            OpenConstructorActivity.this.runOnUiThread(new Runnable()
-            {
+            mProgress.setVisibility(View.GONE);
+            AlertDialog.Builder builder = new AlertDialog.Builder(OpenConstructorActivity.this);
+            builder.setTitle(getString(R.string.view));
+            builder.setPositiveButton(getString(R.string.yes), new DialogInterface.OnClickListener() {
               @Override
-              public void run()
-              {
-                mProgress.setVisibility(View.GONE);
-                AlertDialog.Builder builder = new AlertDialog.Builder(OpenConstructorActivity.this);
-                builder.setTitle(getString(R.string.view));
-                builder.setPositiveButton(getString(R.string.yes), new DialogInterface.OnClickListener() {
+              public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+              }
+            });
+            builder.setNegativeButton(getString(R.string.no), new DialogInterface.OnClickListener() {
+              @Override
+              public void onClick(DialogInterface dialog, int which) {
+                setViewerMode(filename);
+                mProgress.setVisibility(View.VISIBLE);
+                new Thread(new Runnable()
+                {
                   @Override
-                  public void onClick(DialogInterface dialog, int which) {
-                    dialog.cancel();
-                  }
-                });
-                builder.setNegativeButton(getString(R.string.no), new DialogInterface.OnClickListener() {
-                  @Override
-                  public void onClick(DialogInterface dialog, int which) {
-                    setViewerMode(filename);
-                    mProgress.setVisibility(View.VISIBLE);
-                    new Thread(new Runnable()
+                  public void run()
+                  {
+                    TangoJNINative.onClearButtonClicked();
+                    TangoJNINative.load(filename);
+                    OpenConstructorActivity.this.runOnUiThread(new Runnable()
                     {
                       @Override
                       public void run()
                       {
-                        TangoJNINative.onClearButtonClicked();
-                        TangoJNINative.load(filename);
-                        OpenConstructorActivity.this.runOnUiThread(new Runnable()
-                        {
-                          @Override
-                          public void run()
-                          {
-                            mProgress.setVisibility(View.GONE);
-                          }
-                        });
+                        mProgress.setVisibility(View.GONE);
                       }
-                    }).start();
-                    dialog.cancel();
+                    });
                   }
-                });
-                builder.create().show();
+                }).start();
+                dialog.cancel();
               }
             });
+            builder.create().show();
           }
-        }).start();
-        dialog.cancel();
+        });
       }
-    });
-    builder.setNegativeButton(getString(android.R.string.cancel), null);
-    builder.create().show();
+    }).start();
   }
 }
