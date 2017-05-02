@@ -7,7 +7,6 @@
 package com.lvonasek.openconstructor.sketchfab;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -94,19 +93,13 @@ public class Uploader extends AbstractActivity implements OnClickListener
     switch (v.getId())
     {
       case R.id.button_ok:
-        try
-        {
-          File model2share = new File(AbstractActivity.getPath(), mFile);
-          ArrayList<String> list = new ArrayList<>();
-          list.add(model2share.getAbsolutePath());
-          if (AbstractActivity.getModelType(mFile) == 0) //OBJ
-            for (String s : AbstractActivity.getObjResources(model2share))
-              list.add(new File(AbstractActivity.getPath(), s).getAbsolutePath());
-          zipAndPublish(list.toArray(new String[list.size()]), mFilename.getText().toString());
-        } catch (FileNotFoundException e)
-        {
-          e.printStackTrace();
-        }
+        File model2share = new File(AbstractActivity.getPath(), mFile);
+        ArrayList<String> list = new ArrayList<>();
+        list.add(model2share.getAbsolutePath());
+        if (AbstractActivity.getModelType(mFile) == 0) //OBJ
+          for (String s : AbstractActivity.getObjResources(model2share))
+            list.add(new File(AbstractActivity.getPath(), s).getAbsolutePath());
+        zipAndPublish(list.toArray(new String[list.size()]), mFilename.getText().toString());
         break;
     }
   }

@@ -141,7 +141,6 @@ namespace oc {
                                         gyro(false),
                                         landscape(false),
                                         point_cloud_available_(false),
-                                        lastSavedPose_(0),
                                         poses_(0),
                                         zoom(0) {}
 
@@ -381,7 +380,6 @@ namespace oc {
         Tango3DR_clear(t3dr_context_);
         meshes_.clear();
         poses_ = 0;
-        lastSavedPose_ = 0;
         main_scene_.ClearDynamicMeshes();
         render_mutex_.unlock();
         binder_mutex_.unlock();
@@ -411,77 +409,47 @@ namespace oc {
                 std::exit(EXIT_SUCCESS);
 
             //prevent crash on saving empty model
-            if (mesh.num_faces == 0) {
+            if (mesh.num_faces != 0) {
+                //get texturing context
+                Tango3DR_Config textureConfig;
+                textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
+                ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", 0.01);
+                if (ret != TANGO_3DR_SUCCESS)
+                    std::exit(EXIT_SUCCESS);
+                ret = Tango3DR_Config_setInt32(textureConfig, "texturing_backend", TANGO_3DR_CPU_TEXTURING);
+                if (ret != TANGO_3DR_SUCCESS)
+                    std::exit(EXIT_SUCCESS);
+                Tango3DR_TexturingContext context;
+                context = Tango3DR_TexturingContext_create(textureConfig, dataset.c_str(), &mesh);
+                if (context == nullptr)
+                    std::exit(EXIT_SUCCESS);
+                Tango3DR_Config_destroy(textureConfig);
+
+                //texturize mesh
+                ret = Tango3DR_getTexturedMesh(context, &mesh);
+                if (ret != TANGO_3DR_SUCCESS)
+                    std::exit(EXIT_SUCCESS);
+
+                //save and cleanup
+                ret = Tango3DR_Mesh_saveToObj(&mesh, filename.c_str());
+                if (ret != TANGO_3DR_SUCCESS)
+                    std::exit(EXIT_SUCCESS);
+                ret = Tango3DR_TexturingContext_destroy(context);
+                if (ret != TANGO_3DR_SUCCESS)
+                    std::exit(EXIT_SUCCESS);
                 ret = Tango3DR_Mesh_destroy(&mesh);
                 if (ret != TANGO_3DR_SUCCESS)
                     std::exit(EXIT_SUCCESS);
-                render_mutex_.unlock();
-                binder_mutex_.unlock();
-                return;
+
+                //empty context and merge with previous OBJ
+                meshes_.clear();
+                Tango3DR_clear(t3dr_context_);
+                {
+                    File3d io(filename, false);
+                    io.ReadModel(kSubdivisionSize, main_scene_.static_meshes_);
+                }
             }
 
-            //get texturing context
-            Tango3DR_Config textureConfig;
-            textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
-            ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", 0.01);
-            if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-            ret = Tango3DR_Config_setInt32(textureConfig, "texturing_backend", TANGO_3DR_GL_TEXTURING);
-            if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-            Tango3DR_TexturingContext context;
-            context = Tango3DR_TexturingContext_create(textureConfig, dataset.c_str(), &mesh);
-            if (context == nullptr)
-                std::exit(EXIT_SUCCESS);
-            Tango3DR_Config_destroy(textureConfig);
-
-            //update texturing context using stored PNGs
-            for (unsigned int i = lastSavedPose_; i < poses_; i++) {
-                glm::mat4 mat;
-                double timestamp;
-                FILE* file = fopen(GetFileName(i, ".txt").c_str(), "r");
-                for (int i = 0; i < 4; i++)
-                  fscanf(file, "%f %f %f %f\n", &mat[i][0], &mat[i][1], &mat[i][2], &mat[i][3]);
-                fscanf(file, "%lf\n", &timestamp);
-                fclose(file);
-
-                Image frame(GetFileName(i, ".png"));
-                Tango3DR_ImageBuffer image;
-                image.width = frame.GetWidth() * PNG_TEXTURE_SCALE;
-                image.height = frame.GetHeight() * PNG_TEXTURE_SCALE;
-                image.stride = frame.GetWidth() * PNG_TEXTURE_SCALE;
-                image.timestamp = timestamp;
-                image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
-                image.data = frame.ExtractYUV(PNG_TEXTURE_SCALE);
-                Tango3DR_Pose t3dr_image_pose = GLCamera::Extract3DRPose(mat);
-                ret = Tango3DR_updateTexture(context, &image, &t3dr_image_pose);
-                if (ret != TANGO_3DR_SUCCESS)
-                    std::exit(EXIT_SUCCESS);
-                delete[] image.data;
-            }
-
-            //texturize mesh
-            ret = Tango3DR_getTexturedMesh(context, &mesh);
-            if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-
-            //save and cleanup
-            ret = Tango3DR_Mesh_saveToObj(&mesh, filename.c_str());
-            if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-            ret = Tango3DR_TexturingContext_destroy(context);
-            if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-            ret = Tango3DR_Mesh_destroy(&mesh);
-            if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-
-            //empty context and merge with previous OBJ
-            Tango3DR_clear(t3dr_context_);
-            {
-                File3d io(filename, false);
-                io.ReadModel(kSubdivisionSize, main_scene_.static_meshes_);
-            }
             for (unsigned int i = 0; i < main_scene_.static_meshes_.size(); i++)
             {
               main_scene_.static_meshes_[i].indices.clear();
@@ -493,7 +461,6 @@ namespace oc {
             for (unsigned int i = 0; i < main_scene_.static_meshes_.size(); i++)
                 main_scene_.static_meshes_[i].indices.clear();
             main_scene_.ClearDynamicMeshes();
-            lastSavedPose_ = poses_;
         }
         render_mutex_.unlock();
         binder_mutex_.unlock();
@@ -581,5 +548,100 @@ namespace oc {
         ss << index;
         ss << extension.c_str();
         return ss.str();
+    }
+
+    void MeshBuilderApp::Texturize(std::string filename, std::string dataset) {
+        binder_mutex_.lock();
+        render_mutex_.lock();
+        if (!dataset.empty()) {
+            //get mesh to texture
+            Tango3DR_Mesh mesh;
+            Tango3DR_Status ret;
+            ret = Tango3DR_Mesh_initEmpty(&mesh);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+            ret = Tango3DR_Mesh_loadFromObj(filename.c_str(), &mesh);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+
+            //prevent crash on saving empty model
+            if (mesh.num_faces == 0) {
+                ret = Tango3DR_Mesh_destroy(&mesh);
+                if (ret != TANGO_3DR_SUCCESS)
+                    std::exit(EXIT_SUCCESS);
+                render_mutex_.unlock();
+                binder_mutex_.unlock();
+                return;
+            }
+
+            //get texturing context
+            Tango3DR_Config textureConfig;
+            textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
+            ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", 0.01);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+            ret = Tango3DR_Config_setInt32(textureConfig, "texturing_backend", TANGO_3DR_GL_TEXTURING);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+            Tango3DR_TexturingContext context;
+            context = Tango3DR_TexturingContext_create(textureConfig, dataset.c_str(), &mesh);
+            if (context == nullptr)
+                std::exit(EXIT_SUCCESS);
+            Tango3DR_Config_destroy(textureConfig);
+
+            //update texturing context using stored PNGs
+            for (unsigned int i = 0; i < poses_; i++) {
+                glm::mat4 mat;
+                double timestamp;
+                FILE* file = fopen(GetFileName(i, ".txt").c_str(), "r");
+                for (int i = 0; i < 4; i++)
+                    fscanf(file, "%f %f %f %f\n", &mat[i][0], &mat[i][1], &mat[i][2], &mat[i][3]);
+                fscanf(file, "%lf\n", &timestamp);
+                fclose(file);
+
+                Image frame(GetFileName(i, ".png"));
+                Tango3DR_ImageBuffer image;
+                image.width = frame.GetWidth() * PNG_TEXTURE_SCALE;
+                image.height = frame.GetHeight() * PNG_TEXTURE_SCALE;
+                image.stride = frame.GetWidth() * PNG_TEXTURE_SCALE;
+                image.timestamp = timestamp;
+                image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
+                image.data = frame.ExtractYUV(PNG_TEXTURE_SCALE);
+                Tango3DR_Pose t3dr_image_pose = GLCamera::Extract3DRPose(mat);
+                ret = Tango3DR_updateTexture(context, &image, &t3dr_image_pose);
+                if (ret != TANGO_3DR_SUCCESS)
+                    std::exit(EXIT_SUCCESS);
+                delete[] image.data;
+            }
+
+            //texturize mesh
+            ret = Tango3DR_getTexturedMesh(context, &mesh);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+
+            //save and cleanup
+            ret = Tango3DR_Mesh_saveToObj(&mesh, filename.c_str());
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+            ret = Tango3DR_TexturingContext_destroy(context);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+            ret = Tango3DR_Mesh_destroy(&mesh);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+
+            //reload the model
+            Tango3DR_clear(t3dr_context_);
+            meshes_.clear();
+            poses_ = 0;
+            main_scene_.static_meshes_.clear();
+            main_scene_.ClearDynamicMeshes();
+            {
+                File3d io(filename, false);
+                io.ReadModel(kSubdivisionSize, main_scene_.static_meshes_);
+            }
+        }
+        render_mutex_.unlock();
+        binder_mutex_.unlock();
     }
 }

@@ -74,6 +74,13 @@ public abstract class AbstractActivity extends Activity
     return pref.getBoolean(key, false);
   }
 
+  public boolean isTexturingOn()
+  {
+    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+    String key = getString(R.string.pref_texture);
+    return pref.getBoolean(key, true);
+  }
+
   public static int getModelType(String filename) {
     for(int i = 0; i < FILE_EXT.length; i++)
       if(filename.substring(filename.length() - FILE_EXT[i].length()).contains(FILE_EXT[i]))
@@ -81,30 +88,42 @@ public abstract class AbstractActivity extends Activity
     return -1;
   }
 
-  public static ArrayList<String> getObjResources(File file) throws FileNotFoundException
+  public static ArrayList<String> getObjResources(File file)
   {
     ArrayList<String> output = new ArrayList<>();
-    Scanner sc = new Scanner(new FileInputStream(file.getAbsolutePath()));
     String mtlLib = null;
-    while(sc.hasNext()) {
-      String line = sc.nextLine();
-      if (line.startsWith("mtllib")) {
-        mtlLib = line.substring(7);
-        output.add(mtlLib);
-        break;
-      }
-    }
-    sc.close();
-    if (mtlLib != null) {
-      mtlLib = file.getParent() + "/" + mtlLib;
-      sc = new Scanner(new FileInputStream(mtlLib));
+    try
+    {
+      Scanner sc = new Scanner(new FileInputStream(file.getAbsolutePath()));
       while(sc.hasNext()) {
         String line = sc.nextLine();
-        if (line.startsWith("map_Kd")) {
-          output.add(line.substring(7));
+        if (line.startsWith("mtllib")) {
+          mtlLib = line.substring(7);
+          output.add(mtlLib);
+          break;
         }
       }
       sc.close();
+    } catch (FileNotFoundException e)
+    {
+      e.printStackTrace();
+    }
+    if (mtlLib != null) {
+      mtlLib = file.getParent() + "/" + mtlLib;
+      try
+      {
+        Scanner sc = new Scanner(new FileInputStream(mtlLib));
+        while(sc.hasNext()) {
+          String line = sc.nextLine();
+          if (line.startsWith("map_Kd")) {
+            output.add(line.substring(7));
+          }
+        }
+        sc.close();
+      } catch (FileNotFoundException e)
+      {
+        e.printStackTrace();
+      }
     }
     return output;
   }

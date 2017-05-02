@@ -59,6 +59,9 @@ public class TangoJNINative {
   // Save current 3D model
   public static native void save(String name, String dataset);
 
+  // Texturize 3D model
+  public static native void texturize(String name, String dataset);
+
   // Set view on 3D view
   public static native void setView(float pitch, float yaw, float x, float y, boolean gyro);
 

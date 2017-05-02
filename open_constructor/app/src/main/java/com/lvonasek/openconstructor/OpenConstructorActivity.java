@@ -42,7 +42,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private boolean mViewMode = false;
   private long mTimestamp = 0;
   private boolean mFirstSave = true;
-  private String mLastMtl = null;
   private String mSaveFilename = "";
 
   private LinearLayout mLayoutRecBottom;
@@ -418,24 +417,18 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       @Override
       public void run()
       {
-        if (mLastMtl != null)
-          new File(mLastMtl).delete();
         mFirstSave = false;
         String dataset = "";
-        File file2save = new File(getPath(), mSaveFilename + FILE_EXT[0]);
-        final String filename = file2save.getAbsolutePath();
         long timestamp = System.currentTimeMillis();
-        File obj = new File(getPath(), timestamp + FILE_EXT[0]);
+        final File obj = new File(getTempPath(), timestamp + FILE_EXT[0]);
         for (File f : getTempPath().listFiles())
           if (f.isDirectory()) {
             dataset = f.toString();
             break;
           }
         TangoJNINative.save(obj.getAbsolutePath(), dataset);
-        mLastMtl = obj.getAbsolutePath().replace(".obj", ".mtl");
-        if (obj.renameTo(file2save))
-          Log.d(TAG, "Obj file " + file2save.toString() + " saved.");
         //open???
+        final String data = dataset;
         OpenConstructorActivity.this.runOnUiThread(new Runnable()
         {
           @Override
@@ -453,7 +446,32 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
             builder.setNegativeButton(getString(R.string.no), new DialogInterface.OnClickListener() {
               @Override
               public void onClick(DialogInterface dialog, int which) {
-                setViewerMode(filename);
+                mProgress.setVisibility(View.VISIBLE);
+                new Thread(new Runnable()
+                {
+                  @Override
+                  public void run()
+                  {
+                    if (isTexturingOn())
+                      TangoJNINative.texturize(obj.getAbsolutePath(), data);
+                    for(String s : getObjResources(obj.getAbsoluteFile()))
+                      if (new File(getTempPath(), s).renameTo(new File(getPath(), s)))
+                        Log.d(AbstractActivity.TAG, "File " + s + " saved");
+                    final File file2save = new File(getPath(), mSaveFilename + FILE_EXT[0]);
+                    if (obj.renameTo(file2save))
+                      Log.d(TAG, "Obj file " + file2save.toString() + " saved.");
+
+                    OpenConstructorActivity.this.runOnUiThread(new Runnable()
+                    {
+                      @Override
+                      public void run()
+                      {
+                        setViewerMode(file2save.getAbsolutePath());
+                        mProgress.setVisibility(View.GONE);
+                      }
+                    });
+                  }
+                }).start();
                 dialog.cancel();
               }
             });

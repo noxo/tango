@@ -53,6 +53,7 @@ namespace oc {
         void OnClearButtonClicked();
         void Load(std::string filename);
         void Save(std::string filename, std::string dataset);
+        void Texturize(std::string filename, std::string dataset);
         float CenterOfStaticModel(bool horizontal);
         void SetView(float p, float y, float mx, float my, bool g) { pitch = p; yaw = y; gyro = g;
                                                                             movex = mx; movey = my;}
@@ -87,7 +88,6 @@ namespace oc {
 
         std::string dataset_;
         int poses_;
-        int lastSavedPose_;
 
         bool gyro;
         bool landscape;

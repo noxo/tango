@@ -87,6 +87,11 @@ Java_com_lvonasek_openconstructor_TangoJNINative_save(JNIEnv* env, jobject, jstr
 }
 
 JNIEXPORT void JNICALL
+Java_com_lvonasek_openconstructor_TangoJNINative_texturize(JNIEnv* env, jobject, jstring name, jstring d) {
+  app.Texturize(jstring2string(env, name), jstring2string(env, d));
+}
+
+JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_setView(JNIEnv*, jobject, jfloat pitch, jfloat yaw,
                                                          jfloat x, jfloat y, jboolean gyro) {
   app.SetView(pitch, yaw, x, y, gyro);
