@@ -6,13 +6,6 @@
 #include "gl/glsl.h"
 #include "gl/renderer.h"
 
-struct SingleDynamicMesh {
-    Tango3DR_Mesh tango_mesh;
-    oc::Mesh mesh;
-    std::mutex mutex;
-    unsigned long size;
-};
-
 namespace oc {
     class Scene {
     public:

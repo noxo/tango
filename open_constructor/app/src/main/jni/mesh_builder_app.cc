@@ -22,10 +22,7 @@
 
 namespace {
     const int kSubdivisionSize = 5000;
-    const int kInitialVertexCount = 30;
-    const int kInitialIndexCount = 99;
-    const int kGrowthFactor = 2;
-    constexpr int kTangoCoreMinimumVersion = 9377;
+    const int kTangoCoreMinimumVersion = 9377;
 
     void onPointCloudAvailableRouter(void *context, const TangoPointCloud *point_cloud) {
         oc::MeshBuilderApp *app = static_cast<oc::MeshBuilderApp *>(context);
@@ -39,11 +36,6 @@ namespace {
 }
 
 namespace oc {
-
-    bool GridIndex::operator==(const GridIndex &other) const {
-        return indices[0] == other.indices[0] && indices[1] == other.indices[1] &&
-               indices[2] == other.indices[2];
-    }
 
     void MeshBuilderApp::onPointCloudAvailable(TangoPointCloud *point_cloud) {
         if (!t3dr_is_running_)
@@ -130,7 +122,12 @@ namespace oc {
         fclose(file);
         poses_++;
 
-        MeshUpdate(&t3dr_updated);
+        std::vector<SingleDynamicMesh*> added = scan.MeshUpdate(tango.Context(), &t3dr_updated);
+        render_mutex_.lock();
+        for (SingleDynamicMesh* mesh : added)
+            main_scene_.AddDynamicMesh(mesh);
+        render_mutex_.unlock();
+
         Tango3DR_GridIndexArray_destroy(&t3dr_updated);
         point_cloud_available_ = false;
         binder_mutex_.unlock();
@@ -229,8 +226,8 @@ namespace oc {
     void MeshBuilderApp::OnClearButtonClicked() {
         binder_mutex_.lock();
         render_mutex_.lock();
+        scan.Clear();
         tango.Clear();
-        meshes_.clear();
         poses_ = 0;
         main_scene_.ClearDynamicMeshes();
         render_mutex_.unlock();
@@ -294,7 +291,7 @@ namespace oc {
                     std::exit(EXIT_SUCCESS);
 
                 //empty context and merge with previous OBJ
-                meshes_.clear();
+                scan.Clear();
                 tango.Clear();
                 {
                     File3d io(filename, false);
@@ -331,66 +328,6 @@ namespace oc {
             }
         }
         return (min + max) * 0.5f;
-    }
-
-    void MeshBuilderApp::MeshUpdate(Tango3DR_GridIndexArray *t3dr_updated) {
-        for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
-            GridIndex updated_index;
-            updated_index.indices[0] = t3dr_updated->indices[it][0];
-            updated_index.indices[1] = t3dr_updated->indices[it][1];
-            updated_index.indices[2] = t3dr_updated->indices[it][2];
-
-            // Build a dynamic mesh and add it to the scene.
-            SingleDynamicMesh* dynamic_mesh = meshes_[updated_index];
-            if (dynamic_mesh == nullptr) {
-                dynamic_mesh = new SingleDynamicMesh();
-                dynamic_mesh->mesh.vertices.resize(kInitialVertexCount * 3);
-                dynamic_mesh->mesh.colors.resize(kInitialVertexCount * 3);
-                dynamic_mesh->mesh.indices.resize(kInitialIndexCount);
-                dynamic_mesh->tango_mesh = {
-                        /* timestamp */ 0.0,
-                        /* num_vertices */ 0u,
-                        /* num_faces */ 0u,
-                        /* num_textures */ 0u,
-                        /* max_num_vertices */ static_cast<uint32_t>(dynamic_mesh->mesh.vertices.capacity()),
-                        /* max_num_faces */ static_cast<uint32_t>(dynamic_mesh->mesh.indices.capacity() / 3),
-                        /* max_num_textures */ 0u,
-                        /* vertices */ reinterpret_cast<Tango3DR_Vector3 *>(dynamic_mesh->mesh.vertices.data()),
-                        /* faces */ reinterpret_cast<Tango3DR_Face *>(dynamic_mesh->mesh.indices.data()),
-                        /* normals */ nullptr,
-                        /* colors */ reinterpret_cast<Tango3DR_Color *>(dynamic_mesh->mesh.colors.data()),
-                        /* texture_coords */ nullptr,
-                        /* texture_ids */ nullptr,
-                        /* textures */ nullptr};
-                render_mutex_.lock();
-                main_scene_.AddDynamicMesh(dynamic_mesh);
-                render_mutex_.unlock();
-            }
-            dynamic_mesh->mutex.lock();
-
-            while (true) {
-                Tango3DR_Status ret;
-                ret = Tango3DR_extractPreallocatedMeshSegment(tango.Context(), updated_index.indices,
-                                                              &dynamic_mesh->tango_mesh);
-                if (ret == TANGO_3DR_INSUFFICIENT_SPACE) {
-                    unsigned long new_vertex_size = dynamic_mesh->mesh.vertices.capacity() * kGrowthFactor;
-                    unsigned long new_index_size = dynamic_mesh->mesh.indices.capacity() * kGrowthFactor;
-                    new_index_size -= new_index_size % 3;
-                    dynamic_mesh->mesh.vertices.resize(new_vertex_size);
-                    dynamic_mesh->mesh.colors.resize(new_vertex_size);
-                    dynamic_mesh->mesh.indices.resize(new_index_size);
-                    dynamic_mesh->tango_mesh.max_num_vertices = static_cast<uint32_t>(dynamic_mesh->mesh.vertices.capacity());
-                    dynamic_mesh->tango_mesh.max_num_faces = static_cast<uint32_t>(dynamic_mesh->mesh.indices.capacity() / 3);
-                    dynamic_mesh->tango_mesh.vertices = reinterpret_cast<Tango3DR_Vector3 *>(dynamic_mesh->mesh.vertices.data());
-                    dynamic_mesh->tango_mesh.colors = reinterpret_cast<Tango3DR_Color *>(dynamic_mesh->mesh.colors.data());
-                    dynamic_mesh->tango_mesh.faces = reinterpret_cast<Tango3DR_Face *>(dynamic_mesh->mesh.indices.data());
-                } else
-                    break;
-            }
-            dynamic_mesh->size = dynamic_mesh->tango_mesh.num_faces * 3;
-            dynamic_mesh->mesh.texture = -1;
-            dynamic_mesh->mutex.unlock();
-        }
     }
 
     std::string MeshBuilderApp::GetFileName(int index, std::string extension) {
@@ -483,8 +420,8 @@ namespace oc {
                 std::exit(EXIT_SUCCESS);
 
             //reload the model
+            scan.Clear();
             tango.Clear();
-            meshes_.clear();
             poses_ = 0;
             main_scene_.static_meshes_.clear();
             main_scene_.ClearDynamicMeshes();

@@ -2,11 +2,7 @@
 #define DATA_FILE3D_H
 
 #include <map>
-#include <mutex>
 #include <string>
-#ifndef NOTANGO
-#include <tango_3d_reconstruction_api.h>
-#endif
 #include "data/mesh.h"
 
 namespace oc {

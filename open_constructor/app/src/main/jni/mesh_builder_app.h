@@ -2,36 +2,14 @@
 #define MESH_BUILDER_APP_H
 
 #include <jni.h>
-#include <memory>
 #include <mutex>
-#include <pthread.h>
 #include <string>
-#include <unordered_map>
-#include <vector>
 
+#include "tango/scan.h"
 #include "tango/service.h"
 #include "scene.h"
 
 namespace oc {
-
-    struct GridIndex {
-        Tango3DR_GridIndex indices;
-
-        bool operator==(const GridIndex &other) const;
-    };
-
-    struct GridIndexHasher {
-        std::size_t operator()(const oc::GridIndex &index) const {
-            std::size_t val = std::hash<int>()(index.indices[0]);
-            val = hash_combine(val, std::hash<int>()(index.indices[1]));
-            val = hash_combine(val, std::hash<int>()(index.indices[2]));
-            return val;
-        }
-
-        static std::size_t hash_combine(std::size_t val1, std::size_t val2) {
-            return (val1 << 1) ^ val2;
-        }
-    };
 
     class MeshBuilderApp {
     public:
@@ -57,7 +35,6 @@ namespace oc {
 
     private:
         void DeleteResources();
-        void MeshUpdate(Tango3DR_GridIndexArray *t3dr_updated);
         std::string GetFileName(int index, std::string extension);
 
         bool t3dr_is_running_;
@@ -71,8 +48,8 @@ namespace oc {
         glm::mat4 point_cloud_matrix_;
 
         Scene main_scene_;
+        TangoScan scan;
         TangoService tango;
-        std::unordered_map<GridIndex, SingleDynamicMesh*, GridIndexHasher> meshes_;
 
         int poses_;
         bool gyro;
