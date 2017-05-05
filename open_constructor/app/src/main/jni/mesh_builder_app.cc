@@ -59,7 +59,7 @@ namespace oc {
 
         binder_mutex_.lock();
         point_cloud_matrix_ = glm::make_mat4(matrix_transform.matrix);
-        TangoSupport_updatePointCloud(point_cloud_manager_, point_cloud);
+        TangoSupport_updatePointCloud(tango.Pointcloud(), point_cloud);
         point_cloud_available_ = true;
         binder_mutex_.unlock();
     }
@@ -104,7 +104,7 @@ namespace oc {
         }
 
         Tango3DR_PointCloud t3dr_depth;
-        TangoSupport_getLatestPointCloud(point_cloud_manager_, &front_cloud_);
+        TangoSupport_getLatestPointCloud(tango.Pointcloud(), &front_cloud_);
         t3dr_depth.timestamp = front_cloud_->timestamp;
         t3dr_depth.num_points = front_cloud_->num_points;
         t3dr_depth.points = front_cloud_->points;
@@ -112,7 +112,7 @@ namespace oc {
         Tango3DR_Pose t3dr_depth_pose = GLCamera::Extract3DRPose(point_cloud_matrix_);
         Tango3DR_GridIndexArray t3dr_updated;
         Tango3DR_Status ret;
-        ret = Tango3DR_update(t3dr_context_, &t3dr_depth, &t3dr_depth_pose,
+        ret = Tango3DR_update(tango.Context(), &t3dr_depth, &t3dr_depth_pose,
                               &t3dr_image, &t3dr_image_pose, &t3dr_updated);
         if (ret != TANGO_3DR_SUCCESS)
         {
@@ -130,7 +130,7 @@ namespace oc {
         fclose(file);
         poses_++;
 
-        MeshUpdate(t3dr_image, &t3dr_updated);
+        MeshUpdate(&t3dr_updated);
         Tango3DR_GridIndexArray_destroy(&t3dr_updated);
         point_cloud_available_ = false;
         binder_mutex_.unlock();
@@ -144,18 +144,6 @@ namespace oc {
                                         poses_(0),
                                         zoom(0) {}
 
-
-    MeshBuilderApp::~MeshBuilderApp() {
-        if (tango_config_ != nullptr) {
-            TangoConfig_free(tango_config_);
-            tango_config_ = nullptr;
-        }
-        if (point_cloud_manager_ != nullptr) {
-            TangoSupport_freePointCloudManager(point_cloud_manager_);
-            point_cloud_manager_ = nullptr;
-        }
-    }
-
     void MeshBuilderApp::OnCreate(JNIEnv *env, jobject activity) {
         int version;
         TangoErrorType err = TangoSupport_GetTangoVersion(env, activity, &version);
@@ -165,162 +153,26 @@ namespace oc {
 
     void MeshBuilderApp::OnTangoServiceConnected(JNIEnv *env, jobject binder, double res,
                double dmin, double dmax, int noise, bool land, std::string dataset) {
-        dataset_ = dataset;
         landscape = land;
 
         TangoService_setBinder(env, binder);
-        TangoSetupConfig();
-        TangoConnectCallbacks();
-        TangoConnect();
-        binder_mutex_.lock();
-        t3dr_context_ = TangoSetup3DR(res, dmin, dmax, noise);
-        binder_mutex_.unlock();
-    }
+        tango.SetupConfig(dataset);
 
-    void MeshBuilderApp::TangoSetupConfig() {
-        tango_config_ = TangoService_getConfig(TANGO_CONFIG_DEFAULT);
-
-        // This enables basic motion tracking capabilities.
-        if (tango_config_ == nullptr)
-            std::exit(EXIT_SUCCESS);
-
-        // Set auto-recovery for motion tracking as requested by the user.
-        int ret = TangoConfig_setBool(tango_config_, "config_enable_auto_recovery", true);
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-
-        // Enable depth.
-        ret = TangoConfig_setBool(tango_config_, "config_enable_depth", true);
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-
-        // Disable learning.
-        ret = TangoConfig_setBool(tango_config_, "config_enable_learning_mode", false);
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-
-        // Enable drift correction.
-        ret = TangoConfig_setBool(tango_config_, "config_enable_drift_correction", true);//false in Tango Constructor
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-
-        // Need to specify the depth_mode as XYZC.
-        ret = TangoConfig_setInt32(tango_config_, "config_depth_mode", TANGO_POINTCLOUD_XYZC);
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-
-        // Enable color camera.
-        ret = TangoConfig_setBool(tango_config_, "config_enable_color_camera", true);
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-
-        // Set datasets
-        ret = TangoConfig_setString(tango_config_, "config_datasets_path", dataset_.c_str());
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-        ret = TangoConfig_setBool(tango_config_, "config_enable_dataset_recording", true);
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-        ret = TangoConfig_setInt32(tango_config_, "config_dataset_recording_mode", TANGO_RECORDING_MODE_MOTION_TRACKING);
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-        ret = TangoConfig_setBool(tango_config_, "config_smooth_pose", false);
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-
-        if (point_cloud_manager_ == nullptr) {
-            int32_t max_point_cloud_elements;
-            ret = TangoConfig_getInt32(tango_config_, "max_point_cloud_elements",
-                                       &max_point_cloud_elements);
-            if (ret != TANGO_SUCCESS) {
-                LOGE("Failed to query maximum number of point cloud elements.");
-                std::exit(EXIT_SUCCESS);
-            }
-
-            ret = TangoSupport_createPointCloudManager((size_t) max_point_cloud_elements,
-                                                       &point_cloud_manager_);
-            if (ret != TANGO_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-        }
-    }
-
-    Tango3DR_ReconstructionContext MeshBuilderApp::TangoSetup3DR(double res, double dmin, double dmax, int noise) {
-        Tango3DR_Config t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_RECONSTRUCTION);
-        Tango3DR_Status t3dr_err;
-        t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "resolution", res);
-        if (t3dr_err != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-
-        t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "min_depth", dmin);
-        if (t3dr_err != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-
-        t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "max_depth", dmax);
-        if (t3dr_err != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-
-        t3dr_err = Tango3DR_Config_setBool(t3dr_config, "generate_color", true);
-        if (t3dr_err != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-
-        t3dr_err = Tango3DR_Config_setBool(t3dr_config, "use_parallel_integration", true);
-        if (t3dr_err != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-
-        Tango3DR_Config_setInt32(t3dr_config, "min_num_vertices", noise);
-
-        Tango3DR_ReconstructionContext output = Tango3DR_ReconstructionContext_create(t3dr_config);
-        if (output == nullptr)
-            std::exit(EXIT_SUCCESS);
-        Tango3DR_Config_destroy(t3dr_config);
-
-        Tango3DR_setColorCalibration(output, &t3dr_intrinsics_);
-        return output;
-    }
-
-    void MeshBuilderApp::TangoConnectCallbacks() {
         TangoErrorType ret = TangoService_connectOnPointCloudAvailable(onPointCloudAvailableRouter);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
-
         ret = TangoService_connectOnFrameAvailable(TANGO_CAMERA_COLOR, this, onFrameAvailableRouter);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
-    }
 
-    void MeshBuilderApp::TangoConnect() {
-        TangoErrorType err = TangoService_connect(this, tango_config_);
-        if (err != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-
-        // Initialize TangoSupport context.
-        TangoSupport_initializeLibrary();
-
-        // Update the camera intrinsics too.
-        TangoCameraIntrinsics intrinsics;
-        err = TangoService_getCameraIntrinsics(TANGO_CAMERA_COLOR, &intrinsics);
-        if (err != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-        t3dr_intrinsics_.calibration_type =
-                static_cast<Tango3DR_TangoCalibrationType>(intrinsics.calibration_type);
-        t3dr_intrinsics_.width = intrinsics.width;
-        t3dr_intrinsics_.height = intrinsics.height;
-        t3dr_intrinsics_.fx = intrinsics.fx;
-        t3dr_intrinsics_.fy = intrinsics.fy;
-        t3dr_intrinsics_.cx = intrinsics.cx;
-        t3dr_intrinsics_.cy = intrinsics.cy;
-        std::copy(std::begin(intrinsics.distortion), std::end(intrinsics.distortion),
-                  std::begin(t3dr_intrinsics_.distortion));
-    }
-
-    void MeshBuilderApp::TangoDisconnect() {
-        TangoConfig_free(tango_config_);
-        tango_config_ = nullptr;
-        TangoService_disconnect();
+        binder_mutex_.lock();
+        tango.Connect(this);
+        tango.Setup3DR(res, dmin, dmax, noise);
+        binder_mutex_.unlock();
     }
 
     void MeshBuilderApp::OnPause() {
-        TangoDisconnect();
+        tango.Disconnect();
         DeleteResources();
     }
 
@@ -377,7 +229,7 @@ namespace oc {
     void MeshBuilderApp::OnClearButtonClicked() {
         binder_mutex_.lock();
         render_mutex_.lock();
-        Tango3DR_clear(t3dr_context_);
+        tango.Clear();
         meshes_.clear();
         poses_ = 0;
         main_scene_.ClearDynamicMeshes();
@@ -404,7 +256,7 @@ namespace oc {
             ret = Tango3DR_Mesh_initEmpty(&mesh);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
-            ret = Tango3DR_extractFullMesh(t3dr_context_, &mesh);
+            ret = Tango3DR_extractFullMesh(tango.Context(), &mesh);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
 
@@ -443,7 +295,7 @@ namespace oc {
 
                 //empty context and merge with previous OBJ
                 meshes_.clear();
-                Tango3DR_clear(t3dr_context_);
+                tango.Clear();
                 {
                     File3d io(filename, false);
                     io.ReadModel(kSubdivisionSize, main_scene_.static_meshes_);
@@ -481,7 +333,7 @@ namespace oc {
         return (min + max) * 0.5f;
     }
 
-    void MeshBuilderApp::MeshUpdate(Tango3DR_ImageBuffer t3dr_image, Tango3DR_GridIndexArray *t3dr_updated) {
+    void MeshBuilderApp::MeshUpdate(Tango3DR_GridIndexArray *t3dr_updated) {
         for (unsigned long it = 0; it < t3dr_updated->num_indices; ++it) {
             GridIndex updated_index;
             updated_index.indices[0] = t3dr_updated->indices[it][0];
@@ -518,7 +370,7 @@ namespace oc {
 
             while (true) {
                 Tango3DR_Status ret;
-                ret = Tango3DR_extractPreallocatedMeshSegment(t3dr_context_, updated_index.indices,
+                ret = Tango3DR_extractPreallocatedMeshSegment(tango.Context(), updated_index.indices,
                                                               &dynamic_mesh->tango_mesh);
                 if (ret == TANGO_3DR_INSUFFICIENT_SPACE) {
                     unsigned long new_vertex_size = dynamic_mesh->mesh.vertices.capacity() * kGrowthFactor;
@@ -543,7 +395,7 @@ namespace oc {
 
     std::string MeshBuilderApp::GetFileName(int index, std::string extension) {
         std::ostringstream ss;
-        ss << dataset_.c_str();
+        ss << tango.Dataset().c_str();
         ss << "/";
         ss << index;
         ss << extension.c_str();
@@ -631,7 +483,7 @@ namespace oc {
                 std::exit(EXIT_SUCCESS);
 
             //reload the model
-            Tango3DR_clear(t3dr_context_);
+            tango.Clear();
             meshes_.clear();
             poses_ = 0;
             main_scene_.static_meshes_.clear();

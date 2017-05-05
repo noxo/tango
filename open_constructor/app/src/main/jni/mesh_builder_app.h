@@ -9,10 +9,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include <tango_client_api.h>  // NOLINT
-#include <tango_3d_reconstruction_api.h>
-#include <tango_support_api.h>
-
+#include "tango/service.h"
 #include "scene.h"
 
 namespace oc {
@@ -39,7 +36,6 @@ namespace oc {
     class MeshBuilderApp {
     public:
         MeshBuilderApp();
-        ~MeshBuilderApp();
         void OnCreate(JNIEnv *env, jobject caller_activity);
         void OnPause();
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin, double dmax,
@@ -60,35 +56,25 @@ namespace oc {
         void SetZoom(float value) { zoom = value; }
 
     private:
-        void TangoSetupConfig();
-        Tango3DR_ReconstructionContext TangoSetup3DR(double res, double dmin, double dmax, int noise);
-        void TangoConnectCallbacks();
-        void TangoConnect();
-        void TangoDisconnect();
         void DeleteResources();
-        void MeshUpdate(Tango3DR_ImageBuffer t3dr_image, Tango3DR_GridIndexArray *t3dr_updated);
+        void MeshUpdate(Tango3DR_GridIndexArray *t3dr_updated);
         std::string GetFileName(int index, std::string extension);
 
         bool t3dr_is_running_;
-        Tango3DR_ReconstructionContext t3dr_context_;
-        Tango3DR_CameraCalibration t3dr_intrinsics_;
         glm::mat4 image_matrix;
         glm::quat image_rotation;
         std::mutex binder_mutex_;
         std::mutex render_mutex_;
 
         bool point_cloud_available_;
-        TangoSupportPointCloudManager* point_cloud_manager_;
         TangoPointCloud* front_cloud_;
         glm::mat4 point_cloud_matrix_;
 
         Scene main_scene_;
-        TangoConfig tango_config_;
+        TangoService tango;
         std::unordered_map<GridIndex, SingleDynamicMesh*, GridIndexHasher> meshes_;
 
-        std::string dataset_;
         int poses_;
-
         bool gyro;
         bool landscape;
         float movex;
