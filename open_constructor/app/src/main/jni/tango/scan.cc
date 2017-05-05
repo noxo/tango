@@ -10,8 +10,18 @@ namespace oc {
         return indices[0] == o.indices[0] && indices[1] == o.indices[1] && indices[2] == o.indices[2];
     }
 
+    TangoScan::TangoScan() {
+        meshes = new std::unordered_map<GridIndex, SingleDynamicMesh*, GridIndexHasher>();
+    }
+
+    TangoScan::~TangoScan() {
+        delete meshes;
+    }
+
     void TangoScan::Clear() {
-        meshes.clear();
+        meshes->clear();
+        delete meshes;
+        meshes = new std::unordered_map<GridIndex, SingleDynamicMesh*, GridIndexHasher>();
     }
 
     std::vector<SingleDynamicMesh*> TangoScan::MeshUpdate(Tango3DR_ReconstructionContext context,
@@ -24,7 +34,7 @@ namespace oc {
             updated_index.indices[2] = t3dr_updated->indices[it][2];
 
             // Build a dynamic mesh and add it to the scene.
-            SingleDynamicMesh* dynamic_mesh = meshes[updated_index];
+            SingleDynamicMesh* dynamic_mesh = (*meshes)[updated_index];
             if (dynamic_mesh == nullptr) {
                 dynamic_mesh = new SingleDynamicMesh();
                 dynamic_mesh->mesh.vertices.resize(kInitialVertexCount * 3);

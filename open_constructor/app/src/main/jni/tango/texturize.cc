@@ -68,7 +68,7 @@ namespace oc {
         }
 
         //create texturing context
-        Init(dataset, true, &mesh);
+        CreateContext(dataset, true, &mesh);
         ret = Tango3DR_Mesh_destroy(&mesh);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
@@ -91,7 +91,7 @@ namespace oc {
         }
 
         //create texturing context
-        Init(dataset, false, &mesh);
+        CreateContext(dataset, false, &mesh);
         ret = Tango3DR_Mesh_destroy(&mesh);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
@@ -112,10 +112,10 @@ namespace oc {
             std::exit(EXIT_SUCCESS);
 
         //cleanup
-        ret = Tango3DR_TexturingContext_destroy(context);
+        ret = Tango3DR_Mesh_destroy(&mesh);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
-        ret = Tango3DR_Mesh_destroy(&mesh);
+        ret = Tango3DR_TexturingContext_destroy(context);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
     }
@@ -129,7 +129,7 @@ namespace oc {
         return ss.str();
     }
 
-    void TangoTexturize::Init(std::string dataset, bool gl, Tango3DR_Mesh* mesh) {
+    void TangoTexturize::CreateContext(std::string dataset, bool gl, Tango3DR_Mesh* mesh) {
         Tango3DR_Config textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
         Tango3DR_Status ret;
         ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", 0.01);
@@ -139,6 +139,7 @@ namespace oc {
         ret = Tango3DR_Config_setInt32(textureConfig, "texturing_backend", backend);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
+
         context = Tango3DR_TexturingContext_create(textureConfig, dataset.c_str(), mesh);
         if (context == nullptr)
             std::exit(EXIT_SUCCESS);

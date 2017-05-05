@@ -29,12 +29,14 @@ namespace oc {
 
     class TangoScan {
     public:
+        TangoScan();
+        ~TangoScan();
         void Clear();
         std::vector<SingleDynamicMesh*> MeshUpdate(Tango3DR_ReconstructionContext context,
                                                    Tango3DR_GridIndexArray *t3dr_updated);
 
     private:
-        std::unordered_map<GridIndex, SingleDynamicMesh*, GridIndexHasher> meshes;
+        std::unordered_map<GridIndex, SingleDynamicMesh*, GridIndexHasher>* meshes;
     };
 }
 #endif

@@ -115,7 +115,7 @@ namespace oc {
             std::exit(EXIT_SUCCESS);
 
         // Enable drift correction.
-        ret = TangoConfig_setBool(config, "config_enable_drift_correction", true);//false in Tango Constructor
+        ret = TangoConfig_setBool(config, "config_enable_drift_correction", true);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
@@ -145,8 +145,7 @@ namespace oc {
 
         if (pointcloud == nullptr) {
             int32_t max_point_cloud_elements;
-            ret = TangoConfig_getInt32(config, "max_point_cloud_elements",
-                                       &max_point_cloud_elements);
+            ret = TangoConfig_getInt32(config, "max_point_cloud_elements", &max_point_cloud_elements);
             if (ret != TANGO_SUCCESS)
                 std::exit(EXIT_SUCCESS);
 

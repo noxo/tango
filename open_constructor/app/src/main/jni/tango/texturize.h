@@ -17,7 +17,7 @@ namespace oc {
         void Process(std::string filename);
 
     private:
-        void Init(std::string dataset, bool gl, Tango3DR_Mesh* mesh);
+        void CreateContext(std::string dataset, bool gl, Tango3DR_Mesh* mesh);
         std::string GetFileName(int index, std::string dataset, std::string extension);
 
         int poses;
