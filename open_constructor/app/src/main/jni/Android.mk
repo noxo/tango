@@ -26,8 +26,7 @@ LOCAL_CFLAGS    := -std=c++11
 LOCAL_C_INCLUDES := $(PROJECT_ROOT)/third_party/glm/ \
                     $(PROJECT_ROOT)/third_party/libpng/include/
 
-LOCAL_SRC_FILES := jni_interface.cc \
-                   mesh_builder_app.cc \
+LOCAL_SRC_FILES := app.cc \
                    scene.cc \
                    data/file3d.cc \
                    data/image.cc \
@@ -36,7 +35,8 @@ LOCAL_SRC_FILES := jni_interface.cc \
                    gl/glsl.cc \
                    gl/renderer.cc \
                    tango/scan.cc \
-                   tango/service.cc
+                   tango/service.cc \
+                   tango/texturize.cc
 
 LOCAL_LDLIBS    := -llog -lGLESv2 -L$(SYSROOT)/usr/lib -lz -landroid
 include $(BUILD_SHARED_LIBRARY)

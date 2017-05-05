@@ -48,15 +48,8 @@ namespace oc {
         vertexCount = 0;
         std::vector<unsigned int> vectorSize;
         for(unsigned int i = 0; i < model.size(); i++) {
-            unsigned int max = 0;
-            unsigned int value = 0;
-            for(unsigned int j = 0; j < model[i].indices.size(); j++) {
-                value = model[i].indices[j];
-                if(max < value)
-                    max = value;
-            }
-            max++;
-            faceCount += model[i].indices.size() / 3;
+            unsigned int max = model[i].vertices.size() + 1;
+            faceCount += model[i].vertices.size() / 3;
             vertexCount += max;
             vectorSize.push_back(max);
         }
@@ -70,7 +63,7 @@ namespace oc {
                 offset++;
             int texture = -1;
             for (unsigned int i = 0; i < model.size(); i++) {
-                if (model[i].indices.empty()) {
+                if (model[i].vertices.empty()) {
                     offset += vectorSize[i];
                     continue;
                 }
@@ -304,7 +297,7 @@ namespace oc {
             fprintf(file, "mtllib %s.mtl\n", shortBase.c_str());
             FILE* mtl = fopen((base + ".mtl").c_str(), "w");
             for (unsigned int i = 0; i < model.size(); i++) {
-                if (model[i].indices.empty())
+                if (model[i].vertices.empty())
                     continue;
 
                 fprintf(mtl, "newmtl %d\n", i);
@@ -355,10 +348,10 @@ namespace oc {
 
     void File3d::WriteFaces(Mesh& mesh, int offset) {
         glm::ivec3 i;
-        for (unsigned int j = 0; j < mesh.indices.size(); j+=3) {
-            i.x = mesh.indices[j + 0] + offset;
-            i.y = mesh.indices[j + 1] + offset;
-            i.z = mesh.indices[j + 2] + offset;
+        for (unsigned int j = 0; j < mesh.vertices.size(); j+=3) {
+            i.x = j + 0 + offset;
+            i.y = j + 1 + offset;
+            i.z = j + 2 + offset;
             if (type == PLY)
                 fprintf(file, "3 %d %d %d\n", i.x, i.y, i.z);
             else if (type == OBJ)

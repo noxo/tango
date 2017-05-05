@@ -13,6 +13,7 @@ namespace oc {
     public:
 
         Mesh();
+        ~Mesh();
         void Destroy();
         static std::vector<unsigned int> texturesToDelete();
 

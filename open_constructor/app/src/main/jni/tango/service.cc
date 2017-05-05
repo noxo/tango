@@ -20,6 +20,7 @@ namespace oc {
     }
 
     void TangoService::Clear() {
+        Tango3DR_clear(context);
         Tango3DR_ReconstructionContext_destroy(context);
         Setup3DR(res_, dmin_, dmax_, noise_);
     }

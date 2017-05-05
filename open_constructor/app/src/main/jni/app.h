@@ -1,5 +1,5 @@
-#ifndef MESH_BUILDER_APP_H
-#define MESH_BUILDER_APP_H
+#ifndef APP_H
+#define APP_H
 
 #include <jni.h>
 #include <mutex>
@@ -7,13 +7,14 @@
 
 #include "tango/scan.h"
 #include "tango/service.h"
+#include "tango/texturize.h"
 #include "scene.h"
 
 namespace oc {
 
-    class MeshBuilderApp {
+    class App {
     public:
-        MeshBuilderApp();
+        App();
         void OnCreate(JNIEnv *env, jobject caller_activity);
         void OnPause();
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin, double dmax,
@@ -25,33 +26,31 @@ namespace oc {
         void OnDrawFrame();
         void OnToggleButtonClicked(bool t3dr_is_running);
         void OnClearButtonClicked();
+
+        float CenterOfStaticModel(bool horizontal);
         void Load(std::string filename);
         void Save(std::string filename, std::string dataset);
         void Texturize(std::string filename, std::string dataset);
-        float CenterOfStaticModel(bool horizontal);
+
         void SetView(float p, float y, float mx, float my, bool g) { pitch = p; yaw = y; gyro = g;
                                                                             movex = mx; movey = my;}
         void SetZoom(float value) { zoom = value; }
 
     private:
-        void DeleteResources();
-        std::string GetFileName(int index, std::string extension);
-
         bool t3dr_is_running_;
+        bool point_cloud_available_;
+        TangoPointCloud* front_cloud_;
+        glm::mat4 point_cloud_matrix_;
         glm::mat4 image_matrix;
         glm::quat image_rotation;
         std::mutex binder_mutex_;
         std::mutex render_mutex_;
 
-        bool point_cloud_available_;
-        TangoPointCloud* front_cloud_;
-        glm::mat4 point_cloud_matrix_;
-
-        Scene main_scene_;
+        Scene scene;
         TangoScan scan;
         TangoService tango;
+        TangoTexturize texturize;
 
-        int poses_;
         bool gyro;
         bool landscape;
         float movex;
