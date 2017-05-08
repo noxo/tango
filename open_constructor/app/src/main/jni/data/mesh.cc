@@ -7,12 +7,12 @@ namespace oc {
     Mesh::Mesh() : image(NULL), imageOwner(true), texture(-1) {}
 
     void Mesh::Destroy() {
-        if (image)
-            if (imageOwner) {
-                delete image;
-                mesh_textureToDelete.push_back(texture);
-                texture = -1;
-            }
+        if (image && imageOwner) {
+            delete image;
+            mesh_textureToDelete.push_back(texture);
+            texture = -1;
+            image = 0;
+        }
     }
 
     std::vector<unsigned int> Mesh::texturesToDelete() {

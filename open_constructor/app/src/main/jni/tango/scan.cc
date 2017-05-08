@@ -11,13 +11,25 @@ namespace oc {
     }
 
     void TangoScan::Clear() {
+        Tango3DR_Status ret;
+        for (std::pair<GridIndex, Tango3DR_Mesh*> p : meshes) {
+            ret = Tango3DR_Mesh_destroy(p.second);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+            delete p.second;
+        }
         meshes.clear();
     }
 
     void TangoScan::Merge(std::vector<std::pair<GridIndex, Tango3DR_Mesh*> > added) {
+        Tango3DR_Status ret;
         for (std::pair<GridIndex, Tango3DR_Mesh*> p : added) {
-            if (meshes.find(p.first) != meshes.end())
+            if (meshes.find(p.first) != meshes.end()) {
+                ret = Tango3DR_Mesh_destroy(meshes[p.first]);
+                if (ret != TANGO_3DR_SUCCESS)
+                    std::exit(EXIT_SUCCESS);
                 delete meshes[p.first];
+            }
             meshes[p.first] = p.second;
         }
     }

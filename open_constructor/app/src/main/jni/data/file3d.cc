@@ -157,6 +157,9 @@ namespace oc {
                 }
             }
         }
+        std::vector<glm::vec3>().swap(vertices);
+        std::vector<glm::vec3>().swap(normals);
+        std::vector<glm::vec2>().swap(uvs);
     }
 
     void File3d::ParsePLYFaces(int subdivision, std::vector<Mesh> &output) {

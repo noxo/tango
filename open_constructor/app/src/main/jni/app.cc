@@ -233,11 +233,11 @@ namespace oc {
         render_mutex_.lock();
         if (!dataset.empty()) {
             if (texturize.Init(tango.Context(), dataset)) {
-                texturize.Process(filename);
-
-                //empty context and merge with previous OBJ
                 scan.Clear();
                 tango.Clear();
+                texturize.Process(filename);
+
+                //merge with previous OBJ
                 File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
                 File3d(filename, true).WriteModel(scene.static_meshes_);
             }
@@ -256,13 +256,13 @@ namespace oc {
                 binder_mutex_.unlock();
                 return;
             }
-            texturize.ApplyFrames(tango.Dataset());
-            texturize.Process(filename);
-
-            //reload the model
             scan.Clear();
             tango.Clear();
+            texturize.ApplyFrames(tango.Dataset());
+            texturize.Process(filename);
             texturize.Clear();
+
+            //reload the model
             for (unsigned int i = 0; i < scene.static_meshes_.size(); i++)
                 scene.static_meshes_[i].Destroy();
             scene.static_meshes_.clear();
