@@ -169,7 +169,7 @@ Renderer::Renderer(gvr_context* gvr_context, std::string filename)
 
   oc::File3d io(filename, false);
   textured_ = io.GetType() == oc::OBJ;
-  io.ReadModel(5000, static_meshes_);
+  io.ReadModel(20000, static_meshes_);
 }
 
 Renderer::~Renderer() {
