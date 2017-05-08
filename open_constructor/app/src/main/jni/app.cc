@@ -258,6 +258,8 @@ namespace oc {
             io.ReadModel(kSubdivisionSize, scene.static_meshes_);
         }*/
         //TODO:remove after Tango team removes memory leaks from SDK
+        scan.Clear();
+        tango.Clear();
         File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
         File3d(filename, true).WriteModel(scene.static_meshes_);
         render_mutex_.unlock();
