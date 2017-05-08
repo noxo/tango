@@ -109,10 +109,12 @@ namespace oc {
         GLSL::CurrentShader()->UniformMatrix("MVP", glm::value_ptr(camera.projection * camera.GetView()));
         GLSL::CurrentShader()->Attrib(vertices, normals, uv, colors);
 
-        if (indices)
-          glDrawElements(GL_TRIANGLES, size, GL_UNSIGNED_INT, indices);
-        else if (size >= 0)
-          glDrawArrays(GL_TRIANGLES, 0, size);
+        if (size > 0) {
+            if (indices)
+              glDrawElements(GL_TRIANGLES, size, GL_UNSIGNED_INT, indices);
+            else
+              glDrawArrays(GL_TRIANGLES, 0, size);
+        }
     }
 
     void GLRenderer::Rtt(bool enable) {

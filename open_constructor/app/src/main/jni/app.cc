@@ -1,7 +1,7 @@
 #include "app.h"
 
 namespace {
-    const int kSubdivisionSize = 5000;
+    const int kSubdivisionSize = 20000;
     const int kTangoCoreMinimumVersion = 9377;
 
     void onPointCloudAvailableRouter(void *context, const TangoPointCloud *point_cloud) {
@@ -204,21 +204,6 @@ namespace oc {
         binder_mutex_.unlock();
     }
 
-    float App::CenterOfStaticModel(bool horizontal) {
-        float min = 99999999;
-        float max = -99999999;
-        for (Mesh& mesh : scene.static_meshes_) {
-            for (glm::vec3 vec : mesh.vertices) {
-                float value = horizontal ? vec.x : vec.z;
-                if (min > value)
-                    min = value;
-                if (max < value)
-                    max = value;
-            }
-        }
-        return (min + max) * 0.5f;
-    }
-
     void App::Load(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
@@ -233,13 +218,15 @@ namespace oc {
         render_mutex_.lock();
         if (!dataset.empty()) {
             if (texturize.Init(tango.Context(), dataset)) {
-                scan.Clear();
-                tango.Clear();
+                texturize.ApplyFrames(tango.Dataset()); //TODO:remove after Tango team removes memory leaks from SDK
                 texturize.Process(filename);
 
                 //merge with previous OBJ
+                //TODO:wait until Tango team removes memory leaks from SDK
+                /*scan.Clear();
+                tango.Clear();
                 File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
-                File3d(filename, true).WriteModel(scene.static_meshes_);
+                File3d(filename, true).WriteModel(scene.static_meshes_);*/
             }
         }
         render_mutex_.unlock();
@@ -249,7 +236,8 @@ namespace oc {
     void App::Texturize(std::string filename, std::string dataset) {
         binder_mutex_.lock();
         render_mutex_.lock();
-        if (!dataset.empty()) {
+        //TODO:wait until Tango team removes memory leaks from SDK
+        /*if (!dataset.empty()) {
 
             if (!texturize.Init(filename, dataset)) {
                 render_mutex_.unlock();
@@ -268,7 +256,10 @@ namespace oc {
             scene.static_meshes_.clear();
             File3d io(filename, false);
             io.ReadModel(kSubdivisionSize, scene.static_meshes_);
-        }
+        }*/
+        //TODO:remove after Tango team removes memory leaks from SDK
+        File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
+        File3d(filename, true).WriteModel(scene.static_meshes_);
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -358,11 +349,6 @@ Java_com_lvonasek_openconstructor_TangoJNINative_setView(JNIEnv*, jobject, jfloa
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_setZoom(JNIEnv*, jobject, jfloat value) {
   app.SetZoom(value);
-}
-
-JNIEXPORT jfloat JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_centerOfStaticModel(JNIEnv*, jobject, jboolean h) {
-  return app.CenterOfStaticModel(h);
 }
 
 #ifndef NDEBUG

@@ -27,7 +27,6 @@ namespace oc {
         void OnToggleButtonClicked(bool t3dr_is_running);
         void OnClearButtonClicked();
 
-        float CenterOfStaticModel(bool horizontal);
         void Load(std::string filename);
         void Save(std::string filename, std::string dataset);
         void Texturize(std::string filename, std::string dataset);

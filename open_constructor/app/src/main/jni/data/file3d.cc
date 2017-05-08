@@ -91,21 +91,31 @@ namespace oc {
         glm::vec3 v;
         glm::vec3 n;
         glm::vec2 t;
+        std::string lastKey;
         std::vector<glm::vec3> vertices;
         std::vector<glm::vec3> normals;
         std::vector<glm::vec2> uvs;
         bool hasNormals = false;
         bool hasCoords = false;
         unsigned int va, vna, vta, vb, vnb, vtb, vc, vnc, vtc;
+        std::map<std::string, Image*> images;
         while (true) {
             if (!fgets(buffer, 1024, file))
                 break;
             if (buffer[0] == 'u') {
                 char key[1024];
                 sscanf(buffer, "usemtl %s", key);
-                meshIndex = output.size();
-                output.push_back(Mesh());
-                output[meshIndex].image = new Image(keyToFile[std::string(key)]);
+                if (lastKey.compare(key) != 0) {
+                    meshIndex = output.size();
+                    output.push_back(Mesh());
+                    if (images.find(key) == images.end()) {
+                        images[key] = new Image(keyToFile[std::string(key)]);
+                        output[meshIndex].imageOwner = true;
+                    } else
+                        output[meshIndex].imageOwner = false;
+                    output[meshIndex].image = images[key];
+                    lastKey = key;
+                }
             } else if ((buffer[0] == 'v') && (buffer[1] == ' ')) {
                 sscanf(buffer, "v %f %f %f", &v.x, &v.y, &v.z);
                 vertices.push_back(v);

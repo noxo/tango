@@ -238,8 +238,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
           {
             TangoJNINative.onCreate(OpenConstructorActivity.this);
             TangoJNINative.load(file);
-            mMoveX = TangoJNINative.centerOfStaticModel(true);
-            mMoveY = TangoJNINative.centerOfStaticModel(false);
             TangoJNINative.setView(mYaw, mPitch, mMoveX, mMoveY, !mViewMode);
             OpenConstructorActivity.this.runOnUiThread(new Runnable()
             {
