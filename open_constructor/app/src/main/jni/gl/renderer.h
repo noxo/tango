@@ -31,11 +31,16 @@ namespace oc {
         void Init(int w, int h, float a);
 
         /**
-         * @brief RenderModel renders model into scene
-         * @param m is instance of model to render
-         * @param size is amount of indices to render indexed geometry or -1 to render vertex array
+         * @brief Render renders model into scene
+         * @param vertices is pointer to vertices
+         * @param normals is pointer to normals
+         * @param uv is pointer to uv
+         * @param colors is pointer to colors
+         * @param size is of indices array for indexed geometry or size of vertex array for nonindiced
+         * @param indices is pointer to indices
          */
-        void Render(Mesh m, int size);
+        void Render(float* vertices, float* normals, float* uv, unsigned int* colors,
+                    int size, unsigned int* indices = 0);
 
         /**
          * @brief Rtt enables rendering into FBO which makes posible to do reflections
@@ -55,7 +60,6 @@ namespace oc {
         unsigned int* rendertexture;          ///< Texture for color buffer
         unsigned int* fboID;                  ///< Frame buffer object id
         unsigned int* rboID;                  ///< Render buffer object id
-
     };
 }
 

@@ -85,24 +85,20 @@ namespace oc {
             }
             if (mesh.texture == -1) {
                 color_vertex_shader->Bind();
-                renderer->Render(mesh, -1);
+                renderer->Render(&mesh.vertices[0].x, 0, 0, mesh.colors.data(), mesh.vertices.size());
             } else {
                 if (lastTexture != mesh.texture) {
                     lastTexture = (unsigned int)mesh.texture;
                     glBindTexture(GL_TEXTURE_2D, (unsigned int)mesh.texture);
                 }
                 textured_shader->Bind();
-                renderer->Render(mesh, -1);
+                renderer->Render(&mesh.vertices[0].x, 0, &mesh.uv[0].s, 0, mesh.vertices.size());
             }
         }
         color_vertex_shader->Bind();
-        for (SingleDynamicMesh *mesh : dynamic_meshes_) {
-            mesh->mutex.lock();
-            renderer->Render(mesh->mesh, mesh->size);
-            mesh->mutex.unlock();
-        }
         if(!frustum_.vertices.empty() && frustum)
-            renderer->Render(frustum_, frustum_.indices.size());
+            renderer->Render(&frustum_.vertices[0].x, 0, 0, frustum_.colors.data(),
+                             frustum_.indices.size(), frustum_.indices.data());
 
         for (unsigned int i : Mesh::texturesToDelete())
             glDeleteTextures(1, &i);
@@ -144,16 +140,5 @@ namespace oc {
         frustum_.vertices.push_back(pos + glm::vec3(0, 0, -f));
         frustum_.vertices.push_back(pos + glm::vec3(0, f, 0));
         frustum_.vertices.push_back(pos + glm::vec3(0, -f, 0));
-    }
-
-    void Scene::AddDynamicMesh(SingleDynamicMesh *mesh) {
-        dynamic_meshes_.push_back(mesh);
-    }
-
-    void Scene::ClearDynamicMeshes() {
-        for (unsigned int i = 0; i < dynamic_meshes_.size(); i++) {
-            delete dynamic_meshes_[i];
-        }
-        dynamic_meshes_.clear();
     }
 }

@@ -2,9 +2,6 @@
 #define DATA_MESH_H
 
 #include <mutex>
-#ifndef NOTANGO
-#include <tango_3d_reconstruction_api.h>
-#endif
 #include "data/image.h"
 #include "gl/opengl.h"
 
@@ -13,7 +10,6 @@ namespace oc {
     public:
 
         Mesh();
-        ~Mesh();
         void Destroy();
         static std::vector<unsigned int> texturesToDelete();
 
@@ -25,15 +21,6 @@ namespace oc {
         Image* image;
         bool imageOwner;
         long texture;
-    };
-
-    struct SingleDynamicMesh {
-#ifndef NOTANGO
-        Tango3DR_Mesh tango_mesh;
-#endif
-        Mesh mesh;
-        std::mutex mutex;
-        unsigned long size;
     };
 }
 #endif

@@ -24,7 +24,7 @@ namespace oc {
          * @param coords is texture coords
          * @param colors is vertex colors
          */
-        void Attrib(glm::vec3* vertices, glm::vec3* normals, glm::vec2* coords, unsigned int* colors);
+        void Attrib(float* vertices, float* normals, float* coords, unsigned int* colors);
 
         /**
          * @brief it binds shader

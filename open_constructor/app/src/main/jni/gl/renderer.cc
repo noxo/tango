@@ -104,14 +104,15 @@ namespace oc {
         scene = new GLSL(RTTVertexShader(), RTTFragmentShader());
     }
 
-    void GLRenderer::Render(Mesh m, int size) {
+    void GLRenderer::Render(float* vertices, float* normals, float* uv, unsigned int* colors,
+                            int size, unsigned int* indices) {
         GLSL::CurrentShader()->UniformMatrix("MVP", glm::value_ptr(camera.projection * camera.GetView()));
-        GLSL::CurrentShader()->Attrib(m.vertices.data(), m.normals.data(), m.uv.data(), m.colors.data());
+        GLSL::CurrentShader()->Attrib(vertices, normals, uv, colors);
 
-        if (size >= 0)
-          glDrawElements(GL_TRIANGLES, size, GL_UNSIGNED_INT, m.indices.data());
-        else if (!m.vertices.empty())
-          glDrawArrays(GL_TRIANGLES, 0, m.vertices.size());
+        if (indices)
+          glDrawElements(GL_TRIANGLES, size, GL_UNSIGNED_INT, indices);
+        else if (size >= 0)
+          glDrawArrays(GL_TRIANGLES, 0, size);
     }
 
     void GLRenderer::Rtt(bool enable) {
@@ -154,7 +155,7 @@ namespace oc {
             glDepthMask(false);
 
             /// render
-            scene->Attrib(vertices, 0, coords, 0);
+            scene->Attrib(&vertices[0].x, 0, &coords[0].s, 0);
             glDrawArrays(GL_TRIANGLES, 0, 6);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glDepthMask(true);

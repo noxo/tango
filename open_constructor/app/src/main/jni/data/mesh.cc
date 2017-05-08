@@ -6,14 +6,6 @@ namespace oc {
 
     Mesh::Mesh() : image(NULL), imageOwner(true), texture(-1) {}
 
-    Mesh::~Mesh() {
-        std::vector<glm::vec3>().swap(vertices);
-        std::vector<glm::vec3>().swap(normals);
-        std::vector<glm::vec2>().swap(uv);
-        std::vector<unsigned int>().swap(colors);
-        std::vector<unsigned int>().swap(indices);
-    }
-
     void Mesh::Destroy() {
         if (image)
             if (imageOwner) {

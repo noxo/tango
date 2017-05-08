@@ -30,13 +30,13 @@ namespace oc {
         glDeleteProgram(id);
     }
 
-    void GLSL::Attrib(glm::vec3* vertices, glm::vec3* normals, glm::vec2* coords, unsigned int* colors) {
+    void GLSL::Attrib(float* vertices, float* normals, float* coords, unsigned int* colors) {
         /// send attributes to GPU
-        glVertexAttribPointer(attribute_v_vertex, 3, GL_FLOAT, GL_FALSE, 0, &vertices[0].x);
+        glVertexAttribPointer(attribute_v_vertex, 3, GL_FLOAT, GL_FALSE, 0, vertices);
         if ((attribute_v_normal != -1) && (normals != 0))
-          glVertexAttribPointer(attribute_v_normal, 3, GL_FLOAT, GL_FALSE, 0, &normals[0].x);
+          glVertexAttribPointer(attribute_v_normal, 3, GL_FLOAT, GL_FALSE, 0, normals);
         if ((attribute_v_coord != -1) && (coords != 0))
-          glVertexAttribPointer(attribute_v_coord, 2, GL_FLOAT, GL_FALSE, 0, &coords[0].x);
+          glVertexAttribPointer(attribute_v_coord, 2, GL_FLOAT, GL_FALSE, 0, coords);
         if ((attribute_v_color != -1) && (colors != 0))
           glVertexAttribPointer(attribute_v_color, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, colors);
     }

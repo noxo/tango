@@ -93,10 +93,10 @@ namespace oc {
         }
 
         texturize.Add(t3dr_image, image_matrix, tango.Dataset());
-        std::vector<SingleDynamicMesh*> added = scan.MeshUpdate(tango.Context(), &t3dr_updated);
+        std::vector<std::pair<GridIndex, Tango3DR_Mesh*> > added;
+        added = scan.Process(tango.Context(), &t3dr_updated);
         render_mutex_.lock();
-        for (SingleDynamicMesh* mesh : added)
-            scene.AddDynamicMesh(mesh);
+        scan.Merge(added);
         render_mutex_.unlock();
 
         Tango3DR_GridIndexArray_destroy(&t3dr_updated);
@@ -180,6 +180,11 @@ namespace oc {
         scene.renderer->camera.position += glm::vec3(move.x, move.y, move.z);
         //render
         scene.Render(gyro);
+        for (std::pair<GridIndex, Tango3DR_Mesh*> s : scan.Data()) {
+            scene.renderer->Render(&s.second->vertices[0][0], 0, 0,
+                                   (unsigned int*)&s.second->colors[0][0],
+                                   s.second->num_faces * 3, &s.second->faces[0][0]);
+        }
         render_mutex_.unlock();
     }
 
@@ -195,7 +200,6 @@ namespace oc {
         scan.Clear();
         tango.Clear();
         texturize.Clear();
-        scene.ClearDynamicMeshes();
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -234,7 +238,6 @@ namespace oc {
                 //empty context and merge with previous OBJ
                 scan.Clear();
                 tango.Clear();
-                scene.ClearDynamicMeshes();
                 File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
                 File3d(filename, true).WriteModel(scene.static_meshes_);
             }
@@ -260,8 +263,9 @@ namespace oc {
             scan.Clear();
             tango.Clear();
             texturize.Clear();
+            for (unsigned int i = 0; i < scene.static_meshes_.size(); i++)
+                scene.static_meshes_[i].Destroy();
             scene.static_meshes_.clear();
-            scene.ClearDynamicMeshes();
             File3d io(filename, false);
             io.ReadModel(kSubdivisionSize, scene.static_meshes_);
         }
