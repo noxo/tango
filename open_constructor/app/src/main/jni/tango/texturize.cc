@@ -135,6 +135,9 @@ namespace oc {
         ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", 0.01);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
+        ret = Tango3DR_Config_setInt32(textureConfig, "mesh_simplification_factor", 100);
+        if (ret != TANGO_3DR_SUCCESS)
+            std::exit(EXIT_SUCCESS);
         int backend = gl ? TANGO_3DR_GL_TEXTURING : TANGO_3DR_CPU_TEXTURING;
         ret = Tango3DR_Config_setInt32(textureConfig, "texturing_backend", backend);
         if (ret != TANGO_3DR_SUCCESS)
