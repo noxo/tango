@@ -3,12 +3,13 @@ PROJECT_ROOT_FROM_JNI:= ../../../../..
 PROJECT_ROOT:= $(call my-dir)/../../../../..
 
 include $(CLEAR_VARS)
-LOCAL_MODULE    := libdaydream
-LOCAL_CFLAGS    := -std=c++11
+LOCAL_MODULE           := libdaydream
+LOCAL_CFLAGS           := -std=c++11
 LOCAL_SHARED_LIBRARIES := gvr
-LOCAL_STATIC_LIBRARIES := png
+LOCAL_STATIC_LIBRARIES := jpeg-turbo png
 
 LOCAL_C_INCLUDES += $(PROJECT_ROOT)/third_party/glm/ \
+                    $(PROJECT_ROOT)/third_party/libjpeg-turbo/include/ \
                     $(PROJECT_ROOT)/third_party/libpng/include/ \
                     $(LOCAL_PATH)/../../../../../open_constructor/app/src/main/jni/
 
@@ -25,4 +26,5 @@ include $(BUILD_SHARED_LIBRARY)
 $(call import-add-path, $(PROJECT_ROOT))
 $(call import-add-path, $(PROJECT_ROOT)/third_party)
 $(call import-module,gvr)
+$(call import-module,libjpeg-turbo)
 $(call import-module,libpng)

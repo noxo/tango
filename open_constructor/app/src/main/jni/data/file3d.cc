@@ -18,6 +18,8 @@ namespace oc {
             type = PLY;
         else if (ext.compare("obj") == 0)
             type = OBJ;
+        else
+            assert(false);
 
         if (writeMode)
             file = fopen(filename.c_str(), "w");

@@ -14,10 +14,10 @@ namespace oc {
 #ifndef NOTANGO
         Image(Tango3DR_ImageBuffer t3dr_image, int scale);
 #endif
-        Image(std::string file);
+        Image(std::string filename);
         ~Image();
         unsigned char* ExtractYUV(int s);
-        void Write(const char* filename);
+        void Write(std::string filename);
 
         int GetWidth() { return width; }
         int GetHeight() { return height; }
@@ -25,6 +25,11 @@ namespace oc {
         std::string GetName() { return name; }
 
     private:
+        void ReadJPG(std::string filename);
+        void ReadPNG(std::string filename);
+        void WriteJPG(std::string filename);
+        void WritePNG(std::string filename);
+
         int width;
         int height;
         unsigned char* data;

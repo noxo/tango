@@ -1,6 +1,9 @@
 #include <png.h>
+#include <turbojpeg.h>
 #include "data/image.h"
 #include "gl/opengl.h"
+
+#define JPEG_QUALITY 85
 
 FILE* temp;
 void png_read_file(png_structp, png_bytep data, png_size_t length)
@@ -53,12 +56,95 @@ namespace oc {
     }
 #endif
 
-    Image::Image(std::string file) {
-        LOGI("Reading %s", file.c_str());
-        temp = fopen(file.c_str(), "r");
-        unsigned int sig_read = 0;
+    Image::Image(std::string filename) {
+        LOGI("Reading %s", filename.c_str());
+        name = filename;
+
+        std::string ext = filename.substr(filename.size() - 3, filename.size() - 1);
+        if (ext.compare("jpg") == 0)
+            ReadJPG(filename);
+        else if (ext.compare("png") == 0)
+            ReadPNG(filename);
+        else
+            assert(false);
+    }
+
+    Image::~Image() {
+        delete[] data;
+    }
+
+    unsigned char* Image::ExtractYUV(int s) {
+        int yIndex = 0;
+        int uvIndex = width * s * height * s;
+        int R, G, B, Y, U, V;
+        int index = 0;
+        unsigned int xRGBIndex, yRGBIndex;
+        unsigned char* output = new unsigned char[uvIndex * 2];
+        for (int y = 0; y < height * s; y++) {
+            xRGBIndex = 0;
+            yRGBIndex = (y / s) * width * 3;
+            for (unsigned int x = 0; x < width; x++) {
+                B = data[yRGBIndex + xRGBIndex++];
+                G = data[yRGBIndex + xRGBIndex++];
+                R = data[yRGBIndex + xRGBIndex++];
+
+                //RGB to YUV algorithm
+                Y = ( (  66 * R + 129 * G +  25 * B + 128) >> 8) +  16;
+                V = ( ( -38 * R -  74 * G + 112 * B + 128) >> 8) + 128;
+                U = ( ( 112 * R -  94 * G -  18 * B + 128) >> 8) + 128;
+
+                for (int xs = 0; xs < s; xs++) {
+                    output[yIndex++] = (uint8_t) ((Y < 0) ? 0 : ((Y > 255) ? 255 : Y));
+                    if (y % 2 == 0 && index % 2 == 0) {
+                        output[uvIndex++] = (uint8_t)((V<0) ? 0 : ((V > 255) ? 255 : V));
+                        output[uvIndex++] = (uint8_t)((U<0) ? 0 : ((U > 255) ? 255 : U));
+                    }
+                    index++;
+                }
+            }
+        }
+        return output;
+    }
+
+    void Image::Write(std::string filename) {
+        std::string ext = filename.substr(filename.size() - 3, filename.size() - 1);
+        if (ext.compare("jpg") == 0)
+            WriteJPG(filename);
+        else if (ext.compare("png") == 0)
+            WritePNG(filename);
+        else
+            assert(false);
+    }
+
+    void Image::ReadJPG(std::string filename) {
+        //get file size
+        temp = fopen(filename.c_str(), "rb");
+        fseek(temp, 0, SEEK_END);
+        long unsigned int size = ftell(temp);
+        rewind(temp);
+
+        //read compressed data
+        unsigned char* src = new unsigned char[size];
+        fread(src, 1, size, temp);
+        fclose(temp);
+
+        //read header of compressed data
+        int sub;
+        tjhandle jpeg = tjInitDecompress();
+        tjDecompressHeader2(jpeg, src, size, &width, &height, &sub);
+        data = new unsigned char[width * height * 3];
+
+        //decompress data
+        tjDecompress2(jpeg, src, size, data, width, 0, height, TJPF_RGB, TJFLAG_FASTDCT);
+        tjDestroy(jpeg);
+        delete[] src;
+    }
+
+    void Image::ReadPNG(std::string filename) {
 
         /// init PNG library
+        temp = fopen(filename.c_str(), "r");
+        unsigned int sig_read = 0;
         png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
         png_infop info_ptr = png_create_info_struct(png_ptr);
         setjmp(png_jmpbuf(png_ptr));
@@ -108,55 +194,32 @@ namespace oc {
         }
         png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
         fclose(temp);
-        name = file;
     }
 
-    Image::~Image() {
-        delete[] data;
+    void Image::WriteJPG(std::string filename) {
+        //compress data
+        long unsigned int size = 0;
+        unsigned char* dst = NULL;
+        tjhandle jpeg = tjInitCompress();
+        tjCompress2(jpeg, data, width, 0, height, TJPF_RGB, &dst, &size, TJSAMP_444, JPEG_QUALITY, TJFLAG_FASTDCT);
+        tjDestroy(jpeg);
+
+        //write data into file
+        temp = fopen(filename.c_str(), "wb");
+        fwrite(dst, 1, size, temp);
+        fclose(temp);
+        tjFree(dst);
     }
 
-    unsigned char* Image::ExtractYUV(int s) {
-        int yIndex = 0;
-        int uvIndex = width * s * height * s;
-        int R, G, B, Y, U, V;
-        int index = 0;
-        unsigned int xRGBIndex, yRGBIndex;
-        unsigned char* output = new unsigned char[uvIndex * 2];
-        for (int y = 0; y < height * s; y++) {
-            xRGBIndex = 0;
-            yRGBIndex = (y / s) * width * 3;
-            for (unsigned int x = 0; x < width; x++) {
-                B = data[yRGBIndex + xRGBIndex++];
-                G = data[yRGBIndex + xRGBIndex++];
-                R = data[yRGBIndex + xRGBIndex++];
-
-                //RGB to YUV algorithm
-                Y = ( (  66 * R + 129 * G +  25 * B + 128) >> 8) +  16;
-                V = ( ( -38 * R -  74 * G + 112 * B + 128) >> 8) + 128;
-                U = ( ( 112 * R -  94 * G -  18 * B + 128) >> 8) + 128;
-
-                for (int xs = 0; xs < s; xs++) {
-                    output[yIndex++] = (uint8_t) ((Y < 0) ? 0 : ((Y > 255) ? 255 : Y));
-                    if (y % 2 == 0 && index % 2 == 0) {
-                        output[uvIndex++] = (uint8_t)((V<0) ? 0 : ((V > 255) ? 255 : V));
-                        output[uvIndex++] = (uint8_t)((U<0) ? 0 : ((U > 255) ? 255 : U));
-                    }
-                    index++;
-                }
-            }
-        }
-        return output;
-    }
-
-    void Image::Write(const char *filename) {
+    void Image::WritePNG(std::string filename) {
         // Open file for writing (binary mode)
-        FILE *fp = fopen(filename, "wb");
+        temp = fopen(filename.c_str(), "wb");
 
         // init PNG library
         png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
         png_infop info_ptr = png_create_info_struct(png_ptr);
         setjmp(png_jmpbuf(png_ptr));
-        png_init_io(png_ptr, fp);
+        png_init_io(png_ptr, temp);
         png_set_IHDR(png_ptr, info_ptr, (png_uint_32) width, (png_uint_32) height,
                      8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
                      PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
@@ -175,7 +238,7 @@ namespace oc {
         png_write_end(png_ptr, NULL);
 
         /// close all
-        if (fp != NULL) fclose(fp);
+        if (temp != NULL) fclose(temp);
         if (info_ptr != NULL) png_free_data(png_ptr, info_ptr, PNG_FREE_ALL, -1);
         if (png_ptr != NULL) png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
         if (row != NULL) free(row);
