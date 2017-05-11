@@ -31,6 +31,8 @@ namespace oc {
     std::string App::GetEvent() {
         event_mutex_.lock();
         std::string output = event_;
+        if (!texturize.GetEvent().empty())
+          output = texturize.GetEvent();
         event_ = "";
         event_mutex_.unlock();
         return output;

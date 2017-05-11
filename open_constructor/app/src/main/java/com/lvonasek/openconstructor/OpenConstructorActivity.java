@@ -32,7 +32,7 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 public class OpenConstructorActivity extends AbstractActivity implements View.OnClickListener,
-        GLSurfaceView.Renderer {
+        GLSurfaceView.Renderer, Runnable {
 
   private ActivityManager mActivityManager;
   private ActivityManager.MemoryInfo mMemoryInfo;
@@ -42,7 +42,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private String mToLoad;
   private boolean m3drRunning = false;
   private boolean mViewMode = false;
-  private long mTimestamp = 0;
+  private boolean mRunning = false;
   private boolean mFirstSave = true;
   private String mSaveFilename = "";
 
@@ -235,6 +235,8 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   protected void onResume() {
     super.onResume();
     mGLView.onResume();
+    mRunning = true;
+    new Thread(this).start();
 
     if (mViewMode) {
       if (mToLoad != null) {
@@ -270,6 +272,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   protected void onPause() {
     super.onPause();
     mGLView.onPause();
+    mRunning = false;
     if (mInitialised)
       TangoJNINative.onPause();
     if (mTangoBinded) {
@@ -387,17 +390,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   // Render loop of the Gl context.
   public void onDrawFrame(GL10 gl) {
     TangoJNINative.onGlSurfaceDrawFrame();
-    if (System.currentTimeMillis() - mTimestamp > 1000) {
-      mTimestamp = System.currentTimeMillis();
-      runOnUiThread(new Runnable()
-      {
-        @Override
-        public void run()
-        {
-          refreshUi();
-        }
-      });
-    }
   }
 
   // Called when the surface size changes.
@@ -521,5 +513,27 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     int scale = batteryStatus != null ? batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1) : -1;
     float batteryPct = level / (float) scale;
     return (int) (batteryPct * 100);
+  }
+
+  @Override
+  public void run()
+  {
+    while (mRunning) {
+      try
+      {
+        Thread.sleep(1000);
+      } catch (InterruptedException e)
+      {
+        e.printStackTrace();
+      }
+      runOnUiThread(new Runnable()
+      {
+        @Override
+        public void run()
+        {
+          refreshUi();
+        }
+      });
+    }
   }
 }

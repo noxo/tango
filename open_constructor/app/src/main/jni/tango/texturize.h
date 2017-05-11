@@ -14,6 +14,7 @@ namespace oc {
         void Clear();
         bool Init(std::string filename, std::string dataset);
         bool Init(Tango3DR_ReconstructionContext context, std::string dataset);
+        std::string GetEvent() { return event; }
         void Process(std::string filename);
 
     private:
@@ -21,6 +22,7 @@ namespace oc {
         std::string GetFileName(int index, std::string dataset, std::string extension);
 
         int poses;
+        std::string event;
         Tango3DR_TexturingContext context;
     };
 }

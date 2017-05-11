@@ -23,6 +23,13 @@ namespace oc {
 
     void TangoTexturize::ApplyFrames(std::string dataset) {
         for (unsigned int i = 0; i < poses; i++) {
+            std::ostringstream ss;
+            ss << "Processing image ";
+            ss << i + 1;
+            ss << "/";
+            ss << poses;
+            event = ss.str();
+
             glm::mat4 mat;
             double timestamp;
             FILE* file = fopen(GetFileName(i, dataset, ".txt").c_str(), "r");
@@ -53,6 +60,7 @@ namespace oc {
     }
 
     bool TangoTexturize::Init(std::string filename, std::string dataset) {
+        event = "Merging results";
         Tango3DR_Mesh mesh;
         Tango3DR_Status ret;
         ret = Tango3DR_Mesh_loadFromObj(filename.c_str(), &mesh);
@@ -76,6 +84,7 @@ namespace oc {
     }
 
     bool TangoTexturize::Init(Tango3DR_ReconstructionContext context, std::string dataset) {
+        event = "Processing model";
         Tango3DR_Mesh mesh;
         Tango3DR_Status ret;
         ret = Tango3DR_extractFullMesh(context, &mesh);
@@ -100,6 +109,7 @@ namespace oc {
 
     void TangoTexturize::Process(std::string filename) {
         //texturize mesh
+        event = "Unwraping model";
         Tango3DR_Mesh mesh;
         Tango3DR_Status ret;
         ret = Tango3DR_getTexturedMesh(context, &mesh);
@@ -118,6 +128,7 @@ namespace oc {
         ret = Tango3DR_TexturingContext_destroy(context);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
+        event = "";
     }
 
     std::string TangoTexturize::GetFileName(int index, std::string dataset, std::string extension) {
