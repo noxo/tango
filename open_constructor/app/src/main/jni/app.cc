@@ -13,9 +13,28 @@ namespace {
         oc::App *app = static_cast<oc::App *>(context);
         app->onFrameAvailable(id, buffer);
     }
+
+    void onTangoEventRouter(void *context, const TangoEvent *event) {
+        oc::App *app = static_cast<oc::App *>(context);
+        app->onTangoEvent(event);
+    }
 }
 
 namespace oc {
+
+    void App::onTangoEvent(const TangoEvent *event) {
+        event_mutex_.lock();
+        event_ = "Tango: " + std::string(event->event_key) + " " + std::string(event->event_value);
+        event_mutex_.unlock();
+    }
+
+    std::string App::GetEvent() {
+        event_mutex_.lock();
+        std::string output = event_;
+        event_ = "";
+        event_mutex_.unlock();
+        return output;
+    }
 
     void App::onPointCloudAvailable(TangoPointCloud *point_cloud) {
         if (!t3dr_is_running_)
@@ -129,6 +148,9 @@ namespace oc {
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
         ret = TangoService_connectOnFrameAvailable(TANGO_CAMERA_COLOR, this, onFrameAvailableRouter);
+        if (ret != TANGO_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+        ret = TangoService_connectOnTangoEvent(onTangoEventRouter);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
@@ -351,6 +373,16 @@ Java_com_lvonasek_openconstructor_TangoJNINative_setView(JNIEnv*, jobject, jfloa
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_setZoom(JNIEnv*, jobject, jfloat value) {
   app.SetZoom(value);
+}
+
+JNIEXPORT jbyteArray JNICALL
+Java_com_lvonasek_openconstructor_TangoJNINative_getEvent(JNIEnv* env, jobject) {
+  std::string message = app.GetEvent();
+  int byteCount = message.length();
+  const jbyte* pNativeMessage = reinterpret_cast<const jbyte*>(message.c_str());
+  jbyteArray bytes = env->NewByteArray(byteCount);
+  env->SetByteArrayRegion(bytes, 0, byteCount, pNativeMessage);
+  return bytes;
 }
 
 #ifndef NDEBUG

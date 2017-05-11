@@ -52,6 +52,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private TextView mInfoLeft;
   private TextView mInfoMiddle;
   private TextView mInfoRight;
+  private TextView mInfoLog;
   private View mBattery;
   private Button mCardboard;
   private int mRes = 3;
@@ -123,6 +124,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     mInfoLeft = (TextView) findViewById(R.id.info_left);
     mInfoMiddle = (TextView) findViewById(R.id.info_middle);
     mInfoRight = (TextView) findViewById(R.id.info_right);
+    mInfoLog = (TextView) findViewById(R.id.infolog);
     mBattery = findViewById(R.id.info_battery);
 
     // OpenGL view where all of the graphics are drawn
@@ -326,6 +328,11 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     else if(mRes == 0)
       text += "0.5 cm";
     mInfoMiddle.setText(text);
+
+    //update info about Tango
+    text = new String(TangoJNINative.getEvent());
+    mInfoLog.setVisibility(text.length() > 0 ? View.VISIBLE : View.GONE);
+    mInfoLog.setText(text);
   }
 
   @Override

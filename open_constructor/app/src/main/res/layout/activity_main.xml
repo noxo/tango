@@ -94,6 +94,17 @@
 
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/infolog"
+        android:background="@android:color/black"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/layout_info"
+        android:layout_alignParentStart="true"
+        android:visibility="gone"
+        android:text=""
+        android:textSize="20dp" />
+
     <ProgressBar
         style="?android:attr/progressBarStyleLarge"
         android:layout_width="wrap_content"

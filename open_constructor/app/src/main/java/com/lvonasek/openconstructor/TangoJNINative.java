@@ -68,8 +68,8 @@ public class TangoJNINative {
   // Set zoom of view
   public static native void setZoom(float value);
 
-  // Get center of loaded 3D model
-  public static native float centerOfStaticModel(boolean horizontal);
+  // Get Tango event
+  public static native byte[] getEvent();
 
   public static native byte[] clientSecret();
 }

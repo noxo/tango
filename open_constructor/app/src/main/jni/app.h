@@ -21,6 +21,7 @@ namespace oc {
                                      int noise, bool land, std::string dataset);
         void onPointCloudAvailable(TangoPointCloud *point_cloud);
         void onFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer);
+        void onTangoEvent(const TangoEvent *event);
         void OnSurfaceCreated();
         void OnSurfaceChanged(int width, int height);
         void OnDrawFrame();
@@ -34,6 +35,7 @@ namespace oc {
         void SetView(float p, float y, float mx, float my, bool g) { pitch = p; yaw = y; gyro = g;
                                                                             movex = mx; movey = my;}
         void SetZoom(float value) { zoom = value; }
+        std::string GetEvent();
 
     private:
         bool t3dr_is_running_;
@@ -44,6 +46,8 @@ namespace oc {
         glm::quat image_rotation;
         std::mutex binder_mutex_;
         std::mutex render_mutex_;
+        std::mutex event_mutex_;
+        std::string event_;
 
         Scene scene;
         TangoScan scan;
