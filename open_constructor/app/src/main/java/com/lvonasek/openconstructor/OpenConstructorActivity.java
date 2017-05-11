@@ -394,7 +394,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
             dataset = f.toString();
             break;
           }
-        TangoJNINative.save(obj.getAbsolutePath(), dataset);
+        TangoJNINative.save(obj.getAbsolutePath(), dataset, isTexturingOn());
         //open???
         final String data = dataset;
         OpenConstructorActivity.this.runOnUiThread(new Runnable()

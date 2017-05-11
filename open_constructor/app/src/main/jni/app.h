@@ -28,7 +28,7 @@ namespace oc {
         void OnClearButtonClicked();
 
         void Load(std::string filename);
-        void Save(std::string filename, std::string dataset);
+        void Save(std::string filename, std::string dataset, bool texture);
         void Texturize(std::string filename, std::string dataset);
 
         void SetView(float p, float y, float mx, float my, bool g) { pitch = p; yaw = y; gyro = g;

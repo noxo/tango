@@ -230,12 +230,13 @@ namespace oc {
         binder_mutex_.unlock();
     }
 
-    void App::Save(std::string filename, std::string dataset) {
+    void App::Save(std::string filename, std::string dataset, bool texture) {
         binder_mutex_.lock();
         render_mutex_.lock();
         if (!dataset.empty()) {
             if (texturize.Init(tango.Context(), dataset)) {
-                texturize.ApplyFrames(tango.Dataset()); //TODO:remove after Tango team removes memory leaks from SDK
+                if (texture)
+                    texturize.ApplyFrames(tango.Dataset()); //TODO:remove after Tango team removes memory leaks from SDK
                 texturize.Process(filename);
 
                 //merge with previous OBJ
@@ -345,8 +346,9 @@ Java_com_lvonasek_openconstructor_TangoJNINative_load(JNIEnv* env, jobject, jstr
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_save(JNIEnv* env, jobject, jstring name, jstring d) {
-  app.Save(jstring2string(env, name), jstring2string(env, d));
+Java_com_lvonasek_openconstructor_TangoJNINative_save(JNIEnv* env, jobject, jstring name,
+                                                      jstring dataset, jboolean texture) {
+  app.Save(jstring2string(env, name), jstring2string(env, dataset), texture);
 }
 
 JNIEXPORT void JNICALL
