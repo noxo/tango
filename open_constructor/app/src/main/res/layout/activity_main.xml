@@ -15,28 +15,47 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
+        android:padding="10dp"
         android:background="@android:color/background_dark">
+
+        <View
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="60dp"/>
 
         <Button
             android:id="@+id/toggle_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:background="@drawable/ic_pause" />
+
+        <View
             android:layout_weight="1"
-            android:text="@string/pause" />
+            android:layout_width="0dp"
+            android:layout_height="60dp"/>
 
         <Button
             android:id="@+id/save_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:background="@drawable/ic_save" />
+
+        <View
             android:layout_weight="1"
-            android:text="@string/save"/>
+            android:layout_width="0dp"
+            android:layout_height="60dp"/>
 
         <Button
             android:id="@+id/clear_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:background="@drawable/ic_delete" />
+
+        <View
             android:layout_weight="1"
-            android:text="@string/clear"/>
+            android:layout_width="0dp"
+            android:layout_height="60dp"/>
+
     </LinearLayout>
 
     <LinearLayout

@@ -225,9 +225,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       save();
       break;
     }
-    int textId = m3drRunning ? R.string.pause : R.string.resume;
-    mToggleButton.setText(textId);
-    mLayoutRec.setVisibility(View.VISIBLE);
+    mToggleButton.setBackgroundResource(m3drRunning ? R.drawable.ic_pause : R.drawable.ic_record);
   }
 
   @Override
@@ -381,6 +379,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
 
   private void saveObj()
   {
+    mLayoutRec.setVisibility(View.GONE);
     mProgress.setVisibility(View.VISIBLE);
     new Thread(new Runnable(){
       @Override
@@ -409,6 +408,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
             builder.setPositiveButton(getString(R.string.yes), new DialogInterface.OnClickListener() {
               @Override
               public void onClick(DialogInterface dialog, int which) {
+                mLayoutRec.setVisibility(View.VISIBLE);
                 dialog.cancel();
               }
             });
@@ -528,7 +528,10 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
           mInfoLog.setVisibility(text.length() > 0 ? View.VISIBLE : View.GONE);
           mInfoLog.setText(text);
 
-          mLayoutInfo.setVisibility(View.VISIBLE);
+          if(!mViewMode)
+            mLayoutInfo.setVisibility(View.VISIBLE);
+          else
+            mRunning = false;
         }
       });
     }

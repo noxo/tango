@@ -12,14 +12,10 @@
 
     <!-- Recording !-->
     <string name="app_name">Open Constructor</string>
-    <string name="clear">Clear</string>
     <string name="data_lost">Motion tracking control lost</string>
     <string name="distance">Max. dist.:</string>
     <string name="enter_filename">Enter the file name</string>
-    <string name="pause">Pause</string>
     <string name="resolution">3D grid:</string>
-    <string name="resume">Resume</string>
-    <string name="save">Save</string>
     <string name="view">Saved. Do you want to continue the recording?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
