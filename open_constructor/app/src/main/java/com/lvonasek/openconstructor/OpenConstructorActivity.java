@@ -6,11 +6,13 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.net.Uri;
 import android.opengl.GLSurfaceView;
+import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
@@ -44,10 +46,13 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private boolean mFirstSave = true;
   private String mSaveFilename = "";
 
-  private LinearLayout mLayoutRecBottom;
+  private LinearLayout mLayoutRec;
   private Button mToggleButton;
-  private LinearLayout mLayoutRecTop;
-  private TextView mResText;
+  private LinearLayout mLayoutInfo;
+  private TextView mInfoLeft;
+  private TextView mInfoMiddle;
+  private TextView mInfoRight;
+  private View mBattery;
   private Button mCardboard;
   private int mRes = 3;
 
@@ -102,21 +107,23 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_mesh_builder);
+    setContentView(R.layout.activity_main);
     mActivityManager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
     mMemoryInfo = new ActivityManager.MemoryInfo();
-    TangoJNINative.onToggleButtonClicked(false);
 
     // Setup UI elements and listeners.
-    mLayoutRecBottom = (LinearLayout) findViewById(R.id.layout_rec_bottom);
+    mLayoutRec = (LinearLayout) findViewById(R.id.layout_rec);
     findViewById(R.id.clear_button).setOnClickListener(this);
     findViewById(R.id.save_button).setOnClickListener(this);
     mToggleButton = (Button) findViewById(R.id.toggle_button);
     mToggleButton.setOnClickListener(this);
 
     mCardboard = (Button) findViewById(R.id.cardboard_button);
-    mLayoutRecTop = (LinearLayout) findViewById(R.id.layout_rec_top);
-    mResText = (TextView) findViewById(R.id.res_text);
+    mLayoutInfo = (LinearLayout) findViewById(R.id.layout_info);
+    mInfoLeft = (TextView) findViewById(R.id.info_left);
+    mInfoMiddle = (TextView) findViewById(R.id.info_middle);
+    mInfoRight = (TextView) findViewById(R.id.info_right);
+    mBattery = findViewById(R.id.info_battery);
 
     // OpenGL view where all of the graphics are drawn
     mGLView = (GLSurfaceView) findViewById(R.id.gl_surface_view);
@@ -192,7 +199,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   }
 
   @Override
-  public synchronized void onClick(View v) {
+  public void onClick(View v) {
     switch (v.getId()) {
     case R.id.toggle_button:
       m3drRunning = !m3drRunning;
@@ -258,7 +265,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   }
 
   @Override
-  protected synchronized void onPause() {
+  protected void onPause() {
     super.onPause();
     mGLView.onPause();
     if (mInitialised)
@@ -272,13 +279,42 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private void refreshUi() {
     int textId = m3drRunning ? R.string.pause : R.string.resume;
     mToggleButton.setText(textId);
-    mLayoutRecBottom.setVisibility(View.VISIBLE);
+    mLayoutRec.setVisibility(View.VISIBLE);
     //memory info
     mActivityManager.getMemoryInfo(mMemoryInfo);
     long freeMBs = mMemoryInfo.availMem / 1048576L;
-    String text = freeMBs + " " + getString(R.string.mb_free) + ", ";
+    mInfoLeft.setText(freeMBs + " MB");
+
+    //warning
+    if (freeMBs < 400)
+      mInfoLeft.setTextColor(Color.RED);
+    else
+      mInfoLeft.setTextColor(Color.WHITE);
+
+    //battery state
+    int bat = getBatteryPercentage(this);
+    mInfoRight.setText(bat + "%");
+    int icon = R.drawable.ic_battery_0;
+    if (bat > 10)
+      icon = R.drawable.ic_battery_20;
+    if (bat > 30)
+      icon = R.drawable.ic_battery_40;
+    if (bat > 50)
+      icon = R.drawable.ic_battery_60;
+    if (bat > 70)
+      icon = R.drawable.ic_battery_80;
+    if (bat > 90)
+      icon = R.drawable.ic_battery_100;
+    mBattery.setBackgroundResource(icon);
+
+    //warning
+    if (bat < 15)
+      mInfoRight.setTextColor(Color.RED);
+    else
+      mInfoRight.setTextColor(Color.WHITE);
+
     //max distance
-    text += getString(R.string.distance) + " ";
+    String text = getString(R.string.distance) + " ";
     if(mRes > 0)
       text += (1.5f * mRes) + " m, ";
     else if(mRes == 0)
@@ -289,16 +325,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       text += mRes + " cm";
     else if(mRes == 0)
       text += "0.5 cm";
-    text += " ";
-    //warning
-    if (mRes <= 0) {
-      text += getString(R.string.extreme);
-      mResText.setTextColor(Color.RED);
-    } else if (freeMBs < 400)
-      mResText.setTextColor(Color.RED);
-    else
-      mResText.setTextColor(Color.WHITE);
-    mResText.setText(text);
+    mInfoMiddle.setText(text);
   }
 
   @Override
@@ -323,8 +350,8 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
 
   private void setViewerMode(final String filename)
   {
-    mLayoutRecBottom.setVisibility(View.GONE);
-    mLayoutRecTop.setVisibility(View.GONE);
+    mLayoutRec.setVisibility(View.GONE);
+    mLayoutInfo.setVisibility(View.GONE);
     if (isCardboardEnabled(this)) {
       mCardboard.setVisibility(View.VISIBLE);
       mCardboard.setOnClickListener(new View.OnClickListener()
@@ -351,7 +378,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   }
 
   // Render loop of the Gl context.
-  public synchronized void onDrawFrame(GL10 gl) {
+  public void onDrawFrame(GL10 gl) {
     TangoJNINative.onGlSurfaceDrawFrame();
     if (System.currentTimeMillis() - mTimestamp > 1000) {
       mTimestamp = System.currentTimeMillis();
@@ -367,12 +394,12 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   }
 
   // Called when the surface size changes.
-  public synchronized void onSurfaceChanged(GL10 gl, int width, int height) {
+  public void onSurfaceChanged(GL10 gl, int width, int height) {
     TangoJNINative.onGlSurfaceChanged(width, height);
   }
 
   // Called when the surface is created or recreated.
-  public synchronized void onSurfaceCreated(GL10 gl, EGLConfig config) {
+  public void onSurfaceCreated(GL10 gl, EGLConfig config) {
     TangoJNINative.onGlSurfaceCreated();
   }
 
@@ -478,5 +505,14 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         });
       }
     }).start();
+  }
+
+  public static int getBatteryPercentage(Context context) {
+    IntentFilter iFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+    Intent batteryStatus = context.registerReceiver(null, iFilter);
+    int level = batteryStatus != null ? batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) : -1;
+    int scale = batteryStatus != null ? batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1) : -1;
+    float batteryPct = level / (float) scale;
+    return (int) (batteryPct * 100);
   }
 }

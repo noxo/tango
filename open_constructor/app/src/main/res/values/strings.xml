@@ -16,8 +16,6 @@
     <string name="data_lost">Motion tracking control lost</string>
     <string name="distance">Max. dist.:</string>
     <string name="enter_filename">Enter the file name</string>
-    <string name="extreme">Warning, extreme settings!</string>
-    <string name="mb_free">MB RAM free</string>
     <string name="pause">Pause</string>
     <string name="resolution">3D grid:</string>
     <string name="resume">Resume</string>

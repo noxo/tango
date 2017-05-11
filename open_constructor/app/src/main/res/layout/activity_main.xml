@@ -9,7 +9,7 @@
         android:layout_gravity="top" />
 
     <LinearLayout
-        android:id="@+id/layout_rec_top"
+        android:id="@+id/layout_rec"
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -39,20 +39,58 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/layout_rec_bottom"
+        android:id="@+id/layout_info"
         android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="30dp"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:background="@android:color/background_dark">
 
+        <View
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="@drawable/ic_memory" />
+
         <TextView
             android:text=""
             android:textSize="20dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/res_text" />
+            android:gravity="left"
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:id="@+id/info_left" />
+
+        <View
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="30dp" />
+
+        <TextView
+            android:text=""
+            android:textSize="16dp"
+            android:gravity="center_horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:id="@+id/info_middle" />
+
+        <View
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="30dp" />
+
+        <TextView
+            android:text=""
+            android:textSize="20dp"
+            android:gravity="right"
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:id="@+id/info_right" />
+
+        <View
+            android:layout_width="60dp"
+            android:layout_height="30dp"
+            android:background="@drawable/ic_battery_0"
+            android:id="@+id/info_battery" />
 
     </LinearLayout>
 
