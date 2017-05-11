@@ -1,12 +1,12 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content" >
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
 
     <android.opengl.GLSurfaceView
         android:id="@+id/gl_surface_view"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:layout_gravity="top" />
+        android:layout_gravity="top"/>
 
     <LinearLayout
         android:id="@+id/layout_rec"
@@ -17,25 +17,26 @@
         android:layout_centerHorizontal="true"
         android:background="@android:color/background_dark">
 
-    <Button
-        android:id="@+id/toggle_button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_weight="1" />
+        <Button
+            android:id="@+id/toggle_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/pause" />
 
         <Button
             android:id="@+id/save_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/save" />
+            android:text="@string/save"/>
 
-    <Button
-        android:id="@+id/clear_button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="@string/clear" />
+        <Button
+            android:id="@+id/clear_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/clear"/>
     </LinearLayout>
 
     <LinearLayout
@@ -45,12 +46,13 @@
         android:layout_height="30dp"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
+        android:visibility="gone"
         android:background="@android:color/background_dark">
 
         <View
             android:layout_width="30dp"
             android:layout_height="30dp"
-            android:background="@drawable/ic_memory" />
+            android:background="@drawable/ic_memory"/>
 
         <TextView
             android:text=""
@@ -58,12 +60,12 @@
             android:gravity="left"
             android:layout_width="wrap_content"
             android:layout_height="30dp"
-            android:id="@+id/info_left" />
+            android:id="@+id/info_left"/>
 
         <View
             android:layout_weight="1"
             android:layout_width="0dp"
-            android:layout_height="30dp" />
+            android:layout_height="30dp"/>
 
         <TextView
             android:text=""
@@ -71,12 +73,12 @@
             android:gravity="center_horizontal"
             android:layout_width="wrap_content"
             android:layout_height="30dp"
-            android:id="@+id/info_middle" />
+            android:id="@+id/info_middle"/>
 
         <View
             android:layout_weight="1"
             android:layout_width="0dp"
-            android:layout_height="30dp" />
+            android:layout_height="30dp"/>
 
         <TextView
             android:text=""
@@ -84,13 +86,13 @@
             android:gravity="right"
             android:layout_width="wrap_content"
             android:layout_height="30dp"
-            android:id="@+id/info_right" />
+            android:id="@+id/info_right"/>
 
         <View
             android:layout_width="60dp"
             android:layout_height="30dp"
             android:background="@drawable/ic_battery_0"
-            android:id="@+id/info_battery" />
+            android:id="@+id/info_battery"/>
 
     </LinearLayout>
 
@@ -103,7 +105,7 @@
         android:layout_alignParentStart="true"
         android:visibility="gone"
         android:text=""
-        android:textSize="20dp" />
+        android:textSize="20dp"/>
 
     <ProgressBar
         style="?android:attr/progressBarStyleLarge"
@@ -112,7 +114,7 @@
         android:layout_centerVertical="true"
         android:layout_centerHorizontal="true"
         android:id="@+id/progressBar"
-        android:visibility="gone" />
+        android:visibility="gone"/>
 
     <SeekBar
         android:layout_width="match_parent"
@@ -120,7 +122,7 @@
         android:max="90"
         android:layout_alignParentTop="true"
         android:id="@+id/seekBar"
-        android:visibility="gone" />
+        android:visibility="gone"/>
 
     <Button
         android:id="@+id/cardboard_button"
@@ -131,6 +133,6 @@
         android:layout_margin="10dp"
         android:visibility="gone"
         android:background="@drawable/ic_cardboard"
-        android:text="" />
+        android:text=""/>
 
 </RelativeLayout>

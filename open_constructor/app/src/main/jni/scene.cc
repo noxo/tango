@@ -43,19 +43,17 @@ namespace oc {
 
     Scene::Scene() { }
 
-    Scene::~Scene() { }
+    Scene::~Scene() {
+        delete color_vertex_shader;
+        color_vertex_shader = nullptr;
+        delete textured_shader;
+        textured_shader = nullptr;
+    }
 
     void Scene::InitGLContent() {
         renderer = new GLRenderer();
         color_vertex_shader = new GLSL(ColorVertexShader(), ColorFragmentShader());
         textured_shader = new GLSL(TexturedVertexShader(), TexturedFragmentShader());
-    }
-
-    void Scene::DeleteResources() {
-        delete color_vertex_shader;
-        color_vertex_shader = nullptr;
-        delete textured_shader;
-        textured_shader = nullptr;
     }
 
     void Scene::SetupViewPort(int w, int h) {

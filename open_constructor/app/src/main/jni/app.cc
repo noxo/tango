@@ -162,13 +162,6 @@ namespace oc {
         binder_mutex_.unlock();
     }
 
-    void App::OnPause() {
-        render_mutex_.lock();
-        tango.Disconnect();
-        scene.DeleteResources();
-        render_mutex_.unlock();
-    }
-
     void App::OnSurfaceCreated() {
         render_mutex_.lock();
         scene.InitGLContent();
@@ -317,11 +310,6 @@ Java_com_lvonasek_openconstructor_TangoJNINative_onTangoServiceConnected(JNIEnv*
           jobject iBinder, jdouble res, jdouble dmin, jdouble dmax, jint noise, jboolean land,
                                                                               jstring dataset) {
   app.OnTangoServiceConnected(env, iBinder, res, dmin, dmax, noise, land, jstring2string(env, dataset));
-}
-
-JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_onPause(JNIEnv*, jobject) {
-  app.OnPause();
 }
 
 JNIEXPORT void JNICALL

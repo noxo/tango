@@ -33,11 +33,6 @@ public class TangoJNINative {
   public static native void onTangoServiceConnected(IBinder nativeTangoServiceBinder, double res,
    double dmin, double dmax, int noise, boolean land, String temp);
 
-  /**
-   * Interfaces to native OnPause function.
-   */
-  public static native void onPause();
-
   // Allocate OpenGL resources for rendering.
   public static native void onGlSurfaceCreated();
 

@@ -78,9 +78,9 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         if (android.os.Build.DEVICE.toLowerCase().startsWith("yellowstone"))
           land = !land;
 
-        if(mRes == 0) {
-            res = 0.005;
-            dmax = 1.0;
+        if (mRes == 0) {
+          res = 0.005;
+          dmax = 1.0;
         }
 
         m3drRunning = true;
@@ -94,7 +94,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
           @Override
           public void run()
           {
-            refreshUi();
             mProgress.setVisibility(View.GONE);
           }
         });
@@ -196,7 +195,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     }
     else
       mRes = getIntent().getIntExtra(RESOLUTION_KEY, 3);
-    refreshUi();
     mProgress.setVisibility(View.VISIBLE);
   }
 
@@ -224,19 +222,18 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       //pause
       m3drRunning = false;
       TangoJNINative.onToggleButtonClicked(false);
-      refreshUi();
       save();
       break;
     }
-    refreshUi();
+    int textId = m3drRunning ? R.string.pause : R.string.resume;
+    mToggleButton.setText(textId);
+    mLayoutRec.setVisibility(View.VISIBLE);
   }
 
   @Override
   protected void onResume() {
     super.onResume();
     mGLView.onResume();
-    mRunning = true;
-    new Thread(this).start();
 
     if (mViewMode) {
       if (mToLoad != null) {
@@ -262,9 +259,15 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
           }
         }).start();
       }
-    } else if(!mInitialised && !mTangoBinded) {
-      TangoInitHelper.bindTangoService(this, mTangoServiceConnection);
-      mTangoBinded = true;
+    } else
+    {
+      mRunning = true;
+      new Thread(this).start();
+
+      if(!mInitialised && !mTangoBinded) {
+        TangoInitHelper.bindTangoService(this, mTangoServiceConnection);
+        mTangoBinded = true;
+      }
     }
   }
 
@@ -273,69 +276,11 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     super.onPause();
     mGLView.onPause();
     mRunning = false;
-    if (mInitialised)
-      TangoJNINative.onPause();
     if (mTangoBinded) {
       unbindService(mTangoServiceConnection);
       Toast.makeText(this, R.string.data_lost, Toast.LENGTH_LONG).show();
     }
-  }
-
-  private void refreshUi() {
-    int textId = m3drRunning ? R.string.pause : R.string.resume;
-    mToggleButton.setText(textId);
-    mLayoutRec.setVisibility(View.VISIBLE);
-    //memory info
-    mActivityManager.getMemoryInfo(mMemoryInfo);
-    long freeMBs = mMemoryInfo.availMem / 1048576L;
-    mInfoLeft.setText(freeMBs + " MB");
-
-    //warning
-    if (freeMBs < 400)
-      mInfoLeft.setTextColor(Color.RED);
-    else
-      mInfoLeft.setTextColor(Color.WHITE);
-
-    //battery state
-    int bat = getBatteryPercentage(this);
-    mInfoRight.setText(bat + "%");
-    int icon = R.drawable.ic_battery_0;
-    if (bat > 10)
-      icon = R.drawable.ic_battery_20;
-    if (bat > 30)
-      icon = R.drawable.ic_battery_40;
-    if (bat > 50)
-      icon = R.drawable.ic_battery_60;
-    if (bat > 70)
-      icon = R.drawable.ic_battery_80;
-    if (bat > 90)
-      icon = R.drawable.ic_battery_100;
-    mBattery.setBackgroundResource(icon);
-
-    //warning
-    if (bat < 15)
-      mInfoRight.setTextColor(Color.RED);
-    else
-      mInfoRight.setTextColor(Color.WHITE);
-
-    //max distance
-    String text = getString(R.string.distance) + " ";
-    if(mRes > 0)
-      text += (1.5f * mRes) + " m, ";
-    else if(mRes == 0)
-      text += "1.0 m, ";
-    //3d resolution
-    text += getString(R.string.resolution) + " ";
-    if(mRes > 0)
-      text += mRes + " cm";
-    else if(mRes == 0)
-      text += "0.5 cm";
-    mInfoMiddle.setText(text);
-
-    //update info about Tango
-    text = new String(TangoJNINative.getEvent());
-    mInfoLog.setVisibility(text.length() > 0 ? View.VISIBLE : View.GONE);
-    mInfoLog.setText(text);
+    System.exit(0);
   }
 
   @Override
@@ -531,7 +476,59 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         @Override
         public void run()
         {
-          refreshUi();
+          //memory info
+          mActivityManager.getMemoryInfo(mMemoryInfo);
+          long freeMBs = mMemoryInfo.availMem / 1048576L;
+          mInfoLeft.setText(freeMBs + " MB");
+
+          //warning
+          if (freeMBs < 400)
+            mInfoLeft.setTextColor(Color.RED);
+          else
+            mInfoLeft.setTextColor(Color.WHITE);
+
+          //battery state
+          int bat = getBatteryPercentage(OpenConstructorActivity.this);
+          mInfoRight.setText(bat + "%");
+          int icon = R.drawable.ic_battery_0;
+          if (bat > 10)
+            icon = R.drawable.ic_battery_20;
+          if (bat > 30)
+            icon = R.drawable.ic_battery_40;
+          if (bat > 50)
+            icon = R.drawable.ic_battery_60;
+          if (bat > 70)
+            icon = R.drawable.ic_battery_80;
+          if (bat > 90)
+            icon = R.drawable.ic_battery_100;
+          mBattery.setBackgroundResource(icon);
+
+          //warning
+          if (bat < 15)
+            mInfoRight.setTextColor(Color.RED);
+          else
+            mInfoRight.setTextColor(Color.WHITE);
+
+          //max distance
+          String text = getString(R.string.distance) + " ";
+          if(mRes > 0)
+            text += (1.5f * mRes) + " m, ";
+          else if(mRes == 0)
+            text += "1.0 m, ";
+          //3d resolution
+          text += getString(R.string.resolution) + " ";
+          if(mRes > 0)
+            text += mRes + " cm";
+          else if(mRes == 0)
+            text += "0.5 cm";
+          mInfoMiddle.setText(text);
+
+          //update info about Tango
+          text = new String(TangoJNINative.getEvent());
+          mInfoLog.setVisibility(text.length() > 0 ? View.VISIBLE : View.GONE);
+          mInfoLog.setText(text);
+
+          mLayoutInfo.setVisibility(View.VISIBLE);
         }
       });
     }

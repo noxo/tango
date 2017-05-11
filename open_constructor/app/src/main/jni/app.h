@@ -16,7 +16,6 @@ namespace oc {
     public:
         App();
         void OnCreate(JNIEnv *env, jobject caller_activity);
-        void OnPause();
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin, double dmax,
                                      int noise, bool land, std::string dataset);
         void onPointCloudAvailable(TangoPointCloud *point_cloud);
