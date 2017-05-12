@@ -129,8 +129,7 @@ namespace oc {
     App::App() :  t3dr_is_running_(false),
                   gyro(false),
                   landscape(false),
-                  point_cloud_available_(false),
-                  zoom(0) {}
+                  point_cloud_available_(false) {}
 
     void App::OnCreate(JNIEnv *env, jobject activity) {
         int version;
@@ -178,7 +177,7 @@ namespace oc {
         render_mutex_.lock();
         //camera transformation
         if (!gyro) {
-            scene.renderer->camera.position = glm::vec3(movex, 0, movey);
+            scene.renderer->camera.position = glm::vec3(movex, movez, movey);
             scene.renderer->camera.rotation = glm::quat(glm::vec3(yaw, pitch, 0));
             scene.renderer->camera.scale    = glm::vec3(1, 1, 1);
         } else {
@@ -189,12 +188,11 @@ namespace oc {
                     landscape ? ROTATION_90 : ROTATION_0, &transform);
             if (transform.status_code == TANGO_POSE_VALID) {
                 scene.renderer->camera.SetTransformation(glm::make_mat4(transform.matrix));
-                scene.UpdateFrustum(scene.renderer->camera.position, zoom);
+                scene.UpdateFrustum(scene.renderer->camera.position, movez);
+                glm::vec4 move = scene.renderer->camera.GetTransformation() * glm::vec4(0, 0, movez, 0);
+                scene.renderer->camera.position += glm::vec3(move.x, move.y, move.z);
             }
         }
-        //zoom
-        glm::vec4 move = scene.renderer->camera.GetTransformation() * glm::vec4(0, 0, zoom, 0);
-        scene.renderer->camera.position += glm::vec3(move.x, move.y, move.z);
         //render
         scene.Render(gyro);
         for (std::pair<GridIndex, Tango3DR_Mesh*> s : scan.Data()) {
@@ -358,13 +356,8 @@ Java_com_lvonasek_openconstructor_TangoJNINative_texturize(JNIEnv* env, jobject,
 
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_setView(JNIEnv*, jobject, jfloat pitch, jfloat yaw,
-                                                         jfloat x, jfloat y, jboolean gyro) {
-  app.SetView(pitch, yaw, x, y, gyro);
-}
-
-JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_setZoom(JNIEnv*, jobject, jfloat value) {
-  app.SetZoom(value);
+                                                         jfloat x, jfloat y, jfloat z, jboolean gyro) {
+  app.SetView(pitch, yaw, x, y, z, gyro);
 }
 
 JNIEXPORT jbyteArray JNICALL

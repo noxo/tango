@@ -135,13 +135,16 @@
         android:id="@+id/progressBar"
         android:visibility="gone"/>
 
-    <SeekBar
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:max="90"
-        android:layout_alignParentTop="true"
-        android:id="@+id/seekBar"
-        android:visibility="gone"/>
+    <Button
+        android:id="@+id/mode_button"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_margin="10dp"
+        android:visibility="gone"
+        android:background="@drawable/ic_move"
+        android:text=""/>
 
     <Button
         android:id="@+id/cardboard_button"

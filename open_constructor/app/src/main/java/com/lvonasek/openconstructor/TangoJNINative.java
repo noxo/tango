@@ -58,10 +58,7 @@ public class TangoJNINative {
   public static native void texturize(String name, String dataset);
 
   // Set view on 3D view
-  public static native void setView(float pitch, float yaw, float x, float y, boolean gyro);
-
-  // Set zoom of view
-  public static native void setZoom(float value);
+  public static native void setView(float pitch, float yaw, float x, float y, float z, boolean gyro);
 
   // Get Tango event
   public static native byte[] getEvent();

@@ -31,9 +31,9 @@ namespace oc {
         void Save(std::string filename, std::string dataset, bool texture);
         void Texturize(std::string filename, std::string dataset);
 
-        void SetView(float p, float y, float mx, float my, bool g) { pitch = p; yaw = y; gyro = g;
-                                                                            movex = mx; movey = my;}
-        void SetZoom(float value) { zoom = value; }
+        void SetView(float p, float y, float mx, float my, float mz, bool g) { pitch = p; yaw = y;
+                                                                               gyro = g; movex = mx;
+                                                                               movey = my; movez = mz;}
         std::string GetEvent();
 
     private:
@@ -57,9 +57,9 @@ namespace oc {
         bool landscape;
         float movex;
         float movey;
+        float movez;
         float pitch;
         float yaw;
-        float zoom;
     };
 }
 

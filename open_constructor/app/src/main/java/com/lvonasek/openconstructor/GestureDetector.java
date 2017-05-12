@@ -26,17 +26,27 @@ class GestureDetector
     ptrID2 = INVALID_POINTER_ID;
 
     mScaleDetector = new ScaleGestureDetector(context, new ScaleGestureDetector.OnScaleGestureListener() {
+
+      float last;
+
       @Override
       public void onScaleEnd(ScaleGestureDetector detector) {
       }
       @Override
       public boolean onScaleBegin(ScaleGestureDetector detector) {
+        last = 0;
         return true;
       }
       @Override
       public boolean onScale(ScaleGestureDetector detector) {
-        if (mListener != null)
-          mListener.OnZoom(detector.getScaleFactor() - 1.0f);
+        if (mListener != null) {
+          float f = detector.getScaleFactor() - 1.0f;
+          if (f > 0)
+            mListener.OnZoom((f - last) * 4.0f);
+          else
+            mListener.OnZoom((f - last) * 8.0f);
+          last = f;
+        }
         return false;
       }
     });

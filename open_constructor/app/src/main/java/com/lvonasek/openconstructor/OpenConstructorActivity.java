@@ -23,7 +23,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -38,7 +37,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private ActivityManager.MemoryInfo mMemoryInfo;
   private ProgressBar mProgress;
   private GLSurfaceView mGLView;
-  private SeekBar mSeekbar;
   private String mToLoad;
   private boolean m3drRunning = false;
   private boolean mViewMode = false;
@@ -55,14 +53,16 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private TextView mInfoLog;
   private View mBattery;
   private Button mCardboard;
+  private Button mModeButton;
   private int mRes = 3;
 
   private GestureDetector mGestureDetector;
+  private boolean mModeMove;
   private float mMoveX = 0;
   private float mMoveY = 0;
+  private float mMoveZ = 0;
   private float mPitch = 0;
   private float mYaw = 0;
-  private float mZoom = 0;
 
   // Tango Service connection.
   boolean mInitialised = false;
@@ -88,7 +88,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         TangoJNINative.onCreate(OpenConstructorActivity.this);
         TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, t);
         TangoJNINative.onToggleButtonClicked(m3drRunning);
-        TangoJNINative.setView(0, 0, 0, 0, true);
+        TangoJNINative.setView(0, 0, 0, 0, 0, true);
         OpenConstructorActivity.this.runOnUiThread(new Runnable()
         {
           @Override
@@ -119,6 +119,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     mToggleButton.setOnClickListener(this);
 
     mCardboard = (Button) findViewById(R.id.cardboard_button);
+    mModeButton = (Button) findViewById(R.id.mode_button);
     mLayoutInfo = (LinearLayout) findViewById(R.id.layout_info);
     mInfoLeft = (TextView) findViewById(R.id.info_left);
     mInfoMiddle = (TextView) findViewById(R.id.info_middle);
@@ -131,56 +132,47 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     mGLView.setEGLContextClientVersion(2);
     mGLView.setRenderer(this);
     mProgress = (ProgressBar) findViewById(R.id.progressBar);
-    mSeekbar = (SeekBar) findViewById(R.id.seekBar);
-    mSeekbar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener()
-    {
-      @Override
-      public void onProgressChanged(SeekBar seekBar, int value, boolean byUser)
-      {
-        mPitch = (float) Math.toRadians(-value);
-        TangoJNINative.setView(mYaw, mPitch, mMoveX, mMoveY, !mViewMode);
-      }
-
-      @Override
-      public void onStartTrackingTouch(SeekBar seekBar)
-      {
-      }
-
-      @Override
-      public void onStopTrackingTouch(SeekBar seekBar)
-      {
-      }
-    });
 
     mGestureDetector = new GestureDetector(new GestureDetector.GestureListener()
     {
       @Override
-      public void OnMove(float dx, float dy)
-      {
-        double angle = -mYaw;
+      public void OnMove(float dx, float dy) {
         float f = getMoveFactor();
-        mMoveX += dx * f * Math.cos( angle ) + dy * f * Math.sin( angle );
-        mMoveY += dx * f * Math.sin( angle ) - dy * f * Math.cos( angle );
-        TangoJNINative.setView(mYaw, mPitch, mMoveX, mMoveY, !mViewMode);
+        if (mModeMove) {
+          //yaw rotation
+          double angle = -mYaw;
+          double fx = dx * f * Math.cos(angle) + dy * f * Math.sin(angle);
+          double fy = dx * f * Math.sin(angle) - dy * f * Math.cos(angle);
+          //pitch rotation
+          mMoveX += dx * f * Math.cos(angle) * Math.cos(mPitch) - fx * Math.sin(mPitch);
+          mMoveY += dx * f * Math.sin(angle) * Math.cos(mPitch) - fy * Math.sin(mPitch);
+          mMoveZ += dy * f * Math.cos(mPitch);
+        } else {
+          mPitch += dy * f;
+          mYaw += -dx * f;
+        }
+        TangoJNINative.setView(mYaw, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
       }
 
       @Override
-      public void OnRotation(float angle)
-      {
-        mYaw = (float) Math.toRadians(-angle);
-        TangoJNINative.setView(mYaw, mPitch, mMoveX, mMoveY, !mViewMode);
-      }
+      public void OnRotation(float angle) {}
 
       @Override
-      public void OnZoom(float diff)
-      {
-        mZoom -= diff;
-        int min = mViewMode ? 1 : 0;
-        if(mZoom < min)
-          mZoom = min;
-        if(mZoom > 10)
-          mZoom = 10;
-        TangoJNINative.setZoom(mZoom);
+      public void OnZoom(float diff) {
+        if (mViewMode) {
+          diff *= 0.25f;
+          double angle = -mYaw;
+          mMoveX += diff * Math.sin(angle) * Math.cos(mPitch);
+          mMoveY -= diff * Math.cos(angle) * Math.cos(mPitch);
+          mMoveZ += diff * Math.sin(mPitch);
+        } else {
+          mMoveZ -= diff;
+          if(mMoveZ < 0)
+            mMoveZ = 0;
+          if(mMoveZ > 10)
+            mMoveZ = 10;
+        }
+        TangoJNINative.setView(mYaw, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
       }
     }, this);
 
@@ -244,7 +236,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
           {
             TangoJNINative.onCreate(OpenConstructorActivity.this);
             TangoJNINative.load(file);
-            TangoJNINative.setView(mYaw, mPitch, mMoveX, mMoveY, !mViewMode);
+            TangoJNINative.setView(mYaw, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
             OpenConstructorActivity.this.runOnUiThread(new Runnable()
             {
               @Override
@@ -298,13 +290,24 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     Display display = getWindowManager().getDefaultDisplay();
     Point size = new Point();
     display.getSize(size);
-    return 2.0f / (size.x + size.y) * (float)Math.pow(mZoom, 0.5f) * 2.0f;
+    return 2.0f / (size.x + size.y);
   }
 
   private void setViewerMode(final String filename)
   {
     mLayoutRec.setVisibility(View.GONE);
     mLayoutInfo.setVisibility(View.GONE);
+    mModeButton.setVisibility(View.VISIBLE);
+    mModeButton.setOnClickListener(new View.OnClickListener()
+    {
+      @Override
+      public void onClick(View view)
+      {
+        mModeMove = !mModeMove;
+        mModeButton.setBackgroundResource(mModeMove ? R.drawable.ic_move : R.drawable.ic_rotate);
+      }
+    });
+    mModeMove = true;
     if (isCardboardEnabled(this)) {
       mCardboard.setVisibility(View.VISIBLE);
       mCardboard.setOnClickListener(new View.OnClickListener()
@@ -320,14 +323,12 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         }
       });
     }
-    mSeekbar.setVisibility(View.VISIBLE);
     mMoveX = 0;
     mMoveY = 0;
+    mMoveZ = 10;
+    mPitch = (float) Math.toRadians(-90);
     mYaw = 0;
-    mZoom = 10;
     mViewMode = true;
-    mSeekbar.setProgress(90);
-    TangoJNINative.setZoom(mZoom);
   }
 
   // Render loop of the Gl context.
