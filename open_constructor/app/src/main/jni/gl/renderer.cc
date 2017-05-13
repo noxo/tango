@@ -100,7 +100,7 @@ namespace oc {
         glActiveTexture( GL_TEXTURE0 );
 
         //set objects
-        camera.projection = glm::perspective(glm::radians(45.0f), w / (float)h, 0.1f, 100.0f);
+        camera.projection = glm::perspective(glm::radians(45.0f), w / (float)h, 0.1f, 1000.0f);
         scene = new GLSL(RTTVertexShader(), RTTFragmentShader());
     }
 

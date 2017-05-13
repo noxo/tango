@@ -129,6 +129,11 @@ namespace oc {
     App::App() :  t3dr_is_running_(false),
                   gyro(false),
                   landscape(false),
+                  lastMovex(0),
+                  lastMovey(0),
+                  lastMovez(0),
+                  lastPitch(0),
+                  lastYaw(0),
                   point_cloud_available_(false) {}
 
     void App::OnCreate(JNIEnv *env, jobject activity) {
@@ -177,8 +182,13 @@ namespace oc {
         render_mutex_.lock();
         //camera transformation
         if (!gyro) {
-            scene.renderer->camera.position = glm::vec3(movex, movez, movey);
-            scene.renderer->camera.rotation = glm::quat(glm::vec3(yaw, pitch, 0));
+            lastMovex = lastMovex * 0.9f + movex * 0.1f;
+            lastMovey = lastMovey * 0.9f + movey * 0.1f;
+            lastMovez = lastMovez * 0.9f + movez * 0.1f;
+            lastPitch = lastPitch * 0.95f + pitch * 0.05f;
+            lastYaw   = lastYaw   * 0.95f + yaw   * 0.05f;
+            scene.renderer->camera.position = glm::vec3(lastMovex, lastMovez, lastMovey);
+            scene.renderer->camera.rotation = glm::quat(glm::vec3(lastYaw, lastPitch, 0));
             scene.renderer->camera.scale    = glm::vec3(1, 1, 1);
         } else {
             TangoMatrixTransformData transform;

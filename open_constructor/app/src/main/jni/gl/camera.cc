@@ -2,16 +2,6 @@
 
 namespace oc {
 
-    void GLCamera::Convert2uv(glm::vec4 &v, glm::mat4 &world2uv, Tango3DR_CameraCalibration &c) {
-        v = world2uv * v;
-        v.x /= glm::abs(v.w * v.z);
-        v.y /= glm::abs(v.w * v.z);
-        v.x *= c.fx / (float)c.width;
-        v.y *= c.fy / (float)c.height;
-        v.x += c.cx / (float)c.width;
-        v.y += c.cy / (float)c.height;
-    }
-
     void GLCamera::DecomposeMatrix(const glm::mat4& matrix, glm::vec3* translation,
                                    glm::quat* rotation, glm::vec3* scale) {
         translation->x = matrix[3][0];

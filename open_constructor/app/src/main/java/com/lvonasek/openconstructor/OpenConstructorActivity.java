@@ -62,7 +62,8 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private float mMoveY = 0;
   private float mMoveZ = 0;
   private float mPitch = 0;
-  private float mYaw = 0;
+  private float mYawM = 0;
+  private float mYawR = 0;
 
   // Tango Service connection.
   boolean mInitialised = false;
@@ -139,8 +140,10 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       public void OnMove(float dx, float dy) {
         float f = getMoveFactor();
         if (mModeMove) {
+          //move factor
+          f *= Math.max(1.0, mMoveZ);
           //yaw rotation
-          double angle = -mYaw;
+          double angle = -mYawM - mYawR;
           double fx = dx * f * Math.cos(angle) + dy * f * Math.sin(angle);
           double fy = dx * f * Math.sin(angle) - dy * f * Math.cos(angle);
           //pitch rotation
@@ -148,20 +151,26 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
           mMoveY += dx * f * Math.sin(angle) * Math.cos(mPitch) - fy * Math.sin(mPitch);
           mMoveZ += dy * f * Math.cos(mPitch);
         } else {
+          f *= 2.0f;
           mPitch += dy * f;
-          mYaw += -dx * f;
+          mYawM += -dx * f;
         }
-        TangoJNINative.setView(mYaw, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
+        TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
       }
 
       @Override
-      public void OnRotation(float angle) {}
+      public void OnRotation(float angle) {
+        if (mModeMove) {
+          mYawR = (float) Math.toRadians(-angle);
+          TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
+        }
+      }
 
       @Override
       public void OnZoom(float diff) {
         if (mViewMode) {
-          diff *= 0.25f;
-          double angle = -mYaw;
+          diff *= 0.25f * Math.max(1.0, mMoveZ);
+          double angle = -mYawM - mYawR;
           mMoveX += diff * Math.sin(angle) * Math.cos(mPitch);
           mMoveY -= diff * Math.cos(angle) * Math.cos(mPitch);
           mMoveZ += diff * Math.sin(mPitch);
@@ -172,7 +181,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
           if(mMoveZ > 10)
             mMoveZ = 10;
         }
-        TangoJNINative.setView(mYaw, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
+        TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
       }
     }, this);
 
@@ -236,7 +245,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
           {
             TangoJNINative.onCreate(OpenConstructorActivity.this);
             TangoJNINative.load(file);
-            TangoJNINative.setView(mYaw, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
+            TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
             OpenConstructorActivity.this.runOnUiThread(new Runnable()
             {
               @Override
@@ -304,10 +313,18 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       public void onClick(View view)
       {
         mModeMove = !mModeMove;
-        mModeButton.setBackgroundResource(mModeMove ? R.drawable.ic_move : R.drawable.ic_rotate);
+        mModeButton.setBackgroundResource(mModeMove ? R.drawable.ic_mode3d : R.drawable.ic_mode2d);
+        if (mModeMove) {
+          mMoveZ = 10;
+          mPitch = (float) Math.toRadians(-90);
+        } else {
+          mMoveZ = 0;
+          mPitch = 0;
+        }
+        TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
       }
     });
-    mModeMove = true;
+    mModeMove = false;
     if (isCardboardEnabled(this)) {
       mCardboard.setVisibility(View.VISIBLE);
       mCardboard.setOnClickListener(new View.OnClickListener()
@@ -325,9 +342,10 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     }
     mMoveX = 0;
     mMoveY = 0;
-    mMoveZ = 10;
-    mPitch = (float) Math.toRadians(-90);
-    mYaw = 0;
+    mMoveZ = 0;
+    mPitch = 0;
+    mYawM  = 0;
+    mYawR  = 0;
     mViewMode = true;
   }
 

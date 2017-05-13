@@ -55,11 +55,11 @@ namespace oc {
 
         bool gyro;
         bool landscape;
-        float movex;
-        float movey;
-        float movez;
-        float pitch;
-        float yaw;
+        float movex, lastMovex;
+        float movey, lastMovey;
+        float movez, lastMovez;
+        float pitch, lastPitch;
+        float yaw, lastYaw;
     };
 }
 

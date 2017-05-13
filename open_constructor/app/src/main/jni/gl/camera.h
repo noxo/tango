@@ -8,7 +8,6 @@ namespace oc {
     class GLCamera {
     public:
 
-        static void Convert2uv(glm::vec4 &v, glm::mat4 &world2uv, Tango3DR_CameraCalibration &c);
         static void DecomposeMatrix(const glm::mat4& matrix, glm::vec3* translation,
                                     glm::quat* rotation, glm::vec3* scale);
         static float Diff(const glm::quat &a, const glm::quat &b);
