@@ -137,6 +137,11 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     mGestureDetector = new GestureDetector(new GestureDetector.GestureListener()
     {
       @Override
+      public boolean IsAcceptingRotation() {
+        return mModeMove;
+      }
+
+      @Override
       public void OnMove(float dx, float dy) {
         float f = getMoveFactor();
         if (mModeMove) {
@@ -160,10 +165,8 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
 
       @Override
       public void OnRotation(float angle) {
-        if (mModeMove) {
-          mYawR = (float) Math.toRadians(-angle);
-          TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
-        }
+        mYawR = (float) Math.toRadians(-angle);
+        TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
       }
 
       @Override

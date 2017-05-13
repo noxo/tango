@@ -83,19 +83,18 @@ class GestureDetector
           float angle = angleBetweenLines(fX, fY, sX, sY, nfX, nfY, nsX, nsY);
           float gap = angle - mLastAngle;
           while(gap > 180)
-          {
             gap -= 360.0f;
-          }
           while(gap < -180)
-          {
             gap += 360.0f;
-          }
-          if(mLastAngle < INVALID_ANGLE)
-            mAngle += gap;
-          mLastAngle = angle;
 
-          if (mListener != null)
-            mListener.OnRotation(mAngle);
+          if (mListener.IsAcceptingRotation()) {
+            if(mLastAngle < INVALID_ANGLE)
+              mAngle += gap;
+            mLastAngle = angle;
+
+            if (mListener != null)
+              mListener.OnRotation(mAngle);
+          }
         }
         else if (mMoveValid)
         {
@@ -138,6 +137,8 @@ class GestureDetector
 
   interface GestureListener
   {
+    boolean IsAcceptingRotation();
+
     void OnMove(float dx, float dy);
 
     void OnRotation(float angle);
