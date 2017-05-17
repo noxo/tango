@@ -60,6 +60,9 @@ public class TangoJNINative {
   // Set view on 3D view
   public static native void setView(float pitch, float yaw, float x, float y, float z, boolean gyro);
 
+  // Detect floor level for position
+  public static native float getFloorLevel(float x, float y, float z);
+
   // Get Tango event
   public static native byte[] getEvent();
 

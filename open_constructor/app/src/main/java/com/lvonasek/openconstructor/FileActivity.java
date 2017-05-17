@@ -130,21 +130,31 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
   {
     switch (v.getId()) {
       case R.id.add_button:
-        String[] resolutions = getResources().getStringArray(R.array.resolutions);
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(getString(R.string.scene_res));
-        builder.setItems(resolutions, new DialogInterface.OnClickListener()
-                {
-                  @Override
-                  public void onClick(DialogInterface dialog, int which)
-                  {
-                    showProgress();
-                    Intent intent = new Intent(FileActivity.this, OpenConstructorActivity.class);
-                    intent.putExtra(AbstractActivity.RESOLUTION_KEY, which);
-                    startActivity(intent);
-                  }
-                });
-        builder.create().show();
+        if (isAirplaneModeOn(this))
+          startScanning();
+        else {
+          AlertDialog.Builder builder = new AlertDialog.Builder(this);
+          builder.setTitle(getString(R.string.airplane_title));
+          builder.setMessage(getString(R.string.airplane_detail));
+          builder.setPositiveButton(R.string.yes, new DialogInterface.OnClickListener()
+          {
+            @Override
+            public void onClick(DialogInterface dialog, int i)
+            {
+              startScanning();
+              dialog.dismiss();
+            }
+          });
+          builder.setNegativeButton(R.string.no, new DialogInterface.OnClickListener()
+          {
+            @Override
+            public void onClick(DialogInterface dialog, int i)
+            {
+              dialog.dismiss();
+            }
+          });
+          builder.create().show();
+        }
         break;
       case R.id.settings:
         startActivity(new Intent(this, SettingsActivity.class));
@@ -154,5 +164,24 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
         startActivity(new Intent(this, Home.class));
         break;
     }
+  }
+
+  private void startScanning()
+  {
+    String[] resolutions = getResources().getStringArray(R.array.resolutions);
+    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    builder.setTitle(getString(R.string.scene_res));
+    builder.setItems(resolutions, new DialogInterface.OnClickListener()
+    {
+      @Override
+      public void onClick(DialogInterface dialog, int which)
+      {
+        showProgress();
+        Intent intent = new Intent(FileActivity.this, OpenConstructorActivity.class);
+        intent.putExtra(AbstractActivity.RESOLUTION_KEY, which);
+        startActivity(intent);
+      }
+    });
+    builder.create().show();
   }
 }

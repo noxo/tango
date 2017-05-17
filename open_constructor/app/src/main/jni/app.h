@@ -31,6 +31,7 @@ namespace oc {
         void Save(std::string filename, std::string dataset, bool texture);
         void Texturize(std::string filename, std::string dataset);
 
+        float GetFloorLevel(float x, float y, float z);
         void SetView(float p, float y, float mx, float my, float mz, bool g) { pitch = p; yaw = y;
                                                                                gyro = g; movex = mx;
                                                                                movey = my; movez = mz;}

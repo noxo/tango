@@ -9,6 +9,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Environment;
 import android.preference.PreferenceManager;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.WindowManager;
 
@@ -34,6 +35,11 @@ public abstract class AbstractActivity extends Activity
   protected static final String TAG = "tango_app";
   protected static final String TEMP_DIRECTORY = "dataset";
   protected static final String URL_KEY = "URL2OPEN";
+
+  public static boolean isAirplaneModeOn(Context context)
+  {
+    return Settings.Global.getInt(context.getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 0) != 0;
+  }
 
   public static void installCardboardApp(Context context)
   {

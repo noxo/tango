@@ -63,7 +63,8 @@ namespace oc {
 
     void Scene::Render(bool frustum) {
         glEnable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
@@ -98,7 +99,7 @@ namespace oc {
             renderer->Render(&frustum_.vertices[0].x, 0, 0, frustum_.colors.data(),
                              frustum_.indices.size(), frustum_.indices.data());
 
-        for (unsigned int i : Mesh::texturesToDelete())
+        for (unsigned int i : Mesh::TexturesToDelete())
             glDeleteTextures(1, &i);
     }
 

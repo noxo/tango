@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- File Manager !-->
+    <string name="app_name">Open Constructor</string>
     <string name="new_name">Choose a new name</string>
     <string name="no_data">No recorded models</string>
     <string name="name_exists">A model with the entered name already exists</string>
@@ -11,7 +12,8 @@
     <string name="capture">Capture</string>
 
     <!-- Recording !-->
-    <string name="app_name">Open Constructor</string>
+    <string name="airplane_title">The airplane mode is not active</string>
+    <string name="airplane_detail">An incoming call would cancel scanning without saving data. Do you want to continue?</string>
     <string name="data_lost">Motion tracking control lost</string>
     <string name="distance">Max. dist.:</string>
     <string name="enter_filename">Enter the file name</string>

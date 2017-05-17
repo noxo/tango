@@ -317,11 +317,14 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       {
         mModeMove = !mModeMove;
         mModeButton.setBackgroundResource(mModeMove ? R.drawable.ic_mode3d : R.drawable.ic_mode2d);
+        float floor = TangoJNINative.getFloorLevel(mMoveX, mMoveY, mMoveZ);
+        if (floor < -9999)
+          floor = 0;
         if (mModeMove) {
-          mMoveZ = 10;
+          mMoveZ = floor + 10.0f;
           mPitch = (float) Math.toRadians(-90);
         } else {
-          mMoveZ = 0;
+          mMoveZ = floor + 1.7f; //1.7m as an average human height
           mPitch = 0;
         }
         TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);

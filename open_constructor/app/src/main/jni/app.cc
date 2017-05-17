@@ -291,6 +291,25 @@ namespace oc {
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
+
+    float App::GetFloorLevel(float x, float y, float z) {
+        binder_mutex_.lock();
+        render_mutex_.lock();
+        float output = INT_MAX;
+        glm::vec3 p = glm::vec3(x, z, y);
+        for (unsigned int i = 0; i < scene.static_meshes_.size(); i++) {
+            float value = scene.static_meshes_[i].GetFloorLevel(p);
+            if (value < INT_MIN + 1000)
+                continue;
+            if (output > value)
+                output = value;
+        }
+        if (output > INT_MAX - 1000)
+            output = INT_MIN;
+        render_mutex_.unlock();
+        binder_mutex_.unlock();
+        return output;
+    }
 }
 
 
@@ -368,6 +387,11 @@ JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_setView(JNIEnv*, jobject, jfloat pitch, jfloat yaw,
                                                          jfloat x, jfloat y, jfloat z, jboolean gyro) {
   app.SetView(pitch, yaw, x, y, z, gyro);
+}
+
+JNIEXPORT jfloat JNICALL
+Java_com_lvonasek_openconstructor_TangoJNINative_getFloorLevel(JNIEnv*, jobject, jfloat x, jfloat y, jfloat z) {
+    return app.GetFloorLevel(x, y, z);
 }
 
 JNIEXPORT jbyteArray JNICALL

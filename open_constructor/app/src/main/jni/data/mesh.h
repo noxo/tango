@@ -6,13 +6,26 @@
 #include "gl/opengl.h"
 
 namespace oc {
+
+    struct Triangle {
+        glm::vec3 a, b, c;
+    };
+
     class Mesh {
     public:
 
         Mesh();
         void Destroy();
-        static std::vector<unsigned int> texturesToDelete();
+        float GetFloorLevel(glm::vec3 pos);
+        static std::vector<unsigned int> TexturesToDelete();
+    private:
+        bool IsInAABB(glm::vec3& p, glm::vec3& min, glm::vec3& max);
+        void UpdateAABB(glm::vec3& p, glm::vec3& min, glm::vec3& max);
 
+        glm::vec3 aabbMin;
+        glm::vec3 aabbMax;
+        unsigned long aabbUpdate;
+    public:
         std::vector<glm::vec3> vertices;
         std::vector<glm::vec3> normals;
         std::vector<unsigned int> colors;
