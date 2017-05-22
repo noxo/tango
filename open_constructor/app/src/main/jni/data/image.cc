@@ -19,42 +19,14 @@ namespace oc {
         data = new unsigned char[3];
         name = "";
     }
-#ifndef NOTANGO
-    Image::Image(Tango3DR_ImageBuffer t3dr_image, int scale) {
-        data = new unsigned char[(t3dr_image.width / scale) * (t3dr_image.height / scale) * 3];
-        int index = 0;
-        int frameSize = t3dr_image.width * t3dr_image.height;
-        for (int y = 0; y < t3dr_image.height; y+=scale) {
-            for (int x = 0; x < t3dr_image.width; x+=scale) {
-                int xby2 = x/2;
-                int yby2 = y/2;
-                int UVIndex = frameSize + 2*xby2 + yby2*t3dr_image.width;
-                int Y = t3dr_image.data[y*t3dr_image.width + x] & 0xff;
-                float U = (float)(t3dr_image.data[UVIndex + 0] & 0xff) - 128.0f;
-                float V = (float)(t3dr_image.data[UVIndex + 1] & 0xff) - 128.0f;
 
-                // Do the YUV -> RGB conversion
-                float Yf = 1.164f*((float)Y) - 16.0f;
-                int R = (int)(Yf + 1.596f*V);
-                int G = (int)(Yf - 0.813f*V - 0.391f*U);
-                int B = (int)(Yf            + 2.018f*U);
-
-                // Clip rgb values to 0-255
-                R = R < 0 ? 0 : R > 255 ? 255 : R;
-                G = G < 0 ? 0 : G > 255 ? 255 : G;
-                B = B < 0 ? 0 : B > 255 ? 255 : B;
-
-                // Put that pixel in the buffer
-                data[index++] = (unsigned char) B;
-                data[index++] = (unsigned char) G;
-                data[index++] = (unsigned char) R;
-            }
-        }
-        width = t3dr_image.width / scale;
-        height = t3dr_image.height / scale;
+    Image::Image(unsigned char* src, int w, int h, int scale) {
+        data = new unsigned char[(w / scale) * (h / scale) * 3];
+        width = w / scale;
+        height = h / scale;
         name = "photo";
+        UpdateYUV(src, w, h, scale);
     }
-#endif
 
     Image::Image(std::string filename) {
         LOGI("Reading %s", filename.c_str());
@@ -73,9 +45,9 @@ namespace oc {
         delete[] data;
     }
 
-    unsigned char* Image::ExtractYUV(int s) {
+    unsigned char* Image::ExtractYUV(unsigned int s) {
         int yIndex = 0;
-        int uvIndex = width * s * height * s;
+        unsigned int uvIndex = width * s * height * s;
         int R, G, B, Y, U, V;
         int index = 0;
         unsigned int xRGBIndex, yRGBIndex;
@@ -106,6 +78,35 @@ namespace oc {
         return output;
     }
 
+    void Image::UpdateYUV(unsigned char *src, int w, int h, int scale) {
+        int index = 0;
+        int frameSize = w * h;
+        for (int y = 0; y < h; y+=scale) {
+            for (int x = 0; x < w; x+=scale) {
+                int UVIndex = frameSize + 2*(x/2) + (y/2) * w;
+                int Y = src[y*w + x] & 0xff;
+                float U = (float)(src[UVIndex + 0] & 0xff) - 128.0f;
+                float V = (float)(src[UVIndex + 1] & 0xff) - 128.0f;
+
+                // Do the YUV -> RGB conversion
+                float Yf = 1.164f*((float)Y) - 16.0f;
+                int R = (int)(Yf + 1.596f*V);
+                int G = (int)(Yf - 0.813f*V - 0.391f*U);
+                int B = (int)(Yf            + 2.018f*U);
+
+                // Clip rgb values to 0-255
+                R = R < 0 ? 0 : R > 255 ? 255 : R;
+                G = G < 0 ? 0 : G > 255 ? 255 : G;
+                B = B < 0 ? 0 : B > 255 ? 255 : B;
+
+                // Put that pixel in the buffer
+                data[index++] = (unsigned char) B;
+                data[index++] = (unsigned char) G;
+                data[index++] = (unsigned char) R;
+            }
+        }
+    }
+
     void Image::Write(std::string filename) {
         std::string ext = filename.substr(filename.size() - 3, filename.size() - 1);
         if (ext.compare("jpg") == 0)
@@ -120,7 +121,7 @@ namespace oc {
         //get file size
         temp = fopen(filename.c_str(), "rb");
         fseek(temp, 0, SEEK_END);
-        long unsigned int size = ftell(temp);
+        unsigned long size = (unsigned long) ftell(temp);
         rewind(temp);
 
         //read compressed data
@@ -190,6 +191,9 @@ namespace oc {
                     for (unsigned int j = 0; j < row_bytes; j++)
                         for (unsigned int k = 0; k < 3; k++)
                             data[3 * (i * row_bytes + j) + k] = row_pointers[i][j];
+                break;
+            default:
+                assert(false);
                 break;
         }
         png_destroy_read_struct(&png_ptr, &info_ptr, NULL);

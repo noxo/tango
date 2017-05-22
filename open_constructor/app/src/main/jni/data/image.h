@@ -1,9 +1,6 @@
 #ifndef DATA_IMAGE_H
 #define DATA_IMAGE_H
 
-#ifndef NOTANGO
-#include <tango_3d_reconstruction_api.h>
-#endif
 #include <string>
 
 namespace oc {
@@ -11,12 +8,11 @@ namespace oc {
     class Image {
     public:
         Image();
-#ifndef NOTANGO
-        Image(Tango3DR_ImageBuffer t3dr_image, int scale);
-#endif
+        Image(unsigned char* src, int w, int h, int scale);
         Image(std::string filename);
         ~Image();
-        unsigned char* ExtractYUV(int s);
+        unsigned char* ExtractYUV(unsigned int s);
+        void UpdateYUV(unsigned char* src, int w, int h, int scale);
         void Write(std::string filename);
 
         int GetWidth() { return width; }

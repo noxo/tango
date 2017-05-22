@@ -3,15 +3,24 @@
 #include "gl/camera.h"
 #include "tango/texturize.h"
 
-#define TEXTURE_SCALE 2
-
 namespace oc {
 
-    TangoTexturize::TangoTexturize() : poses(0) {}
+    TangoTexturize::TangoTexturize() : frame(0), poses(0) {}
+
+    TangoTexturize::~TangoTexturize() {
+        if (frame)
+            delete frame;
+    }
 
     void TangoTexturize::Add(Tango3DR_ImageBuffer t3dr_image, glm::mat4 image_matrix, std::string dataset) {
-        Image frame(t3dr_image, TEXTURE_SCALE);
-        frame.Write(GetFileName(poses, dataset, ".jpg").c_str());
+        //save frame
+        if (frame)
+            frame->UpdateYUV(t3dr_image.data, t3dr_image.width, t3dr_image.height, 1);
+        else
+            frame = new Image(t3dr_image.data, t3dr_image.width, t3dr_image.height, 1);
+        frame->Write(GetFileName(poses, dataset, ".jpg").c_str());
+
+        //save transform
         FILE* file = fopen(GetFileName(poses, dataset, ".txt").c_str(), "w");
         for (int i = 0; i < 4; i++)
             fprintf(file, "%f %f %f %f\n", image_matrix[i][0], image_matrix[i][1],
@@ -40,12 +49,12 @@ namespace oc {
 
             Image frame(GetFileName(i, dataset, ".jpg"));
             Tango3DR_ImageBuffer image;
-            image.width = frame.GetWidth() * TEXTURE_SCALE;
-            image.height = frame.GetHeight() * TEXTURE_SCALE;
-            image.stride = frame.GetWidth() * TEXTURE_SCALE;
+            image.width = (uint32_t) frame.GetWidth();
+            image.height = (uint32_t) frame.GetHeight();
+            image.stride = (uint32_t) frame.GetWidth();
             image.timestamp = timestamp;
             image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
-            image.data = frame.ExtractYUV(TEXTURE_SCALE);
+            image.data = frame.ExtractYUV(1);
             Tango3DR_Pose t3dr_image_pose = GLCamera::Extract3DRPose(mat);
             Tango3DR_Status ret;
             ret = Tango3DR_updateTexture(context, &image, &t3dr_image_pose);
