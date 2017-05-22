@@ -126,6 +126,7 @@ namespace oc {
             std::exit(EXIT_SUCCESS);
 
         //save
+        event = "Converting data";
         ret = Tango3DR_Mesh_saveToObj(&mesh, filename.c_str());
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
@@ -140,22 +141,14 @@ namespace oc {
         event = "";
     }
 
-    std::string TangoTexturize::GetFileName(int index, std::string dataset, std::string extension) {
-        std::ostringstream ss;
-        ss << dataset.c_str();
-        ss << "/";
-        ss << index;
-        ss << extension.c_str();
-        return ss.str();
-    }
-
     void TangoTexturize::CreateContext(std::string dataset, bool gl, Tango3DR_Mesh* mesh) {
+        event = "Simplifying mesh";
         Tango3DR_Config textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
         Tango3DR_Status ret;
-        ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", 0.005);
+        ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", gl ? 0.005 : 1.0);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
-        ret = Tango3DR_Config_setInt32(textureConfig, "mesh_simplification_factor", 50);
+        ret = Tango3DR_Config_setInt32(textureConfig, "mesh_simplification_factor", gl ? 1 : 50);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
         int backend = gl ? TANGO_3DR_GL_TEXTURING : TANGO_3DR_CPU_TEXTURING;
@@ -167,5 +160,14 @@ namespace oc {
         if (context == nullptr)
             std::exit(EXIT_SUCCESS);
         Tango3DR_Config_destroy(textureConfig);
+    }
+
+    std::string TangoTexturize::GetFileName(int index, std::string dataset, std::string extension) {
+        std::ostringstream ss;
+        ss << dataset.c_str();
+        ss << "/";
+        ss << index;
+        ss << extension.c_str();
+        return ss.str();
     }
 }

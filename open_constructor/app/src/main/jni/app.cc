@@ -238,21 +238,18 @@ namespace oc {
         binder_mutex_.unlock();
     }
 
-    void App::Save(std::string filename, std::string dataset, bool texture) {
+    void App::Save(std::string filename, std::string dataset) {
         binder_mutex_.lock();
         render_mutex_.lock();
         if (!dataset.empty()) {
             if (texturize.Init(tango.Context(), dataset)) {
-                if (texture)
-                    texturize.ApplyFrames(tango.Dataset()); //TODO:remove after Tango team removes memory leaks from SDK
                 texturize.Process(filename);
 
                 //merge with previous OBJ
-                //TODO:wait until Tango team removes memory leaks from SDK
-                /*scan.Clear();
+                scan.Clear();
                 tango.Clear();
                 File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
-                File3d(filename, true).WriteModel(scene.static_meshes_);*/
+                File3d(filename, true).WriteModel(scene.static_meshes_);
             }
         }
         render_mutex_.unlock();
@@ -262,8 +259,7 @@ namespace oc {
     void App::Texturize(std::string filename, std::string dataset) {
         binder_mutex_.lock();
         render_mutex_.lock();
-        //TODO:wait until Tango team removes memory leaks from SDK
-        /*if (!dataset.empty()) {
+        if (!dataset.empty()) {
 
             if (!texturize.Init(filename, dataset)) {
                 render_mutex_.unlock();
@@ -282,12 +278,12 @@ namespace oc {
             scene.static_meshes_.clear();
             File3d io(filename, false);
             io.ReadModel(kSubdivisionSize, scene.static_meshes_);
-        }*/
-        //TODO:remove after Tango team removes memory leaks from SDK
-        scan.Clear();
-        tango.Clear();
-        File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
-        File3d(filename, true).WriteModel(scene.static_meshes_);
+        } else {
+            scan.Clear();
+            tango.Clear();
+            File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
+            File3d(filename, true).WriteModel(scene.static_meshes_);
+        }
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -373,9 +369,8 @@ Java_com_lvonasek_openconstructor_TangoJNINative_load(JNIEnv* env, jobject, jstr
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_save(JNIEnv* env, jobject, jstring name,
-                                                      jstring dataset, jboolean texture) {
-  app.Save(jstring2string(env, name), jstring2string(env, dataset), texture);
+Java_com_lvonasek_openconstructor_TangoJNINative_save(JNIEnv* env, jobject, jstring name, jstring d) {
+  app.Save(jstring2string(env, name), jstring2string(env, d));
 }
 
 JNIEXPORT void JNICALL

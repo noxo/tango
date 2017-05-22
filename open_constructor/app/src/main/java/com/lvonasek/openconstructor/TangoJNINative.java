@@ -52,7 +52,7 @@ public class TangoJNINative {
   public static native void load(String name);
 
   // Save current 3D model
-  public static native void save(String name, String dataset, boolean texture);
+  public static native void save(String name, String dataset);
 
   // Texturize 3D model
   public static native void texturize(String name, String dataset);

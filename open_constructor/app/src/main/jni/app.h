@@ -28,7 +28,7 @@ namespace oc {
         void OnClearButtonClicked();
 
         void Load(std::string filename);
-        void Save(std::string filename, std::string dataset, bool texture);
+        void Save(std::string filename, std::string dataset);
         void Texturize(std::string filename, std::string dataset);
 
         float GetFloorLevel(float x, float y, float z);

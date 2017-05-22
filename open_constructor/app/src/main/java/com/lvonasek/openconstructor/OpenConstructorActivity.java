@@ -327,7 +327,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
           mMoveZ = floor + 1.7f; //1.7m as an average human height
           mPitch = 0;
         }
-        TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
+        TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, false);
       }
     });
     mModeMove = false;
@@ -353,6 +353,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     mYawM  = 0;
     mYawR  = 0;
     mViewMode = true;
+    TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, false);
   }
 
   // Render loop of the Gl context.
@@ -419,7 +420,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
             dataset = f.toString();
             break;
           }
-        TangoJNINative.save(obj.getAbsolutePath(), dataset, isTexturingOn());
+        TangoJNINative.save(obj.getAbsolutePath(), dataset);
         //open???
         final String data = dataset;
         OpenConstructorActivity.this.runOnUiThread(new Runnable()
