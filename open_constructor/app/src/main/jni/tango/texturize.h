@@ -9,7 +9,6 @@ namespace oc {
     class TangoTexturize {
     public:
         TangoTexturize();
-        ~TangoTexturize();
         void Add(Tango3DR_ImageBuffer t3dr_image, glm::mat4 image_matrix, std::string dataset);
         void ApplyFrames(std::string dataset);
         void Clear();
@@ -25,7 +24,7 @@ namespace oc {
         int poses;
         std::string event;
         Tango3DR_TexturingContext context;
-        Image* frame;
+        int width, height;
     };
 }
 #endif

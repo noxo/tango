@@ -5,20 +5,13 @@
 
 namespace oc {
 
-    TangoTexturize::TangoTexturize() : frame(0), poses(0) {}
-
-    TangoTexturize::~TangoTexturize() {
-        if (frame)
-            delete frame;
-    }
+    TangoTexturize::TangoTexturize() : poses(0) {}
 
     void TangoTexturize::Add(Tango3DR_ImageBuffer t3dr_image, glm::mat4 image_matrix, std::string dataset) {
         //save frame
-        if (frame)
-            frame->UpdateYUV(t3dr_image.data, t3dr_image.width, t3dr_image.height, 1);
-        else
-            frame = new Image(t3dr_image.data, t3dr_image.width, t3dr_image.height, 1);
-        frame->Write(GetFileName(poses, dataset, ".jpg").c_str());
+        width = t3dr_image.width;
+        height = t3dr_image.height;
+        Image::YUV2JPG(t3dr_image.data, t3dr_image.width, t3dr_image.height, GetFileName(poses, dataset, ".jpg"));
 
         //save transform
         FILE* file = fopen(GetFileName(poses, dataset, ".txt").c_str(), "w");
@@ -31,6 +24,13 @@ namespace oc {
     }
 
     void TangoTexturize::ApplyFrames(std::string dataset) {
+        Tango3DR_ImageBuffer image;
+        image.width = (uint32_t) width;
+        image.height = (uint32_t) height;
+        image.stride = (uint32_t) width;
+        image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
+        image.data = new unsigned char[width * height * 3];
+
         for (unsigned int i = 0; i < poses; i++) {
             std::ostringstream ss;
             ss << "Processing image ";
@@ -42,26 +42,20 @@ namespace oc {
             glm::mat4 mat;
             double timestamp;
             FILE* file = fopen(GetFileName(i, dataset, ".txt").c_str(), "r");
-            for (int i = 0; i < 4; i++)
-                fscanf(file, "%f %f %f %f\n", &mat[i][0], &mat[i][1], &mat[i][2], &mat[i][3]);
+            for (int j = 0; j < 4; j++)
+                fscanf(file, "%f %f %f %f\n", &mat[j][0], &mat[j][1], &mat[j][2], &mat[j][3]);
             fscanf(file, "%lf\n", &timestamp);
             fclose(file);
 
-            Image frame(GetFileName(i, dataset, ".jpg"));
-            Tango3DR_ImageBuffer image;
-            image.width = (uint32_t) frame.GetWidth();
-            image.height = (uint32_t) frame.GetHeight();
-            image.stride = (uint32_t) frame.GetWidth();
             image.timestamp = timestamp;
-            image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
-            image.data = frame.ExtractYUV(1);
+            Image::JPG2YUV(GetFileName(i, dataset, ".jpg"), image.data, width, height);
             Tango3DR_Pose t3dr_image_pose = GLCamera::Extract3DRPose(mat);
             Tango3DR_Status ret;
             ret = Tango3DR_updateTexture(context, &image, &t3dr_image_pose);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
-            delete[] image.data;
         }
+        delete[] image.data;
     }
 
     void TangoTexturize::Clear() {
@@ -145,10 +139,11 @@ namespace oc {
         event = "Simplifying mesh";
         Tango3DR_Config textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
         Tango3DR_Status ret;
-        ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", gl ? 0.005 : 1.0);
+        ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", gl ? 0.002 : 0.01);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
-        ret = Tango3DR_Config_setInt32(textureConfig, "mesh_simplification_factor", gl ? 1 : 50);
+        int simplify = (mesh->max_num_faces < 1000) ? 1 : (gl ? 1 : 50);
+        ret = Tango3DR_Config_setInt32(textureConfig, "mesh_simplification_factor", simplify);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
         int backend = gl ? TANGO_3DR_GL_TEXTURING : TANGO_3DR_CPU_TEXTURING;

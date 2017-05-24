@@ -88,9 +88,12 @@ public abstract class AbstractActivity extends Activity
   }
 
   public static int getModelType(String filename) {
-    for(int i = 0; i < FILE_EXT.length; i++)
-      if(filename.substring(filename.length() - FILE_EXT[i].length()).contains(FILE_EXT[i]))
-        return i;
+    for(int i = 0; i < FILE_EXT.length; i++) {
+      int begin = filename.length() - FILE_EXT[i].length();
+      if (begin >= 0)
+        if (filename.substring(begin).contains(FILE_EXT[i]))
+          return i;
+    }
     return -1;
   }
 

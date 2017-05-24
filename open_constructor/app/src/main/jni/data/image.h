@@ -20,6 +20,9 @@ namespace oc {
         unsigned char* GetData() { return data; }
         std::string GetName() { return name; }
 
+        static void JPG2YUV(std::string filename, unsigned char* data, int width, int height);
+        static void YUV2JPG(unsigned char* data, int width, int height, std::string filename);
+
     private:
         void ReadJPG(std::string filename);
         void ReadPNG(std::string filename);

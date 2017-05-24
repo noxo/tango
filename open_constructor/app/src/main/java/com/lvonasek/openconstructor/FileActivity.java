@@ -117,6 +117,20 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
       {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
           deleteRecursive(getTempPath());
+          if (Build.DEVICE.toLowerCase().contains("asus_a002")) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle(getString(R.string.unsupported));
+            builder.setMessage(getString(R.string.unsupported_asus));
+            builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener()
+            {
+              @Override
+              public void onClick(DialogInterface dialog, int i)
+              {
+                dialog.dismiss();
+              }
+            });
+            builder.create().show();
+          }
           refreshUI();
         } else
           finish();
