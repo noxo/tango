@@ -75,6 +75,7 @@ namespace oc {
             ret = Tango3DR_Mesh_destroy(&mesh);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
+            event = "";
             return false;
         }
 
@@ -99,6 +100,7 @@ namespace oc {
             ret = Tango3DR_Mesh_destroy(&mesh);
             if (ret != TANGO_3DR_SUCCESS)
                 std::exit(EXIT_SUCCESS);
+            event = "";
             return false;
         }
 

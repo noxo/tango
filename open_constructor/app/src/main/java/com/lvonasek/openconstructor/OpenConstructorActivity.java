@@ -470,6 +470,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                 dialog.cancel();
               }
             });
+            builder.setCancelable(false);
             builder.create().show();
           }
         });

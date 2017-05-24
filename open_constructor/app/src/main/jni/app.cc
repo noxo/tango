@@ -225,6 +225,9 @@ namespace oc {
         scan.Clear();
         tango.Clear();
         texturize.Clear();
+        for (unsigned int i = 0; i < scene.static_meshes_.size(); i++)
+            scene.static_meshes_[i].Destroy();
+        scene.static_meshes_.clear();
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -249,8 +252,8 @@ namespace oc {
                 scan.Clear();
                 tango.Clear();
                 File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
-                File3d(filename, true).WriteModel(scene.static_meshes_);
             }
+            File3d(filename, true).WriteModel(scene.static_meshes_);
         }
         render_mutex_.unlock();
         binder_mutex_.unlock();
@@ -278,11 +281,6 @@ namespace oc {
             scene.static_meshes_.clear();
             File3d io(filename, false);
             io.ReadModel(kSubdivisionSize, scene.static_meshes_);
-        } else {
-            scan.Clear();
-            tango.Clear();
-            File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
-            File3d(filename, true).WriteModel(scene.static_meshes_);
         }
         render_mutex_.unlock();
         binder_mutex_.unlock();
