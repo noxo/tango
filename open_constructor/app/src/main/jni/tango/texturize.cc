@@ -114,7 +114,7 @@ namespace oc {
 
     void TangoTexturize::Process(std::string filename) {
         //texturize mesh
-        event = "Unwraping model";
+        event = "Unwrapping model";
         Tango3DR_Mesh mesh;
         Tango3DR_Status ret;
         ret = Tango3DR_getTexturedMesh(context, &mesh);
