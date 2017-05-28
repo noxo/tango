@@ -2,7 +2,6 @@
 
 namespace {
     const int kSubdivisionSize = 20000;
-    const int kTangoCoreMinimumVersion = 9377;
 
     void onPointCloudAvailableRouter(void *context, const TangoPointCloud *point_cloud) {
         oc::App *app = static_cast<oc::App *>(context);
@@ -135,13 +134,6 @@ namespace oc {
                   lastPitch(0),
                   lastYaw(0),
                   point_cloud_available_(false) {}
-
-    void App::OnCreate(JNIEnv *env, jobject activity) {
-        int version;
-        TangoErrorType err = TangoSupport_GetTangoVersion(env, activity, &version);
-        if (err != TANGO_SUCCESS || version < kTangoCoreMinimumVersion)
-            std::exit(EXIT_SUCCESS);
-    }
 
     void App::OnTangoServiceConnected(JNIEnv *env, jobject binder, double res,
                double dmin, double dmax, int noise, bool land, std::string dataset) {
@@ -320,12 +312,6 @@ std::string jstring2string(JNIEnv* env, jstring name)
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_onCreate(
-JNIEnv* env, jobject, jobject activity) {
-  app.OnCreate(env, activity);
-}
 
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_onTangoServiceConnected(JNIEnv* env, jobject,

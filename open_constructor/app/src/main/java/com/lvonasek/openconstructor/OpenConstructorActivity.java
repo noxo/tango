@@ -86,7 +86,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
 
         m3drRunning = true;
         String t = getTempPath().getAbsolutePath();
-        TangoJNINative.onCreate(OpenConstructorActivity.this);
         TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, t);
         TangoJNINative.onToggleButtonClicked(m3drRunning);
         TangoJNINative.setView(0, 0, 0, 0, 0, true);
@@ -246,7 +245,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
           @Override
           public void run()
           {
-            TangoJNINative.onCreate(OpenConstructorActivity.this);
             TangoJNINative.load(file);
             TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
             OpenConstructorActivity.this.runOnUiThread(new Runnable()

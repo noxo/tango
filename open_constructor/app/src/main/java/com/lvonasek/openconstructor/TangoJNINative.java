@@ -18,20 +18,9 @@ public class TangoJNINative {
     System.loadLibrary("openconstructor");
   }
 
-  /**
-   * Interfaces to native OnCreate function.
-   *
-   * @param callerActivity the caller activity of this function.
-   */
-  public static native void onCreate(Activity callerActivity);
-
-  /**
-   * Called when the Tango service is connected successfully.
-   *
-   * @param nativeTangoServiceBinder The native binder object.
-   */
-  public static native void onTangoServiceConnected(IBinder nativeTangoServiceBinder, double res,
-   double dmin, double dmax, int noise, boolean land, String temp);
+  // Called when the Tango service is connected successfully.
+  public static native void onTangoServiceConnected(IBinder binder, double res,  double dmin,
+                                                    double dmax, int noise, boolean land, String temp);
 
   // Allocate OpenGL resources for rendering.
   public static native void onGlSurfaceCreated();
