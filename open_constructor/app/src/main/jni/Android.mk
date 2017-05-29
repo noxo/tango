@@ -17,6 +17,7 @@ LOCAL_SRC_FILES := app.cc \
                    data/file3d.cc \
                    data/image.cc \
                    data/mesh.cc \
+                   editor/rasterizer.cc \
                    gl/camera.cc \
                    gl/glsl.cc \
                    gl/renderer.cc \
