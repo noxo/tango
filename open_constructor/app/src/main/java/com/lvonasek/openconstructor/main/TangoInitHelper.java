@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.lvonasek.openconstructor;
+package com.lvonasek.openconstructor.main;
 
 import android.content.Context;
 import android.content.Intent;

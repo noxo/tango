@@ -148,19 +148,27 @@ namespace oc {
                 //incomplete line ignored
                 if ((va == 0) || (vb == 0) || (vc == 0))
                     continue;
+                //vertices
                 output[meshIndex].vertices.push_back(vertices[va - 1]);
                 output[meshIndex].vertices.push_back(vertices[vb - 1]);
                 output[meshIndex].vertices.push_back(vertices[vc - 1]);
+                //selector
+                output[meshIndex].colors.push_back(0);
+                output[meshIndex].colors.push_back(0);
+                output[meshIndex].colors.push_back(0);
+                //uvs
                 if (hasCoords) {
                     output[meshIndex].uv.push_back(uvs[vta - 1]);
                     output[meshIndex].uv.push_back(uvs[vtb - 1]);
                     output[meshIndex].uv.push_back(uvs[vtc - 1]);
                 }
+                //normals
                 if (hasNormals) {
                     output[meshIndex].normals.push_back(normals[vna - 1]);
                     output[meshIndex].normals.push_back(normals[vnb - 1]);
                     output[meshIndex].normals.push_back(normals[vnc - 1]);
                 }
+                //create new model if it is already too big
                 if (output[meshIndex].vertices.size() >= subdivision * 3) {
                     meshIndex = output.size();
                     output.push_back(Mesh());

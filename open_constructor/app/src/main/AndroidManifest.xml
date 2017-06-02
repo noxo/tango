@@ -26,7 +26,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:configChanges="orientation|screenSize" android:name=".OpenConstructorActivity"/>
+        <activity android:configChanges="orientation|screenSize" android:name=".main.OpenConstructorActivity"/>
         <activity android:configChanges="orientation|screenSize" android:name=".SettingsActivity"/>
         <activity android:configChanges="orientation|screenSize" android:name=".sketchfab.Home"/>
         <activity android:configChanges="orientation|screenSize" android:name=".sketchfab.OAuth"/>

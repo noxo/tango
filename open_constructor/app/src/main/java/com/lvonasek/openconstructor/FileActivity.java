@@ -15,6 +15,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.google.atap.tangoservice.Tango;
+import com.lvonasek.openconstructor.main.OpenConstructorActivity;
 import com.lvonasek.openconstructor.sketchfab.Home;
 
 import java.io.File;

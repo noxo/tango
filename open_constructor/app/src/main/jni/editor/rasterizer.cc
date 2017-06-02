@@ -17,17 +17,36 @@ namespace oc {
             c.x *= (float)(viewport_width - 1);
             c.y *= (float)(viewport_height - 1);
             //process
-            Triangle(a, b, c);
+            Triangle(i, a, b, c);
         }
     }
 
-    void Rasterizer::AddVertices(std::vector<glm::vec3> vertices) {
+    void Rasterizer::AddVertices(std::vector<glm::vec3>& vertices, glm::mat4 world2screen) {
         glm::vec3 a, b, c;
+        glm::vec4 wa, wb, wc;
         for (unsigned long i = 0; i < vertices.size(); i += 3) {
             //get coordinate
-            a = glm::vec3(vertices[i + 0]);
-            b = glm::vec3(vertices[i + 1]);
-            c = glm::vec3(vertices[i + 2]);
+            wa = glm::vec4(vertices[i + 0], 1.0f);
+            wb = glm::vec4(vertices[i + 1], 1.0f);
+            wc = glm::vec4(vertices[i + 2], 1.0f);
+            //transform to 2D
+            wa = world2screen * wa;
+            wb = world2screen * wb;
+            wc = world2screen * wc;
+            //perspective division
+            wa /= glm::abs(wa.w);
+            wb /= glm::abs(wb.w);
+            wc /= glm::abs(wc.w);
+            //convert
+            a.x = wa.x;
+            a.y = wa.y;
+            a.z = wa.z;
+            b.x = wb.x;
+            b.y = wb.y;
+            b.z = wb.z;
+            c.x = wc.x;
+            c.y = wc.y;
+            c.z = wc.z;
             //convert it from -1,1 to 0,1
             a.x = (a.x + 1.0f) * 0.5f;
             a.y = (a.y + 1.0f) * 0.5f;
@@ -43,7 +62,7 @@ namespace oc {
             c.x *= (float)(viewport_width - 1);
             c.y *= (float)(viewport_height - 1);
             //process
-            Triangle(a, b, c);
+            Triangle(i, a, b, c);
         }
     }
 
@@ -183,7 +202,7 @@ namespace oc {
         return true;
     }
 
-    void Rasterizer::Triangle(glm::vec3 &a, glm::vec3 &b, glm::vec3 &c) {
+    void Rasterizer::Triangle(unsigned long& index, glm::vec3 &a, glm::vec3 &b, glm::vec3 &c) {
 
         //create markers for filling
         int min, max;
@@ -224,7 +243,10 @@ namespace oc {
             int x = x2 - x1;
             if (Test(-x, x1, t1, t2) && Test(x, viewport_width - 1 - x1, t1, t2)) {
 
-                ProcessVertex(x1, x2, y, z1, z2);
+                if (x2 > x1)
+                    ProcessVertex(index, x1, x2, y, z1, z2);
+                else
+                    ProcessVertex(index, x2, x1, y, z2, z1);
                 if (VerticesOnly())
                     continue;
 
@@ -247,7 +269,7 @@ namespace oc {
                 z = (z2 - z1) / (float)x;
                 int mem = x1 + memy;
                 for (; x >= 0; x--) {
-                    ProcessFragment(x, y, z1);
+                    ProcessFragment(index, x, y, z1);
                     mem += step;
                     z1 += z;
                 }

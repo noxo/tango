@@ -13,6 +13,20 @@
     <string name="unsupported">Unsupported device</string>
     <string name="unsupported_asus">Asus Zenfore AR is not supported yet, the device has some problem with loading Tango library. Asus refused to provide any help connected with this problem.</string>
 
+    <!-- Editor !-->
+    <string name="editor_back">Back</string>
+    <string name="editor_main_colors">Colors</string>
+    <string name="editor_main_select">Select</string>
+    <string name="editor_colors_gamma_add">Gamma+</string>
+    <string name="editor_colors_gamma_sub">Gamma-</string>
+    <string name="editor_colors_saturation_add">Saturation+</string>
+    <string name="editor_colors_saturation_sub">Saturation-</string>
+    <string name="editor_select_area">Area</string>
+    <string name="editor_select_object">Object</string>
+    <string name="editor_select_object_desc">Tap on the object you want select</string>
+    <string name="editor_select_less">Less</string>
+    <string name="editor_select_more">More</string>
+
     <!-- Recording !-->
     <string name="airplane_title">The airplane mode is not active</string>
     <string name="airplane_detail">An incoming call would cancel scanning without saving data. Do you want to continue?</string>

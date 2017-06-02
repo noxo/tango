@@ -40,7 +40,7 @@ namespace oc {
          * @param indices is pointer to indices
          */
         void Render(float* vertices, float* normals, float* uv, unsigned int* colors,
-                    int size, unsigned int* indices = 0);
+                    unsigned long size, unsigned int* indices = 0);
 
         /**
          * @brief Rtt enables rendering into FBO which makes posible to do reflections

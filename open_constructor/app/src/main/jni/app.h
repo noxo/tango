@@ -5,6 +5,8 @@
 #include <mutex>
 #include <string>
 
+#include "editor/effector.h"
+#include "editor/selector.h"
 #include "tango/scan.h"
 #include "tango/service.h"
 #include "tango/texturize.h"
@@ -36,6 +38,9 @@ namespace oc {
                                                                                movey = my; movez = mz;}
         std::string GetEvent();
 
+        void ApplyEffect(Effector::Effect effect, float value);
+        void ApplySelection(float x, float y);
+
     private:
         bool t3dr_is_running_;
         bool point_cloud_available_;
@@ -48,7 +53,9 @@ namespace oc {
         std::mutex event_mutex_;
         std::string event_;
 
+        Effector editor;
         Scene scene;
+        Selector selector;
         TangoScan scan;
         TangoService tango;
         TangoTexturize texturize;

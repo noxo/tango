@@ -1,8 +1,9 @@
 package com.lvonasek.openconstructor;
 
-import android.app.Activity;
 import android.os.IBinder;
 import android.util.Log;
+
+import com.lvonasek.openconstructor.main.TangoInitHelper;
 
 /**
  * Interfaces between native C++ code and Java code.
@@ -54,6 +55,12 @@ public class TangoJNINative {
 
   // Get Tango event
   public static native byte[] getEvent();
+
+  // Apply effect on model
+  public static native void applyEffect(int effect, float value);
+
+  // Apply select on model
+  public static native void applySelect(float x, float y);
 
   public static native byte[] clientSecret();
 }

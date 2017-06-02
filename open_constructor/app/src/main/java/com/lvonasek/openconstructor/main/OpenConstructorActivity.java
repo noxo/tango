@@ -1,4 +1,4 @@
-package com.lvonasek.openconstructor;
+package com.lvonasek.openconstructor.main;
 
 import android.app.ActivityManager;
 import android.app.AlertDialog;
@@ -26,7 +26,13 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.lvonasek.openconstructor.AbstractActivity;
+import com.lvonasek.openconstructor.R;
+import com.lvonasek.openconstructor.TangoJNINative;
+
 import java.io.File;
+import java.util.ArrayList;
+
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
@@ -52,9 +58,15 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private TextView mInfoRight;
   private TextView mInfoLog;
   private View mBattery;
-  private Button mCardboard;
+  private Button mCardboardButton;
+  private Button mEditorButton;
   private Button mModeButton;
   private int mRes = 3;
+
+  private LinearLayout mLayoutEditor;
+  private ArrayList<Button> mEditorAction;
+  private TextView mEditorMsg;
+  private Editor mEditor = null;
 
   private GestureDetector mGestureDetector;
   private boolean mModeMove;
@@ -118,8 +130,10 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     mToggleButton = (Button) findViewById(R.id.toggle_button);
     mToggleButton.setOnClickListener(this);
 
-    mCardboard = (Button) findViewById(R.id.cardboard_button);
+    // Recording info
+    mCardboardButton = (Button) findViewById(R.id.cardboard_button);
     mModeButton = (Button) findViewById(R.id.mode_button);
+    mEditorButton = (Button) findViewById(R.id.editor_button);
     mLayoutInfo = (LinearLayout) findViewById(R.id.layout_info);
     mInfoLeft = (TextView) findViewById(R.id.info_left);
     mInfoMiddle = (TextView) findViewById(R.id.info_middle);
@@ -127,12 +141,23 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     mInfoLog = (TextView) findViewById(R.id.infolog);
     mBattery = findViewById(R.id.info_battery);
 
+    // Editor
+    mLayoutEditor = (LinearLayout) findViewById(R.id.layout_editor);
+    mEditorMsg = (TextView) findViewById(R.id.editorMsg);
+    mEditorAction = new ArrayList<>();
+    mEditorAction.add((Button) findViewById(R.id.editor1));
+    mEditorAction.add((Button) findViewById(R.id.editor2));
+    mEditorAction.add((Button) findViewById(R.id.editor3));
+    mEditorAction.add((Button) findViewById(R.id.editor4));
+    mEditorAction.add((Button) findViewById(R.id.editor5));
+
     // OpenGL view where all of the graphics are drawn
     mGLView = (GLSurfaceView) findViewById(R.id.gl_surface_view);
     mGLView.setEGLContextClientVersion(2);
     mGLView.setRenderer(this);
     mProgress = (ProgressBar) findViewById(R.id.progressBar);
 
+    // Touch controller
     mGestureDetector = new GestureDetector(new GestureDetector.GestureListener()
     {
       @Override
@@ -292,6 +317,8 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   @Override
   public boolean onTouchEvent(MotionEvent event) {
     mGestureDetector.onTouchEvent(event);
+    if (mEditor != null)
+      mEditor.touchEvent(event.getX(), mGLView.getHeight() - event.getY());
     return true;
   }
 
@@ -328,10 +355,23 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, false);
       }
     });
+    mEditorButton.setVisibility(View.VISIBLE);
+    mEditorButton.setOnClickListener(new View.OnClickListener()
+    {
+      @Override
+      public void onClick(View view)
+      {
+        mCardboardButton.setVisibility(View.GONE);
+        mEditorButton.setVisibility(View.GONE);
+        mLayoutEditor.setVisibility(View.VISIBLE);
+        setOrientation(false, OpenConstructorActivity.this);
+        mEditor = new Editor(mEditorAction, mEditorMsg, mProgress, OpenConstructorActivity.this);
+      }
+    });
     mModeMove = false;
     if (isCardboardEnabled(this)) {
-      mCardboard.setVisibility(View.VISIBLE);
-      mCardboard.setOnClickListener(new View.OnClickListener()
+      mCardboardButton.setVisibility(View.VISIBLE);
+      mCardboardButton.setOnClickListener(new View.OnClickListener()
       {
         @Override
         public void onClick(View view)

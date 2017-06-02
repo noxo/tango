@@ -12,7 +12,6 @@ class File3d {
 public:
     File3d(std::string filename, bool writeAccess);
     ~File3d();
-    TYPE GetType() { return type; }
     void ReadModel(int subdivision, std::vector<oc::Mesh>& output);
     void WriteModel(std::vector<Mesh>& model);
 

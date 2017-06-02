@@ -13,6 +13,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.lvonasek.openconstructor.main.OpenConstructorActivity;
 import com.lvonasek.openconstructor.sketchfab.OAuth;
 
 import java.io.File;

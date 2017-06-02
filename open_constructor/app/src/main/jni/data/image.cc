@@ -17,10 +17,10 @@ unsigned char* srcPlanes[3] = {0, 0, 0};
 
 namespace oc {
 
-    Image::Image() {
-        width = 1;
-        height = 1;
-        data = new unsigned char[3];
+    Image::Image(int w, int h) {
+        width = w;
+        height = h;
+        data = new unsigned char[w * h * 3];
         name = "";
     }
 

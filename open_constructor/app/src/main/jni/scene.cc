@@ -21,18 +21,22 @@ std::string ColorVertexShader() {
 
 std::string TexturedFragmentShader() {
   return "uniform sampler2D u_texture;\n"
+         "varying vec4 f_color;\n"
          "varying vec2 v_uv;\n"
          "void main() {\n"
-         "  gl_FragColor = texture2D(u_texture, v_uv);\n"
+         "  gl_FragColor = f_color + texture2D(u_texture, v_uv);\n"
          "}\n";
 }
 
 std::string TexturedVertexShader() {
   return "attribute vec4 v_vertex;\n"
          "attribute vec2 v_coord;\n"
+         "attribute vec4 v_color;\n"
+         "varying vec4 f_color;\n"
          "varying vec2 v_uv;\n"
          "uniform mat4 MVP;\n"
          "void main() {\n"
+         "  f_color = v_color;\n"
          "  v_uv.x = v_coord.x;\n"
          "  v_uv.y = 1.0 - v_coord.y;\n"
          "  gl_Position = MVP * v_vertex;\n"
@@ -91,7 +95,7 @@ namespace oc {
                     glBindTexture(GL_TEXTURE_2D, (unsigned int)mesh.texture);
                 }
                 textured_shader->Bind();
-                renderer->Render(&mesh.vertices[0].x, 0, &mesh.uv[0].s, 0, mesh.vertices.size());
+                renderer->Render(&mesh.vertices[0].x, 0, &mesh.uv[0].s, mesh.colors.data(), mesh.vertices.size());
             }
         }
         color_vertex_shader->Bind();
@@ -99,8 +103,8 @@ namespace oc {
             renderer->Render(&frustum_.vertices[0].x, 0, 0, frustum_.colors.data(),
                              frustum_.indices.size(), frustum_.indices.data());
 
-        for (unsigned int i : Mesh::TexturesToDelete())
-            glDeleteTextures(1, &i);
+        for (long i : Mesh::TexturesToDelete())
+            glDeleteTextures(1, (const GLuint *) &i);
     }
 
     void Scene::UpdateFrustum(glm::vec3 pos, float zoom) {

@@ -105,26 +105,26 @@ namespace oc {
     }
 
     void GLRenderer::Render(float* vertices, float* normals, float* uv, unsigned int* colors,
-                            int size, unsigned int* indices) {
+                            unsigned long size, unsigned int* indices) {
         GLSL::CurrentShader()->UniformMatrix("MVP", glm::value_ptr(camera.projection * camera.GetView()));
         GLSL::CurrentShader()->Attrib(vertices, normals, uv, colors);
 
         if (size > 0) {
             if (indices)
-              glDrawElements(GL_TRIANGLES, size, GL_UNSIGNED_INT, indices);
+              glDrawElements(GL_TRIANGLES, (GLsizei) size, GL_UNSIGNED_INT, indices);
             else
-              glDrawArrays(GL_TRIANGLES, 0, size);
+              glDrawArrays(GL_TRIANGLES, 0, (GLsizei) size);
         }
     }
 
     void GLRenderer::Rtt(bool enable) {
         if (enable) {
             glBindFramebuffer(GL_FRAMEBUFFER, fboID[0]);
-            glViewport (0, 0, width * aliasing, height * aliasing);
+            glViewport (0, 0, (GLsizei) (width * aliasing), (GLsizei) (height * aliasing));
             glClearStencil(0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glEnable(GL_DEPTH_TEST);
-            glDepthMask(true);
+            glDepthMask(GL_TRUE);
         } else {
             /// prepare rendering
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -154,13 +154,13 @@ namespace oc {
             glBindTexture(GL_TEXTURE_2D, rendertexture[0]);
             glDisable(GL_BLEND);
             glDisable(GL_DEPTH_TEST);
-            glDepthMask(false);
+            glDepthMask(GL_FALSE);
 
             /// render
             scene->Attrib(&vertices[0].x, 0, &coords[0].s, 0);
             glDrawArrays(GL_TRIANGLES, 0, 6);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
-            glDepthMask(true);
+            glDepthMask(GL_TRUE);
         }
     }
 }

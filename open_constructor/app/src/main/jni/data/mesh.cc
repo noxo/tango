@@ -1,6 +1,6 @@
 #include "data/mesh.h"
 
-std::vector<unsigned int> mesh_textureToDelete;
+std::vector<long> mesh_textureToDelete;
 
 namespace oc {
 
@@ -55,6 +55,12 @@ namespace oc {
                 output = value;
         }
         return (float) (output / 3.0);
+    }
+
+    void Mesh::UpdateTexture() {
+        if (image && imageOwner)
+            mesh_textureToDelete.push_back(texture);
+        texture = -1;
     }
 
     std::vector<unsigned int> Mesh::TexturesToDelete() {

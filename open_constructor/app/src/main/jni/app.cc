@@ -167,6 +167,7 @@ namespace oc {
     void App::OnSurfaceChanged(int width, int height) {
         render_mutex_.lock();
         scene.SetupViewPort(width, height);
+        selector.Init(width, height);
         render_mutex_.unlock();
     }
 
@@ -296,6 +297,19 @@ namespace oc {
         binder_mutex_.unlock();
         return output;
     }
+
+    void App::ApplyEffect(Effector::Effect effect, float value) {
+        render_mutex_.lock();
+        editor.ApplyEffect(scene.static_meshes_, effect, value);
+        render_mutex_.unlock();
+    }
+
+    void App::ApplySelection(float x, float y) {
+        render_mutex_.lock();
+        glm::mat4 matrix = scene.renderer->camera.projection * scene.renderer->camera.GetView();
+        selector.ApplySelection(scene.static_meshes_, matrix, x, y);
+        render_mutex_.unlock();
+    }
 }
 
 
@@ -373,10 +387,20 @@ Java_com_lvonasek_openconstructor_TangoJNINative_getFloorLevel(JNIEnv*, jobject,
     return app.GetFloorLevel(x, y, z);
 }
 
+JNIEXPORT void JNICALL
+Java_com_lvonasek_openconstructor_TangoJNINative_applyEffect(JNIEnv*, jobject, jint effect, jfloat value) {
+    app.ApplyEffect((oc::Effector::Effect) effect, value);
+}
+
+JNIEXPORT void JNICALL
+Java_com_lvonasek_openconstructor_TangoJNINative_applySelect(JNIEnv*, jobject, jfloat x, jfloat y) {
+    app.ApplySelection(x, y);
+}
+
 JNIEXPORT jbyteArray JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_getEvent(JNIEnv* env, jobject) {
   std::string message = app.GetEvent();
-  int byteCount = message.length();
+  int byteCount = (int) message.length();
   const jbyte* pNativeMessage = reinterpret_cast<const jbyte*>(message.c_str());
   jbyteArray bytes = env->NewByteArray(byteCount);
   env->SetByteArrayRegion(bytes, 0, byteCount, pNativeMessage);
@@ -387,7 +411,7 @@ Java_com_lvonasek_openconstructor_TangoJNINative_getEvent(JNIEnv* env, jobject) 
 JNIEXPORT jbyteArray JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_clientSecret(JNIEnv* env, jobject) {
   std::string message = "NO SECRET";
-  int byteCount = message.length();
+  int byteCount = (int) message.length();
   const jbyte* pNativeMessage = reinterpret_cast<const jbyte*>(message.c_str());
   jbyteArray bytes = env->NewByteArray(byteCount);
   env->SetByteArrayRegion(bytes, 0, byteCount, pNativeMessage);
