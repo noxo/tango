@@ -24,7 +24,7 @@ std::string TexturedFragmentShader() {
          "varying vec4 f_color;\n"
          "varying vec2 v_uv;\n"
          "void main() {\n"
-         "  gl_FragColor = f_color + texture2D(u_texture, v_uv);\n"
+         "  gl_FragColor = texture2D(u_texture, v_uv) - f_color;\n"
          "}\n";
 }
 

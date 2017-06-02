@@ -9,6 +9,7 @@ namespace oc {
 class Selector : Rasterizer {
 public:
     void ApplySelection(std::vector<Mesh>& mesh, glm::mat4 world2screen, float x, float y);
+    void CompleteSelection(std::vector<Mesh>& mesh, bool inverse);
     void DecreaseSelection(std::vector<Mesh>& mesh);
     void IncreaseSelection(std::vector<Mesh>& mesh);
     void Init(int w, int h);

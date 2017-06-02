@@ -26,6 +26,8 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
   private Status mStatus;
   private TextView mMsg;
 
+  private boolean mComplete;
+
   public Editor(ArrayList<Button> buttons, TextView msg, ProgressBar progress, Activity context)
   {
     for (Button b : buttons) {
@@ -38,6 +40,25 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
     mProgress = progress;
     mStatus = Status.IDLE;
     setMainScreen();
+
+    mComplete = false;
+    mProgress.setVisibility(View.VISIBLE);
+    new Thread(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        TangoJNINative.completeSelection(mComplete);
+        mContext.runOnUiThread(new Runnable()
+        {
+          @Override
+          public void run()
+          {
+            mProgress.setVisibility(View.GONE);
+          }
+        });
+      }
+    }).start();
   }
 
   @Override
@@ -53,16 +74,77 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
       setMainScreen();
 
     if (mScreen == Screen.SELECT) {
-      //TODO:
+      //select all/none
+      if (view.getId() == R.id.editor2)
+      {
+        mProgress.setVisibility(View.VISIBLE);
+        new Thread(new Runnable()
+        {
+          @Override
+          public void run()
+          {
+            mComplete = !mComplete;
+            TangoJNINative.completeSelection(mComplete);
+            mContext.runOnUiThread(new Runnable()
+            {
+              @Override
+              public void run()
+              {
+                mProgress.setVisibility(View.GONE);
+              }
+            });
+          }
+        }).start();
+      }
+      //select object
       if (view.getId() == R.id.editor3) {
         showText(R.string.editor_select_object_desc);
         mStatus = Status.WAITING_SELECTION_POINT;
       }
+      //select less
       if (view.getId() == R.id.editor4)
-        TangoJNINative.multSelection(false);
+      {
+        mProgress.setVisibility(View.VISIBLE);
+        new Thread(new Runnable()
+        {
+          @Override
+          public void run()
+          {
+            TangoJNINative.multSelection(false);
+            mContext.runOnUiThread(new Runnable()
+            {
+              @Override
+              public void run()
+              {
+                mProgress.setVisibility(View.GONE);
+              }
+            });
+          }
+        }).start();
+      }
+      //select more
       if (view.getId() == R.id.editor5)
-        TangoJNINative.multSelection(true);
+      {
+        mProgress.setVisibility(View.VISIBLE);
+        new Thread(new Runnable()
+        {
+          @Override
+          public void run()
+          {
+            TangoJNINative.multSelection(true);
+            mContext.runOnUiThread(new Runnable()
+            {
+              @Override
+              public void run()
+              {
+                mProgress.setVisibility(View.GONE);
+              }
+            });
+          }
+        }).start();
+      }
     }
+
     //color editing
     if (mScreen == Screen.COLOR) {
       mProgress.setVisibility(View.VISIBLE);
@@ -138,7 +220,7 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
   {
     initButtons();
     mButtons.get(0).setText(mContext.getString(R.string.editor_back));
-    mButtons.get(1).setText(mContext.getString(R.string.editor_select_area));
+    mButtons.get(1).setText(mContext.getString(R.string.editor_select_all));
     mButtons.get(2).setText(mContext.getString(R.string.editor_select_object));
     mButtons.get(3).setText(mContext.getString(R.string.editor_select_less));
     mButtons.get(4).setText(mContext.getString(R.string.editor_select_more));

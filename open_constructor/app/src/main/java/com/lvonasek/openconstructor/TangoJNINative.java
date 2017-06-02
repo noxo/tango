@@ -62,6 +62,9 @@ public class TangoJNINative {
   // Apply select on model
   public static native void applySelect(float x, float y);
 
+  // Select or deselect all
+  public static native void completeSelection(boolean inverse);
+
   // Increase or decrease selection
   public static native void multSelection(boolean increase);
 

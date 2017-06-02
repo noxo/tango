@@ -311,6 +311,12 @@ namespace oc {
         render_mutex_.unlock();
     }
 
+    void App::CompleteSelection(bool inverse) {
+        render_mutex_.lock();
+        selector.CompleteSelection(scene.static_meshes_, inverse);
+        render_mutex_.unlock();
+    }
+
     void App::MultSelection(bool increase) {
         render_mutex_.lock();
         if (increase)
@@ -404,6 +410,11 @@ Java_com_lvonasek_openconstructor_TangoJNINative_applyEffect(JNIEnv*, jobject, j
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_applySelect(JNIEnv*, jobject, jfloat x, jfloat y) {
     app.ApplySelection(x, y);
+}
+
+JNIEXPORT void JNICALL
+Java_com_lvonasek_openconstructor_TangoJNINative_completeSelection(JNIEnv*, jobject, jboolean inverse) {
+    app.CompleteSelection(inverse);
 }
 
 JNIEXPORT void JNICALL
