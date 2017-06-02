@@ -1,16 +1,12 @@
 #include "data/mesh.h"
 
-std::vector<long> mesh_textureToDelete;
-
 namespace oc {
 
-    Mesh::Mesh() : aabbUpdate(0), image(NULL), imageOwner(true), texture(-1) {}
+    Mesh::Mesh() : aabbUpdate(0), image(NULL), imageOwner(true) {}
 
     void Mesh::Destroy() {
         if (image && imageOwner) {
             delete image;
-            mesh_textureToDelete.push_back(texture);
-            texture = -1;
             image = 0;
         }
     }
@@ -55,20 +51,6 @@ namespace oc {
                 output = value;
         }
         return (float) (output / 3.0);
-    }
-
-    void Mesh::UpdateTexture() {
-        if (image && imageOwner)
-            mesh_textureToDelete.push_back(texture);
-        texture = -1;
-    }
-
-    std::vector<unsigned int> Mesh::TexturesToDelete() {
-        std::vector<unsigned int> output;
-        for (unsigned int i : mesh_textureToDelete)
-            output.push_back(i);
-        mesh_textureToDelete.clear();
-        return output;
     }
 
     bool Mesh::IsInAABB(glm::vec3 &p, glm::vec3 &min, glm::vec3 &max) {

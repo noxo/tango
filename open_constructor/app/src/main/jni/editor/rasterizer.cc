@@ -3,7 +3,7 @@
 namespace oc {
 
     void Rasterizer::AddUVS(std::vector<glm::vec2> uvs, std::vector<unsigned int> selected) {
-        glm::vec3 a, b, c;
+        glm::vec3 a, b, c, center;
         for (unsigned long i = 0; i < uvs.size(); i += 3) {
             if (!selected.empty()) {
                 if (selected[i + 0] != 0)
@@ -28,6 +28,14 @@ namespace oc {
             b.y *= (float)(viewport_height - 1);
             c.x *= (float)(viewport_width - 1);
             c.y *= (float)(viewport_height - 1);
+            //padding
+            center = (a + b + c) / 3.0f;
+            if (center.x > a.x) a.x -= 2; else a.x += 2;
+            if (center.y > a.y) a.y -= 2; else a.y += 2;
+            if (center.x > b.x) b.x -= 2; else b.x += 2;
+            if (center.y > b.y) b.y -= 2; else b.y += 2;
+            if (center.x > c.x) c.x -= 2; else c.x += 2;
+            if (center.y > c.y) c.y -= 2; else c.y += 2;
             //process
             Triangle(i, a, b, c);
         }

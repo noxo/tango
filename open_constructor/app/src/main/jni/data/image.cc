@@ -15,6 +15,8 @@ tjhandle jpegC = tjInitCompress();
 tjhandle jpegD = tjInitDecompress();
 unsigned char* srcPlanes[3] = {0, 0, 0};
 
+std::vector<long> image_textureToDelete;
+
 namespace oc {
 
     Image::Image(int w, int h) {
@@ -22,6 +24,7 @@ namespace oc {
         height = h;
         data = new unsigned char[w * h * 3];
         name = "";
+        texture = -1;
     }
 
     Image::Image(unsigned char* src, int w, int h, int scale) {
@@ -29,12 +32,14 @@ namespace oc {
         width = w / scale;
         height = h / scale;
         name = "photo";
+        texture = -1;
         UpdateYUV(src, w, h, scale);
     }
 
     Image::Image(std::string filename) {
         LOGI("Reading %s", filename.c_str());
         name = filename;
+        texture = -1;
 
         std::string ext = filename.substr(filename.size() - 3, filename.size() - 1);
         if (ext.compare("jpg") == 0)
@@ -86,6 +91,11 @@ namespace oc {
             }
         }
         return output;
+    }
+
+    void Image::UpdateTexture() {
+        image_textureToDelete.push_back(texture);
+        texture = -1;
     }
 
     void Image::UpdateYUV(unsigned char *src, int w, int h, int scale) {
@@ -320,5 +330,14 @@ namespace oc {
         fwrite(dst, 1, size, temp);
         fclose(temp);
         tjFree(dst);
+    }
+
+
+    std::vector<unsigned int> Image::TexturesToDelete() {
+        std::vector<unsigned int> output;
+        for (long & i : image_textureToDelete)
+            output.push_back((const unsigned int &) i);
+        image_textureToDelete.clear();
+        return output;
     }
 }

@@ -10,21 +10,21 @@ namespace oc {
 
         // create masks
         for (Mesh& m : mesh) {
-            if (m.texture == -1)
+            if (!m.image || (m.image->GetTexture() == -1))
                 continue;
-            if (texture2mask.find(m.texture) == texture2mask.end()) {
+            if (texture2mask.find(m.image->GetTexture()) == texture2mask.end()) {
                 mask = new bool[m.image->GetWidth() * m.image->GetHeight()];
                 for (unsigned int i = 0; i < m.image->GetWidth() * m.image->GetHeight(); i++)
                     mask[i] = false;
-                texture2mask[m.texture] = mask;
+                texture2mask[m.image->GetTexture()] = mask;
             }
         }
 
         // fill masks
         for (Mesh& m : mesh) {
-            if (m.texture == -1)
+            if (!m.image || (m.image->GetTexture() == -1))
                 continue;
-            mask = texture2mask[m.texture];
+            mask = texture2mask[m.image->GetTexture()];
             stride = m.image->GetWidth();
             SetResolution(m.image->GetWidth(), m.image->GetHeight());
             AddUVS(m.uv, m.colors);
@@ -33,10 +33,12 @@ namespace oc {
         // apply effect
         if ((effect == GAMMA) || (effect == SATURATION)) {
             for (Mesh& m : mesh) {
+                if (!m.image || (m.image->GetTexture() == -1))
+                    continue;
                 if (m.imageOwner) {
                     int c, r, g, b, index = 0;
                     unsigned char* data = m.image->GetData();
-                    mask = texture2mask[m.texture];
+                    mask = texture2mask[m.image->GetTexture()];
                     for (unsigned int i = 0; i < m.image->GetWidth() * m.image->GetHeight(); i++) {
                         r = data[index++];
                         g = data[index++];
@@ -65,8 +67,8 @@ namespace oc {
                             data[index - 1] = (unsigned char) b;
                         }
                     }
+                    m.image->UpdateTexture();
                 }
-                m.UpdateTexture();
             }
         }
 

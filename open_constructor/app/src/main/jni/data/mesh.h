@@ -17,8 +17,6 @@ namespace oc {
         Mesh();
         void Destroy();
         float GetFloorLevel(glm::vec3 pos);
-        void UpdateTexture();
-        static std::vector<unsigned int> TexturesToDelete();
     private:
         bool IsInAABB(glm::vec3& p, glm::vec3& min, glm::vec3& max);
         void UpdateAABB(glm::vec3& p, glm::vec3& min, glm::vec3& max);
@@ -34,7 +32,6 @@ namespace oc {
         std::vector<glm::vec2> uv;
         Image* image;
         bool imageOwner;
-        long texture;
     };
 }
 #endif

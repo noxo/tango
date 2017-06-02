@@ -172,7 +172,7 @@ namespace oc {
                 if (output[meshIndex].vertices.size() >= subdivision * 3) {
                     meshIndex = output.size();
                     output.push_back(Mesh());
-                    output[meshIndex].image = output[meshIndex - 1].image;
+                    output[meshIndex].image = images[lastKey];
                     output[meshIndex].imageOwner = false;
                 }
             }

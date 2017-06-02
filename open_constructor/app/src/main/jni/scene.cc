@@ -74,10 +74,10 @@ namespace oc {
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
         long lastTexture = INT_MAX;
         for (Mesh& mesh : static_meshes_) {
-            if (mesh.image && (mesh.texture == -1)) {
+            if (mesh.image && (mesh.image->GetTexture() == -1)) {
                 GLuint textureID;
                 glGenTextures(1, &textureID);
-                mesh.texture = textureID;
+                mesh.image->SetTexture(textureID);
                 glBindTexture(GL_TEXTURE_2D, textureID);
                 glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -86,13 +86,13 @@ namespace oc {
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, mesh.image->GetWidth(), mesh.image->GetHeight(),
                              0, GL_RGB, GL_UNSIGNED_BYTE, mesh.image->GetData());
             }
-            if (mesh.texture == -1) {
+            if (!mesh.image || (mesh.image->GetTexture() == -1)) {
                 color_vertex_shader->Bind();
                 renderer->Render(&mesh.vertices[0].x, 0, 0, mesh.colors.data(), mesh.vertices.size());
             } else {
-                if (lastTexture != mesh.texture) {
-                    lastTexture = (unsigned int)mesh.texture;
-                    glBindTexture(GL_TEXTURE_2D, (unsigned int)mesh.texture);
+                if (lastTexture != mesh.image->GetTexture()) {
+                    lastTexture = (unsigned int)mesh.image->GetTexture();
+                    glBindTexture(GL_TEXTURE_2D, (unsigned int)mesh.image->GetTexture());
                 }
                 textured_shader->Bind();
                 renderer->Render(&mesh.vertices[0].x, 0, &mesh.uv[0].s, mesh.colors.data(), mesh.vertices.size());
@@ -103,7 +103,7 @@ namespace oc {
             renderer->Render(&frustum_.vertices[0].x, 0, 0, frustum_.colors.data(),
                              frustum_.indices.size(), frustum_.indices.data());
 
-        for (long i : Mesh::TexturesToDelete())
+        for (long i : Image::TexturesToDelete())
             glDeleteTextures(1, (const GLuint *) &i);
     }
 
