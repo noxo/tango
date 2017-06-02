@@ -310,6 +310,15 @@ namespace oc {
         selector.ApplySelection(scene.static_meshes_, matrix, x, y);
         render_mutex_.unlock();
     }
+
+    void App::MultSelection(bool increase) {
+        render_mutex_.lock();
+        if (increase)
+            selector.IncreaseSelection(scene.static_meshes_);
+        else
+            selector.DecreaseSelection(scene.static_meshes_);
+        render_mutex_.unlock();
+    }
 }
 
 
@@ -395,6 +404,11 @@ Java_com_lvonasek_openconstructor_TangoJNINative_applyEffect(JNIEnv*, jobject, j
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_applySelect(JNIEnv*, jobject, jfloat x, jfloat y) {
     app.ApplySelection(x, y);
+}
+
+JNIEXPORT void JNICALL
+Java_com_lvonasek_openconstructor_TangoJNINative_multSelection(JNIEnv*, jobject, jboolean increase) {
+    app.MultSelection(increase);
 }
 
 JNIEXPORT jbyteArray JNICALL

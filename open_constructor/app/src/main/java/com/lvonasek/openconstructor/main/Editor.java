@@ -58,6 +58,10 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
         showText(R.string.editor_select_object_desc);
         mStatus = Status.WAITING_SELECTION_POINT;
       }
+      if (view.getId() == R.id.editor4)
+        TangoJNINative.multSelection(false);
+      if (view.getId() == R.id.editor5)
+        TangoJNINative.multSelection(true);
     }
     //color editing
     if (mScreen == Screen.COLOR) {

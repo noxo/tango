@@ -62,5 +62,8 @@ public class TangoJNINative {
   // Apply select on model
   public static native void applySelect(float x, float y);
 
+  // Increase or decrease selection
+  public static native void multSelection(boolean increase);
+
   public static native byte[] clientSecret();
 }

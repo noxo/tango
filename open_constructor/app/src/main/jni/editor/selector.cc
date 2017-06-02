@@ -1,6 +1,9 @@
+#include <map>
 #include "editor/selector.h"
 
 #define SELECTOR_COLOR 0x004000
+
+char buffer[1024];
 
 namespace oc {
 
@@ -25,6 +28,57 @@ namespace oc {
         }
     }
 
+    void Selector::DecreaseSelection(std::vector<Mesh> &mesh) {
+        //get vertices to deselect
+        std::map<std::string, bool> toDeselect;
+        for (unsigned int m = 0; m < mesh.size(); m++)
+            for (unsigned int i = 0; i < mesh[m].vertices.size(); i += 3)
+                if ((mesh[m].colors[i + 0] != SELECTOR_COLOR) ||
+                    (mesh[m].colors[i + 1] != SELECTOR_COLOR) ||
+                    (mesh[m].colors[i + 2] != SELECTOR_COLOR)) {
+                    toDeselect[VertexToKey(mesh[m].vertices[i + 0])] = true;
+                    toDeselect[VertexToKey(mesh[m].vertices[i + 1])] = true;
+                    toDeselect[VertexToKey(mesh[m].vertices[i + 2])] = true;
+                }
+
+        //deselect vertices
+        for (unsigned int m = 0; m < mesh.size(); m++)
+            for (unsigned int i = 0; i < mesh[m].vertices.size(); i += 3)
+                if ((toDeselect.find(VertexToKey(mesh[m].vertices[i + 0])) != toDeselect.end()) ||
+                    (toDeselect.find(VertexToKey(mesh[m].vertices[i + 1])) != toDeselect.end()) ||
+                    (toDeselect.find(VertexToKey(mesh[m].vertices[i + 2])) != toDeselect.end())) {
+                    mesh[m].colors[i + 0] = 0;
+                    mesh[m].colors[i + 1] = 0;
+                    mesh[m].colors[i + 2] = 0;
+                }
+    }
+
+    void Selector::IncreaseSelection(std::vector<Mesh>& mesh) {
+
+        //get vertices to select
+        std::map<std::string, bool> toSelect;
+        for (unsigned int m = 0; m < mesh.size(); m++)
+            for (unsigned int i = 0; i < mesh[m].vertices.size(); i += 3)
+                if ((mesh[m].colors[i + 0] == SELECTOR_COLOR) ||
+                    (mesh[m].colors[i + 1] == SELECTOR_COLOR) ||
+                    (mesh[m].colors[i + 2] == SELECTOR_COLOR)) {
+                    toSelect[VertexToKey(mesh[m].vertices[i + 0])] = true;
+                    toSelect[VertexToKey(mesh[m].vertices[i + 1])] = true;
+                    toSelect[VertexToKey(mesh[m].vertices[i + 2])] = true;
+                }
+
+        //select vertices
+        for (unsigned int m = 0; m < mesh.size(); m++)
+            for (unsigned int i = 0; i < mesh[m].vertices.size(); i += 3)
+                if ((toSelect.find(VertexToKey(mesh[m].vertices[i + 0])) != toSelect.end()) ||
+                    (toSelect.find(VertexToKey(mesh[m].vertices[i + 1])) != toSelect.end()) ||
+                    (toSelect.find(VertexToKey(mesh[m].vertices[i + 2])) != toSelect.end())) {
+                    mesh[m].colors[i + 0] = SELECTOR_COLOR;
+                    mesh[m].colors[i + 1] = SELECTOR_COLOR;
+                    mesh[m].colors[i + 2] = SELECTOR_COLOR;
+                }
+    }
+
     void Selector::Init(int w, int h) {
         SetResolution(w, h);
     }
@@ -47,5 +101,10 @@ namespace oc {
 
     bool Selector::VerticesOnly() {
         return false;
+    }
+
+    std::string Selector::VertexToKey(glm::vec3& vec) {
+        sprintf(buffer, "%.3f,%.3f,%.3f", vec.x, vec.y, vec.z);
+        return std::string(buffer);
     }
 }

@@ -40,6 +40,7 @@ namespace oc {
 
         void ApplyEffect(Effector::Effect effect, float value);
         void ApplySelection(float x, float y);
+        void MultSelection(bool increase);
 
     private:
         bool t3dr_is_running_;
