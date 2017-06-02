@@ -2,13 +2,25 @@
 
 namespace oc {
 
-    void Rasterizer::AddUVS(std::vector<glm::vec2> uvs) {
+    void Rasterizer::AddUVS(std::vector<glm::vec2> uvs, std::vector<unsigned int> selected) {
         glm::vec3 a, b, c;
         for (unsigned long i = 0; i < uvs.size(); i += 3) {
+            if (!selected.empty()) {
+                if (selected[i + 0] != 0)
+                    continue;
+                if (selected[i + 1] != 0)
+                    continue;
+                if (selected[i + 2] != 0)
+                    continue;
+            }
             //get coordinate
             a = glm::vec3(uvs[i + 0], 0.0f);
             b = glm::vec3(uvs[i + 1], 0.0f);
             c = glm::vec3(uvs[i + 2], 0.0f);
+            //mirror y axis
+            a.y = 1.0f - a.y;
+            b.y = 1.0f - b.y;
+            c.y = 1.0f - c.y;
             //scale into raster dimensions
             a.x *= (float)(viewport_width - 1);
             a.y *= (float)(viewport_height - 1);

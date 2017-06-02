@@ -7,7 +7,7 @@ namespace oc {
 
 class Rasterizer {
 public:
-    void AddUVS(std::vector<glm::vec2> uvs);
+    void AddUVS(std::vector<glm::vec2> uvs, std::vector<unsigned int> selected);
     void AddVertices(std::vector<glm::vec3>& vertices, glm::mat4 world2screen);
     void SetResolution(int w, int h);
 
