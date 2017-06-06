@@ -16,7 +16,7 @@ namespace oc {
         void Setup3DR(double res, double dmin, double dmax, int noise);
 
         std::string Dataset() { return dataset; }
-        Tango3DR_CameraCalibration Camera() { return camera; }
+        Tango3DR_CameraCalibration* Camera() { return &camera; }
         Tango3DR_ReconstructionContext Context() { return context; }
         TangoSupportPointCloudManager* Pointcloud() { return pointcloud; }
 
@@ -24,6 +24,7 @@ namespace oc {
         std::string dataset;
         TangoConfig config;
         Tango3DR_CameraCalibration camera;
+        Tango3DR_CameraCalibration depth;
         Tango3DR_ReconstructionContext context;
         TangoSupportPointCloudManager* pointcloud;
 

@@ -31,7 +31,7 @@ namespace oc {
             std::exit(EXIT_SUCCESS);
 
         // Initialize TangoSupport context.
-        TangoSupport_initializeLibrary();
+        TangoSupport_initialize(TangoService_getPoseAtTime, TangoService_getCameraIntrinsics);
 
         // Update the camera intrinsics too.
         TangoCameraIntrinsics intrinsics;
@@ -47,6 +47,20 @@ namespace oc {
         camera.cy = intrinsics.cy;
         std::copy(std::begin(intrinsics.distortion), std::end(intrinsics.distortion),
                   std::begin(camera.distortion));
+
+        // Update the depth intrinsics too.
+        err = TangoService_getCameraIntrinsics(TANGO_CAMERA_DEPTH, &intrinsics);
+        if (err != TANGO_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+        depth.calibration_type = static_cast<Tango3DR_TangoCalibrationType>(intrinsics.calibration_type);
+        depth.width = intrinsics.width;
+        depth.height = intrinsics.height;
+        depth.fx = intrinsics.fx;
+        depth.fy = intrinsics.fy;
+        depth.cx = intrinsics.cx;
+        depth.cy = intrinsics.cy;
+        std::copy(std::begin(intrinsics.distortion), std::end(intrinsics.distortion),
+                  std::begin(depth.distortion));
     }
 
     void TangoService::Disconnect() {
@@ -79,13 +93,15 @@ namespace oc {
             std::exit(EXIT_SUCCESS);
 
         Tango3DR_Config_setInt32(t3dr_config, "min_num_vertices", noise);
+        Tango3DR_Config_setInt32(t3dr_config, "update_method", TANGO_3DR_PROJECTIVE_UPDATE);
 
         context = Tango3DR_ReconstructionContext_create(t3dr_config);
         if (context == nullptr)
             std::exit(EXIT_SUCCESS);
         Tango3DR_Config_destroy(t3dr_config);
 
-        Tango3DR_setColorCalibration(context, &camera);
+        Tango3DR_ReconstructionContext_setColorCalibration(context, &camera);
+        Tango3DR_ReconstructionContext_setDepthCalibration(context, &depth);
 
         res_ = res;
         dmin_ = dmin;

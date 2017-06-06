@@ -233,47 +233,47 @@ namespace oc {
         binder_mutex_.unlock();
     }
 
-    void App::Save(std::string filename, std::string dataset) {
+    void App::Save(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
-        if (!dataset.empty()) {
-            if (texturize.Init(tango.Context(), dataset)) {
-                texturize.Process(filename);
+        if (texturize.Init(tango.Context(), tango.Camera())) {
+            texturize.Process(filename);
 
-                //merge with previous OBJ
-                scan.Clear();
-                tango.Clear();
-                File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
-            }
-            File3d(filename, true).WriteModel(scene.static_meshes_);
+            //merge with previous OBJ
+            scan.Clear();
+            tango.Clear();
+            File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
         }
+        File3d(filename, true).WriteModel(scene.static_meshes_);
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
 
-    void App::Texturize(std::string filename, std::string dataset) {
+    void App::Texturize(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
-        if (!dataset.empty()) {
 
-            if (!texturize.Init(filename, dataset)) {
-                render_mutex_.unlock();
-                binder_mutex_.unlock();
-                return;
-            }
-            scan.Clear();
-            tango.Clear();
-            texturize.ApplyFrames(tango.Dataset());
-            texturize.Process(filename);
-            texturize.Clear();
-
-            //reload the model
-            for (unsigned int i = 0; i < scene.static_meshes_.size(); i++)
-                scene.static_meshes_[i].Destroy();
-            scene.static_meshes_.clear();
-            File3d io(filename, false);
-            io.ReadModel(kSubdivisionSize, scene.static_meshes_);
+        //check if texturizing is valid
+        if (!texturize.Init(filename, tango.Camera())) {
+            render_mutex_.unlock();
+            binder_mutex_.unlock();
+            return;
         }
+
+        //texturize
+        scan.Clear();
+        tango.Clear();
+        texturize.ApplyFrames(tango.Dataset());
+        texturize.Process(filename);
+        texturize.Clear();
+
+        //reload the model
+        for (unsigned int i = 0; i < scene.static_meshes_.size(); i++)
+            scene.static_meshes_[i].Destroy();
+        scene.static_meshes_.clear();
+        File3d io(filename, false);
+        io.ReadModel(kSubdivisionSize, scene.static_meshes_);
+
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -354,12 +354,12 @@ Java_com_lvonasek_openconstructor_TangoJNINative_load(JNIEnv* env, jobject, jstr
 
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_save(JNIEnv* env, jobject, jstring name, jstring d) {
-  app.Save(jstring2string(env, name), jstring2string(env, d));
+  app.Save(jstring2string(env, name));//TODO:remove d parameter
 }
 
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_texturize(JNIEnv* env, jobject, jstring name, jstring d) {
-  app.Texturize(jstring2string(env, name), jstring2string(env, d));
+  app.Texturize(jstring2string(env, name));//TODO:remove d parameter
 }
 
 JNIEXPORT void JNICALL

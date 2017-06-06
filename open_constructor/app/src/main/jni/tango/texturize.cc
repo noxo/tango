@@ -62,7 +62,7 @@ namespace oc {
         poses = 0;
     }
 
-    bool TangoTexturize::Init(std::string filename, std::string dataset) {
+    bool TangoTexturize::Init(std::string filename, Tango3DR_CameraCalibration* camera) {
         event = "Merging results";
         Tango3DR_Mesh mesh;
         Tango3DR_Status ret;
@@ -80,14 +80,14 @@ namespace oc {
         }
 
         //create texturing context
-        CreateContext(dataset, true, &mesh);
+        CreateContext(true, &mesh, camera);
         ret = Tango3DR_Mesh_destroy(&mesh);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
         return true;
     }
 
-    bool TangoTexturize::Init(Tango3DR_ReconstructionContext context, std::string dataset) {
+    bool TangoTexturize::Init(Tango3DR_ReconstructionContext context, Tango3DR_CameraCalibration* camera) {
         event = "Processing model";
         Tango3DR_Mesh mesh;
         Tango3DR_Status ret;
@@ -105,7 +105,7 @@ namespace oc {
         }
 
         //create texturing context
-        CreateContext(dataset, false, &mesh);
+        CreateContext(false, &mesh, camera);
         ret = Tango3DR_Mesh_destroy(&mesh);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
@@ -137,7 +137,7 @@ namespace oc {
         event = "";
     }
 
-    void TangoTexturize::CreateContext(std::string dataset, bool gl, Tango3DR_Mesh* mesh) {
+    void TangoTexturize::CreateContext(bool gl, Tango3DR_Mesh* mesh, Tango3DR_CameraCalibration* camera) {
         event = "Simplifying mesh";
         Tango3DR_Config textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
         Tango3DR_Status ret;
@@ -153,10 +153,12 @@ namespace oc {
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
-        context = Tango3DR_TexturingContext_create(textureConfig, dataset.c_str(), mesh);
+        context = Tango3DR_TexturingContext_create(textureConfig, mesh);
         if (context == nullptr)
             std::exit(EXIT_SUCCESS);
         Tango3DR_Config_destroy(textureConfig);
+
+        Tango3DR_TexturingContext_setColorCalibration(context, camera);
     }
 
     std::string TangoTexturize::GetFileName(int index, std::string dataset, std::string extension) {
