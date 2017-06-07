@@ -23,9 +23,10 @@
     <string name="editor_colors_tone">Tone</string>
     <string name="editor_colors_reset">Reset</string>
     <string name="editor_select_all">All/None</string>
-    <string name="editor_select_area">Area</string>
     <string name="editor_select_object">Object</string>
     <string name="editor_select_object_desc">Tap on the object you want select</string>
+    <string name="editor_select_triangle">Triangle</string>
+    <string name="editor_select_triangle_desc">Point on the triangle(s) you want select</string>
     <string name="editor_select_less">Less</string>
     <string name="editor_select_more">More</string>
 

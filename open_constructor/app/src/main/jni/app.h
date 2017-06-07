@@ -40,7 +40,7 @@ namespace oc {
         void ApplyEffect(Effector::Effect effect, float value);
         void PreviewEffect(Effector::Effect effect, float value);
 
-        void ApplySelection(float x, float y);
+        void ApplySelection(float x, float y, bool triangle);
         void CompleteSelection(bool inverse);
         void MultSelection(bool increase);
 

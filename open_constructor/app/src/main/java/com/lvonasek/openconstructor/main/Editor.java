@@ -18,7 +18,7 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
 {
   private enum Effect { CONTRAST, GAMMA, SATURATION, TONE, RESET }
   private enum Screen { MAIN, COLOR, SELECT }
-  private enum Status { IDLE, UPDATING_COLORS, WAITING_SELECTION_POINT }
+  private enum Status { IDLE, UPDATING_COLORS, WAITING_SELECTION_OBJECTS, WAITING_SELECTION_TRIANGLES }
 
   private ArrayList<Button> mButtons;
   private Activity mContext;
@@ -85,6 +85,11 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
     }).start();
   }
 
+  public boolean movingLocked()
+  {
+    return (mStatus == Status.WAITING_SELECTION_OBJECTS) ||(mStatus == Status.WAITING_SELECTION_TRIANGLES);
+  }
+
   @Override
   public void onClick(final View view)
   {
@@ -102,7 +107,7 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
     }
     //back button
     else if (view.getId() == R.id.editor0) {
-      if (mStatus == Status.WAITING_SELECTION_POINT)
+      if ((mStatus == Status.WAITING_SELECTION_OBJECTS) || (mStatus == Status.WAITING_SELECTION_TRIANGLES))
         setSelectScreen();
       else if (mStatus == Status.UPDATING_COLORS) {
         mProgress.setVisibility(View.VISIBLE);
@@ -151,14 +156,15 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
           }
         }).start();
       }
-      //area selection
-      if (view.getId() == R.id.editor2) {
-        //TODO:implement
-      }
       //select object
-      if (view.getId() == R.id.editor3) {
+      if (view.getId() == R.id.editor2) {
         showText(R.string.editor_select_object_desc);
-        mStatus = Status.WAITING_SELECTION_POINT;
+        mStatus = Status.WAITING_SELECTION_OBJECTS;
+      }
+      //triangle selection
+      if (view.getId() == R.id.editor3) {
+        showText(R.string.editor_select_triangle_desc);
+        mStatus = Status.WAITING_SELECTION_TRIANGLES;
       }
       //select less
       if (view.getId() == R.id.editor4)
@@ -303,8 +309,8 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
   {
     initButtons();
     mButtons.get(1).setText(mContext.getString(R.string.editor_select_all));
-    mButtons.get(2).setText(mContext.getString(R.string.editor_select_area));
-    mButtons.get(3).setText(mContext.getString(R.string.editor_select_object));
+    mButtons.get(2).setText(mContext.getString(R.string.editor_select_object));
+    mButtons.get(3).setText(mContext.getString(R.string.editor_select_triangle));
     mButtons.get(4).setText(mContext.getString(R.string.editor_select_less));
     mButtons.get(5).setText(mContext.getString(R.string.editor_select_more));
     mScreen = Screen.SELECT;
@@ -331,11 +337,12 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
 
   public void touchEvent(float x, float y)
   {
-    if (mStatus == Status.WAITING_SELECTION_POINT)
-    {
-      TangoJNINative.applySelect(x, y);
+    if (mStatus == Status.WAITING_SELECTION_OBJECTS) {
+      TangoJNINative.applySelect(x, y, false);
       mStatus = Status.IDLE;
       setSelectScreen();
     }
+    if (mStatus == Status.WAITING_SELECTION_TRIANGLES)
+      TangoJNINative.applySelect(x, y, true);
   }
 }

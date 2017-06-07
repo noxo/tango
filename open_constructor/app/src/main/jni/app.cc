@@ -311,10 +311,13 @@ namespace oc {
         render_mutex_.unlock();
     }
 
-    void App::ApplySelection(float x, float y) {
+    void App::ApplySelection(float x, float y, bool triangle) {
         render_mutex_.lock();
         glm::mat4 matrix = scene.renderer->camera.projection * scene.renderer->camera.GetView();
-        selector.SelectObject(scene.static_meshes_, matrix, x, y);
+        if (triangle)
+          selector.SelectTriangle(scene.static_meshes_, matrix, x, y);
+        else
+          selector.SelectObject(scene.static_meshes_, matrix, x, y);
         render_mutex_.unlock();
     }
 
@@ -415,8 +418,8 @@ Java_com_lvonasek_openconstructor_TangoJNINative_previewEffect(JNIEnv*, jobject,
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_applySelect(JNIEnv*, jobject, jfloat x, jfloat y) {
-    app.ApplySelection(x, y);
+Java_com_lvonasek_openconstructor_TangoJNINative_applySelect(JNIEnv*, jobject, jfloat x, jfloat y, jboolean triangle) {
+    app.ApplySelection(x, y, triangle);
 }
 
 JNIEXPORT void JNICALL

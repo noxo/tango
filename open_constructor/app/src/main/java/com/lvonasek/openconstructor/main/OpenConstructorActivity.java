@@ -320,9 +320,13 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
 
   @Override
   public boolean onTouchEvent(MotionEvent event) {
-    mGestureDetector.onTouchEvent(event);
     if (mEditor != null)
+    {
       mEditor.touchEvent(event.getX(), mGLView.getHeight() - event.getY());
+      if (mEditor.movingLocked())
+        return true;
+    }
+    mGestureDetector.onTouchEvent(event);
     return true;
   }
 

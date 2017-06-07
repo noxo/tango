@@ -60,7 +60,7 @@ public class TangoJNINative {
   public static native void previewEffect(int effect, float value);
 
   // Apply select on model
-  public static native void applySelect(float x, float y);
+  public static native void applySelect(float x, float y, boolean triangle);
 
   // Select or deselect all
   public static native void completeSelection(boolean inverse);

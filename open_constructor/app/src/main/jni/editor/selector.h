@@ -19,6 +19,7 @@ public:
 private:
     std::string VertexToKey(glm::vec3& vec);
 
+    std::map<std::string, std::map<std::pair<int, int>, bool> > connections;
     double depth;
     int pointX, pointY;
     int selected;

@@ -106,23 +106,24 @@ namespace oc {
         //create graph of vertices
         std::string a, b, c;
         std::pair<int, int> p;
-        std::map<std::string, std::map<std::pair<int, int>, bool> > connections;
-        for (unsigned int m = 0; m < mesh.size(); m++)
-            for (unsigned int i = 0; i < mesh[m].vertices.size(); i += 3) {
-                a = VertexToKey(mesh[m].vertices[i + 0]);
-                b = VertexToKey(mesh[m].vertices[i + 1]);
-                c = VertexToKey(mesh[m].vertices[i + 2]);
-                p = std::pair<int, int>(m, i);
-                if (connections.find(a) == connections.end())
-                    connections[a] = std::map<std::pair<int, int>, bool>();
-                if (connections.find(b) == connections.end())
-                    connections[b] = std::map<std::pair<int, int>, bool>();
-                if (connections.find(c) == connections.end())
-                    connections[c] = std::map<std::pair<int, int>, bool>();
-                connections[a][p] = true;
-                connections[b][p] = true;
-                connections[c][p] = true;
-            }
+        if (connections.empty()) {
+            for (unsigned int m = 0; m < mesh.size(); m++)
+                for (unsigned int i = 0; i < mesh[m].vertices.size(); i += 3) {
+                    a = VertexToKey(mesh[m].vertices[i + 0]);
+                    b = VertexToKey(mesh[m].vertices[i + 1]);
+                    c = VertexToKey(mesh[m].vertices[i + 2]);
+                    p = std::pair<int, int>(m, i);
+                    if (connections.find(a) == connections.end())
+                        connections[a] = std::map<std::pair<int, int>, bool>();
+                    if (connections.find(b) == connections.end())
+                        connections[b] = std::map<std::pair<int, int>, bool>();
+                    if (connections.find(c) == connections.end())
+                        connections[c] = std::map<std::pair<int, int>, bool>();
+                    connections[a][p] = true;
+                    connections[b][p] = true;
+                    connections[c][p] = true;
+                }
+        }
 
         //select initial triangle
         mesh[selectModel].colors[selectFace + 0] = 0;
