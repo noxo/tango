@@ -11,9 +11,7 @@ public:
     void AddVertices(std::vector<glm::vec3>& vertices, glm::mat4 world2screen);
     void SetResolution(int w, int h);
 
-    virtual void ProcessFragment(unsigned long& index, int &x, int &y, double &z) = 0;
-    virtual void ProcessVertex(unsigned long& index, int &x1, int &x2, int &y, double &z1, double &z2) = 0;
-    virtual bool VerticesOnly() = 0;
+    virtual void Process(unsigned long& index, int &x1, int &x2, int &y, double &z1, double &z2) = 0;
 private:
     bool Line(int x1, int y1, int x2, int y2, double z1, double z2, std::pair<int, double>* fillCache);
     bool Test(double p, double q, double &t1, double &t2);

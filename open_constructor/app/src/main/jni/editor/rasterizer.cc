@@ -263,36 +263,11 @@ namespace oc {
             int x = x2 - x1;
             if (Test(-x, x1, t1, t2) && Test(x, viewport_width - 1 - x1, t1, t2)) {
 
+                //callback for processing
                 if (x2 > x1)
-                    ProcessVertex(index, x1, x2, y, z1, z2);
+                    Process(index, x1, x2, y, z1, z2);
                 else
-                    ProcessVertex(index, x2, x1, y, z2, z1);
-                if (VerticesOnly())
-                    continue;
-
-                //clip line
-                double z = z2 - z1;
-                if (t1 > 0) {
-                    x1 += t1 * x;
-                    z1 += t1 * z;
-                } else
-                    t1 = 0;
-                if (t2 < 1) {
-                    t2 -= t1;
-                    x2 = (int) (x1 + t2 * x);
-                    z2 = z1 + t2 * z;
-                }
-
-                //filling algorithm
-                x = glm::abs(x2 - x1);
-                int step = (x2 >= x1) ? 1 : -1;
-                z = (z2 - z1) / (float)x;
-                int mem = x1 + memy;
-                for (; x >= 0; x--) {
-                    ProcessFragment(index, x, y, z1);
-                    mem += step;
-                    z1 += z;
-                }
+                    Process(index, x2, x1, y, z2, z1);
             }
             memy += viewport_width;
         }

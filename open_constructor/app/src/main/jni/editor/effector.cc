@@ -78,11 +78,7 @@ namespace oc {
         texture2mask.clear();
     }
 
-    void Effector::ProcessFragment(unsigned long &index, int &x, int &y, double &z) {
-        //dummy
-    }
-
-    void Effector::ProcessVertex(unsigned long &index, int &x1, int &x2, int &y, double &z1, double &z2) {
+    void Effector::Process(unsigned long &index, int &x1, int &x2, int &y, double &z1, double &z2) {
         int offset = y * stride;
         int start = x1;
         if (start < 0)
@@ -92,9 +88,5 @@ namespace oc {
             finish = stride - 1;
         for (int x = start; x <= finish; x++)
           mask[x + offset] = true;
-    }
-
-    bool Effector::VerticesOnly() {
-        return true;
     }
 }

@@ -89,11 +89,7 @@ namespace oc {
         SetResolution(w, h);
     }
 
-    void Selector::ProcessFragment(unsigned long &index, int &x, int &y, double &z) {
-        //dummy
-    }
-
-    void Selector::ProcessVertex(unsigned long &index, int &x1, int &x2, int &y, double &z1, double &z2) {
+    void Selector::Process(unsigned long &index, int &x1, int &x2, int &y, double &z1, double &z2) {
         if (pointY == y) {
             if ((x1 <= pointX) && (pointX <= x2)) {
                 double z = z1 + (pointX - x1) * (z2 - z1) / (double)(x2 - x1);
@@ -103,10 +99,6 @@ namespace oc {
                 }
             }
         }
-    }
-
-    bool Selector::VerticesOnly() {
-        return false;
     }
 
     std::string Selector::VertexToKey(glm::vec3& vec) {
