@@ -314,7 +314,7 @@ namespace oc {
     void App::ApplySelection(float x, float y) {
         render_mutex_.lock();
         glm::mat4 matrix = scene.renderer->camera.projection * scene.renderer->camera.GetView();
-        selector.ApplySelection(scene.static_meshes_, matrix, x, y);
+        selector.SelectObject(scene.static_meshes_, matrix, x, y);
         render_mutex_.unlock();
     }
 

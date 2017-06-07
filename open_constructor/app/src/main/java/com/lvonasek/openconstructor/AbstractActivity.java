@@ -28,7 +28,7 @@ public abstract class AbstractActivity extends Activity
 {
   protected static final int BUFFER_SIZE = 65536;
   protected static final String CARDBOARD_APP = "com.lvonasek.daydreamOBJ";
-  protected static final String[] FILE_EXT = {".obj", ".ply"};
+  protected static final String[] FILE_EXT = {".obj"};
   protected static final String FILE_KEY = "FILE2OPEN";
   protected static final String MODEL_DIRECTORY = "/Models/";
   protected static final String RESOLUTION_KEY = "RESOLUTION";
