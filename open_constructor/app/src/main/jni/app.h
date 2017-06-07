@@ -22,7 +22,6 @@ namespace oc {
         void onPointCloudAvailable(TangoPointCloud *point_cloud);
         void onFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer);
         void onTangoEvent(const TangoEvent *event);
-        void OnSurfaceCreated();
         void OnSurfaceChanged(int width, int height);
         void OnDrawFrame();
         void OnToggleButtonClicked(bool t3dr_is_running);
@@ -39,6 +38,8 @@ namespace oc {
         std::string GetEvent();
 
         void ApplyEffect(Effector::Effect effect, float value);
+        void PreviewEffect(Effector::Effect effect, float value);
+
         void ApplySelection(float x, float y);
         void CompleteSelection(bool inverse);
         void MultSelection(bool increase);

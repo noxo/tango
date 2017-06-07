@@ -16,13 +16,13 @@ import java.util.ArrayList;
 
 public class Editor implements Button.OnClickListener, View.OnTouchListener
 {
-  private enum Colors { CONTRAST, GAMMA, SATURATION, TONE }
+  private enum Effect { CONTRAST, GAMMA, SATURATION, TONE, RESET }
   private enum Screen { MAIN, COLOR, SELECT }
   private enum Status { IDLE, UPDATING_COLORS, WAITING_SELECTION_POINT }
 
   private ArrayList<Button> mButtons;
   private Activity mContext;
-  private Colors mColors;
+  private Effect mEffect;
   private ProgressBar mProgress;
   private Screen mScreen;
   private SeekBar mSeek;
@@ -52,7 +52,8 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
       public void onProgressChanged(SeekBar seekBar, int value, boolean byUser)
       {
         if (byUser && (mStatus == Status.UPDATING_COLORS)) {
-          //TODO:implement preview
+          value -= 127;
+          TangoJNINative.previewEffect(mEffect.ordinal(), value);
         }
       }
 
@@ -104,7 +105,23 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
       if (mStatus == Status.WAITING_SELECTION_POINT)
         setSelectScreen();
       else if (mStatus == Status.UPDATING_COLORS) {
-        //TODO:implement updating colors
+        mProgress.setVisibility(View.VISIBLE);
+        new Thread(new Runnable()
+        {
+          @Override
+          public void run()
+          {
+            TangoJNINative.applyEffect(mEffect.ordinal(), mSeek.getProgress() - 127);
+            mContext.runOnUiThread(new Runnable()
+            {
+              @Override
+              public void run()
+              {
+                mProgress.setVisibility(View.INVISIBLE);
+              }
+            });
+          }
+        }).start();
         setColorScreen();
       }
       else
@@ -191,25 +208,25 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
     if (mScreen == Screen.COLOR) {
       if (view.getId() == R.id.editor1)
       {
-        mColors = Colors.CONTRAST;
+        mEffect = Effect.CONTRAST;
         mStatus = Status.UPDATING_COLORS;
         showSeekBar();
       }
       if (view.getId() == R.id.editor2)
       {
-        mColors = Colors.GAMMA;
+        mEffect = Effect.GAMMA;
         mStatus = Status.UPDATING_COLORS;
         showSeekBar();
       }
       if (view.getId() == R.id.editor3)
       {
-        mColors = Colors.SATURATION;
+        mEffect = Effect.SATURATION;
         mStatus = Status.UPDATING_COLORS;
         showSeekBar();
       }
       if (view.getId() == R.id.editor4)
       {
-        mColors = Colors.TONE;
+        mEffect = Effect.TONE;
         mStatus = Status.UPDATING_COLORS;
         showSeekBar();
       }
@@ -298,8 +315,8 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
     for (Button b : mButtons)
       b.setVisibility(View.GONE);
     mButtons.get(0).setVisibility(View.VISIBLE);
-    mSeek.setMax(510);
-    mSeek.setProgress(256);
+    mSeek.setMax(255);
+    mSeek.setProgress(127);
     mSeek.setVisibility(View.VISIBLE);
   }
 

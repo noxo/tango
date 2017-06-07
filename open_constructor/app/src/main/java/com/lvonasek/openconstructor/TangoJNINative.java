@@ -23,9 +23,6 @@ public class TangoJNINative {
   public static native void onTangoServiceConnected(IBinder binder, double res,  double dmin,
                                                     double dmax, int noise, boolean land, String temp);
 
-  // Allocate OpenGL resources for rendering.
-  public static native void onGlSurfaceCreated();
-
   // Setup the view port width and height.
   public static native void onGlSurfaceChanged(int width, int height);
 
@@ -42,10 +39,10 @@ public class TangoJNINative {
   public static native void load(String name);
 
   // Save current 3D model
-  public static native void save(String name, String dataset);
+  public static native void save(String name);
 
   // Texturize 3D model
-  public static native void texturize(String name, String dataset);
+  public static native void texturize(String name);
 
   // Set view on 3D view
   public static native void setView(float pitch, float yaw, float x, float y, float z, boolean gyro);
@@ -58,6 +55,9 @@ public class TangoJNINative {
 
   // Apply effect on model
   public static native void applyEffect(int effect, float value);
+
+  // Preview effect on model
+  public static native void previewEffect(int effect, float value);
 
   // Apply select on model
   public static native void applySelect(float x, float y);

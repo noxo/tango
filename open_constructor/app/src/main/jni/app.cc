@@ -158,12 +158,6 @@ namespace oc {
         binder_mutex_.unlock();
     }
 
-    void App::OnSurfaceCreated() {
-        render_mutex_.lock();
-        scene.InitGLContent();
-        render_mutex_.unlock();
-    }
-
     void App::OnSurfaceChanged(int width, int height) {
         render_mutex_.lock();
         scene.SetupViewPort(width, height);
@@ -301,6 +295,19 @@ namespace oc {
     void App::ApplyEffect(Effector::Effect effect, float value) {
         render_mutex_.lock();
         editor.ApplyEffect(scene.static_meshes_, effect, value);
+        scene.vertex = scene.TexturedVertexShader();
+        scene.fragment = scene.TexturedFragmentShader();
+        render_mutex_.unlock();
+    }
+
+    void App::PreviewEffect(Effector::Effect effect, float value) {
+        render_mutex_.lock();
+        std::string vs = scene.TexturedVertexShader();
+        std::string fs = scene.TexturedFragmentShader();
+        editor.PreviewEffect(vs, fs, effect);
+        scene.vertex = vs;
+        scene.fragment = fs;
+        scene.uniform = value / 255.0f;
         render_mutex_.unlock();
     }
 
@@ -350,11 +357,6 @@ Java_com_lvonasek_openconstructor_TangoJNINative_onTangoServiceConnected(JNIEnv*
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_onGlSurfaceCreated(JNIEnv*, jobject) {
-  app.OnSurfaceCreated();
-}
-
-JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_onGlSurfaceChanged(
     JNIEnv*, jobject, jint width, jint height) {
   app.OnSurfaceChanged(width, height);
@@ -382,13 +384,13 @@ Java_com_lvonasek_openconstructor_TangoJNINative_load(JNIEnv* env, jobject, jstr
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_save(JNIEnv* env, jobject, jstring name, jstring d) {
-  app.Save(jstring2string(env, name));//TODO:remove d parameter
+Java_com_lvonasek_openconstructor_TangoJNINative_save(JNIEnv* env, jobject, jstring name) {
+  app.Save(jstring2string(env, name));
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_texturize(JNIEnv* env, jobject, jstring name, jstring d) {
-  app.Texturize(jstring2string(env, name));//TODO:remove d parameter
+Java_com_lvonasek_openconstructor_TangoJNINative_texturize(JNIEnv* env, jobject, jstring name) {
+  app.Texturize(jstring2string(env, name));
 }
 
 JNIEXPORT void JNICALL
@@ -405,6 +407,11 @@ Java_com_lvonasek_openconstructor_TangoJNINative_getFloorLevel(JNIEnv*, jobject,
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_applyEffect(JNIEnv*, jobject, jint effect, jfloat value) {
     app.ApplyEffect((oc::Effector::Effect) effect, value);
+}
+
+JNIEXPORT void JNICALL
+Java_com_lvonasek_openconstructor_TangoJNINative_previewEffect(JNIEnv*, jobject, jint effect, jfloat value) {
+    app.PreviewEffect((oc::Effector::Effect) effect, value);
 }
 
 JNIEXPORT void JNICALL

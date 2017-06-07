@@ -30,6 +30,7 @@ namespace oc {
         }
 
         // apply effect
+        float fValue = value / 255.0f;
         if ((effect == GAMMA) || (effect == SATURATION)) {
             for (Mesh& m : mesh) {
                 if (!m.image || (m.image->GetTexture() == -1))
@@ -51,9 +52,9 @@ namespace oc {
                             }
                             if (effect == SATURATION) {
                                 c = (r + g + b) / 3;
-                                r -= (int) ((c - r) * value);
-                                g -= (int) ((c - g) * value);
-                                b -= (int) ((c - b) * value);
+                                r -= (int) ((c - r) * fValue * 2.0f);
+                                g -= (int) ((c - g) * fValue * 2.0f);
+                                b -= (int) ((c - b) * fValue * 2.0f);
                             }
                             if (r < 0) r = 0;
                             if (g < 0) g = 0;
@@ -75,6 +76,36 @@ namespace oc {
         for (std::pair<const long, bool *> & m : texture2mask)
             delete[] m.second;
         texture2mask.clear();
+    }
+
+    void Effector::PreviewEffect(std::string& vs, std::string& fs, Effector::Effect effect) {
+        if (effect == GAMMA) {
+            fs = "uniform sampler2D u_texture;\n"
+                 "uniform float u_uniform;\n"
+                 "varying vec4 f_color;\n"
+                 "varying vec2 v_uv;\n"
+                 "void main() {\n"
+                 "  gl_FragColor = texture2D(u_texture, v_uv) - f_color;\n"
+                 "  if (f_color.r < 0.005)\n"
+                 "    gl_FragColor.rgb += u_uniform;\n"
+                 "}";
+        }
+        if (effect == SATURATION) {
+            fs = "uniform sampler2D u_texture;\n"
+                    "uniform float u_uniform;\n"
+                    "varying vec4 f_color;\n"
+                    "varying vec2 v_uv;\n"
+                    "void main() {\n"
+                    "  gl_FragColor = texture2D(u_texture, v_uv) - f_color;\n"
+                    "  if (f_color.r < 0.005)\n"
+                    "  {\n"
+                    "    float c = (gl_FragColor.r + gl_FragColor.g + gl_FragColor.b) / 3.0;\n"
+                    "    gl_FragColor.r -= (c - gl_FragColor.r) * u_uniform * 2.0;\n"
+                    "    gl_FragColor.g -= (c - gl_FragColor.g) * u_uniform * 2.0;\n"
+                    "    gl_FragColor.b -= (c - gl_FragColor.b) * u_uniform * 2.0;\n"
+                    "  }\n"
+                    "}";
+        }
     }
 
     void Effector::Process(unsigned long &index, int &x1, int &x2, int &y, double &z1, double &z2) {

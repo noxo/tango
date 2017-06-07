@@ -398,19 +398,17 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, false);
   }
 
-  // Render loop of the Gl context.
+  @Override
   public void onDrawFrame(GL10 gl) {
     TangoJNINative.onGlSurfaceDrawFrame();
   }
 
-  // Called when the surface size changes.
+  @Override
+  public void onSurfaceCreated(GL10 gl10, EGLConfig eglConfig) {}
+
+  @Override
   public void onSurfaceChanged(GL10 gl, int width, int height) {
     TangoJNINative.onGlSurfaceChanged(width, height);
-  }
-
-  // Called when the surface is created or recreated.
-  public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-    TangoJNINative.onGlSurfaceCreated();
   }
 
   private void save() {
@@ -454,17 +452,10 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       public void run()
       {
         mFirstSave = false;
-        String dataset = "";
         long timestamp = System.currentTimeMillis();
         final File obj = new File(getTempPath(), timestamp + FILE_EXT[0]);
-        for (File f : getTempPath().listFiles())
-          if (f.isDirectory()) {
-            dataset = f.toString();
-            break;
-          }
-        TangoJNINative.save(obj.getAbsolutePath(), dataset);
+        TangoJNINative.save(obj.getAbsolutePath());
         //open???
-        final String data = dataset;
         OpenConstructorActivity.this.runOnUiThread(new Runnable()
         {
           @Override
@@ -490,7 +481,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                   public void run()
                   {
                     if (isTexturingOn())
-                      TangoJNINative.texturize(obj.getAbsolutePath(), data);
+                      TangoJNINative.texturize(obj.getAbsolutePath());
                     for(String s : getObjResources(obj.getAbsoluteFile()))
                       if (new File(getTempPath(), s).renameTo(new File(getPath(), s)))
                         Log.d(AbstractActivity.TAG, "File " + s + " saved");
