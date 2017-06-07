@@ -127,6 +127,14 @@
         android:background="@android:color/background_dark" >
 
         <Button
+            android:id="@+id/editor0"
+            android:layout_width="60dp"
+            android:layout_height="match_parent"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:background="@drawable/ic_back_small" />
+
+        <Button
             android:id="@+id/editor1"
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -170,6 +178,13 @@
             android:background="@android:color/transparent"
             android:textColor="@android:color/white"
             android:textSize="20dp" />
+
+        <SeekBar
+            android:id="@+id/editorSeek"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            style="@android:style/Widget.Holo.SeekBar"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/editorMsg"

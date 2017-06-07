@@ -17,7 +17,6 @@ public:
 
 private:
     bool* mask;
-    int stride;
     std::map<long, bool*> texture2mask;
 };
 }

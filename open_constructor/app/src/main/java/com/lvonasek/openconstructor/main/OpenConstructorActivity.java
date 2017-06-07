@@ -23,6 +23,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -66,6 +67,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private LinearLayout mLayoutEditor;
   private ArrayList<Button> mEditorAction;
   private TextView mEditorMsg;
+  private SeekBar mEditorSeek;
   private Editor mEditor = null;
 
   private GestureDetector mGestureDetector;
@@ -144,7 +146,9 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     // Editor
     mLayoutEditor = (LinearLayout) findViewById(R.id.layout_editor);
     mEditorMsg = (TextView) findViewById(R.id.editorMsg);
+    mEditorSeek = (SeekBar) findViewById(R.id.editorSeek);
     mEditorAction = new ArrayList<>();
+    mEditorAction.add((Button) findViewById(R.id.editor0));
     mEditorAction.add((Button) findViewById(R.id.editor1));
     mEditorAction.add((Button) findViewById(R.id.editor2));
     mEditorAction.add((Button) findViewById(R.id.editor3));
@@ -365,7 +369,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         mEditorButton.setVisibility(View.GONE);
         mLayoutEditor.setVisibility(View.VISIBLE);
         setOrientation(false, OpenConstructorActivity.this);
-        mEditor = new Editor(mEditorAction, mEditorMsg, mProgress, OpenConstructorActivity.this);
+        mEditor = new Editor(mEditorAction, mEditorMsg, mEditorSeek, mProgress, OpenConstructorActivity.this);
       }
     });
     mModeMove = false;

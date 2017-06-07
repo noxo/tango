@@ -25,7 +25,6 @@ namespace oc {
             if (!m.image || (m.image->GetTexture() == -1))
                 continue;
             mask = texture2mask[m.image->GetTexture()];
-            stride = m.image->GetWidth();
             SetResolution(m.image->GetWidth(), m.image->GetHeight());
             AddUVS(m.uv, m.colors);
         }
@@ -79,14 +78,21 @@ namespace oc {
     }
 
     void Effector::Process(unsigned long &index, int &x1, int &x2, int &y, double &z1, double &z2) {
-        int offset = y * stride;
-        int start = x1;
+        int start = x1 - 2;
         if (start < 0)
             start = 0;
-        int finish = x2;
-        if (finish >= stride)
-            finish = stride - 1;
-        for (int x = start; x <= finish; x++)
-          mask[x + offset] = true;
+        int finish = x2 + 2;
+        if (finish >= viewport_width)
+            finish = viewport_width - 1;
+
+        for (int i = -2; i <= 2; i++) {
+            if (y + i < 0)
+                continue;
+            if (y + i >= viewport_height)
+                continue;
+            int offset = (y + i) * viewport_width;
+            for (int x = start; x <= finish; x++)
+                mask[x + offset] = true;
+        }
     }
 }

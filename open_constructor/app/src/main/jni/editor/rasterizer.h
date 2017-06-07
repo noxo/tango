@@ -18,6 +18,8 @@ private:
     void Triangle(unsigned long& index, glm::vec3 &a, glm::vec3 &b, glm::vec3 &c);
 
     std::vector<std::pair<int, double> > fillCache1, fillCache2;
+
+protected:
     int viewport_width, viewport_height;
 };
 }

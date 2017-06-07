@@ -3,7 +3,7 @@
 namespace oc {
 
     void Rasterizer::AddUVS(std::vector<glm::vec2> uvs, std::vector<unsigned int> selected) {
-        glm::vec3 a, b, c, center;
+        glm::vec3 a, b, c;
         for (unsigned long i = 0; i < uvs.size(); i += 3) {
             if (!selected.empty()) {
                 if (selected[i + 0] != 0)
@@ -28,21 +28,13 @@ namespace oc {
             b.y *= (float)(viewport_height - 1);
             c.x *= (float)(viewport_width - 1);
             c.y *= (float)(viewport_height - 1);
-            //padding
-            center = (a + b + c) / 3.0f;
-            if (center.x > a.x) a.x -= 2; else a.x += 2;
-            if (center.y > a.y) a.y -= 2; else a.y += 2;
-            if (center.x > b.x) b.x -= 2; else b.x += 2;
-            if (center.y > b.y) b.y -= 2; else b.y += 2;
-            if (center.x > c.x) c.x -= 2; else c.x += 2;
-            if (center.y > c.y) c.y -= 2; else c.y += 2;
             //process
             Triangle(i, a, b, c);
         }
     }
 
     void Rasterizer::AddVertices(std::vector<glm::vec3>& vertices, glm::mat4 world2screen) {
-        glm::vec3 a, b, c;
+        glm::vec3 a, b, c, ba, ca;
         glm::vec4 wa, wb, wc;
         for (unsigned long i = 0; i < vertices.size(); i += 3) {
             //get coordinate
@@ -81,6 +73,11 @@ namespace oc {
             b.y *= (float)(viewport_height - 1);
             c.x *= (float)(viewport_width - 1);
             c.y *= (float)(viewport_height - 1);
+            //back face culling
+            ba = glm::vec3(b.x - a.x, b.y - a.y, 0.0f);
+            ca = glm::vec3(c.x - a.x, c.y - a.y, 0.0f);
+            if (glm::cross(ba, ca).z < 0)
+                continue;
             //process
             Triangle(i, a, b, c);
         }
@@ -229,24 +226,27 @@ namespace oc {
         int ab = (int) glm::abs(a.y - b.y);
         int ac = (int) glm::abs(a.y - c.y);
         int bc = (int) glm::abs(b.y - c.y);
+        glm::ivec2 ia = glm::ivec2(a.x + 0.5f, a.y + 0.5f);
+        glm::ivec2 ib = glm::ivec2(b.x + 0.5f, b.y + 0.5f);
+        glm::ivec2 ic = glm::ivec2(c.x + 0.5f, c.y + 0.5f);
         if ((ab >= ac) && (ab >= bc)) {
-            Line((int) a.x, (int) a.y, (int) b.x, (int) b.y, a.z, b.z, &fillCache1[0]);
-            Line((int) a.x, (int) a.y, (int) c.x, (int) c.y, a.z, c.z, &fillCache2[0]);
-            Line((int) b.x, (int) b.y, (int) c.x, (int) c.y, b.z, c.z, &fillCache2[0]);
-            min = glm::max(0, (int) glm::min(a.y, b.y));
-            max = glm::min((int) glm::max(a.y, b.y), viewport_height - 1);
+            Line(ia.x, ia.y, ib.x, ib.y, a.z, b.z, &fillCache1[0]);
+            Line(ia.x, ia.y, ic.x, ic.y, a.z, c.z, &fillCache2[0]);
+            Line(ib.x, ib.y, ic.x, ic.y, b.z, c.z, &fillCache2[0]);
+            min = glm::max(0, glm::min(ia.y, ib.y));
+            max = glm::min(glm::max(ia.y, ib.y), viewport_height - 1);
         } else if ((ac >= ab) && (ac >= bc)) {
-            Line((int) a.x, (int) a.y, (int) c.x, (int) c.y, a.z, c.z, &fillCache1[0]);
-            Line((int) a.x, (int) a.y, (int) b.x, (int) b.y, a.z, b.z, &fillCache2[0]);
-            Line((int) b.x, (int) b.y, (int) c.x, (int) c.y, b.z, c.z, &fillCache2[0]);
-            min = glm::max(0, (int) glm::min(a.y, c.y));
-            max = glm::min((int) glm::max(a.y, c.y), viewport_height - 1);
+            Line(ia.x, ia.y, ic.x, ic.y, a.z, c.z, &fillCache1[0]);
+            Line(ia.x, ia.y, ib.x, ib.y, a.z, b.z, &fillCache2[0]);
+            Line(ib.x, ib.y, ic.x, ic.y, b.z, c.z, &fillCache2[0]);
+            min = glm::max(0, glm::min(ia.y, ic.y));
+            max = glm::min(glm::max(ia.y, ic.y), viewport_height - 1);
         }else {
-            Line((int) b.x, (int) b.y, (int) c.x, (int) c.y, b.z, c.z, &fillCache1[0]);
-            Line((int) a.x, (int) a.y, (int) b.x, (int) b.y, a.z, b.z, &fillCache2[0]);
-            Line((int) a.x, (int) a.y, (int) c.x, (int) c.y, a.z, c.z, &fillCache2[0]);
-            min = glm::max(0, (int) glm::min(b.y, c.y));
-            max = glm::min((int) glm::max(b.y, c.y), viewport_height - 1);
+            Line(ib.x, ib.y, ic.x, ic.y, b.z, c.z, &fillCache1[0]);
+            Line(ia.x, ia.y, ib.x, ib.y, a.z, b.z, &fillCache2[0]);
+            Line(ia.x, ia.y, ic.x, ic.y, a.z, c.z, &fillCache2[0]);
+            min = glm::max(0, glm::min(ib.y, ic.y));
+            max = glm::min(glm::max(ib.y, ic.y), viewport_height - 1);
         }
 
         //fill triangle
