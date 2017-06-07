@@ -238,7 +238,7 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
           @Override
           public void run()
           {
-            //TODO:implement resetting colors
+            TangoJNINative.applyEffect(Effect.RESET.ordinal(), 0);
             mContext.runOnUiThread(new Runnable()
             {
               @Override

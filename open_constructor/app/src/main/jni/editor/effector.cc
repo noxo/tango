@@ -31,44 +31,53 @@ namespace oc {
 
         // apply effect
         float fValue = value / 255.0f;
-        if ((effect == GAMMA) || (effect == SATURATION)) {
-            for (Mesh& m : mesh) {
-                if (!m.image || (m.image->GetTexture() == -1))
-                    continue;
-                if (m.imageOwner) {
-                    int c, r, g, b, index = 0;
-                    unsigned char* data = m.image->GetData();
-                    mask = texture2mask[m.image->GetTexture()];
-                    for (unsigned int i = 0; i < m.image->GetWidth() * m.image->GetHeight(); i++) {
-                        r = data[index++];
-                        g = data[index++];
-                        b = data[index++];
-                        //effects implementation
-                        if (mask[i]) {
-                            if (effect == GAMMA) {
-                                r += value;
-                                g += value;
-                                b += value;
-                            }
-                            if (effect == SATURATION) {
-                                c = (r + g + b) / 3;
-                                r -= (int) ((c - r) * fValue * 2.0f);
-                                g -= (int) ((c - g) * fValue * 2.0f);
-                                b -= (int) ((c - b) * fValue * 2.0f);
-                            }
-                            if (r < 0) r = 0;
-                            if (g < 0) g = 0;
-                            if (b < 0) b = 0;
-                            if (r > 255) r = 255;
-                            if (g > 255) g = 255;
-                            if (b > 255) b = 255;
-                            data[index - 3] = (unsigned char) r;
-                            data[index - 2] = (unsigned char) g;
-                            data[index - 1] = (unsigned char) b;
+        for (Mesh& m : mesh) {
+            if (!m.image || (m.image->GetTexture() == -1))
+                continue;
+            if (m.imageOwner) {
+                Image* img = 0;
+                if (effect == RESET)
+                    img = new Image(m.image->GetName());
+
+                int c, r, g, b, index = 0;
+                unsigned char* data = m.image->GetData();
+                mask = texture2mask[m.image->GetTexture()];
+                for (unsigned int i = 0; i < m.image->GetWidth() * m.image->GetHeight(); i++) {
+                    r = data[index++];
+                    g = data[index++];
+                    b = data[index++];
+                    //effects implementation
+                    if (mask[i]) {
+                        if (effect == GAMMA) {
+                            r += value;
+                            g += value;
+                            b += value;
                         }
+                        else if ((effect == CONTRAST) || (effect == SATURATION)) {
+                            c = effect == CONTRAST ? 128 : (r + g + b) / 3;
+                            r -= (int) ((c - r) * fValue * 2.0f);
+                            g -= (int) ((c - g) * fValue * 2.0f);
+                            b -= (int) ((c - b) * fValue * 2.0f);
+                        }
+                        else if (effect == RESET) {
+                            r = img->GetData()[index - 3];
+                            g = img->GetData()[index - 2];
+                            b = img->GetData()[index - 1];
+                        }
+                        if (r < 0) r = 0;
+                        if (g < 0) g = 0;
+                        if (b < 0) b = 0;
+                        if (r > 255) r = 255;
+                        if (g > 255) g = 255;
+                        if (b > 255) b = 255;
+                        data[index - 3] = (unsigned char) r;
+                        data[index - 2] = (unsigned char) g;
+                        data[index - 1] = (unsigned char) b;
                     }
-                    m.image->UpdateTexture();
                 }
+                if (img)
+                    delete img;
+                m.image->UpdateTexture();
             }
         }
 
@@ -79,6 +88,22 @@ namespace oc {
     }
 
     void Effector::PreviewEffect(std::string& vs, std::string& fs, Effector::Effect effect) {
+        if (effect == CONTRAST) {
+            fs = "uniform sampler2D u_texture;\n"
+                    "uniform float u_uniform;\n"
+                    "varying vec4 f_color;\n"
+                    "varying vec2 v_uv;\n"
+                    "void main() {\n"
+                    "  gl_FragColor = texture2D(u_texture, v_uv) - f_color;\n"
+                    "  if (f_color.r < 0.005)\n"
+                    "  {\n"
+                    "    float c = 0.5;\n"
+                    "    gl_FragColor.r -= (c - gl_FragColor.r) * u_uniform * 2.0;\n"
+                    "    gl_FragColor.g -= (c - gl_FragColor.g) * u_uniform * 2.0;\n"
+                    "    gl_FragColor.b -= (c - gl_FragColor.b) * u_uniform * 2.0;\n"
+                    "  }\n"
+                    "}";
+        }
         if (effect == GAMMA) {
             fs = "uniform sampler2D u_texture;\n"
                  "uniform float u_uniform;\n"
