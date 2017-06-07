@@ -64,6 +64,22 @@ namespace oc {
                             g = img->GetData()[index - 2];
                             b = img->GetData()[index - 1];
                         }
+                        else if (effect == TONE) {
+                            float factor = 255.0f * (fValue > 0.0 ? 3.0f : -3.0f);
+                            double hue = fabs(fValue);
+                            if ((hue >= 0.0) && (hue < 0.15))
+                                r += (hue - 0.0) * factor;
+                            if ((hue >= 0.15) && (hue < 0.3))
+                                r += (0.3 - hue) * factor;
+                            if ((hue >= 0.15) && (hue < 0.3))
+                                g += (hue - 0.15) * factor;
+                            if ((hue >= 0.3) && (hue < 0.45))
+                                g += (0.45 - hue) * factor;
+                            if ((hue >= 0.3) && (hue < 0.45))
+                                b += (hue - 0.3) * factor;
+                            if ((hue >= 0.45) && (hue < 0.6))
+                                b += (0.6 - hue) * factor;
+                        }
                         if (r < 0) r = 0;
                         if (g < 0) g = 0;
                         if (b < 0) b = 0;
@@ -130,6 +146,32 @@ namespace oc {
                     "    gl_FragColor.b -= (c - gl_FragColor.b) * u_uniform * 2.0;\n"
                     "  }\n"
                     "}";
+        }
+        if (effect == TONE) {
+            fs = "uniform sampler2D u_texture;\n"
+                 "uniform float u_uniform;\n"
+                 "varying vec4 f_color;\n"
+                 "varying vec2 v_uv;\n"
+                 "void main() {\n"
+                 "  gl_FragColor = texture2D(u_texture, v_uv) - f_color;\n"
+                 "  if (f_color.r < 0.005)\n"
+                 "  {\n"
+                 "    float factor = u_uniform > 0.0 ? 3.0 : -3.0;\n"
+                 "    float hue = abs(u_uniform);\n"
+                 "    if ((hue >= 0.0) && (hue < 0.15))\n"
+                 "      gl_FragColor.r += (hue - 0.0) * factor;\n"
+                 "    if ((hue >= 0.15) && (hue < 0.3))\n"
+                 "      gl_FragColor.r += (0.3 - hue) * factor;\n"
+                 "    if ((hue >= 0.15) && (hue < 0.3))\n"
+                 "      gl_FragColor.g += (hue - 0.15) * factor;\n"
+                 "    if ((hue >= 0.3) && (hue < 0.45))\n"
+                 "      gl_FragColor.g += (0.45 - hue) * factor;\n"
+                 "    if ((hue >= 0.3) && (hue < 0.45))\n"
+                 "      gl_FragColor.b += (hue - 0.3) * factor;\n"
+                 "    if ((hue >= 0.45) && (hue < 0.6))\n"
+                 "      gl_FragColor.b += (0.6 - hue) * factor;\n"
+                 "  }\n"
+                 "}";
         }
     }
 
