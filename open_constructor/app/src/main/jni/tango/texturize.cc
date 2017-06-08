@@ -145,6 +145,8 @@ namespace oc {
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
         int simplify = (mesh->max_num_faces < 1000) ? 1 : (gl ? 1 : 50);
+        if (resolution < 0.006)
+            simplify = 1;
         ret = Tango3DR_Config_setInt32(textureConfig, "mesh_simplification_factor", simplify);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);

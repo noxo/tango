@@ -16,12 +16,14 @@ namespace oc {
         bool Init(Tango3DR_ReconstructionContext context, Tango3DR_CameraCalibration* camera);
         std::string GetEvent() { return event; }
         void Process(std::string filename);
+        void SetResolution(float value) { resolution = value; }
 
     private:
         void CreateContext(bool gl, Tango3DR_Mesh* mesh, Tango3DR_CameraCalibration* camera);
         std::string GetFileName(int index, std::string dataset, std::string extension);
 
         int poses;
+        float resolution;
         std::string event;
         Tango3DR_TexturingContext context;
         int width, height;

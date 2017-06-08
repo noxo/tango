@@ -141,6 +141,7 @@ namespace oc {
 
         TangoService_setBinder(env, binder);
         tango.SetupConfig(dataset);
+        texturize.SetResolution((float) res);
 
         TangoErrorType ret = TangoService_connectOnPointCloudAvailable(onPointCloudAvailableRouter);
         if (ret != TANGO_SUCCESS)
