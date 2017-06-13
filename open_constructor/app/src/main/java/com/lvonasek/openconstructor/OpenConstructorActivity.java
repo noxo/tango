@@ -57,7 +57,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private int mRes = 3;
 
   private GestureDetector mGestureDetector;
-  private boolean mModeMove;
+  private boolean mTopMode;
   private float mMoveX = 0;
   private float mMoveY = 0;
   private float mMoveZ = 0;
@@ -137,13 +137,13 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     {
       @Override
       public boolean IsAcceptingRotation() {
-        return mModeMove;
+        return mTopMode;
       }
 
       @Override
       public void OnMove(float dx, float dy) {
         float f = getMoveFactor();
-        if (mModeMove) {
+        if (mTopMode) {
           //move factor
           f *= Math.max(1.0, mMoveZ);
           //yaw rotation
@@ -313,12 +313,12 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       @Override
       public void onClick(View view)
       {
-        mModeMove = !mModeMove;
-        mModeButton.setBackgroundResource(mModeMove ? R.drawable.ic_mode3d : R.drawable.ic_mode2d);
+        mTopMode = !mTopMode;
+        mModeButton.setBackgroundResource(mTopMode ? R.drawable.ic_mode3d : R.drawable.ic_mode2d);
         float floor = TangoJNINative.getFloorLevel(mMoveX, mMoveY, mMoveZ);
         if (floor < -9999)
           floor = 0;
-        if (mModeMove) {
+        if (mTopMode) {
           mMoveZ = floor + 10.0f;
           mPitch = (float) Math.toRadians(-90);
         } else {
@@ -328,7 +328,6 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, false);
       }
     });
-    mModeMove = false;
     if (isCardboardEnabled(this)) {
       mCardboard.setVisibility(View.VISIBLE);
       mCardboard.setOnClickListener(new View.OnClickListener()
@@ -344,12 +343,16 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         }
       });
     }
+    float floor = TangoJNINative.getFloorLevel(mMoveX, mMoveY, mMoveZ);
+    if (floor < -9999)
+      floor = 0;
     mMoveX = 0;
     mMoveY = 0;
-    mMoveZ = 0;
-    mPitch = 0;
+    mMoveZ = floor + 10.0f;
+    mPitch = (float) Math.toRadians(-90);
     mYawM  = 0;
     mYawR  = 0;
+    mTopMode = true;
     mViewMode = true;
     TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, false);
   }

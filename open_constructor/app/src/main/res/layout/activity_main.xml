@@ -143,7 +143,7 @@
         android:layout_alignParentLeft="true"
         android:layout_margin="10dp"
         android:visibility="gone"
-        android:background="@drawable/ic_mode2d"
+        android:background="@drawable/ic_mode3d"
         android:text=""/>
 
     <Button
