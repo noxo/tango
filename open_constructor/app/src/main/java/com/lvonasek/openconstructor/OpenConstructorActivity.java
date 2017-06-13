@@ -336,9 +336,9 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         @Override
         public void onClick(View view)
         {
-          Intent i = new Intent();
-          i.setAction(Intent.ACTION_VIEW);
+          Intent i = new Intent(Intent.ACTION_VIEW);
           i.setDataAndType(Uri.parse("file://" + filename), "application/" + CARDBOARD_APP);
+          i.setPackage(CARDBOARD_APP);
           startActivity(i);
           System.exit(0);
         }
