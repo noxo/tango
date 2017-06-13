@@ -38,7 +38,7 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
       b.setOnClickListener(this);
       b.setOnTouchListener(this);
     }
-    mAxis = 0;
+    mAxis = 1;
     mButtons = buttons;
     mContext = context;
     mMsg = msg;
@@ -89,13 +89,14 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
 
   private void applyTransform()
   {
+    final int axis = mAxis;
     mProgress.setVisibility(View.VISIBLE);
     new Thread(new Runnable()
     {
       @Override
       public void run()
       {
-        TangoJNINative.applyEffect(mEffect.ordinal(), mSeek.getProgress() - 127, mAxis);
+        TangoJNINative.applyEffect(mEffect.ordinal(), mSeek.getProgress() - 127, axis);
         mContext.runOnUiThread(new Runnable()
         {
           @Override
@@ -355,15 +356,15 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
       }
       if (view.getId() == R.id.editor4)
       {
-        mEffect = Effect.MOVE;
+        mEffect = Effect.ROTATE;
         mStatus = Status.UPDATE_TRANSFORM;
         showSeekBar(true);
       }
       if (view.getId() == R.id.editor5)
       {
-        mEffect = Effect.MOVE;
+        mEffect = Effect.SCALE;
         mStatus = Status.UPDATE_TRANSFORM;
-        showSeekBar(true);
+        showSeekBar(false);
       }
     }
   }

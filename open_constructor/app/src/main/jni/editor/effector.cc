@@ -158,11 +158,38 @@ namespace oc {
                 m.uv = uv;
                 m.vertices = vertices;
             } else if (effect == MOVE) {
-                //TODO
+                for (long i = 0; i < size; i++) {
+                    if (m.colors[i] == 0) {
+                        if (axis == 0)
+                            m.vertices[i].x += value * 10.0f / 255.0f;
+                        if (axis == 1)
+                            m.vertices[i].y += value * 10.0f / 255.0f;
+                        if (axis == 2)
+                            m.vertices[i].z += value * 10.0f / 255.0f;
+                    }
+                }
             } else if (effect == ROTATE) {
                 //TODO
             } else if (effect == SCALE) {
-                //TODO
+                for (long i = 0; i < size; i++) {
+                    if (m.colors[i] == 0) {
+                        m.vertices[i].x -= center.x;
+                        m.vertices[i].y -= center.y;
+                        m.vertices[i].z -= center.z;
+                        if (value > 0) {
+                            m.vertices[i].x *= value / 255.0f + 1.0f;
+                            m.vertices[i].y *= value / 255.0f + 1.0f;
+                            m.vertices[i].z *= value / 255.0f + 1.0f;
+                        } else {
+                            m.vertices[i].x /= 1.0f - value / 255.0f;
+                            m.vertices[i].y /= 1.0f - value / 255.0f;
+                            m.vertices[i].z /= 1.0f - value / 255.0f;
+                        }
+                        m.vertices[i].x += center.x;
+                        m.vertices[i].y += center.y;
+                        m.vertices[i].z += center.z;
+                    }
+                }
             }
         }
     }
@@ -241,13 +268,54 @@ namespace oc {
 
     void Effector::PreviewGeometryEffect(std::string &vs, Effector::Effect effect, int axis) {
         if (effect == MOVE) {
-            //TODO
+            vs = "attribute vec4 v_vertex;\n"
+                 "attribute vec2 v_coord;\n"
+                 "attribute vec4 v_color;\n"
+                 "varying vec4 f_color;\n"
+                 "varying vec2 v_uv;\n"
+                 "uniform mat4 MVP;\n"
+                 "uniform float u_uniform;\n"
+                 "uniform vec3 u_uniformPos;\n"
+                 "void main() {\n"
+                 "  f_color = v_color;\n"
+                 "  v_uv.x = v_coord.x;\n"
+                 "  v_uv.y = 1.0 - v_coord.y;\n"
+                 "  vec4 v = v_vertex;\n"
+                 "  if (f_color.r < 0.005)\n"
+                 "  {\n";
+            if (axis == 0)
+                vs += "    v.x += u_uniform * 10.0;\n";
+            if (axis == 1)
+                vs += "    v.y += u_uniform * 10.0;\n";
+            if (axis == 2)
+                vs += "    v.z += u_uniform * 10.0;\n";
+            vs +="  }\n"
+                 "  gl_Position = MVP * v;\n"
+                 "}";
         }
         if (effect == ROTATE) {
             //TODO
         }
         if (effect == SCALE) {
-            //TODO
+            vs = "attribute vec4 v_vertex;\n"
+                 "attribute vec2 v_coord;\n"
+                 "attribute vec4 v_color;\n"
+                 "varying vec4 f_color;\n"
+                 "varying vec2 v_uv;\n"
+                 "uniform mat4 MVP;\n"
+                 "uniform float u_uniform;\n"
+                 "uniform vec3 u_uniformPos;\n"
+                 "void main() {\n"
+                 "  f_color = v_color;\n"
+                 "  v_uv.x = v_coord.x;\n"
+                 "  v_uv.y = 1.0 - v_coord.y;\n"
+                 "  vec4 v = v_vertex;\n"
+                 "  v.xyz -= u_uniformPos;\n"
+                 "  if (f_color.r < 0.005)\n"
+                 "    v.xyz *= u_uniform > 0.0 ? u_uniform + 1.0 : 1.0 / (1.0 - u_uniform);\n"
+                 "  v.xyz += u_uniformPos;\n"
+                 "  gl_Position = MVP * v;\n"
+                 "}";
         }
     }
 
