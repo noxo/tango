@@ -4,87 +4,22 @@
 
 namespace oc {
 
-    void Effector::ApplyEffect(std::vector<Mesh> &mesh, Effector::Effect effect, float value) {
+    void Effector::ApplyEffect(std::vector<Mesh> &mesh, Effector::Effect e, float value) {
 
         if (mesh.empty())
             return;
 
-        if ((effect == CONTRAST) || (effect == GAMMA) || (effect == SATURATION) || (effect == TONE) || (effect == RESET))
-            ApplyColorEffect(mesh, effect, value);
+        if ((e == CONTRAST) || (e == GAMMA) || (e == SATURATION) || (e == TONE) || (e == RESET))
+            ApplyColorEffect(mesh, e, value);
         else
-            ApplyGeometryEffect(mesh, effect, value);
+            ApplyGeometryEffect(mesh, e, value);
     }
 
-    void Effector::PreviewEffect(std::string& vs, std::string& fs, Effector::Effect effect) {
-        if (effect == CONTRAST) {
-            fs = "uniform sampler2D u_texture;\n"
-                    "uniform float u_uniform;\n"
-                    "varying vec4 f_color;\n"
-                    "varying vec2 v_uv;\n"
-                    "void main() {\n"
-                    "  gl_FragColor = texture2D(u_texture, v_uv) - f_color;\n"
-                    "  if (f_color.r < 0.005)\n"
-                    "  {\n"
-                    "    float c = 0.5;\n"
-                    "    gl_FragColor.r -= (c - gl_FragColor.r) * u_uniform * 2.0;\n"
-                    "    gl_FragColor.g -= (c - gl_FragColor.g) * u_uniform * 2.0;\n"
-                    "    gl_FragColor.b -= (c - gl_FragColor.b) * u_uniform * 2.0;\n"
-                    "  }\n"
-                    "}";
-        }
-        if (effect == GAMMA) {
-            fs = "uniform sampler2D u_texture;\n"
-                 "uniform float u_uniform;\n"
-                 "varying vec4 f_color;\n"
-                 "varying vec2 v_uv;\n"
-                 "void main() {\n"
-                 "  gl_FragColor = texture2D(u_texture, v_uv) - f_color;\n"
-                 "  if (f_color.r < 0.005)\n"
-                 "    gl_FragColor.rgb += u_uniform;\n"
-                 "}";
-        }
-        if (effect == SATURATION) {
-            fs = "uniform sampler2D u_texture;\n"
-                    "uniform float u_uniform;\n"
-                    "varying vec4 f_color;\n"
-                    "varying vec2 v_uv;\n"
-                    "void main() {\n"
-                    "  gl_FragColor = texture2D(u_texture, v_uv) - f_color;\n"
-                    "  if (f_color.r < 0.005)\n"
-                    "  {\n"
-                    "    float c = (gl_FragColor.r + gl_FragColor.g + gl_FragColor.b) / 3.0;\n"
-                    "    gl_FragColor.r -= (c - gl_FragColor.r) * u_uniform * 2.0;\n"
-                    "    gl_FragColor.g -= (c - gl_FragColor.g) * u_uniform * 2.0;\n"
-                    "    gl_FragColor.b -= (c - gl_FragColor.b) * u_uniform * 2.0;\n"
-                    "  }\n"
-                    "}";
-        }
-        if (effect == TONE) {
-            fs = "uniform sampler2D u_texture;\n"
-                 "uniform float u_uniform;\n"
-                 "varying vec4 f_color;\n"
-                 "varying vec2 v_uv;\n"
-                 "void main() {\n"
-                 "  gl_FragColor = texture2D(u_texture, v_uv) - f_color;\n"
-                 "  if (f_color.r < 0.005)\n"
-                 "  {\n"
-                 "    float factor = u_uniform > 0.0 ? 3.0 : -3.0;\n"
-                 "    float hue = abs(u_uniform);\n"
-                 "    if ((hue >= 0.0) && (hue < 0.15))\n"
-                 "      gl_FragColor.r += (hue - 0.0) * factor;\n"
-                 "    if ((hue >= 0.15) && (hue < 0.3))\n"
-                 "      gl_FragColor.r += (0.3 - hue) * factor;\n"
-                 "    if ((hue >= 0.15) && (hue < 0.3))\n"
-                 "      gl_FragColor.g += (hue - 0.15) * factor;\n"
-                 "    if ((hue >= 0.3) && (hue < 0.45))\n"
-                 "      gl_FragColor.g += (0.45 - hue) * factor;\n"
-                 "    if ((hue >= 0.3) && (hue < 0.45))\n"
-                 "      gl_FragColor.b += (hue - 0.3) * factor;\n"
-                 "    if ((hue >= 0.45) && (hue < 0.6))\n"
-                 "      gl_FragColor.b += (0.6 - hue) * factor;\n"
-                 "  }\n"
-                 "}";
-        }
+    void Effector::PreviewEffect(std::string& vs, std::string& fs, Effector::Effect e) {
+        if ((e == CONTRAST) || (e == GAMMA) || (e == SATURATION) || (e == TONE) || (e == RESET))
+            PreviewColorEffect(fs, e);
+        else
+            PreviewGeometryEffect(vs, e);
     }
 
     void Effector::ApplyColorEffect(std::vector<Mesh> &mesh, Effector::Effect effect, float value) {
@@ -222,7 +157,97 @@ namespace oc {
                 m.normals = normals;
                 m.uv = uv;
                 m.vertices = vertices;
+            } else if (effect == MOVE) {
+                //TODO
+            } else if (effect == ROTATE) {
+                //TODO
+            } else if (effect == SCALE) {
+                //TODO
             }
+        }
+    }
+
+    void Effector::PreviewColorEffect(std::string &fs, Effector::Effect effect) {
+        if (effect == CONTRAST) {
+            fs = "uniform sampler2D u_texture;\n"
+                    "uniform float u_uniform;\n"
+                    "varying vec4 f_color;\n"
+                    "varying vec2 v_uv;\n"
+                    "void main() {\n"
+                    "  gl_FragColor = texture2D(u_texture, v_uv) - f_color;\n"
+                    "  if (f_color.r < 0.005)\n"
+                    "  {\n"
+                    "    float c = 0.5;\n"
+                    "    gl_FragColor.r -= (c - gl_FragColor.r) * u_uniform * 2.0;\n"
+                    "    gl_FragColor.g -= (c - gl_FragColor.g) * u_uniform * 2.0;\n"
+                    "    gl_FragColor.b -= (c - gl_FragColor.b) * u_uniform * 2.0;\n"
+                    "  }\n"
+                    "}";
+        }
+        if (effect == GAMMA) {
+            fs = "uniform sampler2D u_texture;\n"
+                    "uniform float u_uniform;\n"
+                    "varying vec4 f_color;\n"
+                    "varying vec2 v_uv;\n"
+                    "void main() {\n"
+                    "  gl_FragColor = texture2D(u_texture, v_uv) - f_color;\n"
+                    "  if (f_color.r < 0.005)\n"
+                    "    gl_FragColor.rgb += u_uniform;\n"
+                    "}";
+        }
+        if (effect == SATURATION) {
+            fs = "uniform sampler2D u_texture;\n"
+                    "uniform float u_uniform;\n"
+                    "varying vec4 f_color;\n"
+                    "varying vec2 v_uv;\n"
+                    "void main() {\n"
+                    "  gl_FragColor = texture2D(u_texture, v_uv) - f_color;\n"
+                    "  if (f_color.r < 0.005)\n"
+                    "  {\n"
+                    "    float c = (gl_FragColor.r + gl_FragColor.g + gl_FragColor.b) / 3.0;\n"
+                    "    gl_FragColor.r -= (c - gl_FragColor.r) * u_uniform * 2.0;\n"
+                    "    gl_FragColor.g -= (c - gl_FragColor.g) * u_uniform * 2.0;\n"
+                    "    gl_FragColor.b -= (c - gl_FragColor.b) * u_uniform * 2.0;\n"
+                    "  }\n"
+                    "}";
+        }
+        if (effect == TONE) {
+            fs = "uniform sampler2D u_texture;\n"
+                    "uniform float u_uniform;\n"
+                    "varying vec4 f_color;\n"
+                    "varying vec2 v_uv;\n"
+                    "void main() {\n"
+                    "  gl_FragColor = texture2D(u_texture, v_uv) - f_color;\n"
+                    "  if (f_color.r < 0.005)\n"
+                    "  {\n"
+                    "    float factor = u_uniform > 0.0 ? 3.0 : -3.0;\n"
+                    "    float hue = abs(u_uniform);\n"
+                    "    if ((hue >= 0.0) && (hue < 0.15))\n"
+                    "      gl_FragColor.r += (hue - 0.0) * factor;\n"
+                    "    if ((hue >= 0.15) && (hue < 0.3))\n"
+                    "      gl_FragColor.r += (0.3 - hue) * factor;\n"
+                    "    if ((hue >= 0.15) && (hue < 0.3))\n"
+                    "      gl_FragColor.g += (hue - 0.15) * factor;\n"
+                    "    if ((hue >= 0.3) && (hue < 0.45))\n"
+                    "      gl_FragColor.g += (0.45 - hue) * factor;\n"
+                    "    if ((hue >= 0.3) && (hue < 0.45))\n"
+                    "      gl_FragColor.b += (hue - 0.3) * factor;\n"
+                    "    if ((hue >= 0.45) && (hue < 0.6))\n"
+                    "      gl_FragColor.b += (0.6 - hue) * factor;\n"
+                    "  }\n"
+                    "}";
+        }
+    }
+
+    void Effector::PreviewGeometryEffect(std::string &vs, Effector::Effect effect) {
+        if (effect == MOVE) {
+            //TODO
+        }
+        if (effect == ROTATE) {
+            //TODO
+        }
+        if (effect == SCALE) {
+            //TODO
         }
     }
 

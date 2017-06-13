@@ -319,12 +319,18 @@ namespace oc {
           selector.SelectTriangle(scene.static_meshes_, matrix, x, y);
         else
           selector.SelectObject(scene.static_meshes_, matrix, x, y);
+        glm::vec3 center = selector.GetCenter(scene.static_meshes_);
+        editor.SetCenter(center);
+        scene.uniformPos = center;
         render_mutex_.unlock();
     }
 
     void App::CompleteSelection(bool inverse) {
         render_mutex_.lock();
         selector.CompleteSelection(scene.static_meshes_, inverse);
+        glm::vec3 center = selector.GetCenter(scene.static_meshes_);
+        editor.SetCenter(center);
+        scene.uniformPos = center;
         render_mutex_.unlock();
     }
 
@@ -334,6 +340,9 @@ namespace oc {
             selector.IncreaseSelection(scene.static_meshes_);
         else
             selector.DecreaseSelection(scene.static_meshes_);
+        glm::vec3 center = selector.GetCenter(scene.static_meshes_);
+        editor.SetCenter(center);
+        scene.uniformPos = center;
         render_mutex_.unlock();
     }
 }

@@ -60,6 +60,15 @@ namespace oc {
          */
         void UniformMatrix(const char* name, const float* value);
 
+        /**
+         * @brief UniformVec3 send vec3 into shader
+         * @param name is uniform name
+         * @param x is uniform value in x coordinate
+         * @param y is uniform value in y coordinate
+         * @param z is uniform value in z coordinate
+         */
+        void UniformVec3(const char* name, float x, float y, float z);
+
     private:
         unsigned int id;          ///< Shader id
         unsigned int shader_vp;   ///< Vertex shader

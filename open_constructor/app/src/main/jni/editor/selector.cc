@@ -37,6 +37,29 @@ namespace oc {
                 }
     }
 
+    glm::vec3 Selector::GetCenter(std::vector<Mesh> &mesh) {
+        glm::vec3 min = glm::vec3(INT_MAX, INT_MAX, INT_MAX);
+        glm::vec3 max = glm::vec3(INT_MIN, INT_MIN, INT_MIN);
+        glm::vec3 p;
+
+        for (unsigned int m = 0; m < mesh.size(); m++) {
+            for (unsigned int i = 0; i < mesh[m].vertices.size(); i++) {
+                if (mesh[m].colors[i] == 0) {
+                    p = mesh[m].vertices[i];
+                    if (min.x > p.x)
+                        min.x = p.x;
+                    if (min.z > p.z)
+                        min.z = p.z;
+                    if (max.x < p.x)
+                        max.x = p.x;
+                    if (max.z < p.z)
+                        max.z = p.z;
+                }
+            }
+        }
+        return (min + max) * 0.5f;
+    }
+
     void Selector::IncreaseSelection(std::vector<Mesh>& mesh) {
 
         //get vertices to select

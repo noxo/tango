@@ -30,6 +30,7 @@ namespace oc {
         std::string vertex;
         std::string fragment;
         float uniform;
+        glm::vec3 uniformPos;
     private:
         std::string lastVertex;
         std::string lastFragment;
