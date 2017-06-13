@@ -11,7 +11,7 @@
     <string name="sketchfab">Sketchfab</string>
     <string name="capture">Capture</string>
     <string name="unsupported">Unsupported device</string>
-    <string name="unsupported_asus">Asus Zenfore AR is not supported yet, the device has some problem with loading Tango library. Asus refused to provide any help connected with this problem.</string>
+    <string name="unsupported_asus">Asus Zenfore AR is not supported yet, the device has some problem with loading Tango library.</string>
 
     <!-- Editor !-->
     <string name="editor_back">Back</string>
