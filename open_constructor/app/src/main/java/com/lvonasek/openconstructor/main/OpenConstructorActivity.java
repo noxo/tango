@@ -154,6 +154,9 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     mEditorAction.add((Button) findViewById(R.id.editor3));
     mEditorAction.add((Button) findViewById(R.id.editor4));
     mEditorAction.add((Button) findViewById(R.id.editor5));
+    mEditorAction.add((Button) findViewById(R.id.editorX));
+    mEditorAction.add((Button) findViewById(R.id.editorY));
+    mEditorAction.add((Button) findViewById(R.id.editorZ));
 
     // OpenGL view where all of the graphics are drawn
     mGLView = (GLSurfaceView) findViewById(R.id.gl_surface_view);

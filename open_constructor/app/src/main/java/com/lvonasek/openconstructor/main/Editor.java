@@ -18,7 +18,7 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
 {
   private enum Effect { CONTRAST, GAMMA, SATURATION, TONE, RESET, CLONE, DELETE, MOVE, ROTATE, SCALE }
   private enum Screen { MAIN, COLOR, SELECT, TRANSFORM }
-  private enum Status { IDLE, UPDATING_COLORS, WAITING_SELECTION_OBJECTS, WAITING_SELECTION_TRIANGLES }
+  private enum Status { IDLE, SELECT_OBJECTS, SELECT_TRIANGLES, UPDATE_COLORS, UPDATE_TRANSFORM }
 
   private ArrayList<Button> mButtons;
   private Activity mContext;
@@ -28,6 +28,7 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
   private SeekBar mSeek;
   private Status mStatus;
   private TextView mMsg;
+  private int mAxis;
 
   private boolean mComplete;
 
@@ -37,6 +38,7 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
       b.setOnClickListener(this);
       b.setOnTouchListener(this);
     }
+    mAxis = 0;
     mButtons = buttons;
     mContext = context;
     mMsg = msg;
@@ -51,9 +53,9 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
       @Override
       public void onProgressChanged(SeekBar seekBar, int value, boolean byUser)
       {
-        if (byUser && (mStatus == Status.UPDATING_COLORS)) {
+        if ((mStatus == Status.UPDATE_COLORS) || (mStatus == Status.UPDATE_TRANSFORM)) {
           value -= 127;
-          TangoJNINative.previewEffect(mEffect.ordinal(), value);
+          TangoJNINative.previewEffect(mEffect.ordinal(), value, mAxis);
         }
       }
 
@@ -85,14 +87,52 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
     }).start();
   }
 
+  private void applyTransform()
+  {
+    mProgress.setVisibility(View.VISIBLE);
+    new Thread(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        TangoJNINative.applyEffect(mEffect.ordinal(), mSeek.getProgress() - 127, mAxis);
+        mContext.runOnUiThread(new Runnable()
+        {
+          @Override
+          public void run()
+          {
+            mProgress.setVisibility(View.INVISIBLE);
+          }
+        });
+      }
+    }).start();
+  }
+
   public boolean movingLocked()
   {
-    return (mStatus == Status.WAITING_SELECTION_OBJECTS) ||(mStatus == Status.WAITING_SELECTION_TRIANGLES);
+    return (mStatus == Status.SELECT_OBJECTS) ||(mStatus == Status.SELECT_TRIANGLES);
   }
 
   @Override
   public void onClick(final View view)
   {
+    //axis buttons
+    if (view.getId() == R.id.editorX) {
+      applyTransform();
+      mAxis = 0;
+      showSeekBar(true);
+    }
+    if (view.getId() == R.id.editorY) {
+      applyTransform();
+      mAxis = 1;
+      showSeekBar(true);
+    }
+    if (view.getId() == R.id.editorZ) {
+      applyTransform();
+      mAxis = 2;
+      showSeekBar(true);
+    }
+
     //main menu
     if (mScreen == Screen.MAIN) {
       if (view.getId() == R.id.editor0)
@@ -109,16 +149,16 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
     }
     //back button
     else if (view.getId() == R.id.editor0) {
-      if ((mStatus == Status.WAITING_SELECTION_OBJECTS) || (mStatus == Status.WAITING_SELECTION_TRIANGLES))
+      if ((mStatus == Status.SELECT_OBJECTS) || (mStatus == Status.SELECT_TRIANGLES))
         setSelectScreen();
-      else if (mStatus == Status.UPDATING_COLORS) {
+      else if (mStatus == Status.UPDATE_COLORS) {
         mProgress.setVisibility(View.VISIBLE);
         new Thread(new Runnable()
         {
           @Override
           public void run()
           {
-            TangoJNINative.applyEffect(mEffect.ordinal(), mSeek.getProgress() - 127);
+            TangoJNINative.applyEffect(mEffect.ordinal(), mSeek.getProgress() - 127, 0);
             mContext.runOnUiThread(new Runnable()
             {
               @Override
@@ -130,6 +170,10 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
           }
         }).start();
         setColorScreen();
+      }
+      else if (mStatus == Status.UPDATE_TRANSFORM) {
+        applyTransform();
+        setTransformScreen();
       }
       else
         setMainScreen();
@@ -162,12 +206,12 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
       //select object
       if (view.getId() == R.id.editor2) {
         showText(R.string.editor_select_object_desc);
-        mStatus = Status.WAITING_SELECTION_OBJECTS;
+        mStatus = Status.SELECT_OBJECTS;
       }
       //triangle selection
       if (view.getId() == R.id.editor3) {
         showText(R.string.editor_select_triangle_desc);
-        mStatus = Status.WAITING_SELECTION_TRIANGLES;
+        mStatus = Status.SELECT_TRIANGLES;
       }
       //select less
       if (view.getId() == R.id.editor4)
@@ -218,26 +262,26 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
       if (view.getId() == R.id.editor1)
       {
         mEffect = Effect.CONTRAST;
-        mStatus = Status.UPDATING_COLORS;
-        showSeekBar();
+        mStatus = Status.UPDATE_COLORS;
+        showSeekBar(false);
       }
       if (view.getId() == R.id.editor2)
       {
         mEffect = Effect.GAMMA;
-        mStatus = Status.UPDATING_COLORS;
-        showSeekBar();
+        mStatus = Status.UPDATE_COLORS;
+        showSeekBar(false);
       }
       if (view.getId() == R.id.editor3)
       {
         mEffect = Effect.SATURATION;
-        mStatus = Status.UPDATING_COLORS;
-        showSeekBar();
+        mStatus = Status.UPDATE_COLORS;
+        showSeekBar(false);
       }
       if (view.getId() == R.id.editor4)
       {
         mEffect = Effect.TONE;
-        mStatus = Status.UPDATING_COLORS;
-        showSeekBar();
+        mStatus = Status.UPDATE_COLORS;
+        showSeekBar(false);
       }
       if (view.getId() == R.id.editor5)
       {
@@ -247,7 +291,7 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
           @Override
           public void run()
           {
-            TangoJNINative.applyEffect(Effect.RESET.ordinal(), 0);
+            TangoJNINative.applyEffect(Effect.RESET.ordinal(), 0, 0);
             mContext.runOnUiThread(new Runnable()
             {
               @Override
@@ -271,7 +315,7 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
           @Override
           public void run()
           {
-            TangoJNINative.applyEffect(Effect.CLONE.ordinal(), 0);
+            TangoJNINative.applyEffect(Effect.CLONE.ordinal(), 0, 0);
             mContext.runOnUiThread(new Runnable()
             {
               @Override
@@ -291,7 +335,7 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
           @Override
           public void run()
           {
-            TangoJNINative.applyEffect(Effect.DELETE.ordinal(), 0);
+            TangoJNINative.applyEffect(Effect.DELETE.ordinal(), 0, 0);
             mContext.runOnUiThread(new Runnable()
             {
               @Override
@@ -303,7 +347,24 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
           }
         }).start();
       }
-      //TODO:implement move/rotate/scale
+      if (view.getId() == R.id.editor3)
+      {
+        mEffect = Effect.MOVE;
+        mStatus = Status.UPDATE_TRANSFORM;
+        showSeekBar(true);
+      }
+      if (view.getId() == R.id.editor4)
+      {
+        mEffect = Effect.MOVE;
+        mStatus = Status.UPDATE_TRANSFORM;
+        showSeekBar(true);
+      }
+      if (view.getId() == R.id.editor5)
+      {
+        mEffect = Effect.MOVE;
+        mStatus = Status.UPDATE_TRANSFORM;
+        showSeekBar(true);
+      }
     }
   }
 
@@ -330,6 +391,9 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
       b.setText("");
       b.setVisibility(View.VISIBLE);
     }
+    mButtons.get(6).setVisibility(View.GONE);
+    mButtons.get(7).setVisibility(View.GONE);
+    mButtons.get(8).setVisibility(View.GONE);
     mButtons.get(0).setBackgroundResource(R.drawable.ic_back_small);
   }
 
@@ -376,11 +440,13 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
     mScreen = Screen.TRANSFORM;
   }
 
-  private void showSeekBar()
+  private void showSeekBar(boolean axes)
   {
     for (Button b : mButtons)
       b.setVisibility(View.GONE);
     mButtons.get(0).setVisibility(View.VISIBLE);
+    if (axes)
+      updateAxisButtons();
     mSeek.setMax(255);
     mSeek.setProgress(127);
     mSeek.setVisibility(View.VISIBLE);
@@ -397,12 +463,28 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
 
   public void touchEvent(float x, float y)
   {
-    if (mStatus == Status.WAITING_SELECTION_OBJECTS) {
+    if (mStatus == Status.SELECT_OBJECTS) {
       TangoJNINative.applySelect(x, y, false);
       mStatus = Status.IDLE;
       setSelectScreen();
     }
-    if (mStatus == Status.WAITING_SELECTION_TRIANGLES)
+    if (mStatus == Status.SELECT_TRIANGLES)
       TangoJNINative.applySelect(x, y, true);
+  }
+
+  private void updateAxisButtons()
+  {
+    mButtons.get(6).setVisibility(View.VISIBLE);
+    mButtons.get(7).setVisibility(View.VISIBLE);
+    mButtons.get(8).setVisibility(View.VISIBLE);
+    mButtons.get(6).setText("X");
+    mButtons.get(7).setText("Y");
+    mButtons.get(8).setText("Z");
+    mButtons.get(6).setTextColor(mAxis == 0 ? Color.BLACK : Color.WHITE);
+    mButtons.get(7).setTextColor(mAxis == 1 ? Color.BLACK : Color.WHITE);
+    mButtons.get(8).setTextColor(mAxis == 2 ? Color.BLACK : Color.WHITE);
+    mButtons.get(6).setBackgroundColor(mAxis == 0 ? Color.WHITE : Color.TRANSPARENT);
+    mButtons.get(7).setBackgroundColor(mAxis == 1 ? Color.WHITE : Color.TRANSPARENT);
+    mButtons.get(8).setBackgroundColor(mAxis == 2 ? Color.WHITE : Color.TRANSPARENT);
   }
 }

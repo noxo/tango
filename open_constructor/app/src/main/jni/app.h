@@ -37,8 +37,8 @@ namespace oc {
                                                                                movey = my; movez = mz;}
         std::string GetEvent();
 
-        void ApplyEffect(Effector::Effect effect, float value);
-        void PreviewEffect(Effector::Effect effect, float value);
+        void ApplyEffect(Effector::Effect effect, float value, int axis);
+        void PreviewEffect(Effector::Effect effect, float value, int axis);
 
         void ApplySelection(float x, float y, bool triangle);
         void CompleteSelection(bool inverse);

@@ -293,19 +293,19 @@ namespace oc {
         return output;
     }
 
-    void App::ApplyEffect(Effector::Effect effect, float value) {
+    void App::ApplyEffect(Effector::Effect effect, float value, int axis) {
         render_mutex_.lock();
-        editor.ApplyEffect(scene.static_meshes_, effect, value);
+        editor.ApplyEffect(scene.static_meshes_, effect, value, axis);
         scene.vertex = scene.TexturedVertexShader();
         scene.fragment = scene.TexturedFragmentShader();
         render_mutex_.unlock();
     }
 
-    void App::PreviewEffect(Effector::Effect effect, float value) {
+    void App::PreviewEffect(Effector::Effect effect, float value, int axis) {
         render_mutex_.lock();
         std::string vs = scene.TexturedVertexShader();
         std::string fs = scene.TexturedFragmentShader();
-        editor.PreviewEffect(vs, fs, effect);
+        editor.PreviewEffect(vs, fs, effect, axis);
         scene.vertex = vs;
         scene.fragment = fs;
         scene.uniform = value / 255.0f;
@@ -418,13 +418,13 @@ Java_com_lvonasek_openconstructor_TangoJNINative_getFloorLevel(JNIEnv*, jobject,
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_applyEffect(JNIEnv*, jobject, jint effect, jfloat value) {
-    app.ApplyEffect((oc::Effector::Effect) effect, value);
+Java_com_lvonasek_openconstructor_TangoJNINative_applyEffect(JNIEnv*, jobject, jint effect, jfloat value, jint axis) {
+    app.ApplyEffect((oc::Effector::Effect) effect, value, axis);
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_previewEffect(JNIEnv*, jobject, jint effect, jfloat value) {
-    app.PreviewEffect((oc::Effector::Effect) effect, value);
+Java_com_lvonasek_openconstructor_TangoJNINative_previewEffect(JNIEnv*, jobject, jint effect, jfloat value, jint axis) {
+    app.PreviewEffect((oc::Effector::Effect) effect, value, axis);
 }
 
 JNIEXPORT void JNICALL

@@ -54,10 +54,10 @@ public class TangoJNINative {
   public static native byte[] getEvent();
 
   // Apply effect on model
-  public static native void applyEffect(int effect, float value);
+  public static native void applyEffect(int effect, float value, int axis);
 
   // Preview effect on model
-  public static native void previewEffect(int effect, float value);
+  public static native void previewEffect(int effect, float value, int axis);
 
   // Apply select on model
   public static native void applySelect(float x, float y, boolean triangle);

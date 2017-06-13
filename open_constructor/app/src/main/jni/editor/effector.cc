@@ -4,7 +4,7 @@
 
 namespace oc {
 
-    void Effector::ApplyEffect(std::vector<Mesh> &mesh, Effector::Effect e, float value) {
+    void Effector::ApplyEffect(std::vector<Mesh> &mesh, Effector::Effect e, float value, int axis) {
 
         if (mesh.empty())
             return;
@@ -12,14 +12,14 @@ namespace oc {
         if ((e == CONTRAST) || (e == GAMMA) || (e == SATURATION) || (e == TONE) || (e == RESET))
             ApplyColorEffect(mesh, e, value);
         else
-            ApplyGeometryEffect(mesh, e, value);
+            ApplyGeometryEffect(mesh, e, value, axis);
     }
 
-    void Effector::PreviewEffect(std::string& vs, std::string& fs, Effector::Effect e) {
+    void Effector::PreviewEffect(std::string& vs, std::string& fs, Effector::Effect e, int axis) {
         if ((e == CONTRAST) || (e == GAMMA) || (e == SATURATION) || (e == TONE) || (e == RESET))
             PreviewColorEffect(fs, e);
         else
-            PreviewGeometryEffect(vs, e);
+            PreviewGeometryEffect(vs, e, axis);
     }
 
     void Effector::ApplyColorEffect(std::vector<Mesh> &mesh, Effector::Effect effect, float value) {
@@ -118,7 +118,7 @@ namespace oc {
         texture2mask.clear();
     }
 
-    void Effector::ApplyGeometryEffect(std::vector<Mesh> &mesh, Effector::Effect effect, float value) {
+    void Effector::ApplyGeometryEffect(std::vector<Mesh> &mesh, Effector::Effect effect, float value, int axis) {
         for (Mesh& m : mesh) {
             long size = m.vertices.size();
             if (effect == CLONE) {
@@ -239,7 +239,7 @@ namespace oc {
         }
     }
 
-    void Effector::PreviewGeometryEffect(std::string &vs, Effector::Effect effect) {
+    void Effector::PreviewGeometryEffect(std::string &vs, Effector::Effect effect, int axis) {
         if (effect == MOVE) {
             //TODO
         }
