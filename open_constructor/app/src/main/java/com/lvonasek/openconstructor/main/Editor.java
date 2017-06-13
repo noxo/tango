@@ -16,8 +16,8 @@ import java.util.ArrayList;
 
 public class Editor implements Button.OnClickListener, View.OnTouchListener
 {
-  private enum Effect { CONTRAST, GAMMA, SATURATION, TONE, RESET }
-  private enum Screen { MAIN, COLOR, SELECT }
+  private enum Effect { CONTRAST, GAMMA, SATURATION, TONE, RESET, CLONE, DELETE, MOVE, ROTATE, SCALE }
+  private enum Screen { MAIN, COLOR, SELECT, TRANSFORM }
   private enum Status { IDLE, UPDATING_COLORS, WAITING_SELECTION_OBJECTS, WAITING_SELECTION_TRIANGLES }
 
   private ArrayList<Button> mButtons;
@@ -103,6 +103,8 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
         setSelectScreen();
       if (view.getId() == R.id.editor2)
         setColorScreen();
+      if (view.getId() == R.id.editor3)
+        setTransformScreen();
       return;
     }
     //back button
@@ -133,6 +135,7 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
         setMainScreen();
     }
 
+    //selecting objects
     if (mScreen == Screen.SELECT) {
       //select all/none
       if (view.getId() == R.id.editor1)
@@ -257,6 +260,51 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
         }).start();
       }
     }
+
+    // transforming objects
+    if (mScreen == Screen.TRANSFORM) {
+      if (view.getId() == R.id.editor1)
+      {
+        mProgress.setVisibility(View.VISIBLE);
+        new Thread(new Runnable()
+        {
+          @Override
+          public void run()
+          {
+            TangoJNINative.applyEffect(Effect.CLONE.ordinal(), 0);
+            mContext.runOnUiThread(new Runnable()
+            {
+              @Override
+              public void run()
+              {
+                mProgress.setVisibility(View.INVISIBLE);
+              }
+            });
+          }
+        }).start();
+      }
+      if (view.getId() == R.id.editor2)
+      {
+        mProgress.setVisibility(View.VISIBLE);
+        new Thread(new Runnable()
+        {
+          @Override
+          public void run()
+          {
+            TangoJNINative.applyEffect(Effect.DELETE.ordinal(), 0);
+            mContext.runOnUiThread(new Runnable()
+            {
+              @Override
+              public void run()
+              {
+                mProgress.setVisibility(View.INVISIBLE);
+              }
+            });
+          }
+        }).start();
+      }
+      //TODO:implement move/rotate/scale
+    }
   }
 
   @Override
@@ -291,6 +339,7 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
     mButtons.get(0).setBackgroundResource(R.drawable.ic_save_small);
     mButtons.get(1).setText(mContext.getString(R.string.editor_main_select));
     mButtons.get(2).setText(mContext.getString(R.string.editor_main_colors));
+    mButtons.get(3).setText(mContext.getString(R.string.editor_main_transform));
     mScreen = Screen.MAIN;
   }
 
@@ -314,6 +363,17 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
     mButtons.get(4).setText(mContext.getString(R.string.editor_select_less));
     mButtons.get(5).setText(mContext.getString(R.string.editor_select_more));
     mScreen = Screen.SELECT;
+  }
+
+  private void setTransformScreen()
+  {
+    initButtons();
+    mButtons.get(1).setText(mContext.getString(R.string.editor_transform_clone));
+    mButtons.get(2).setText(mContext.getString(R.string.editor_transform_delete));
+    mButtons.get(3).setText(mContext.getString(R.string.editor_transform_move));
+    mButtons.get(4).setText(mContext.getString(R.string.editor_transform_rotate));
+    mButtons.get(5).setText(mContext.getString(R.string.editor_transform_scale));
+    mScreen = Screen.TRANSFORM;
   }
 
   private void showSeekBar()

@@ -4,6 +4,8 @@
 #include "data/mesh.h"
 #include "editor/rasterizer.h"
 
+#define DESELECT_COLOR 0x00204040
+
 namespace oc {
 
 class Selector : Rasterizer {

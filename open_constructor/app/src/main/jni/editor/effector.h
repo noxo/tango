@@ -9,12 +9,14 @@ namespace oc {
 
 class Effector : Rasterizer {
 public:
-    enum Effect{ CONTRAST, GAMMA, SATURATION, TONE, RESET };
+    enum Effect{ CONTRAST, GAMMA, SATURATION, TONE, RESET, CLONE, DELETE, MOVE, ROTATE, SCALE };
 
     void ApplyEffect(std::vector<Mesh>& mesh, Effect effect, float value);
     void PreviewEffect(std::string& vs, std::string& fs, Effect effect);
 
 private:
+    void ApplyColorEffect(std::vector<Mesh>& mesh, Effect effect, float value);
+    void ApplyGeometryEffect(std::vector<Mesh>& mesh, Effect effect, float value);
     virtual void Process(unsigned long& index, int &x1, int &x2, int &y, double &z1, double &z2);
 
     bool* mask;

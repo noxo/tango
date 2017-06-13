@@ -2,8 +2,6 @@
 #include <stack>
 #include "editor/selector.h"
 
-#define DESELECT_COLOR 0x00204040
-
 char buffer[1024];
 
 namespace oc {

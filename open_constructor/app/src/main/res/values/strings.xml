@@ -17,6 +17,7 @@
     <string name="editor_back">Back</string>
     <string name="editor_main_colors">Colors</string>
     <string name="editor_main_select">Select</string>
+    <string name="editor_main_transform">Transform</string>
     <string name="editor_colors_contrast">Contrast</string>
     <string name="editor_colors_gamma">Gamma</string>
     <string name="editor_colors_saturation">Saturation</string>
@@ -29,6 +30,11 @@
     <string name="editor_select_triangle_desc">Point on the triangle(s) you want select</string>
     <string name="editor_select_less">Less</string>
     <string name="editor_select_more">More</string>
+    <string name="editor_transform_clone">Clone</string>
+    <string name="editor_transform_delete">Delete</string>
+    <string name="editor_transform_move">Move</string>
+    <string name="editor_transform_rotate">Rotate</string>
+    <string name="editor_transform_scale">Scale</string>
 
     <!-- Recording !-->
     <string name="airplane_title">The airplane mode is not active</string>
