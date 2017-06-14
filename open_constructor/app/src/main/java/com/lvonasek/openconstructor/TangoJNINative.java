@@ -41,6 +41,9 @@ public class TangoJNINative {
   // Save current 3D model
   public static native void save(String name);
 
+  // Save current 3D model with textures (editor usage)
+  public static native void saveWithTextures(String name);
+
   // Texturize 3D model
   public static native void texturize(String name);
 

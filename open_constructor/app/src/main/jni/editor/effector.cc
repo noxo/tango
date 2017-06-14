@@ -121,6 +121,16 @@ namespace oc {
     void Effector::ApplyGeometryEffect(std::vector<Mesh> &mesh, Effector::Effect effect, float value, int axis) {
         for (Mesh& m : mesh) {
             long size = m.vertices.size();
+            //set axis to fit with view
+            if ((effect == MOVE) || (effect == ROTATE)) {
+                int a = 1;
+                float s = glm::sin(pitch);
+                float c = glm::cos(pitch);
+                glm::vec3 null = glm::vec3(0);
+                for (long i = 0; i < size; i++)
+                    RotateVertex(m.vertices[i], null, a, s, c);
+            }
+
             if (effect == CLONE) {
                 for (long i = 0; i < size; i += 3) {
                     if (m.colors[i] == 0) {
@@ -169,7 +179,11 @@ namespace oc {
                     }
                 }
             } else if (effect == ROTATE) {
-                //TODO
+                float s = (float) glm::sin(value / 255.0 * 6.28);
+                float c = (float) glm::cos(value / 255.0 * 6.28);
+                for (long i = 0; i < size; i++)
+                    if (m.colors[i] == 0)
+                        RotateVertex(m.vertices[i], center, axis, s, c);
             } else if (effect == SCALE) {
                 for (long i = 0; i < size; i++) {
                     if (m.colors[i] == 0) {
@@ -190,6 +204,16 @@ namespace oc {
                         m.vertices[i].z += center.z;
                     }
                 }
+            }
+
+            //set axis to fit with model
+            if ((effect == MOVE) || (effect == ROTATE)) {
+                int a = 1;
+                float s = glm::sin(-pitch);
+                float c = glm::cos(-pitch);
+                glm::vec3 null = glm::vec3(0);
+                for (long i = 0; i < size; i++)
+                    RotateVertex(m.vertices[i], null, a, s, c);
             }
         }
     }
@@ -267,56 +291,62 @@ namespace oc {
     }
 
     void Effector::PreviewGeometryEffect(std::string &vs, Effector::Effect effect, int axis) {
+        vs = "attribute vec4 v_vertex;\n"
+             "attribute vec2 v_coord;\n"
+             "attribute vec4 v_color;\n"
+             "varying vec4 f_color;\n"
+             "varying vec2 v_uv;\n"
+             "uniform mat4 MVP;\n"
+             "uniform float u_uniform;\n"
+             "uniform float u_uniformPitch;\n"
+             "uniform vec3 u_uniformPos;\n"
+             "void main() {\n"
+             "  f_color = v_color;\n"
+             "  v_uv.x = v_coord.x;\n"
+             "  v_uv.y = 1.0 - v_coord.y;\n"
+             "  vec4 v = v_vertex;\n"
+             "  vec3 p = v.xyz;\n"
+             "  float s = sin(u_uniformPitch);\n"
+             "  float c = cos(u_uniformPitch);\n"
+             "  v.x = p.x * c - p.z * s;\n"
+             "  v.z = p.x * s + p.z * c;\n"
+             "  v.xyz -= u_uniformPos;\n"
+             "  if (f_color.r < 0.005)\n"
+             "  {\n";
         if (effect == MOVE) {
-            vs = "attribute vec4 v_vertex;\n"
-                 "attribute vec2 v_coord;\n"
-                 "attribute vec4 v_color;\n"
-                 "varying vec4 f_color;\n"
-                 "varying vec2 v_uv;\n"
-                 "uniform mat4 MVP;\n"
-                 "uniform float u_uniform;\n"
-                 "uniform vec3 u_uniformPos;\n"
-                 "void main() {\n"
-                 "  f_color = v_color;\n"
-                 "  v_uv.x = v_coord.x;\n"
-                 "  v_uv.y = 1.0 - v_coord.y;\n"
-                 "  vec4 v = v_vertex;\n"
-                 "  if (f_color.r < 0.005)\n"
-                 "  {\n";
             if (axis == 0)
                 vs += "    v.x += u_uniform * 10.0;\n";
             if (axis == 1)
                 vs += "    v.y += u_uniform * 10.0;\n";
             if (axis == 2)
                 vs += "    v.z += u_uniform * 10.0;\n";
-            vs +="  }\n"
-                 "  gl_Position = MVP * v;\n"
-                 "}";
         }
         if (effect == ROTATE) {
-            //TODO
+            vs += "    s = sin(u_uniform * 6.28);\n"
+                  "    c = cos(u_uniform * 6.28);\n"
+                  "    p = v.xyz;\n";
+            if (axis == 0)
+                vs += "    v.y = p.y * c - p.z * s;\n"
+                      "    v.z = p.y * s + p.z * c;\n";
+            if (axis == 1)
+                vs += "    v.x = p.x * c - p.z * s;\n"
+                      "    v.z = p.x * s + p.z * c;\n";
+            if (axis == 2)
+                vs += "    v.x = p.x * c - p.y * s;\n"
+                      "    v.y = p.x * s + p.y * c;\n";
         }
         if (effect == SCALE) {
-            vs = "attribute vec4 v_vertex;\n"
-                 "attribute vec2 v_coord;\n"
-                 "attribute vec4 v_color;\n"
-                 "varying vec4 f_color;\n"
-                 "varying vec2 v_uv;\n"
-                 "uniform mat4 MVP;\n"
-                 "uniform float u_uniform;\n"
-                 "uniform vec3 u_uniformPos;\n"
-                 "void main() {\n"
-                 "  f_color = v_color;\n"
-                 "  v_uv.x = v_coord.x;\n"
-                 "  v_uv.y = 1.0 - v_coord.y;\n"
-                 "  vec4 v = v_vertex;\n"
-                 "  v.xyz -= u_uniformPos;\n"
-                 "  if (f_color.r < 0.005)\n"
-                 "    v.xyz *= u_uniform > 0.0 ? u_uniform + 1.0 : 1.0 / (1.0 - u_uniform);\n"
-                 "  v.xyz += u_uniformPos;\n"
-                 "  gl_Position = MVP * v;\n"
-                 "}";
+            vs += "    v.xyz *= u_uniform > 0.0 ? u_uniform + 1.0 : 1.0 / (1.0 - u_uniform);\n";
         }
+        vs += "  }\n"
+              "  v.xyz += u_uniformPos;\n"
+              "  p = v.xyz;\n"
+              "  s = sin(-u_uniformPitch);\n"
+              "  c = cos(-u_uniformPitch);\n"
+              "  v.x = p.x * c - p.z * s;\n"
+              "  v.z = p.x * s + p.z * c;\n"
+              "  gl_Position = MVP * v;\n"
+              "}";
     }
 
     void Effector::Process(unsigned long &index, int &x1, int &x2, int &y, double &z1, double &z2) {
@@ -336,5 +366,27 @@ namespace oc {
             for (int x = start; x <= finish; x++)
                 mask[x + offset] = true;
         }
+    }
+
+    void Effector::RotateVertex(glm::vec3 &v, glm::vec3 &center, int &axis, float &s, float &c) {
+        v.x -= center.x;
+        v.y -= center.y;
+        v.z -= center.z;
+        glm::vec3 p = v;
+        if (axis == 0) {
+            v.y = p.y * c - p.z * s;
+            v.z = p.y * s + p.z * c;
+        }
+        if (axis == 1) {
+            v.x = p.x * c - p.z * s;
+            v.z = p.x * s + p.z * c;
+        }
+        if (axis == 2) {
+            v.x = p.x * c - p.y * s;
+            v.y = p.x * s + p.y * c;
+        }
+        v.x += center.x;
+        v.y += center.y;
+        v.z += center.z;
     }
 }

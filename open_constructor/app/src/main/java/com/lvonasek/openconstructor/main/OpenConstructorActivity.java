@@ -351,6 +351,9 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       @Override
       public void onClick(View view)
       {
+        if (mEditor != null)
+          if (mEditor.movingLocked())
+            return;
         mTopMode = !mTopMode;
         mModeButton.setBackgroundResource(mTopMode ? R.drawable.ic_mode3d : R.drawable.ic_mode2d);
         float floor = TangoJNINative.getFloorLevel(mMoveX, mMoveY, mMoveZ);
@@ -410,6 +413,21 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
 
   @Override
   public void onDrawFrame(GL10 gl) {
+    if (mEditor != null)
+    {
+      final int visibility = mModeButton.getVisibility();
+      final int newVisibility = mEditor.movingLocked() ? View.GONE : View.VISIBLE;
+      if (visibility != newVisibility) {
+        runOnUiThread(new Runnable()
+        {
+          @Override
+          public void run()
+          {
+            mModeButton.setVisibility(newVisibility);
+          }
+        });
+      }
+    }
     TangoJNINative.onGlSurfaceDrawFrame();
   }
 

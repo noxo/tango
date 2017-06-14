@@ -1,17 +1,22 @@
 package com.lvonasek.openconstructor.main;
 
-import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.lvonasek.openconstructor.AbstractActivity;
 import com.lvonasek.openconstructor.R;
 import com.lvonasek.openconstructor.TangoJNINative;
 
+import java.io.File;
 import java.util.ArrayList;
 
 public class Editor implements Button.OnClickListener, View.OnTouchListener
@@ -21,7 +26,7 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
   private enum Status { IDLE, SELECT_OBJECTS, SELECT_TRIANGLES, UPDATE_COLORS, UPDATE_TRANSFORM }
 
   private ArrayList<Button> mButtons;
-  private Activity mContext;
+  private AbstractActivity mContext;
   private Effect mEffect;
   private ProgressBar mProgress;
   private Screen mScreen;
@@ -32,7 +37,7 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
 
   private boolean mComplete;
 
-  public Editor(ArrayList<Button> buttons, TextView msg, SeekBar seek, ProgressBar progress, Activity context)
+  public Editor(ArrayList<Button> buttons, TextView msg, SeekBar seek, ProgressBar progress, AbstractActivity context)
   {
     for (Button b : buttons) {
       b.setOnClickListener(this);
@@ -111,7 +116,7 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
 
   public boolean movingLocked()
   {
-    return (mStatus == Status.SELECT_OBJECTS) ||(mStatus == Status.SELECT_TRIANGLES);
+    return mStatus != Status.IDLE;
   }
 
   @Override
@@ -137,9 +142,7 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
     //main menu
     if (mScreen == Screen.MAIN) {
       if (view.getId() == R.id.editor0)
-      {
-        //TODO:implement saving
-      }
+        save();
       if (view.getId() == R.id.editor1)
         setSelectScreen();
       if (view.getId() == R.id.editor2)
@@ -396,6 +399,57 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
     mButtons.get(7).setVisibility(View.GONE);
     mButtons.get(8).setVisibility(View.GONE);
     mButtons.get(0).setBackgroundResource(R.drawable.ic_back_small);
+  }
+
+  private void save() {
+    //filename dialog
+    AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+    builder.setTitle(mContext.getString(R.string.enter_filename));
+    final EditText input = new EditText(mContext);
+    builder.setView(input);
+    builder.setPositiveButton(mContext.getString(android.R.string.ok), new DialogInterface.OnClickListener() {
+      @Override
+      public void onClick(DialogInterface dialog, int which) {
+        //delete old during overwrite
+        File file = new File(AbstractActivity.getPath(), input.getText().toString() + AbstractActivity.FILE_EXT[0]);
+        try {
+          if (file.exists())
+            for(String s : AbstractActivity.getObjResources(file))
+              if (new File(AbstractActivity.getPath(), s).delete())
+                Log.d(AbstractActivity.TAG, "File " + s + " deleted");
+        } catch(Exception e) {
+          e.printStackTrace();
+        }
+        mProgress.setVisibility(View.VISIBLE);
+        new Thread(new Runnable()
+        {
+          @Override
+          public void run()
+          {
+            long timestamp = System.currentTimeMillis();
+            final File obj = new File(AbstractActivity.getTempPath(), timestamp + AbstractActivity.FILE_EXT[0]);
+            TangoJNINative.saveWithTextures(obj.getAbsolutePath());
+            for(String s : AbstractActivity.getObjResources(obj.getAbsoluteFile()))
+              if (new File(AbstractActivity.getTempPath(), s).renameTo(new File(AbstractActivity.getPath(), s)))
+                Log.d(AbstractActivity.TAG, "File " + s + " saved");
+            final File file2save = new File(AbstractActivity.getPath(), input.getText().toString() + AbstractActivity.FILE_EXT[0]);
+            if (obj.renameTo(file2save))
+              Log.d(AbstractActivity.TAG, "Obj file " + file2save.toString() + " saved.");
+            mContext.runOnUiThread(new Runnable()
+            {
+              @Override
+              public void run()
+              {
+                mProgress.setVisibility(View.GONE);
+              }
+            });
+          }
+        }).start();
+        dialog.cancel();
+      }
+    });
+    builder.setNegativeButton(mContext.getString(android.R.string.cancel), null);
+    builder.create().show();
   }
 
   private void setMainScreen()

@@ -28,13 +28,13 @@ public abstract class AbstractActivity extends Activity
 {
   protected static final int BUFFER_SIZE = 65536;
   protected static final String CARDBOARD_APP = "com.lvonasek.daydreamOBJ";
-  protected static final String[] FILE_EXT = {".obj"};
   protected static final String FILE_KEY = "FILE2OPEN";
   protected static final String MODEL_DIRECTORY = "/Models/";
   protected static final String RESOLUTION_KEY = "RESOLUTION";
-  protected static final String TAG = "tango_app";
   protected static final String TEMP_DIRECTORY = "dataset";
   protected static final String URL_KEY = "URL2OPEN";
+  public static final String[] FILE_EXT = {".obj"};
+  public static final String TAG = "tango_app";
 
   public static boolean isAirplaneModeOn(Context context)
   {

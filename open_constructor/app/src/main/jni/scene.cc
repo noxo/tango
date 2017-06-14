@@ -66,6 +66,7 @@ namespace oc {
                 }
                 textured_shader->Bind();
                 textured_shader->UniformFloat("u_uniform", uniform);
+                textured_shader->UniformFloat("u_uniformPitch", uniformPitch);
                 textured_shader->UniformVec3("u_uniformPos", uniformPos.x, uniformPos.y, uniformPos.z);
                 renderer->Render(&mesh.vertices[0].x, 0, &mesh.uv[0].s, mesh.colors.data(), mesh.vertices.size());
             }

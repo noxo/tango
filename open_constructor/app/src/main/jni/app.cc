@@ -1,3 +1,4 @@
+#include <sstream>
 #include "app.h"
 
 namespace {
@@ -245,6 +246,32 @@ namespace oc {
         binder_mutex_.unlock();
     }
 
+    void App::SaveWithTextures(std::string filename) {
+        binder_mutex_.lock();
+        render_mutex_.lock();
+        int index = 0;
+        std::vector<std::string> names;
+        for (Mesh& m : scene.static_meshes_) {
+            if (m.imageOwner) {
+                std::ostringstream ss;
+                ss << filename.substr(0, filename.size() - 4).c_str();
+                ss << "_";
+                ss << index++;
+                ss << ".png";
+                names.push_back(m.image->GetName());
+                m.image->SetName(ss.str());
+                m.image->Write(ss.str());
+            }
+        }
+        index = 0;
+        File3d(filename, true).WriteModel(scene.static_meshes_);
+        for (Mesh& m : scene.static_meshes_)
+            if (m.imageOwner)
+                m.image->SetName(names[index++]);
+        render_mutex_.unlock();
+        binder_mutex_.unlock();
+    }
+
     void App::Texturize(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
@@ -345,6 +372,17 @@ namespace oc {
         scene.uniformPos = center;
         render_mutex_.unlock();
     }
+
+    void App::SetView(float p, float y, float mx, float my, float mz, bool g) {
+        pitch = p;
+        yaw = y;
+        gyro = g;
+        movex = mx;
+        movey = my;
+        movez = mz;
+        editor.SetPitch(pitch);
+        scene.uniformPitch = pitch;
+    }
 }
 
 
@@ -398,7 +436,12 @@ Java_com_lvonasek_openconstructor_TangoJNINative_load(JNIEnv* env, jobject, jstr
 
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_save(JNIEnv* env, jobject, jstring name) {
-  app.Save(jstring2string(env, name));
+    app.Save(jstring2string(env, name));
+}
+
+JNIEXPORT void JNICALL
+Java_com_lvonasek_openconstructor_TangoJNINative_saveWithTextures(JNIEnv* env, jobject, jstring name) {
+    app.SaveWithTextures(jstring2string(env, name));
 }
 
 JNIEXPORT void JNICALL

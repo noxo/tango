@@ -13,6 +13,7 @@ namespace oc {
         Image(std::string filename);
         ~Image();
         unsigned char* ExtractYUV(unsigned int s);
+        void SetName(std::string value) { name = value; }
         void SetTexture(long value) { texture = value; }
         void UpdateTexture();
         void UpdateYUV(unsigned char* src, int w, int h, int scale);

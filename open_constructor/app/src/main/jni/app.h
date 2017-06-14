@@ -29,12 +29,11 @@ namespace oc {
 
         void Load(std::string filename);
         void Save(std::string filename);
+        void SaveWithTextures(std::string filename);
         void Texturize(std::string filename);
 
         float GetFloorLevel(float x, float y, float z);
-        void SetView(float p, float y, float mx, float my, float mz, bool g) { pitch = p; yaw = y;
-                                                                               gyro = g; movex = mx;
-                                                                               movey = my; movez = mz;}
+        void SetView(float p, float y, float mx, float my, float mz, bool g);
         std::string GetEvent();
 
         void ApplyEffect(Effector::Effect effect, float value, int axis);
