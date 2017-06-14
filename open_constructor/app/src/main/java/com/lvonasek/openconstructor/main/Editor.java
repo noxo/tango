@@ -564,10 +564,26 @@ public class Editor extends View implements Button.OnClickListener, View.OnTouch
     mMsg.setVisibility(View.VISIBLE);
   }
 
-  public void touchEvent(MotionEvent event)
+  public void touchEvent(final MotionEvent event)
   {
     if (mStatus == Status.SELECT_OBJECT) {
-      TangoJNINative.applySelect(event.getX(), getHeight() - event.getY(), false);
+      mProgress.setVisibility(View.VISIBLE);
+      new Thread(new Runnable()
+      {
+        @Override
+        public void run()
+        {
+          TangoJNINative.applySelect(event.getX(), getHeight() - event.getY(), false);
+          mContext.runOnUiThread(new Runnable()
+          {
+            @Override
+            public void run()
+            {
+              mProgress.setVisibility(View.GONE);
+            }
+          });
+        }
+      }).start();
       mStatus = Status.IDLE;
       setSelectScreen();
     }
