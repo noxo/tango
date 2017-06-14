@@ -33,6 +33,7 @@ public abstract class AbstractActivity extends Activity
   protected static final String RESOLUTION_KEY = "RESOLUTION";
   protected static final String TEMP_DIRECTORY = "dataset";
   protected static final String URL_KEY = "URL2OPEN";
+  protected static final String USER_AGENT = "Mozilla/5.0 Google";
   public static final String[] FILE_EXT = {".obj"};
   public static final String TAG = "tango_app";
 

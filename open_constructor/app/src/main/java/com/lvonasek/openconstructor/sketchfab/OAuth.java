@@ -51,7 +51,7 @@ public class OAuth extends AbstractActivity
     mWebView = (WebView) findViewById(R.id.webview);
     WebSettings webSettings = mWebView.getSettings();
     webSettings.setJavaScriptEnabled(true);
-    webSettings.setUserAgentString("Mozilla/5.0 Google");
+    webSettings.setUserAgentString(USER_AGENT);
     mWebView.setWebViewClient(new WebViewClient() {
       @Override
       public boolean shouldOverrideUrlLoading(WebView view, String url) {

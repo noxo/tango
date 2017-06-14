@@ -35,6 +35,7 @@ public class Home extends AbstractActivity
     mWebView = (WebView) findViewById(R.id.webview);
     WebSettings webSettings = mWebView.getSettings();
     webSettings.setJavaScriptEnabled(true);
+    webSettings.setUserAgentString(USER_AGENT);
     mWebView.setWebViewClient(new WebViewClient());
     if (mUri != null) {
       mWebView.setWebChromeClient(new WebChromeClient()
