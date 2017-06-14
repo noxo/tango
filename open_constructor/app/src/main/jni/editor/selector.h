@@ -16,6 +16,7 @@ public:
     void IncreaseSelection(std::vector<Mesh>& mesh);
     void Init(int w, int h);
     void SelectObject(std::vector<Mesh>& mesh, glm::mat4 world2screen, float x, float y);
+    void SelectRect(std::vector<Mesh>& mesh, glm::mat4 world2screen, float x1, float y1, float x2, float y2);
     void SelectTriangle(std::vector<Mesh>& mesh, glm::mat4 world2screen, float x, float y);
 
 private:
@@ -24,7 +25,8 @@ private:
 
     std::map<std::string, std::map<std::pair<int, int>, bool> > connections;
     double depth;
-    int pointX, pointY;
+    int pointX, pointY, pointX2, pointY2;
+    bool rangeMode;
     int selected;
 };
 }

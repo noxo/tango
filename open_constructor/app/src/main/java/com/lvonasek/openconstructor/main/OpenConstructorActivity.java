@@ -68,7 +68,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   private ArrayList<Button> mEditorAction;
   private TextView mEditorMsg;
   private SeekBar mEditorSeek;
-  private Editor mEditor = null;
+  private Editor mEditor;
 
   private GestureDetector mGestureDetector;
   private boolean mTopMode;
@@ -157,6 +157,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     mEditorAction.add((Button) findViewById(R.id.editorX));
     mEditorAction.add((Button) findViewById(R.id.editorY));
     mEditorAction.add((Button) findViewById(R.id.editorZ));
+    mEditor = (Editor) findViewById(R.id.editor);
 
     // OpenGL view where all of the graphics are drawn
     mGLView = (GLSurfaceView) findViewById(R.id.gl_surface_view);
@@ -323,9 +324,9 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
 
   @Override
   public boolean onTouchEvent(MotionEvent event) {
-    if (mEditor != null)
+    if (mEditor.initialized())
     {
-      mEditor.touchEvent(event.getX(), mGLView.getHeight() - event.getY());
+      mEditor.touchEvent(event);
       if (mEditor.movingLocked())
         return true;
     }
@@ -351,7 +352,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       @Override
       public void onClick(View view)
       {
-        if (mEditor != null)
+        if (mEditor.initialized())
           if (mEditor.movingLocked())
             return;
         mTopMode = !mTopMode;
@@ -379,7 +380,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         mEditorButton.setVisibility(View.GONE);
         mLayoutEditor.setVisibility(View.VISIBLE);
         setOrientation(false, OpenConstructorActivity.this);
-        mEditor = new Editor(mEditorAction, mEditorMsg, mEditorSeek, mProgress, OpenConstructorActivity.this);
+        mEditor.init(mEditorAction, mEditorMsg, mEditorSeek, mProgress, OpenConstructorActivity.this);
       }
     });
     if (isCardboardEnabled(this)) {
@@ -413,7 +414,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
 
   @Override
   public void onDrawFrame(GL10 gl) {
-    if (mEditor != null)
+    if (mEditor.initialized())
     {
       final int visibility = mModeButton.getVisibility();
       final int newVisibility = mEditor.movingLocked() ? View.GONE : View.VISIBLE;

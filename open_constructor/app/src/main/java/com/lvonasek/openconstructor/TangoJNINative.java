@@ -71,5 +71,8 @@ public class TangoJNINative {
   // Increase or decrease selection
   public static native void multSelection(boolean increase);
 
+  // Select object by rect
+  public static native void rectSelection(float x1, float y1, float x2, float y2);
+
   public static native byte[] clientSecret();
 }

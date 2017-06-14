@@ -26,8 +26,8 @@
     <string name="editor_select_all">All/None</string>
     <string name="editor_select_object">Object</string>
     <string name="editor_select_object_desc">Tap on the object you want select</string>
-    <string name="editor_select_triangle">Triangle</string>
-    <string name="editor_select_triangle_desc">Point on the triangle(s) you want select</string>
+    <string name="editor_select_rect">Rect</string>
+    <string name="editor_select_rect_desc">Create selection rect by dragging rect on screen</string>
     <string name="editor_select_less">Less</string>
     <string name="editor_select_more">More</string>
     <string name="editor_transform_clone">Clone</string>

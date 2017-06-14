@@ -8,7 +8,7 @@ namespace oc {
 class Rasterizer {
 public:
     void AddUVS(std::vector<glm::vec2> uvs, std::vector<unsigned int> selected);
-    void AddVertices(std::vector<glm::vec3>& vertices, glm::mat4 world2screen);
+    void AddVertices(std::vector<glm::vec3>& vertices, glm::mat4 world2screen, bool culling);
     void SetResolution(int w, int h);
 
     virtual void Process(unsigned long& index, int &x1, int &x2, int &y, double &z1, double &z2) = 0;

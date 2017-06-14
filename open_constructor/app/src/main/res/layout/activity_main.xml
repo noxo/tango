@@ -8,6 +8,12 @@
         android:layout_height="fill_parent"
         android:layout_gravity="top"/>
 
+    <com.lvonasek.openconstructor.main.Editor
+        android:id="@+id/editor"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_gravity="top" />
+
     <LinearLayout
         android:id="@+id/layout_rec"
         android:orientation="horizontal"

@@ -42,6 +42,7 @@ namespace oc {
         void ApplySelection(float x, float y, bool triangle);
         void CompleteSelection(bool inverse);
         void MultSelection(bool increase);
+        void RectSelection(float x1, float y1, float x2, float y2);
 
     private:
         bool t3dr_is_running_;

@@ -33,7 +33,7 @@ namespace oc {
         }
     }
 
-    void Rasterizer::AddVertices(std::vector<glm::vec3>& vertices, glm::mat4 world2screen) {
+    void Rasterizer::AddVertices(std::vector<glm::vec3>& vertices, glm::mat4 world2screen, bool culling) {
         glm::vec3 a, b, c, ba, ca;
         glm::vec4 wa, wb, wc;
         for (unsigned long i = 0; i < vertices.size(); i += 3) {
@@ -74,10 +74,12 @@ namespace oc {
             c.x *= (float)(viewport_width - 1);
             c.y *= (float)(viewport_height - 1);
             //back face culling
-            ba = glm::vec3(b.x - a.x, b.y - a.y, 0.0f);
-            ca = glm::vec3(c.x - a.x, c.y - a.y, 0.0f);
-            if (glm::cross(ba, ca).z < 0)
-                continue;
+            if (culling) {
+                ba = glm::vec3(b.x - a.x, b.y - a.y, 0.0f);
+                ca = glm::vec3(c.x - a.x, c.y - a.y, 0.0f);
+                if (glm::cross(ba, ca).z < 0)
+                    continue;
+            }
             //process
             Triangle(i, a, b, c);
         }

@@ -373,6 +373,16 @@ namespace oc {
         render_mutex_.unlock();
     }
 
+    void App::RectSelection(float x1, float y1, float x2, float y2) {
+        render_mutex_.lock();
+        glm::mat4 matrix = scene.renderer->camera.projection * scene.renderer->camera.GetView();
+        selector.SelectRect(scene.static_meshes_, matrix, x1, y1, x2, y2);
+        glm::vec3 center = selector.GetCenter(scene.static_meshes_);
+        editor.SetCenter(center);
+        scene.uniformPos = center;
+        render_mutex_.unlock();
+    }
+
     void App::SetView(float p, float y, float mx, float my, float mz, bool g) {
         pitch = p;
         yaw = y;
@@ -483,6 +493,12 @@ Java_com_lvonasek_openconstructor_TangoJNINative_completeSelection(JNIEnv*, jobj
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_TangoJNINative_multSelection(JNIEnv*, jobject, jboolean increase) {
     app.MultSelection(increase);
+}
+
+JNIEXPORT void JNICALL
+Java_com_lvonasek_openconstructor_TangoJNINative_rectSelection(JNIEnv*, jobject, jfloat x1, jfloat y1,
+                                                               jfloat x2, jfloat y2) {
+    app.RectSelection(x1, y1, x2, y2);
 }
 
 JNIEXPORT jbyteArray JNICALL

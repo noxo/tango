@@ -1,8 +1,13 @@
 package com.lvonasek.openconstructor.main;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -19,12 +24,13 @@ import com.lvonasek.openconstructor.TangoJNINative;
 import java.io.File;
 import java.util.ArrayList;
 
-public class Editor implements Button.OnClickListener, View.OnTouchListener
+public class Editor extends View implements Button.OnClickListener, View.OnTouchListener
 {
   private enum Effect { CONTRAST, GAMMA, SATURATION, TONE, RESET, CLONE, DELETE, MOVE, ROTATE, SCALE }
   private enum Screen { MAIN, COLOR, SELECT, TRANSFORM }
-  private enum Status { IDLE, SELECT_OBJECTS, SELECT_TRIANGLES, UPDATE_COLORS, UPDATE_TRANSFORM }
+  private enum Status { IDLE, SELECT_OBJECT, SELECT_RECT, UPDATE_COLORS, UPDATE_TRANSFORM }
 
+  private int mAxis;
   private ArrayList<Button> mButtons;
   private AbstractActivity mContext;
   private Effect mEffect;
@@ -33,11 +39,22 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
   private SeekBar mSeek;
   private Status mStatus;
   private TextView mMsg;
-  private int mAxis;
+  private Paint mPaint;
+  private Rect mRect;
 
   private boolean mComplete;
+  private boolean mInitialized;
 
-  public Editor(ArrayList<Button> buttons, TextView msg, SeekBar seek, ProgressBar progress, AbstractActivity context)
+  public Editor(Context context, AttributeSet attrs)
+  {
+    super(context, attrs);
+    mInitialized = false;
+    mPaint = new Paint();
+    mPaint.setColor(0x8080FF80);
+    mRect = new Rect();
+  }
+
+  public void init(ArrayList<Button> buttons, TextView msg, SeekBar seek, ProgressBar progress, AbstractActivity context)
   {
     for (Button b : buttons) {
       b.setOnClickListener(this);
@@ -52,6 +69,7 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
     setMainScreen();
 
     mComplete = true;
+    mInitialized = true;
     mProgress.setVisibility(View.VISIBLE);
     mSeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener()
     {
@@ -114,9 +132,32 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
     }).start();
   }
 
+  public boolean initialized() { return mInitialized; }
+
   public boolean movingLocked()
   {
     return mStatus != Status.IDLE;
+  }
+
+  private Rect normalizeRect(Rect input)
+  {
+    Rect output = new Rect();
+    if (input.left > input.right) {
+      output.left = input.right;
+      output.right = input.left;
+    } else {
+      output.left = input.left;
+      output.right = input.right;
+    }
+
+    if (input.top > input.bottom) {
+      output.top = input.bottom;
+      output.bottom = input.top;
+    } else {
+      output.top = input.top;
+      output.bottom = input.bottom;
+    }
+    return output;
   }
 
   @Override
@@ -153,7 +194,7 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
     }
     //back button
     else if (view.getId() == R.id.editor0) {
-      if ((mStatus == Status.SELECT_OBJECTS) || (mStatus == Status.SELECT_TRIANGLES))
+      if ((mStatus == Status.SELECT_OBJECT) || (mStatus == Status.SELECT_RECT))
         setSelectScreen();
       else if (mStatus == Status.UPDATE_COLORS) {
         mProgress.setVisibility(View.VISIBLE);
@@ -210,12 +251,12 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
       //select object
       if (view.getId() == R.id.editor2) {
         showText(R.string.editor_select_object_desc);
-        mStatus = Status.SELECT_OBJECTS;
+        mStatus = Status.SELECT_OBJECT;
       }
-      //triangle selection
+      //rect selection
       if (view.getId() == R.id.editor3) {
-        showText(R.string.editor_select_triangle_desc);
-        mStatus = Status.SELECT_TRIANGLES;
+        showText(R.string.editor_select_rect_desc);
+        mStatus = Status.SELECT_RECT;
       }
       //select less
       if (view.getId() == R.id.editor4)
@@ -373,6 +414,13 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
   }
 
   @Override
+  protected void onDraw(Canvas c)
+  {
+    super.onDraw(c);
+    c.drawRect(normalizeRect(mRect), mPaint);
+  }
+
+  @Override
   public boolean onTouch(View view, MotionEvent motionEvent)
   {
     if (view instanceof Button) {
@@ -478,7 +526,7 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
     initButtons();
     mButtons.get(1).setText(mContext.getString(R.string.editor_select_all));
     mButtons.get(2).setText(mContext.getString(R.string.editor_select_object));
-    mButtons.get(3).setText(mContext.getString(R.string.editor_select_triangle));
+    mButtons.get(3).setText(mContext.getString(R.string.editor_select_rect));
     mButtons.get(4).setText(mContext.getString(R.string.editor_select_less));
     mButtons.get(5).setText(mContext.getString(R.string.editor_select_more));
     mScreen = Screen.SELECT;
@@ -516,15 +564,34 @@ public class Editor implements Button.OnClickListener, View.OnTouchListener
     mMsg.setVisibility(View.VISIBLE);
   }
 
-  public void touchEvent(float x, float y)
+  public void touchEvent(MotionEvent event)
   {
-    if (mStatus == Status.SELECT_OBJECTS) {
-      TangoJNINative.applySelect(x, y, false);
+    if (mStatus == Status.SELECT_OBJECT) {
+      TangoJNINative.applySelect(event.getX(), getHeight() - event.getY(), false);
       mStatus = Status.IDLE;
       setSelectScreen();
     }
-    if (mStatus == Status.SELECT_TRIANGLES)
-      TangoJNINative.applySelect(x, y, true);
+    if (mStatus == Status.SELECT_RECT)
+    {
+      if (event.getAction() == MotionEvent.ACTION_DOWN) {
+        mRect.left = (int) event.getX();
+        mRect.top = (int) event.getY();
+        mRect.right = mRect.left;
+        mRect.bottom = mRect.top;
+      }
+      if (event.getAction() == MotionEvent.ACTION_MOVE) {
+        mRect.right = (int) event.getX();
+        mRect.bottom = (int) event.getY();
+      }
+      if (event.getAction() == MotionEvent.ACTION_UP) {
+        Rect rect = normalizeRect(mRect);
+        rect.top = getHeight() - rect.top;
+        rect.bottom = getHeight() - rect.bottom;
+        TangoJNINative.rectSelection(rect.left, rect.bottom, rect.right, rect.top);
+        mRect = new Rect();
+      }
+      postInvalidate();
+    }
   }
 
   private void updateAxisButtons()

@@ -91,7 +91,9 @@ namespace oc {
     }
 
     void Selector::Process(unsigned long &index, int &x1, int &x2, int &y, double &z1, double &z2) {
-        if (pointY == y) {
+        if (rangeMode) {
+            //TODO:implement
+        } else if (pointY == y) {
             if ((x1 <= pointX) && (pointX <= x2)) {
                 double z = z1 + (pointX - x1) * (z2 - z1) / (double)(x2 - x1);
                 if ((z > 0) && (depth > z)) {
@@ -111,11 +113,12 @@ namespace oc {
         depth = INT_MAX;
         pointX = (int) x;
         pointY = (int) y;
+        rangeMode = false;
         int selectModel = -1;
         int selectFace = -1;
         for (unsigned int i = 0; i < mesh.size(); i++) {
             selected = -1;
-            AddVertices(mesh[i].vertices, world2screen);
+            AddVertices(mesh[i].vertices, world2screen, true);
             if (selected >= 0) {
                 selectModel = i;
                 selectFace = selected;
@@ -192,15 +195,26 @@ namespace oc {
         }
     }
 
+    void Selector::SelectRect(std::vector<Mesh> &mesh, glm::mat4 world2screen, float x1, float y1,
+                              float x2, float y2) {
+        pointX = (int) x1;
+        pointY = (int) y1;
+        pointX2 = (int) x2;
+        pointY2 = (int) y2;
+        rangeMode = true;
+        //TODO:implement
+    }
+
     void Selector::SelectTriangle(std::vector<Mesh> &mesh, glm::mat4 world2screen, float x, float y) {
         depth = INT_MAX;
         pointX = (int) x;
         pointY = (int) y;
+        rangeMode = false;
         int selectModel = -1;
         int selectFace = -1;
         for (unsigned int i = 0; i < mesh.size(); i++) {
             selected = -1;
-            AddVertices(mesh[i].vertices, world2screen);
+            AddVertices(mesh[i].vertices, world2screen, true);
             if (selected >= 0) {
                 selectModel = i;
                 selectFace = selected;
