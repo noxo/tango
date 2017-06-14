@@ -24,6 +24,7 @@ private:
     std::string VertexToKey(glm::vec3& vec);
 
     std::map<std::string, std::map<std::pair<int, int>, bool> > connections;
+    Mesh* currentMesh;
     double depth;
     int pointX, pointY, pointX2, pointY2;
     bool rangeMode;

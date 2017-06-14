@@ -92,7 +92,17 @@ namespace oc {
 
     void Selector::Process(unsigned long &index, int &x1, int &x2, int &y, double &z1, double &z2) {
         if (rangeMode) {
-            //TODO:implement
+            if ((x1 < pointX) && (x1 < pointX2))
+                return;
+            if ((x2 > pointX) && (x2 > pointX2))
+                return;
+            if ((y < pointY) && (y < pointY2))
+                return;
+            if ((y > pointY) && (y > pointY2))
+                return;
+            currentMesh->colors[index + 0] = 0;
+            currentMesh->colors[index + 1] = 0;
+            currentMesh->colors[index + 2] = 0;
         } else if (pointY == y) {
             if ((x1 <= pointX) && (pointX <= x2)) {
                 double z = z1 + (pointX - x1) * (z2 - z1) / (double)(x2 - x1);
@@ -202,7 +212,27 @@ namespace oc {
         pointX2 = (int) x2;
         pointY2 = (int) y2;
         rangeMode = true;
-        //TODO:implement
+        for (unsigned int i = 0; i < mesh.size(); i++) {
+            currentMesh = &mesh[i];
+            AddVertices(mesh[i].vertices, world2screen, false);
+
+            //prevent half selection
+            /*bool selected = false;
+            for (unsigned int j = 0; j < mesh[i].colors.size(); j += 3) {
+                if (mesh[i].colors[j + 0] == 0)
+                    selected = true;
+                if (mesh[i].colors[j + 1] == 0)
+                    selected = true;
+                if (mesh[i].colors[j + 2] == 0)
+                    selected = true;
+
+                if (selected) {
+                    mesh[i].colors[j + 0] = 0;
+                    mesh[i].colors[j + 1] = 0;
+                    mesh[i].colors[j + 2] = 0;
+                }
+            }*/
+        }
     }
 
     void Selector::SelectTriangle(std::vector<Mesh> &mesh, glm::mat4 world2screen, float x, float y) {
