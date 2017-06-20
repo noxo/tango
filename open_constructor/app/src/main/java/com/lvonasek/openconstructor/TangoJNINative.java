@@ -1,8 +1,6 @@
 package com.lvonasek.openconstructor;
 
 import android.os.IBinder;
-import android.util.Log;
-
 import com.lvonasek.openconstructor.main.TangoInitHelper;
 
 /**
@@ -10,13 +8,8 @@ import com.lvonasek.openconstructor.main.TangoInitHelper;
  */
 public class TangoJNINative {
   static {
-    // This project depends on tango_client_api, so we need to make sure we load
-    // the correct library first.
-    if (TangoInitHelper.loadTangoSharedLibrary() ==
-        TangoInitHelper.ARCH_ERROR) {
-      Log.e("TangoJNINative", "ERROR! Unable to load library!");
-    }
-    System.loadLibrary("openconstructor");
+    int arch = TangoInitHelper.loadTangoSharedLibrary();
+    TangoInitHelper.loadLibrary("openconstructor", arch);
   }
 
   // Called when the Tango service is connected successfully.
