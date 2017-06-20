@@ -39,7 +39,6 @@
     <!-- Recording !-->
     <string name="airplane_title">The airplane mode is not active</string>
     <string name="airplane_detail">An incoming call would cancel scanning without saving data. Do you want to continue?</string>
-    <string name="data_lost">Motion tracking control lost</string>
     <string name="distance">Max. dist.:</string>
     <string name="enter_filename">Enter the file name</string>
     <string name="resolution">3D grid:</string>

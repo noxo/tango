@@ -117,7 +117,6 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
       case PERMISSIONS_CODE:
       {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-          deleteRecursive(getTempPath());
           if (Build.DEVICE.toLowerCase().contains("asus_a002")) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle(getString(R.string.unsupported));

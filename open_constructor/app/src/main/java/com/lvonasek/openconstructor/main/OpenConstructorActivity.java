@@ -83,35 +83,43 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   boolean mInitialised = false;
   boolean mTangoBinded = false;
   ServiceConnection mTangoServiceConnection = new ServiceConnection() {
-      public void onServiceConnected(ComponentName name, IBinder srv) {
-        double res      = mRes * 0.01;
-        double dmin     = 0.6f;
-        double dmax     = mRes * 1.5;
-        int noise       = isNoiseFilterOn() ? 9 : 0;
-        boolean land    = !isPortrait(OpenConstructorActivity.this);
-
-        if (android.os.Build.DEVICE.toLowerCase().startsWith("yellowstone"))
-          land = !land;
-
-        if (mRes == 0) {
-          res = 0.005;
-          dmax = 1.0;
-        }
-
-        m3drRunning = true;
-        String t = getTempPath().getAbsolutePath();
-        TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, t);
-        TangoJNINative.onToggleButtonClicked(m3drRunning);
-        TangoJNINative.setView(0, 0, 0, 0, 0, true);
-        OpenConstructorActivity.this.runOnUiThread(new Runnable()
+      public void onServiceConnected(ComponentName name, final IBinder srv) {
+        new Thread(new Runnable()
         {
           @Override
           public void run()
           {
-            mProgress.setVisibility(View.GONE);
+            double res   = mRes * 0.01;
+            double dmin  = 0.6f;
+            double dmax  = mRes * 1.5;
+            int noise    = isNoiseFilterOn() ? 9 : 0;
+            boolean land = !isPortrait(OpenConstructorActivity.this);
+
+            if (android.os.Build.DEVICE.toLowerCase().startsWith("yellowstone"))
+              land = !land;
+
+            if (mRes == 0) {
+              res = 0.005;
+              dmax = 1.0;
+            }
+
+            m3drRunning = true;
+            deleteRecursive(getTempPath());
+            String t = getTempPath().getAbsolutePath();
+            TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, t);
+            TangoJNINative.onToggleButtonClicked(m3drRunning);
+            TangoJNINative.setView(0, 0, 0, 0, 0, true);
+            OpenConstructorActivity.this.runOnUiThread(new Runnable()
+            {
+              @Override
+              public void run()
+              {
+                mProgress.setVisibility(View.GONE);
+              }
+            });
+            mInitialised = true;
           }
-        });
-        mInitialised = true;
+        }).start();
       }
 
       public void onServiceDisconnected(ComponentName name) {
@@ -307,12 +315,15 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
   @Override
   protected void onPause() {
     super.onPause();
-    mGLView.onPause();
-    mRunning = false;
-    if (mTangoBinded) {
-      unbindService(mTangoServiceConnection);
-      Toast.makeText(this, R.string.data_lost, Toast.LENGTH_LONG).show();
-    }
+    new Thread(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        if (mTangoBinded)
+          unbindService(mTangoServiceConnection);
+      }
+    }).start();
     System.exit(0);
   }
 
@@ -330,7 +341,11 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       if (mEditor.movingLocked())
         return true;
     }
-    mGestureDetector.onTouchEvent(event);
+    try {
+      mGestureDetector.onTouchEvent(event);
+    } catch(Exception e) {
+      e.printStackTrace();
+    }
     return true;
   }
 
