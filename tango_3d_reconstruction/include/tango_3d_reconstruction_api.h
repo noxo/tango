@@ -998,7 +998,7 @@ Tango3DR_Status Tango3DR_clear(Tango3DR_ReconstructionContext context);
 ///     valid, TANGO_3DR_ERROR if using @c TANGO_3DR_PROJECTIVE_UPDATE but
 ///     the @c and @c Tango3DR_ReconstructionContext_setDepthCalibration method
 ///     hasn't been called.
-Tango3DR_Status Tango3DR_update(Tango3DR_ReconstructionContext context,
+Tango3DR_Status Tango3DR_updateFromPointCloud(Tango3DR_ReconstructionContext context,
                                 const Tango3DR_PointCloud* cloud,
                                 const Tango3DR_Pose* cloud_pose,
                                 const Tango3DR_ImageBuffer* image,

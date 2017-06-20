@@ -105,8 +105,8 @@ namespace oc {
         Tango3DR_Pose t3dr_depth_pose = GLCamera::Extract3DRPose(point_cloud_matrix_);
         Tango3DR_GridIndexArray t3dr_updated;
         Tango3DR_Status ret;
-        ret = Tango3DR_update(tango.Context(), &t3dr_depth, &t3dr_depth_pose,
-                              &t3dr_image, &t3dr_image_pose, &t3dr_updated);
+        ret = Tango3DR_updateFromPointCloud(tango.Context(), &t3dr_depth, &t3dr_depth_pose,
+                                            &t3dr_image, &t3dr_image_pose, &t3dr_updated);
         if (ret != TANGO_3DR_SUCCESS)
         {
             binder_mutex_.unlock();
