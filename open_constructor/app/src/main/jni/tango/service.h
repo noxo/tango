@@ -3,7 +3,7 @@
 
 #include <tango_3d_reconstruction_api.h>
 #include <tango_client_api.h>
-#include <tango_support_api.h>
+#include <tango_support.h>
 
 namespace oc {
     class TangoService {
@@ -18,7 +18,7 @@ namespace oc {
         std::string Dataset() { return dataset; }
         Tango3DR_CameraCalibration* Camera() { return &camera; }
         Tango3DR_ReconstructionContext Context() { return context; }
-        TangoSupportPointCloudManager* Pointcloud() { return pointcloud; }
+        TangoSupport_PointCloudManager* Pointcloud() { return pointcloud; }
 
     private:
         std::string dataset;
@@ -26,7 +26,7 @@ namespace oc {
         Tango3DR_CameraCalibration camera;
         Tango3DR_CameraCalibration depth;
         Tango3DR_ReconstructionContext context;
-        TangoSupportPointCloudManager* pointcloud;
+        TangoSupport_PointCloudManager* pointcloud;
 
         double res_;
         double dmin_;

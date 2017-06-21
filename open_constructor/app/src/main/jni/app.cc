@@ -42,11 +42,11 @@ namespace oc {
         if (!t3dr_is_running_)
             return;
 
-        TangoMatrixTransformData matrix_transform;
+        TangoSupport_MatrixTransformData matrix_transform;
         TangoSupport_getMatrixTransformAtTime(
                 point_cloud->timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION,
                 TANGO_COORDINATE_FRAME_CAMERA_DEPTH, TANGO_SUPPORT_ENGINE_OPENGL,
-                TANGO_SUPPORT_ENGINE_TANGO, ROTATION_0, &matrix_transform);
+                TANGO_SUPPORT_ENGINE_TANGO, TANGO_SUPPORT_ROTATION_0, &matrix_transform);
         if (matrix_transform.status_code != TANGO_POSE_VALID)
             return;
 
@@ -61,11 +61,11 @@ namespace oc {
         if (id != TANGO_CAMERA_COLOR || !t3dr_is_running_)
             return;
 
-        TangoMatrixTransformData matrix_transform;
+        TangoSupport_MatrixTransformData matrix_transform;
         TangoSupport_getMatrixTransformAtTime(
                         buffer->timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION,
                         TANGO_COORDINATE_FRAME_CAMERA_COLOR, TANGO_SUPPORT_ENGINE_OPENGL,
-                        TANGO_SUPPORT_ENGINE_TANGO, ROTATION_0, &matrix_transform);
+                        TANGO_SUPPORT_ENGINE_TANGO, TANGO_SUPPORT_ROTATION_0, &matrix_transform);
         if (matrix_transform.status_code != TANGO_POSE_VALID)
             return;
 
@@ -180,11 +180,11 @@ namespace oc {
             scene.renderer->camera.rotation = glm::quat(glm::vec3(lastYaw, lastPitch, 0));
             scene.renderer->camera.scale    = glm::vec3(1, 1, 1);
         } else {
-            TangoMatrixTransformData transform;
+            TangoSupport_MatrixTransformData transform;
             TangoSupport_getMatrixTransformAtTime(
                     0, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION, TANGO_COORDINATE_FRAME_DEVICE,
                     TANGO_SUPPORT_ENGINE_OPENGL, TANGO_SUPPORT_ENGINE_OPENGL,
-                    landscape ? ROTATION_90 : ROTATION_0, &transform);
+                    landscape ? TANGO_SUPPORT_ROTATION_90 : TANGO_SUPPORT_ROTATION_0, &transform);
             if (transform.status_code == TANGO_POSE_VALID) {
                 scene.renderer->camera.SetTransformation(glm::make_mat4(transform.matrix));
                 scene.UpdateFrustum(scene.renderer->camera.position, movez);

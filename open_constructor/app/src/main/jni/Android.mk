@@ -4,7 +4,7 @@ PROJECT_ROOT:= $(call my-dir)/../../../../..
 
 include $(CLEAR_VARS)
 LOCAL_MODULE           := libopenconstructor
-LOCAL_SHARED_LIBRARIES := tango_client_api tango_3d_reconstruction tango_support_api
+LOCAL_SHARED_LIBRARIES := tango_client_api tango_3d_reconstruction tango_support
 LOCAL_STATIC_LIBRARIES := jpeg-turbo png
 LOCAL_CFLAGS           := -std=c++11
 
@@ -36,4 +36,4 @@ $(call import-module,libjpeg-turbo)
 $(call import-module,libpng)
 $(call import-module,tango_client_api)
 $(call import-module,tango_3d_reconstruction)
-$(call import-module,tango_support_api)
+$(call import-module,tango_support)
