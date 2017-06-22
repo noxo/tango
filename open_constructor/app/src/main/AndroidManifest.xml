@@ -30,7 +30,7 @@
         <activity android:configChanges="orientation|screenSize" android:name=".sketchfab.Home"/>
         <activity android:configChanges="orientation|screenSize" android:name=".sketchfab.OAuth"/>
         <activity android:configChanges="orientation|screenSize" android:name=".sketchfab.Uploader"/>
-        <activity android:configChanges="orientation|screenSize" android:name=".ui.SettingsActivity"/>
+        <activity android:configChanges="orientation|screenSize" android:name=".ui.Settings"/>
     </application>
 
 </manifest>

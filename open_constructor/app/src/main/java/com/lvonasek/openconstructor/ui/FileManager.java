@@ -172,7 +172,7 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         }
         break;
       case R.id.settings:
-        startActivity(new Intent(this, SettingsActivity.class));
+        startActivity(new Intent(this, Settings.class));
         break;
       case R.id.sketchfab:
         showProgress();

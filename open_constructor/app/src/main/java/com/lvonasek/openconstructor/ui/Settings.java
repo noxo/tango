@@ -11,7 +11,7 @@ import android.view.WindowManager;
 
 import com.lvonasek.openconstructor.R;
 
-public class SettingsActivity extends PreferenceActivity implements Preference.OnPreferenceChangeListener {
+public class Settings extends PreferenceActivity implements Preference.OnPreferenceChangeListener {
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -32,7 +32,7 @@ public class SettingsActivity extends PreferenceActivity implements Preference.O
         builder.setPositiveButton(getString(R.string.yes), new DialogInterface.OnClickListener() {
           @Override
           public void onClick(DialogInterface dialog, int which) {
-            AbstractActivity.installCardboardApp(SettingsActivity.this);
+            AbstractActivity.installCardboardApp(Settings.this);
             dialog.dismiss();
             recreate();
           }
