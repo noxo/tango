@@ -17,7 +17,6 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -114,7 +113,7 @@ public abstract class AbstractActivity extends Activity
         }
       }
       sc.close();
-    } catch (FileNotFoundException e)
+    } catch (Exception e)
     {
       e.printStackTrace();
     }
@@ -130,7 +129,7 @@ public abstract class AbstractActivity extends Activity
           }
         }
         sc.close();
-      } catch (FileNotFoundException e)
+      } catch (Exception e)
       {
         e.printStackTrace();
       }
@@ -171,6 +170,14 @@ public abstract class AbstractActivity extends Activity
     String dir = Environment.getExternalStorageDirectory().getPath() + MODEL_DIRECTORY;
     if (new File(dir).mkdir())
       Log.d(TAG, "Directory " + dir + " created");
+    try
+    {
+      if (new File(new File(dir), ".nomedia").createNewFile())
+        Log.d(TAG, ".nomedia in  " + dir + " created");
+    } catch (Exception e)
+    {
+      e.printStackTrace();
+    }
     return dir;
   }
 
