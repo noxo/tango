@@ -1,4 +1,4 @@
-package com.lvonasek.openconstructor;
+package com.lvonasek.openconstructor.ui;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -8,6 +8,8 @@ import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.view.WindowManager;
+
+import com.lvonasek.openconstructor.R;
 
 public class SettingsActivity extends PreferenceActivity implements Preference.OnPreferenceChangeListener {
   @Override

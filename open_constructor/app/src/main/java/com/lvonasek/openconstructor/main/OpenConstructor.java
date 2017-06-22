@@ -26,9 +26,8 @@ import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import com.lvonasek.openconstructor.AbstractActivity;
+import com.lvonasek.openconstructor.ui.AbstractActivity;
 import com.lvonasek.openconstructor.R;
-import com.lvonasek.openconstructor.TangoJNINative;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -36,7 +35,7 @@ import java.util.ArrayList;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-public class OpenConstructorActivity extends AbstractActivity implements View.OnClickListener,
+public class OpenConstructor extends AbstractActivity implements View.OnClickListener,
         GLSurfaceView.Renderer, Runnable {
 
   private ActivityManager mActivityManager;
@@ -92,7 +91,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
             double dmin  = 0.6f;
             double dmax  = mRes * 1.5;
             int noise    = isNoiseFilterOn() ? 9 : 0;
-            boolean land = !isPortrait(OpenConstructorActivity.this);
+            boolean land = !isPortrait(OpenConstructor.this);
 
             if (android.os.Build.DEVICE.toLowerCase().startsWith("yellowstone"))
               land = !land;
@@ -105,10 +104,10 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
             m3drRunning = true;
             deleteRecursive(getTempPath());
             String t = getTempPath().getAbsolutePath();
-            TangoJNINative.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, t);
-            TangoJNINative.onToggleButtonClicked(m3drRunning);
-            TangoJNINative.setView(0, 0, 0, 0, 0, true);
-            OpenConstructorActivity.this.runOnUiThread(new Runnable()
+            JNI.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, t);
+            JNI.onToggleButtonClicked(m3drRunning);
+            JNI.setView(0, 0, 0, 0, 0, true);
+            OpenConstructor.this.runOnUiThread(new Runnable()
             {
               @Override
               public void run()
@@ -199,13 +198,13 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
           mPitch += dy * f;
           mYawM += -dx * f;
         }
-        TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
+        JNI.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
       }
 
       @Override
       public void OnRotation(float angle) {
         mYawR = (float) Math.toRadians(-angle);
-        TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
+        JNI.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
       }
 
       @Override
@@ -223,7 +222,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
           if(mMoveZ > 10)
             mMoveZ = 10;
         }
-        TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
+        JNI.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
       }
     }, this);
 
@@ -249,7 +248,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       mGLView.queueEvent(new Runnable() {
           @Override
           public void run() {
-            TangoJNINative.onToggleButtonClicked(m3drRunning);
+            JNI.onToggleButtonClicked(m3drRunning);
           }
         });
       break;
@@ -257,14 +256,14 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
       mGLView.queueEvent(new Runnable() {
           @Override
           public void run() {
-            TangoJNINative.onClearButtonClicked();
+            JNI.onClearButtonClicked();
           }
         });
       break;
     case R.id.save_button:
       //pause
       m3drRunning = false;
-      TangoJNINative.onToggleButtonClicked(false);
+      JNI.onToggleButtonClicked(false);
       save();
       break;
     }
@@ -285,9 +284,9 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
           @Override
           public void run()
           {
-            TangoJNINative.load(file);
-            TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
-            OpenConstructorActivity.this.runOnUiThread(new Runnable()
+            JNI.load(file);
+            JNI.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
+            OpenConstructor.this.runOnUiThread(new Runnable()
             {
               @Override
               public void run()
@@ -371,7 +370,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
             return;
         mTopMode = !mTopMode;
         mModeButton.setBackgroundResource(mTopMode ? R.drawable.ic_mode3d : R.drawable.ic_mode2d);
-        float floor = TangoJNINative.getFloorLevel(mMoveX, mMoveY, mMoveZ);
+        float floor = JNI.getFloorLevel(mMoveX, mMoveY, mMoveZ);
         if (floor < -9999)
           floor = 0;
         if (mTopMode) {
@@ -381,7 +380,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
           mMoveZ = floor + 1.7f; //1.7m as an average human height
           mPitch = 0;
         }
-        TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, false);
+        JNI.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, false);
       }
     });
     mEditorButton.setVisibility(View.VISIBLE);
@@ -393,8 +392,8 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         mCardboardButton.setVisibility(View.GONE);
         mEditorButton.setVisibility(View.GONE);
         mLayoutEditor.setVisibility(View.VISIBLE);
-        setOrientation(false, OpenConstructorActivity.this);
-        mEditor.init(mEditorAction, mEditorMsg, mEditorSeek, mProgress, OpenConstructorActivity.this);
+        setOrientation(false, OpenConstructor.this);
+        mEditor.init(mEditorAction, mEditorMsg, mEditorSeek, mProgress, OpenConstructor.this);
       }
     });
     if (isCardboardEnabled(this)) {
@@ -412,7 +411,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         }
       });
     }
-    float floor = TangoJNINative.getFloorLevel(mMoveX, mMoveY, mMoveZ);
+    float floor = JNI.getFloorLevel(mMoveX, mMoveY, mMoveZ);
     if (floor < -9999)
       floor = 0;
     mMoveX = 0;
@@ -423,7 +422,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
     mYawR  = 0;
     mTopMode = true;
     mViewMode = true;
-    TangoJNINative.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, false);
+    JNI.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, false);
   }
 
   @Override
@@ -443,7 +442,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         });
       }
     }
-    TangoJNINative.onGlSurfaceDrawFrame();
+    JNI.onGlSurfaceDrawFrame();
   }
 
   @Override
@@ -451,13 +450,13 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
 
   @Override
   public void onSurfaceChanged(GL10 gl, int width, int height) {
-    TangoJNINative.onGlSurfaceChanged(width, height);
+    JNI.onGlSurfaceChanged(width, height);
   }
 
   private void save() {
     //filename dialog
     if (mFirstSave) {
-      final Context context = OpenConstructorActivity.this;
+      final Context context = OpenConstructor.this;
       AlertDialog.Builder builder = new AlertDialog.Builder(context);
       builder.setTitle(getString(R.string.enter_filename));
       final EditText input = new EditText(context);
@@ -497,15 +496,15 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
         mFirstSave = false;
         long timestamp = System.currentTimeMillis();
         final File obj = new File(getTempPath(), timestamp + FILE_EXT[0]);
-        TangoJNINative.save(obj.getAbsolutePath());
+        JNI.save(obj.getAbsolutePath());
         //open???
-        OpenConstructorActivity.this.runOnUiThread(new Runnable()
+        OpenConstructor.this.runOnUiThread(new Runnable()
         {
           @Override
           public void run()
           {
             mProgress.setVisibility(View.GONE);
-            AlertDialog.Builder builder = new AlertDialog.Builder(OpenConstructorActivity.this);
+            AlertDialog.Builder builder = new AlertDialog.Builder(OpenConstructor.this);
             builder.setTitle(getString(R.string.view));
             builder.setPositiveButton(getString(R.string.yes), new DialogInterface.OnClickListener() {
               @Override
@@ -524,7 +523,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                   public void run()
                   {
                     if (isTexturingOn())
-                      TangoJNINative.texturize(obj.getAbsolutePath());
+                      JNI.texturize(obj.getAbsolutePath());
                     for(String s : getObjResources(obj.getAbsoluteFile()))
                       if (new File(getTempPath(), s).renameTo(new File(getPath(), s)))
                         Log.d(AbstractActivity.TAG, "File " + s + " saved");
@@ -532,7 +531,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
                     if (obj.renameTo(file2save))
                       Log.d(TAG, "Obj file " + file2save.toString() + " saved.");
 
-                    OpenConstructorActivity.this.runOnUiThread(new Runnable()
+                    OpenConstructor.this.runOnUiThread(new Runnable()
                     {
                       @Override
                       public void run()
@@ -591,7 +590,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
             mInfoLeft.setTextColor(Color.WHITE);
 
           //battery state
-          int bat = getBatteryPercentage(OpenConstructorActivity.this);
+          int bat = getBatteryPercentage(OpenConstructor.this);
           mInfoRight.setText(bat + "%");
           int icon = R.drawable.ic_battery_0;
           if (bat > 10)
@@ -627,7 +626,7 @@ public class OpenConstructorActivity extends AbstractActivity implements View.On
           mInfoMiddle.setText(text);
 
           //update info about Tango
-          text = new String(TangoJNINative.getEvent());
+          text = new String(JNI.getEvent());
           mInfoLog.setVisibility(text.length() > 0 ? View.VISIBLE : View.GONE);
           mInfoLog.setText(text);
 

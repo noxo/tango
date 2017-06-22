@@ -411,98 +411,98 @@ extern "C" {
 #endif
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_onTangoServiceConnected(JNIEnv* env, jobject,
+Java_com_lvonasek_openconstructor_main_JNI_onTangoServiceConnected(JNIEnv* env, jobject,
           jobject iBinder, jdouble res, jdouble dmin, jdouble dmax, jint noise, jboolean land,
                                                                               jstring dataset) {
   app.OnTangoServiceConnected(env, iBinder, res, dmin, dmax, noise, land, jstring2string(env, dataset));
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_onGlSurfaceChanged(
+Java_com_lvonasek_openconstructor_main_JNI_onGlSurfaceChanged(
     JNIEnv*, jobject, jint width, jint height) {
   app.OnSurfaceChanged(width, height);
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_onGlSurfaceDrawFrame(JNIEnv*, jobject) {
+Java_com_lvonasek_openconstructor_main_JNI_onGlSurfaceDrawFrame(JNIEnv*, jobject) {
   app.OnDrawFrame();
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_onToggleButtonClicked(
+Java_com_lvonasek_openconstructor_main_JNI_onToggleButtonClicked(
     JNIEnv*, jobject, jboolean t3dr_is_running) {
   app.OnToggleButtonClicked(t3dr_is_running);
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_onClearButtonClicked(JNIEnv*, jobject) {
+Java_com_lvonasek_openconstructor_main_JNI_onClearButtonClicked(JNIEnv*, jobject) {
   app.OnClearButtonClicked();
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_load(JNIEnv* env, jobject, jstring name) {
+Java_com_lvonasek_openconstructor_main_JNI_load(JNIEnv* env, jobject, jstring name) {
   app.Load(jstring2string(env, name));
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_save(JNIEnv* env, jobject, jstring name) {
+Java_com_lvonasek_openconstructor_main_JNI_save(JNIEnv* env, jobject, jstring name) {
     app.Save(jstring2string(env, name));
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_saveWithTextures(JNIEnv* env, jobject, jstring name) {
+Java_com_lvonasek_openconstructor_main_JNI_saveWithTextures(JNIEnv* env, jobject, jstring name) {
     app.SaveWithTextures(jstring2string(env, name));
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_texturize(JNIEnv* env, jobject, jstring name) {
+Java_com_lvonasek_openconstructor_main_JNI_texturize(JNIEnv* env, jobject, jstring name) {
   app.Texturize(jstring2string(env, name));
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_setView(JNIEnv*, jobject, jfloat pitch, jfloat yaw,
+Java_com_lvonasek_openconstructor_main_JNI_setView(JNIEnv*, jobject, jfloat pitch, jfloat yaw,
                                                          jfloat x, jfloat y, jfloat z, jboolean gyro) {
   app.SetView(pitch, yaw, x, y, z, gyro);
 }
 
 JNIEXPORT jfloat JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_getFloorLevel(JNIEnv*, jobject, jfloat x, jfloat y, jfloat z) {
+Java_com_lvonasek_openconstructor_main_JNI_getFloorLevel(JNIEnv*, jobject, jfloat x, jfloat y, jfloat z) {
     return app.GetFloorLevel(x, y, z);
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_applyEffect(JNIEnv*, jobject, jint effect, jfloat value, jint axis) {
+Java_com_lvonasek_openconstructor_main_JNI_applyEffect(JNIEnv*, jobject, jint effect, jfloat value, jint axis) {
     app.ApplyEffect((oc::Effector::Effect) effect, value, axis);
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_previewEffect(JNIEnv*, jobject, jint effect, jfloat value, jint axis) {
+Java_com_lvonasek_openconstructor_main_JNI_previewEffect(JNIEnv*, jobject, jint effect, jfloat value, jint axis) {
     app.PreviewEffect((oc::Effector::Effect) effect, value, axis);
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_applySelect(JNIEnv*, jobject, jfloat x, jfloat y, jboolean triangle) {
+Java_com_lvonasek_openconstructor_main_JNI_applySelect(JNIEnv*, jobject, jfloat x, jfloat y, jboolean triangle) {
     app.ApplySelection(x, y, triangle);
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_completeSelection(JNIEnv*, jobject, jboolean inverse) {
+Java_com_lvonasek_openconstructor_main_JNI_completeSelection(JNIEnv*, jobject, jboolean inverse) {
     app.CompleteSelection(inverse);
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_multSelection(JNIEnv*, jobject, jboolean increase) {
+Java_com_lvonasek_openconstructor_main_JNI_multSelection(JNIEnv*, jobject, jboolean increase) {
     app.MultSelection(increase);
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_rectSelection(JNIEnv*, jobject, jfloat x1, jfloat y1,
+Java_com_lvonasek_openconstructor_main_JNI_rectSelection(JNIEnv*, jobject, jfloat x1, jfloat y1,
                                                                jfloat x2, jfloat y2) {
     app.RectSelection(x1, y1, x2, y2);
 }
 
 JNIEXPORT jbyteArray JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_getEvent(JNIEnv* env, jobject) {
+Java_com_lvonasek_openconstructor_main_JNI_getEvent(JNIEnv* env, jobject) {
   std::string message = app.GetEvent();
   int byteCount = (int) message.length();
   const jbyte* pNativeMessage = reinterpret_cast<const jbyte*>(message.c_str());
@@ -513,7 +513,7 @@ Java_com_lvonasek_openconstructor_TangoJNINative_getEvent(JNIEnv* env, jobject) 
 
 #ifndef NDEBUG
 JNIEXPORT jbyteArray JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_clientSecret(JNIEnv* env, jobject) {
+Java_com_lvonasek_openconstructor_main_JNI_clientSecret(JNIEnv* env, jobject) {
   std::string message = "NO SECRET";
   int byteCount = (int) message.length();
   const jbyte* pNativeMessage = reinterpret_cast<const jbyte*>(message.c_str());
@@ -524,7 +524,7 @@ Java_com_lvonasek_openconstructor_TangoJNINative_clientSecret(JNIEnv* env, jobje
 #else
 #include "secret.h"
 JNIEXPORT jbyteArray JNICALL
-Java_com_lvonasek_openconstructor_TangoJNINative_clientSecret(JNIEnv* env, jobject) {
+Java_com_lvonasek_openconstructor_main_JNI_clientSecret(JNIEnv* env, jobject) {
   std::string message = secret();
   int byteCount = message.length();
   const jbyte* pNativeMessage = reinterpret_cast<const jbyte*>(message.c_str());

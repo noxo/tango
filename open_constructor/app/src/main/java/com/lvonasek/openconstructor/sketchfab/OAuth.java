@@ -11,9 +11,9 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-import com.lvonasek.openconstructor.AbstractActivity;
+import com.lvonasek.openconstructor.ui.AbstractActivity;
 import com.lvonasek.openconstructor.R;
-import com.lvonasek.openconstructor.TangoJNINative;
+import com.lvonasek.openconstructor.main.JNI;
 
 import java.util.ArrayList;
 import cz.msebera.android.httpclient.HttpResponse;
@@ -64,7 +64,7 @@ public class OAuth extends AbstractActivity
           }
           String code = url.substring(url.indexOf("code=") + 5);
 
-          String secret = new String(TangoJNINative.clientSecret());
+          String secret = new String(JNI.clientSecret());
           final ArrayList<NameValuePair> authorize = new ArrayList<>();
           authorize.add(new BasicNameValuePair("grant_type", "authorization_code"));
           authorize.add(new BasicNameValuePair("code", code));

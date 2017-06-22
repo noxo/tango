@@ -17,9 +17,8 @@ import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import com.lvonasek.openconstructor.AbstractActivity;
+import com.lvonasek.openconstructor.ui.AbstractActivity;
 import com.lvonasek.openconstructor.R;
-import com.lvonasek.openconstructor.TangoJNINative;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -78,7 +77,7 @@ public class Editor extends View implements Button.OnClickListener, View.OnTouch
       {
         if ((mStatus == Status.UPDATE_COLORS) || (mStatus == Status.UPDATE_TRANSFORM)) {
           value -= 127;
-          TangoJNINative.previewEffect(mEffect.ordinal(), value, mAxis);
+          JNI.previewEffect(mEffect.ordinal(), value, mAxis);
         }
       }
 
@@ -97,7 +96,7 @@ public class Editor extends View implements Button.OnClickListener, View.OnTouch
       @Override
       public void run()
       {
-        TangoJNINative.completeSelection(mComplete);
+        JNI.completeSelection(mComplete);
         mContext.runOnUiThread(new Runnable()
         {
           @Override
@@ -119,7 +118,7 @@ public class Editor extends View implements Button.OnClickListener, View.OnTouch
       @Override
       public void run()
       {
-        TangoJNINative.applyEffect(mEffect.ordinal(), mSeek.getProgress() - 127, axis);
+        JNI.applyEffect(mEffect.ordinal(), mSeek.getProgress() - 127, axis);
         mContext.runOnUiThread(new Runnable()
         {
           @Override
@@ -203,7 +202,7 @@ public class Editor extends View implements Button.OnClickListener, View.OnTouch
           @Override
           public void run()
           {
-            TangoJNINative.applyEffect(mEffect.ordinal(), mSeek.getProgress() - 127, 0);
+            JNI.applyEffect(mEffect.ordinal(), mSeek.getProgress() - 127, 0);
             mContext.runOnUiThread(new Runnable()
             {
               @Override
@@ -236,7 +235,7 @@ public class Editor extends View implements Button.OnClickListener, View.OnTouch
           public void run()
           {
             mComplete = !mComplete;
-            TangoJNINative.completeSelection(mComplete);
+            JNI.completeSelection(mComplete);
             mContext.runOnUiThread(new Runnable()
             {
               @Override
@@ -267,7 +266,7 @@ public class Editor extends View implements Button.OnClickListener, View.OnTouch
           @Override
           public void run()
           {
-            TangoJNINative.multSelection(false);
+            JNI.multSelection(false);
             mContext.runOnUiThread(new Runnable()
             {
               @Override
@@ -288,7 +287,7 @@ public class Editor extends View implements Button.OnClickListener, View.OnTouch
           @Override
           public void run()
           {
-            TangoJNINative.multSelection(true);
+            JNI.multSelection(true);
             mContext.runOnUiThread(new Runnable()
             {
               @Override
@@ -336,7 +335,7 @@ public class Editor extends View implements Button.OnClickListener, View.OnTouch
           @Override
           public void run()
           {
-            TangoJNINative.applyEffect(Effect.RESET.ordinal(), 0, 0);
+            JNI.applyEffect(Effect.RESET.ordinal(), 0, 0);
             mContext.runOnUiThread(new Runnable()
             {
               @Override
@@ -360,7 +359,7 @@ public class Editor extends View implements Button.OnClickListener, View.OnTouch
           @Override
           public void run()
           {
-            TangoJNINative.applyEffect(Effect.CLONE.ordinal(), 0, 0);
+            JNI.applyEffect(Effect.CLONE.ordinal(), 0, 0);
             mContext.runOnUiThread(new Runnable()
             {
               @Override
@@ -380,7 +379,7 @@ public class Editor extends View implements Button.OnClickListener, View.OnTouch
           @Override
           public void run()
           {
-            TangoJNINative.applyEffect(Effect.DELETE.ordinal(), 0, 0);
+            JNI.applyEffect(Effect.DELETE.ordinal(), 0, 0);
             mContext.runOnUiThread(new Runnable()
             {
               @Override
@@ -476,7 +475,7 @@ public class Editor extends View implements Button.OnClickListener, View.OnTouch
           {
             long timestamp = System.currentTimeMillis();
             final File obj = new File(AbstractActivity.getTempPath(), timestamp + AbstractActivity.FILE_EXT[0]);
-            TangoJNINative.saveWithTextures(obj.getAbsolutePath());
+            JNI.saveWithTextures(obj.getAbsolutePath());
             for(String s : AbstractActivity.getObjResources(obj.getAbsoluteFile()))
               if (new File(AbstractActivity.getTempPath(), s).renameTo(new File(AbstractActivity.getPath(), s)))
                 Log.d(AbstractActivity.TAG, "File " + s + " saved");
@@ -573,7 +572,7 @@ public class Editor extends View implements Button.OnClickListener, View.OnTouch
         @Override
         public void run()
         {
-          TangoJNINative.applySelect(event.getX(), getHeight() - event.getY(), false);
+          JNI.applySelect(event.getX(), getHeight() - event.getY(), false);
           mContext.runOnUiThread(new Runnable()
           {
             @Override
@@ -603,7 +602,7 @@ public class Editor extends View implements Button.OnClickListener, View.OnTouch
         Rect rect = normalizeRect(mRect);
         rect.top = getHeight() - rect.top;
         rect.bottom = getHeight() - rect.bottom;
-        TangoJNINative.rectSelection(rect.left, rect.bottom, rect.right, rect.top);
+        JNI.rectSelection(rect.left, rect.bottom, rect.right, rect.top);
         mRect = new Rect();
       }
       postInvalidate();

@@ -11,7 +11,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-import com.lvonasek.openconstructor.AbstractActivity;
+import com.lvonasek.openconstructor.ui.AbstractActivity;
 import com.lvonasek.openconstructor.R;
 
 public class Home extends AbstractActivity

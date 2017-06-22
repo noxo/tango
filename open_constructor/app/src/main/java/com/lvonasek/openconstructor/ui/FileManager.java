@@ -1,4 +1,4 @@
-package com.lvonasek.openconstructor;
+package com.lvonasek.openconstructor.ui;
 
 import android.Manifest;
 import android.app.Activity;
@@ -15,13 +15,14 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.google.atap.tangoservice.Tango;
-import com.lvonasek.openconstructor.main.OpenConstructorActivity;
+import com.lvonasek.openconstructor.R;
+import com.lvonasek.openconstructor.main.OpenConstructor;
 import com.lvonasek.openconstructor.sketchfab.Home;
 
 import java.io.File;
 import java.util.Arrays;
 
-public class FileActivity extends AbstractActivity implements View.OnClickListener {
+public class FileManager extends AbstractActivity implements View.OnClickListener {
   private ListView mList;
   private LinearLayout mLayout;
   private ProgressBar mProgress;
@@ -191,7 +192,7 @@ public class FileActivity extends AbstractActivity implements View.OnClickListen
       public void onClick(DialogInterface dialog, int which)
       {
         showProgress();
-        Intent intent = new Intent(FileActivity.this, OpenConstructorActivity.class);
+        Intent intent = new Intent(FileManager.this, OpenConstructor.class);
         intent.putExtra(AbstractActivity.RESOLUTION_KEY, which);
         startActivity(intent);
       }

@@ -1,12 +1,12 @@
-package com.lvonasek.openconstructor;
+package com.lvonasek.openconstructor.main;
 
 import android.os.IBinder;
-import com.lvonasek.openconstructor.main.TangoInitHelper;
 
 /**
  * Interfaces between native C++ code and Java code.
  */
-public class TangoJNINative {
+public class JNI
+{
   static {
     int arch = TangoInitHelper.loadTangoSharedLibrary();
     TangoInitHelper.loadLibrary("openconstructor", arch);

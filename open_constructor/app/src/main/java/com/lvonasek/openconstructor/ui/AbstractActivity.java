@@ -1,4 +1,4 @@
-package com.lvonasek.openconstructor;
+package com.lvonasek.openconstructor.ui;
 
 import android.app.Activity;
 import android.content.Context;
@@ -12,6 +12,8 @@ import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.WindowManager;
+
+import com.lvonasek.openconstructor.R;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;

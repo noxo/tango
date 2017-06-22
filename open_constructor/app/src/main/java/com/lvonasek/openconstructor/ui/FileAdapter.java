@@ -1,4 +1,4 @@
-package com.lvonasek.openconstructor;
+package com.lvonasek.openconstructor.ui;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -13,7 +13,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.lvonasek.openconstructor.main.OpenConstructorActivity;
+import com.lvonasek.openconstructor.R;
+import com.lvonasek.openconstructor.main.OpenConstructor;
 import com.lvonasek.openconstructor.sketchfab.OAuth;
 
 import java.io.File;
@@ -21,10 +22,10 @@ import java.util.ArrayList;
 
 class FileAdapter extends BaseAdapter
 {
-  private FileActivity mContext;
+  private FileManager mContext;
   private ArrayList<String> mItems;
 
-  FileAdapter(FileActivity context)
+  FileAdapter(FileManager context)
   {
     mContext = context;
     mItems = new ArrayList<>();
@@ -69,7 +70,7 @@ class FileAdapter extends BaseAdapter
       @Override
       public void onClick(View view)
       {
-        Intent intent = new Intent(mContext, OpenConstructorActivity.class);
+        Intent intent = new Intent(mContext, OpenConstructor.class);
         intent.putExtra(AbstractActivity.FILE_KEY, mItems.get(index));
         mContext.showProgress();
         mContext.startActivity(intent);
@@ -107,7 +108,7 @@ class FileAdapter extends BaseAdapter
       {
         switch(which) {
           case 0://open
-            Intent intent = new Intent(mContext, OpenConstructorActivity.class);
+            Intent intent = new Intent(mContext, OpenConstructor.class);
             intent.putExtra(AbstractActivity.FILE_KEY, mItems.get(index));
             mContext.showProgress();
             mContext.startActivity(intent);

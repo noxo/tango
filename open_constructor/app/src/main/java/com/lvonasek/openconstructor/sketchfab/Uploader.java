@@ -26,7 +26,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.lvonasek.openconstructor.AbstractActivity;
+import com.lvonasek.openconstructor.ui.AbstractActivity;
 import com.lvonasek.openconstructor.R;
 
 public class Uploader extends AbstractActivity implements OnClickListener
