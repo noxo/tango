@@ -65,10 +65,13 @@
     <string name="sketchfab_dialog_title">Upload to Sketchfab</string>
     <string name="sketchfab_pro">Note that for size over 50 MB, a Sketchfab PRO account is required, otherwise the upload may fail.</string>
     <string name="sketchfab_upload_ready">Model is compressed and ready to upload!</string>
-    <string name="sketchfab_uploading">Uploading the model to Sketchfab…</string>
     <string name="tags">Tags:</string>
     <string name="upload">Upload</string>
     <string name="upload_size_is">Total size to upload is</string>
+
+    <!-- Service !-->
+    <string name="finished">Operation finished</string>
+    <string name="sketchfab_uploading">Uploading the model to Sketchfab…</string>
 
     <string-array name="file_operations">
         <item>Open</item>

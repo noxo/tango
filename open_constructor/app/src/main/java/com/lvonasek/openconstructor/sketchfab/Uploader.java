@@ -15,7 +15,6 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -28,6 +27,7 @@ import android.widget.Toast;
 
 import com.lvonasek.openconstructor.ui.AbstractActivity;
 import com.lvonasek.openconstructor.R;
+import com.lvonasek.openconstructor.ui.Service;
 
 public class Uploader extends AbstractActivity implements OnClickListener
 {
@@ -40,6 +40,7 @@ public class Uploader extends AbstractActivity implements OnClickListener
   private EditText mTags;
   private Button mButtonOk;
   private String mFile;
+  private String mModelUri;
 
   @Override
   protected void onCreate(Bundle savedInstanceState)
@@ -145,11 +146,53 @@ public class Uploader extends AbstractActivity implements OnClickListener
               {
                 public void onClick(DialogInterface dialog, int which)
                 {
-                  mProgressDialog.setTitle(getString(R.string.sketchfab_dialog_title));
-                  mProgressDialog.setMessage(getString(R.string.sketchfab_uploading));
-                  mProgressDialog.show();
-                  new uploadToSketchfabTask(mDescription.getText().toString(),
-                          mTags.getText().toString()).execute(zipOutput, fileName);
+                  Service.process(Uploader.this, getString(R.string.sketchfab_uploading), false, new Runnable()
+                  {
+                    @Override
+                    public void run()
+                    {
+                      String charset = "UTF-8";
+                      File uploadFile = new File(zipOutput);
+                      try
+                      {
+                        String token = OAuth.getToken();
+                        MultipartUtility multipart = new MultipartUtility(UPLOAD_URL, token, charset);
+                        multipart.addFormField("name", fileName);
+                        multipart.addFormField("description", mDescription.getText().toString());
+                        multipart.addFormField("tags", UPLOADER_TAG + " " + mTags.getText().toString());
+                        multipart.addFormField("source", "open-constructor");
+                        multipart.addFormField("isPublished", "false");
+                        multipart.addFilePart("modelFile", uploadFile);
+                        List<String> response = multipart.finish();
+                        for (String line : response)
+                        {
+                          if (line.contains("\"uid\":\""))
+                          {
+                            String[] sArray = line.split("\"uid\":\"");
+                            mModelUri = (sArray[1].split("\""))[0];
+                          }
+                        }
+                      } catch (IOException e)
+                      {
+                        e.printStackTrace();
+                      }
+                    }
+                  }, new Runnable()
+                  {
+                    @Override
+                    public void run()
+                    {
+                      if (mModelUri != null)
+                      {
+                        Intent i = new Intent(Uploader.this, Home.class);
+                        i.putExtra(AbstractActivity.URL_KEY, "https://sketchfab.com/models/" + mModelUri);
+                        Uploader.this.startActivity(i);
+                        finish();
+                      } else
+                        Toast.makeText(getApplicationContext(), "Upload failed!", Toast.LENGTH_LONG).show();
+                    }
+                  });
+                  finish();
                 }
               });
               builder.setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener()
@@ -170,72 +213,5 @@ public class Uploader extends AbstractActivity implements OnClickListener
     });
 
     workingThread.start();
-  }
-
-  private class uploadToSketchfabTask extends AsyncTask<String, Void, Void>
-  {
-    String mModelUri;
-    String mFileName;
-    String mDesc;
-    String mTag;
-
-    uploadToSketchfabTask(String desc, String tag)
-    {
-      mDesc = desc;
-      mTag = tag;
-    }
-
-    protected void onPreExecute()
-    {
-      //display progress dialog.
-    }
-
-    @Override
-    protected void onPostExecute(Void result)
-    {
-
-      mProgressDialog.dismiss();
-      //onPostExecute is called after doInBackground finishes its task.
-      if (mModelUri != null)
-      {
-        Intent i = new Intent(Uploader.this, Home.class);
-        i.putExtra(AbstractActivity.URL_KEY, "https://sketchfab.com/models/" + mModelUri);
-        Uploader.this.startActivity(i);
-        finish();
-      } else
-        Toast.makeText(getApplicationContext(), "Upload failed!", Toast.LENGTH_LONG).show();
-    }
-
-    @Override
-    protected Void doInBackground(String... files)
-    {
-      String charset = "UTF-8";
-      File uploadFile = new File(files[0]);
-      mFileName = files[1];
-      try
-      {
-        String token = OAuth.getToken();
-        MultipartUtility multipart = new MultipartUtility(UPLOAD_URL, token, charset);
-        multipart.addFormField("name", mFileName);
-        multipart.addFormField("description", mDesc);
-        multipart.addFormField("tags", UPLOADER_TAG + " " + mTag);
-        multipart.addFormField("source", "open-constructor");
-        multipart.addFormField("isPublished", "false");
-        multipart.addFilePart("modelFile", uploadFile);
-        List<String> response = multipart.finish();
-        for (String line : response)
-        {
-          if (line.contains("\"uid\":\""))
-          {
-            String[] sArray = line.split("\"uid\":\"");
-            mModelUri = (sArray[1].split("\""))[0];
-          }
-        }
-      } catch (IOException e)
-      {
-        e.printStackTrace();
-      }
-      return null;
-    }
   }
 }
