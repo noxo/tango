@@ -12,25 +12,43 @@ import com.lvonasek.openconstructor.R;
 public class Service extends android.app.Service
 {
   private static Runnable action;
-  private static Runnable actionFinish;
-  private static boolean cancelable;
-  private static int index = -1;
-  private static String msg;
+  private static Notification.Builder builder;
   private static AbstractActivity parent;
   private static NotificationManager nm;
   private static boolean isRunning = false;
 
-  public static void process(AbstractActivity activity, String message, boolean cancel, Runnable runnable, Runnable onFinish)
+  public static void finish(Runnable onFinish)
   {
-    if (isRunning)
-      return;
+    isRunning = false;
+
+    //update notification that operation was finished
+    FileManager.setOnResume(onFinish);
+    builder.setContentText(parent.getString(R.string.finished));
+    builder.setAutoCancel(true);
+    builder.setOngoing(false);
+    nm.notify(0, builder.build());
+  }
+
+  public static void process(AbstractActivity activity, String message, Runnable runnable)
+  {
+    //build notification
+    builder = new Notification.Builder(activity)
+            .setSmallIcon(R.drawable.ic_launcher)
+            .setContentTitle(activity.getString(R.string.app_name))
+            .setContentText(message)
+            .setAutoCancel(false)
+            .setOngoing(true);
+
+    //show notification
+    Intent intent = new Intent(activity, FileManager.class);
+    PendingIntent pi = PendingIntent.getActivity(activity, 0, intent, 0);
+    builder.setContentIntent(pi);
+    nm = (NotificationManager) activity.getSystemService(Context.NOTIFICATION_SERVICE);
+    nm.notify(0, builder.build());
+
     action = runnable;
-    actionFinish = onFinish;
-    cancelable = cancel;
-    msg = message;
     parent = activity;
     isRunning = true;
-    index++;
     activity.startService(new Intent(activity, Service.class));
   }
 
@@ -48,54 +66,13 @@ public class Service extends android.app.Service
   public void onCreate() {
     super.onCreate();
 
-    //build notification
-    Notification.Builder mBuilder = new Notification.Builder(this)
-            .setSmallIcon(R.drawable.ic_launcher)
-            .setContentTitle(getString(R.string.app_name))
-            .setContentText(msg)
-            .setAutoCancel(cancelable)
-            .setOngoing(!cancelable);
-
-    //show notification
-    Intent intent = new Intent(this, FileManager.class);
-    if ((action == null) && (actionFinish != null))
-      FileManager.setOnResume(actionFinish);
-    PendingIntent pi = PendingIntent.getActivity(this, 0, intent, 0);
-    mBuilder.setContentIntent(pi);
-    nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-    nm.notify(index, mBuilder.build());
-
     //process
     new Thread(new Runnable()
     {
       @Override
       public void run()
       {
-        if (action != null)
-          action.run();
-        isRunning = false;
-        if (action != null)
-        {
-          nm.cancel(index);
-          stopService(new Intent(parent, Service.class));
-
-          //new notification that operation was finished
-          new Thread(new Runnable()
-          {
-            @Override
-            public void run()
-            {
-              try
-              {
-                Thread.sleep(1000);
-              } catch (InterruptedException e)
-              {
-                e.printStackTrace();
-              }
-              process(parent, getString(R.string.finished), true, null, actionFinish);
-            }
-          }).start();
-        }
+        action.run();
       }
     }).start();
   }
@@ -103,8 +80,12 @@ public class Service extends android.app.Service
   @Override
   public void onDestroy()
   {
-    nm.cancel(index);
-    stopService(new Intent(parent, Service.class));
+    try {
+      nm.cancel(0);
+      stopService(new Intent(parent, Service.class));
+    } catch(Exception e) {
+      e.printStackTrace();
+    }
     super.onDestroy();
   }
 }
