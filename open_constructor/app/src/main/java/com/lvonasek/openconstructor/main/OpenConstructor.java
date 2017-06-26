@@ -27,6 +27,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.lvonasek.openconstructor.ui.AbstractActivity;
+import com.lvonasek.openconstructor.ui.Service;
 import com.lvonasek.openconstructor.R;
 
 import java.io.File;
@@ -322,7 +323,8 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
           unbindService(mTangoServiceConnection);
       }
     }).start();
-    System.exit(0);
+    if (Service.getRunning(this) <= Service.SERVICE_NOT_RUNNING)
+      System.exit(0);
   }
 
   @Override
@@ -516,33 +518,26 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
             builder.setNegativeButton(getString(R.string.no), new DialogInterface.OnClickListener() {
               @Override
               public void onClick(DialogInterface dialog, int which) {
-                mProgress.setVisibility(View.VISIBLE);
-                new Thread(new Runnable()
+                Service.process(getString(R.string.postprocessing), Service.SERVICE_POSTPROCESS,
+                        OpenConstructor.this, new Runnable()
                 {
                   @Override
                   public void run()
                   {
-                    if (isTexturingOn())
-                      JNI.texturize(obj.getAbsolutePath());
+                    JNI.texturize(obj.getAbsolutePath());
                     for(String s : getObjResources(obj.getAbsoluteFile()))
                       if (new File(getTempPath(), s).renameTo(new File(getPath(), s)))
                         Log.d(AbstractActivity.TAG, "File " + s + " saved");
                     final File file2save = new File(getPath(), mSaveFilename + FILE_EXT[0]);
                     if (obj.renameTo(file2save))
                       Log.d(TAG, "Obj file " + file2save.toString() + " saved.");
-
-                    OpenConstructor.this.runOnUiThread(new Runnable()
-                    {
-                      @Override
-                      public void run()
-                      {
-                        setViewerMode(file2save.getAbsolutePath());
-                        mProgress.setVisibility(View.GONE);
-                      }
-                    });
+                    Intent intent = new Intent(OpenConstructor.this, OpenConstructor.class);
+                    intent.putExtra(AbstractActivity.FILE_KEY, file2save.getName());
+                    Service.finish(intent);
                   }
-                }).start();
+                });
                 dialog.cancel();
+                finish();
               }
             });
             builder.setCancelable(false);

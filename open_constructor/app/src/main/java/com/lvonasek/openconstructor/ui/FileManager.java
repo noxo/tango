@@ -27,7 +27,6 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
   private LinearLayout mLayout;
   private ProgressBar mProgress;
   private TextView mText;
-  private static Runnable resume;
   private boolean first = true;
 
   private static final int PERMISSIONS_CODE = 1987;
@@ -51,18 +50,12 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
   protected void onResume()
   {
     super.onResume();
-    if (resume != null)
-    {
-      resume.run();
-      resume = null;
-    } else {
-      mLayout.setVisibility(View.VISIBLE);
-      mProgress.setVisibility(View.GONE);
-      if (first) {
-        first = false;
-        startActivityForResult(Tango.getRequestPermissionIntent(Tango.PERMISSIONTYPE_DATASET),
-                Tango.TANGO_INTENT_ACTIVITYCODE);
-      }
+    mLayout.setVisibility(View.VISIBLE);
+    mProgress.setVisibility(View.GONE);
+    if (first) {
+      first = false;
+      startActivityForResult(Tango.getRequestPermissionIntent(Tango.PERMISSIONTYPE_DATASET),
+              Tango.TANGO_INTENT_ACTIVITYCODE);
     }
   }
 
@@ -205,10 +198,5 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
       }
     });
     builder.create().show();
-  }
-
-  public static void setOnResume(Runnable runnable)
-  {
-    resume = runnable;
   }
 }

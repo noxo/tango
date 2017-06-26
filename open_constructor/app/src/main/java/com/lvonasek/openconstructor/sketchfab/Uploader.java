@@ -23,7 +23,6 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 
 import android.widget.EditText;
-import android.widget.Toast;
 
 import com.lvonasek.openconstructor.ui.AbstractActivity;
 import com.lvonasek.openconstructor.R;
@@ -146,7 +145,8 @@ public class Uploader extends AbstractActivity implements OnClickListener
               {
                 public void onClick(DialogInterface dialog, int which)
                 {
-                  Service.process(Uploader.this, getString(R.string.sketchfab_uploading), new Runnable()
+                  Service.process(getString(R.string.sketchfab_uploading), Service.SERVICE_SKETCHFAB,
+                          Uploader.this, new Runnable()
                   {
                     @Override
                     public void run()
@@ -176,21 +176,9 @@ public class Uploader extends AbstractActivity implements OnClickListener
                       {
                         e.printStackTrace();
                       }
-                      Service.finish(new Runnable()
-                      {
-                        @Override
-                        public void run()
-                        {
-                          if (mModelUri != null)
-                          {
-                            Intent i = new Intent(Uploader.this, Home.class);
-                            i.putExtra(AbstractActivity.URL_KEY, "https://sketchfab.com/models/" + mModelUri);
-                            Uploader.this.startActivity(i);
-                            finish();
-                          } else
-                            Toast.makeText(getApplicationContext(), "Upload failed!", Toast.LENGTH_LONG).show();
-                        }
-                      });
+                      Intent i = new Intent(Uploader.this, Home.class);
+                      i.putExtra(AbstractActivity.URL_KEY, "https://sketchfab.com/models/" + mModelUri);
+                      Service.finish(i);
                     }
                   });
                   finish();
