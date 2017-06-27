@@ -52,7 +52,11 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
     super.onResume();
     mLayout.setVisibility(View.VISIBLE);
     mProgress.setVisibility(View.GONE);
-    if (first) {
+    if (Service.getRunning(this) > Service.SERVICE_NOT_RUNNING) {
+      mLayout.setVisibility(View.GONE);
+      mList.setVisibility(View.GONE);
+      mText.setVisibility(View.GONE);
+    } else if (first) {
       first = false;
       startActivityForResult(Tango.getRequestPermissionIntent(Tango.PERMISSIONTYPE_DATASET),
               Tango.TANGO_INTENT_ACTIVITYCODE);

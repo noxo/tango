@@ -524,6 +524,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
                   @Override
                   public void run()
                   {
+                    mGLView.onPause();
                     JNI.texturize(obj.getAbsolutePath());
                     for(String s : getObjResources(obj.getAbsoluteFile()))
                       if (new File(getTempPath(), s).renameTo(new File(getPath(), s)))
