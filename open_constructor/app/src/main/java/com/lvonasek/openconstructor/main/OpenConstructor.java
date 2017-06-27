@@ -533,9 +533,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
                     final File file2save = new File(getPath(), mSaveFilename + FILE_EXT[0]);
                     if (obj.renameTo(file2save))
                       Log.d(TAG, "Obj file " + file2save.toString() + " saved.");
-                    Intent intent = new Intent(OpenConstructor.this, OpenConstructor.class);
-                    intent.putExtra(AbstractActivity.FILE_KEY, file2save.getName());
-                    Service.finish(intent);
+                    Service.finish(file2save.getName());
                   }
                 });
                 dialog.cancel();

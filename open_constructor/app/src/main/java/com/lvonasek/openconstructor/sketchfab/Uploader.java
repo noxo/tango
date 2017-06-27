@@ -177,9 +177,7 @@ public class Uploader extends AbstractActivity implements OnClickListener
                       {
                         e.printStackTrace();
                       }
-                      Intent i = new Intent(Uploader.this, Home.class);
-                      i.putExtra(AbstractActivity.URL_KEY, "https://sketchfab.com/models/" + mModelUri);
-                      Service.finish(i);
+                      Service.finish("https://sketchfab.com/models/" + mModelUri);
                     }
                   });
                 }

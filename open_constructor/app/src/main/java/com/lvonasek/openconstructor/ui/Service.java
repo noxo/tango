@@ -7,9 +7,12 @@ import android.os.IBinder;
 import android.preference.PreferenceManager;
 
 import com.lvonasek.openconstructor.main.JNI;
+import com.lvonasek.openconstructor.main.OpenConstructor;
+import com.lvonasek.openconstructor.sketchfab.Home;
 
 public class Service extends android.app.Service
 {
+  private static final String SERVICE_LINK = "service_link";
   private static final String SERVICE_RUNNING = "service_running";
 
   public static final int SERVICE_NOT_RUNNING = 0;
@@ -71,14 +74,15 @@ public class Service extends android.app.Service
     return null;
   }
 
-  public static void finish(Intent onFinish)
+  public static void finish(String link)
   {
-    Initializator.updateNotification(onFinish);
     running = false;
     service.stopService(new Intent(parent, Service.class));
     SharedPreferences.Editor e = PreferenceManager.getDefaultSharedPreferences(parent).edit();
     e.putInt(SERVICE_RUNNING, -Math.abs(getRunning(parent)));
+    e.putString(SERVICE_LINK, link);
     e.commit();
+    Initializator.updateNotification(getIntent(parent));
     System.exit(0);
   }
 
@@ -91,8 +95,26 @@ public class Service extends android.app.Service
 
     SharedPreferences.Editor e = PreferenceManager.getDefaultSharedPreferences(activity).edit();
     e.putInt(SERVICE_RUNNING, serviceId);
+    e.putString(SERVICE_LINK, "");
     e.commit();
     activity.startService(new Intent(activity, Service.class));
+  }
+
+  public static Intent getIntent(AbstractActivity activity) {
+    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(parent);
+    String link = pref.getString(SERVICE_LINK, "");
+    switch(Math.abs(getRunning(activity))) {
+      case SERVICE_SKETCHFAB:
+        Intent i = new Intent(activity, Home.class);
+        i.putExtra(AbstractActivity.URL_KEY, link);
+        return i;
+      case SERVICE_POSTPROCESS:
+        Intent intent = new Intent(activity, OpenConstructor.class);
+        intent.putExtra(AbstractActivity.FILE_KEY, link);
+        return intent;
+      default:
+        return new Intent(activity, FileManager.class);
+    }
   }
 
   public static String getMessage()
@@ -110,6 +132,7 @@ public class Service extends android.app.Service
   {
     SharedPreferences.Editor e = PreferenceManager.getDefaultSharedPreferences(context).edit();
     e.putInt(SERVICE_RUNNING, SERVICE_NOT_RUNNING);
+    e.putString(SERVICE_LINK, "");
     e.commit();
   }
 }
