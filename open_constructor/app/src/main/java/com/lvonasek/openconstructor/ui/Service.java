@@ -6,6 +6,8 @@ import android.content.SharedPreferences;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 
+import com.lvonasek.openconstructor.main.JNI;
+
 public class Service extends android.app.Service
 {
   private static final String SERVICE_RUNNING = "service_running";
@@ -15,13 +17,38 @@ public class Service extends android.app.Service
   public static final int SERVICE_POSTPROCESS = 2;
 
   private static Runnable action;
+  private static String message;
+  private static String messageNotification;
   private static AbstractActivity parent;
+  private static boolean running;
   private static Service service;
 
   @Override
   public void onCreate() {
     super.onCreate();
     service = this;
+    if (getRunning(parent) == SERVICE_POSTPROCESS) {
+      message = "";
+      running = true;
+      new Thread(new Runnable()
+      {
+        @Override
+        public void run()
+        {
+          while(running) {
+            message = new String(JNI.getEvent());
+            try
+            {
+              Thread.sleep(100);
+            } catch (Exception e)
+            {
+              e.printStackTrace();
+            }
+          }
+          message = "";
+        }
+      }).start();
+    }
     new Thread(new Runnable()
     {
       @Override
@@ -47,6 +74,7 @@ public class Service extends android.app.Service
   public static void finish(Intent onFinish)
   {
     Initializator.updateNotification(onFinish);
+    running = false;
     service.stopService(new Intent(parent, Service.class));
     SharedPreferences.Editor e = PreferenceManager.getDefaultSharedPreferences(parent).edit();
     e.putInt(SERVICE_RUNNING, -Math.abs(getRunning(parent)));
@@ -58,12 +86,18 @@ public class Service extends android.app.Service
   {
     action = runnable;
     parent = activity;
+    messageNotification = message;
     Initializator.showNotification(message);
 
     SharedPreferences.Editor e = PreferenceManager.getDefaultSharedPreferences(activity).edit();
     e.putInt(SERVICE_RUNNING, serviceId);
     e.commit();
     activity.startService(new Intent(activity, Service.class));
+  }
+
+  public static String getMessage()
+  {
+    return messageNotification + "\n" + message;
   }
 
   public static int getRunning(Context context)

@@ -524,6 +524,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
                   @Override
                   public void run()
                   {
+                    finish();
                     mGLView.onPause();
                     JNI.texturize(obj.getAbsolutePath());
                     for(String s : getObjResources(obj.getAbsoluteFile()))
@@ -538,7 +539,6 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
                   }
                 });
                 dialog.cancel();
-                finish();
               }
             });
             builder.setCancelable(false);

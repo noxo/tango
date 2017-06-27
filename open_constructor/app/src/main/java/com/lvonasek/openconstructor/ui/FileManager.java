@@ -47,6 +47,13 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
   }
 
   @Override
+  public void onBackPressed()
+  {
+    Initializator.letMeGo();
+    super.onBackPressed();
+  }
+
+  @Override
   protected void onResume()
   {
     super.onResume();
@@ -55,7 +62,32 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
     if (Service.getRunning(this) > Service.SERVICE_NOT_RUNNING) {
       mLayout.setVisibility(View.GONE);
       mList.setVisibility(View.GONE);
-      mText.setVisibility(View.GONE);
+      mText.setVisibility(View.VISIBLE);
+      mText.setText("");
+      new Thread(new Runnable()
+      {
+        @Override
+        public void run()
+        {
+          while(true) {
+            try
+            {
+              Thread.sleep(100);
+            } catch (Exception e)
+            {
+              e.printStackTrace();
+            }
+            FileManager.this.runOnUiThread(new Runnable()
+            {
+              @Override
+              public void run()
+              {
+                mText.setText(getString(R.string.working) + "\n\n" + Service.getMessage());
+              }
+            });
+          }
+        }
+      }).start();
     } else if (first) {
       first = false;
       startActivityForResult(Tango.getRequestPermissionIntent(Tango.PERMISSIONTYPE_DATASET),

@@ -151,6 +151,7 @@ public class Uploader extends AbstractActivity implements OnClickListener
                     @Override
                     public void run()
                     {
+                      finish();
                       String charset = "UTF-8";
                       File uploadFile = new File(zipOutput);
                       try
@@ -181,7 +182,6 @@ public class Uploader extends AbstractActivity implements OnClickListener
                       Service.finish(i);
                     }
                   });
-                  finish();
                 }
               });
               builder.setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener()

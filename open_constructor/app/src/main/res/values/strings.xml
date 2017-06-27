@@ -71,6 +71,7 @@
     <string name="finished">Operation finished</string>
     <string name="postprocessing">Postprocessing the model…</string>
     <string name="sketchfab_uploading">Uploading the model to Sketchfab…</string>
+    <string name="working">The app is working, please do not turn off the device or start another Tango app.</string>
 
     <string-array name="file_operations">
         <item>Open</item>

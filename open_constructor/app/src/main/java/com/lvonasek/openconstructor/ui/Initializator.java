@@ -10,7 +10,7 @@ import com.lvonasek.openconstructor.R;
 
 public class Initializator extends AbstractActivity
 {
-  private boolean closeOnResume = false;
+  private static boolean closeOnResume = false;
   private static Notification.Builder builder;
   private static Initializator instance;
   private static NotificationManager nm;
@@ -21,19 +21,19 @@ public class Initializator extends AbstractActivity
     super.onResume();
     instance = this;
     nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-    if (Service.getRunning(this) < Service.SERVICE_NOT_RUNNING) {
-      closeOnResume = true;
-      Service.reset(this);
-      hideNotification();
-      startActivity(new Intent(this, FileManager.class));
-    } else if (closeOnResume) {
+
+    if (closeOnResume) {
+      closeOnResume = false;
       if (Service.getRunning(this) > Service.SERVICE_NOT_RUNNING) {
-        closeOnResume = false;
         moveTaskToBack(true);
       } else
         finish();
     } else {
       closeOnResume = true;
+      if (Service.getRunning(this) < Service.SERVICE_NOT_RUNNING) {
+        Service.reset(this);
+        hideNotification();
+      }
       startActivity(new Intent(this, FileManager.class));
     }
   }
@@ -43,6 +43,11 @@ public class Initializator extends AbstractActivity
   {
     Initializator.hideNotification();
     super.onDestroy();
+  }
+
+  public static void letMeGo()
+  {
+    closeOnResume = true;
   }
 
   public static void hideNotification()
