@@ -157,7 +157,9 @@ namespace oc {
         if (file) {
             fscanf(file, "%s", &uuid);
             fclose(file);
-            TangoConfig_setString(config, "config_load_area_description_UUID", uuid);
+            TangoErrorType err = TangoConfig_setString(config, "config_load_area_description_UUID", uuid);
+            if (err != TANGO_SUCCESS)
+                std::exit(EXIT_SUCCESS);
         }
 
         if (pointcloud == nullptr) {

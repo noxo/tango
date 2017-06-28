@@ -16,7 +16,6 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.google.atap.tangoservice.Tango;
 import com.lvonasek.openconstructor.R;
 import com.lvonasek.openconstructor.main.OpenConstructor;
 import com.lvonasek.openconstructor.sketchfab.Home;
@@ -32,6 +31,8 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
   private TextView mText;
   private boolean first = true;
 
+  private static final String EXTRA_KEY_PERMISSIONTYPE = "PERMISSIONTYPE";
+  private static final String EXTRA_VALUE_ADF = "ADF_LOAD_SAVE_PERMISSION";
   private static final int PERMISSIONS_CODE = 1987;
 
   @Override
@@ -65,6 +66,7 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
   {
     super.onResume();
     mLayout.setVisibility(View.VISIBLE);
+    mOperations.setVisibility(View.GONE);
     mProgress.setVisibility(View.GONE);
     if (Service.getRunning(this) > Service.SERVICE_NOT_RUNNING) {
       mLayout.setVisibility(View.GONE);
@@ -106,8 +108,10 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         findViewById(R.id.service_continue).setVisibility(View.GONE);
     } else if (first) {
       first = false;
-      startActivityForResult(Tango.getRequestPermissionIntent(Tango.PERMISSIONTYPE_ADF_LOAD_SAVE),
-              Tango.TANGO_INTENT_ACTIVITYCODE);
+      Intent intent1 = new Intent();
+      intent1.setAction("android.intent.action.REQUEST_TANGO_PERMISSION");
+      intent1.putExtra(EXTRA_KEY_PERMISSIONTYPE, EXTRA_VALUE_ADF);
+      startActivityForResult(intent1, 1);
     }
   }
 
