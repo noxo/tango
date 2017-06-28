@@ -19,8 +19,9 @@ namespace oc {
         void SetResolution(float value) { resolution = value; }
 
     private:
-        void CreateContext(bool gl, Tango3DR_Mesh* mesh, Tango3DR_CameraCalibration* camera);
+        void CreateContext(bool finalize, Tango3DR_Mesh* mesh, Tango3DR_CameraCalibration* camera);
         std::string GetFileName(int index, std::string dataset, std::string extension);
+        void UpdatePoses(std::string dataset);
 
         int poses;
         float resolution;

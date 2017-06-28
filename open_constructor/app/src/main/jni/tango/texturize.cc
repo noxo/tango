@@ -8,6 +8,9 @@ namespace oc {
     TangoTexturize::TangoTexturize() : poses(0) {}
 
     void TangoTexturize::Add(Tango3DR_ImageBuffer t3dr_image, glm::mat4 image_matrix, std::string dataset) {
+        if (poses == 0)
+            UpdatePoses(dataset);
+
         //save frame
         width = t3dr_image.width;
         height = t3dr_image.height;
@@ -21,9 +24,14 @@ namespace oc {
         fprintf(file, "%lf\n", t3dr_image.timestamp);
         fclose(file);
         poses++;
+
+        file = fopen(GetFileName(-1, dataset, ".txt").c_str(), "w");
+        fprintf(file, "%d %d %d\n", poses, width, height);
+        fclose(file);
     }
 
     void TangoTexturize::ApplyFrames(std::string dataset) {
+        UpdatePoses(dataset);
         Tango3DR_ImageBuffer image;
         image.width = (uint32_t) width;
         image.height = (uint32_t) height;
@@ -137,21 +145,20 @@ namespace oc {
         event = "";
     }
 
-    void TangoTexturize::CreateContext(bool gl, Tango3DR_Mesh* mesh, Tango3DR_CameraCalibration* camera) {
+    void TangoTexturize::CreateContext(bool finalize, Tango3DR_Mesh* mesh, Tango3DR_CameraCalibration* camera) {
         event = "Simplifying mesh";
         Tango3DR_Config textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
         Tango3DR_Status ret;
-        ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", gl ? 0.002 : 0.01);
+        ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", finalize ? 0.002 : 0.01);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
-        int simplify = (mesh->max_num_faces < 1000) ? 1 : (gl ? 1 : 3);
+        int simplify = (mesh->max_num_faces < 1000) ? 1 : (finalize ? 1 : 3);
         if (resolution < 0.006)
             simplify = 1;
         ret = Tango3DR_Config_setInt32(textureConfig, "mesh_simplification_factor", simplify);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
-        int backend = gl ? TANGO_3DR_GL_TEXTURING : TANGO_3DR_CPU_TEXTURING;
-        ret = Tango3DR_Config_setInt32(textureConfig, "texturing_backend", backend);
+        ret = Tango3DR_Config_setInt32(textureConfig, "texturing_backend", TANGO_3DR_CPU_TEXTURING);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
@@ -170,5 +177,13 @@ namespace oc {
         ss << index;
         ss << extension.c_str();
         return ss.str();
+    }
+
+    void TangoTexturize::UpdatePoses(std::string dataset) {
+        FILE* file = fopen(GetFileName(-1, dataset, ".txt").c_str(), "r");
+        if (file) {
+            fscanf(file, "%d %d %d\n", &poses, &width, &height);
+            fclose(file);
+        }
     }
 }

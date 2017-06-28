@@ -69,6 +69,13 @@ namespace oc {
         TangoService_disconnect();
     }
 
+    void TangoService::SaveAreaDescription() {
+        TangoService_saveAreaDescription(&uuid);
+        FILE* file = fopen((dataset + "/uuid.txt").c_str(), "w");
+        fprintf(file, "%s", uuid);
+        fclose(file);
+    }
+
     void TangoService::Setup3DR(double res, double dmin, double dmax, int noise) {
         Tango3DR_Config t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_RECONSTRUCTION);
         Tango3DR_Status t3dr_err;
@@ -125,13 +132,13 @@ namespace oc {
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
-        // Disable learning.
-        ret = TangoConfig_setBool(config, "config_enable_learning_mode", false);
+        // Enable learning.
+        ret = TangoConfig_setBool(config, "config_enable_learning_mode", true);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
-        // Enable drift correction.
-        ret = TangoConfig_setBool(config, "config_enable_drift_correction", true);
+        // Disable drift correction.
+        ret = TangoConfig_setBool(config, "config_enable_drift_correction", false);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
@@ -145,19 +152,13 @@ namespace oc {
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
-        // Set datasets
-        ret = TangoConfig_setString(config, "config_datasets_path", dataset.c_str());
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-        ret = TangoConfig_setBool(config, "config_enable_dataset_recording", true);
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-        ret = TangoConfig_setInt32(config, "config_dataset_recording_mode", TANGO_RECORDING_MODE_MOTION_TRACKING);
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-        ret = TangoConfig_setBool(config, "config_smooth_pose", false);
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
+        // Try to load area description
+        FILE* file = fopen((dataset + "/uuid.txt").c_str(), "r");
+        if (file) {
+            fscanf(file, "%s", &uuid);
+            fclose(file);
+            TangoConfig_setString(config, "config_load_area_description_UUID", uuid);
+        }
 
         if (pointcloud == nullptr) {
             int32_t max_point_cloud_elements;

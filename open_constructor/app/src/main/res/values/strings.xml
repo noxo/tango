@@ -40,7 +40,6 @@
     <string name="airplane_title">The airplane mode is not active</string>
     <string name="airplane_detail">An incoming call would cancel scanning without saving data. Do you want to continue?</string>
     <string name="distance">Max. dist.:</string>
-    <string name="enter_filename">Enter the file name</string>
     <string name="resolution">3D grid:</string>
     <string name="view">Saved. Do you want to continue the recording?</string>
     <string name="yes">Yes</string>
@@ -68,9 +67,15 @@
     <string name="upload_size_is">Total size to upload is</string>
 
     <!-- Service !-->
+    <string name="action_continue">Continue scanning</string>
+    <string name="action_show_result">Show result</string>
+    <string name="action_finish">Finish</string>
+    <string name="enter_filename">Enter the file name</string>
     <string name="finished">Operation finished</string>
     <string name="postprocessing">Postprocessing the model…</string>
+    <string name="saving">Saving the model…</string>
     <string name="sketchfab_uploading">Uploading the model to Sketchfab…</string>
+    <string name="turn_off">You can exit the app without losing data.</string>
     <string name="working">The app is working, please do not turn off the device or start another Tango app.</string>
 
     <string-array name="file_operations">

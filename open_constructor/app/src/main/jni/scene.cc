@@ -6,6 +6,8 @@ namespace oc {
     Scene::Scene() : color_vertex_shader(0), textured_shader(0), uniform(0) {
         vertex = TexturedVertexShader();
         fragment = TexturedFragmentShader();
+        lastVertex = vertex;
+        lastFragment = fragment;
     }
 
     Scene::~Scene() {
@@ -57,24 +59,30 @@ namespace oc {
                              0, GL_RGB, GL_UNSIGNED_BYTE, mesh.image->GetData());
             }
             if (!mesh.image || (mesh.image->GetTexture() == -1)) {
-                color_vertex_shader->Bind();
-                renderer->Render(&mesh.vertices[0].x, 0, 0, mesh.colors.data(), mesh.vertices.size());
+                if (color_vertex_shader) {
+                    color_vertex_shader->Bind();
+                    renderer->Render(&mesh.vertices[0].x, 0, 0, mesh.colors.data(), mesh.vertices.size());
+                }
             } else {
                 if (lastTexture != mesh.image->GetTexture()) {
                     lastTexture = (unsigned int)mesh.image->GetTexture();
                     glBindTexture(GL_TEXTURE_2D, (unsigned int)mesh.image->GetTexture());
                 }
-                textured_shader->Bind();
-                textured_shader->UniformFloat("u_uniform", uniform);
-                textured_shader->UniformFloat("u_uniformPitch", uniformPitch);
-                textured_shader->UniformVec3("u_uniformPos", uniformPos.x, uniformPos.y, uniformPos.z);
-                renderer->Render(&mesh.vertices[0].x, 0, &mesh.uv[0].s, mesh.colors.data(), mesh.vertices.size());
+                if (textured_shader) {
+                    textured_shader->Bind();
+                    textured_shader->UniformFloat("u_uniform", uniform);
+                    textured_shader->UniformFloat("u_uniformPitch", uniformPitch);
+                    textured_shader->UniformVec3("u_uniformPos", uniformPos.x, uniformPos.y, uniformPos.z);
+                    renderer->Render(&mesh.vertices[0].x, 0, &mesh.uv[0].s, mesh.colors.data(), mesh.vertices.size());
+                }
             }
         }
-        color_vertex_shader->Bind();
-        if(!frustum_.vertices.empty() && frustum)
-            renderer->Render(&frustum_.vertices[0].x, 0, 0, frustum_.colors.data(),
-                             frustum_.indices.size(), frustum_.indices.data());
+        if (color_vertex_shader) {
+            color_vertex_shader->Bind();
+            if(!frustum_.vertices.empty() && frustum)
+                renderer->Render(&frustum_.vertices[0].x, 0, 0, frustum_.colors.data(),
+                                 frustum_.indices.size(), frustum_.indices.data());
+        }
 
         for (long i : Image::TexturesToDelete())
             glDeleteTextures(1, (const GLuint *) &i);

@@ -18,6 +18,7 @@ public class Service extends android.app.Service
   public static final int SERVICE_NOT_RUNNING = 0;
   public static final int SERVICE_SKETCHFAB = 1;
   public static final int SERVICE_POSTPROCESS = 2;
+  public static final int SERVICE_SAVE = 3;
 
   private static Runnable action;
   private static String message;
@@ -30,8 +31,10 @@ public class Service extends android.app.Service
   public void onCreate() {
     super.onCreate();
     service = this;
-    if (getRunning(parent) == SERVICE_POSTPROCESS) {
-      message = "";
+    message = "";
+    if (parent == null)
+      return;
+    if ((getRunning(parent) == SERVICE_POSTPROCESS) || (getRunning(parent) == SERVICE_SAVE)) {
       running = true;
       new Thread(new Runnable()
       {
@@ -42,7 +45,7 @@ public class Service extends android.app.Service
             message = new String(JNI.getEvent());
             try
             {
-              Thread.sleep(100);
+              Thread.sleep(1000);
             } catch (Exception e)
             {
               e.printStackTrace();
@@ -82,7 +85,7 @@ public class Service extends android.app.Service
     e.putInt(SERVICE_RUNNING, -Math.abs(getRunning(parent)));
     e.putString(SERVICE_LINK, link);
     e.commit();
-    Initializator.updateNotification(getIntent(parent));
+    Initializator.updateNotification();
     System.exit(0);
   }
 
@@ -101,7 +104,7 @@ public class Service extends android.app.Service
   }
 
   public static Intent getIntent(AbstractActivity activity) {
-    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(parent);
+    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(activity);
     String link = pref.getString(SERVICE_LINK, "");
     switch(Math.abs(getRunning(activity))) {
       case SERVICE_SKETCHFAB:
@@ -109,12 +112,19 @@ public class Service extends android.app.Service
         i.putExtra(AbstractActivity.URL_KEY, link);
         return i;
       case SERVICE_POSTPROCESS:
+      case SERVICE_SAVE:
         Intent intent = new Intent(activity, OpenConstructor.class);
         intent.putExtra(AbstractActivity.FILE_KEY, link);
         return intent;
       default:
         return new Intent(activity, FileManager.class);
     }
+  }
+
+  public static String getLink(Context context)
+  {
+    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
+    return pref.getString(SERVICE_LINK, "");
   }
 
   public static String getMessage()

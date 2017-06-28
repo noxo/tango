@@ -1,10 +1,8 @@
 package com.lvonasek.openconstructor.main;
 
 import android.app.ActivityManager;
-import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -15,12 +13,10 @@ import android.opengl.GLSurfaceView;
 import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.util.Log;
 import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
@@ -31,7 +27,10 @@ import com.lvonasek.openconstructor.ui.Service;
 import com.lvonasek.openconstructor.R;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -47,8 +46,6 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
   private boolean m3drRunning = false;
   private boolean mViewMode = false;
   private boolean mRunning = false;
-  private boolean mFirstSave = true;
-  private String mSaveFilename = "";
 
   private LinearLayout mLayoutRec;
   private Button mToggleButton;
@@ -102,20 +99,71 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
               dmax = 1.0;
             }
 
-            m3drRunning = true;
-            deleteRecursive(getTempPath());
+            //pause/resume
+            boolean continueScanning = mRes == Integer.MIN_VALUE;
+            boolean postprocess = mRes == Integer.MAX_VALUE;
+            File config = new File(getTempPath(), "config.txt");
+            if (continueScanning || postprocess) {
+              m3drRunning = false;
+              try
+              {
+                Scanner sc = new Scanner(new FileInputStream(config.getAbsolutePath()));
+                mRes = sc.nextInt();
+                res = Double.parseDouble(sc.next());
+                dmin = Double.parseDouble(sc.next());
+                dmax = Double.parseDouble(sc.next());
+                noise = sc.nextInt();
+                sc.close();
+              } catch (Exception e)
+              {
+                e.printStackTrace();
+              }
+            } else {
+              m3drRunning = true;
+              deleteRecursive(getTempPath());
+              getTempPath().mkdirs();
+              try
+              {
+                FileOutputStream fos = new FileOutputStream(config.getAbsolutePath());
+                fos.write((mRes + " " + res + " " + dmin + " " + dmax + " " + noise).getBytes());
+                fos.close();
+              } catch (Exception e)
+              {
+                e.printStackTrace();
+              }
+            }
+
             String t = getTempPath().getAbsolutePath();
             JNI.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, t);
             JNI.onToggleButtonClicked(m3drRunning);
             JNI.setView(0, 0, 0, 0, 0, true);
-            OpenConstructor.this.runOnUiThread(new Runnable()
-            {
-              @Override
-              public void run()
+            final File obj = new File(getPath(), Service.getLink(OpenConstructor.this));
+            if (postprocess) {
+              Service.process(getString(R.string.postprocessing), Service.SERVICE_POSTPROCESS,
+                      OpenConstructor.this, new Runnable()
+                      {
+                        @Override
+                        public void run()
+                        {
+                          mGLView.onPause();
+                          finish();
+                          JNI.load(obj.getAbsolutePath());
+                          JNI.texturize(obj.getAbsolutePath());
+                          Service.finish(TEMP_DIRECTORY + "/" + obj.getName());
+                        }
+                      });
+            } else {
+              if (continueScanning)
+                JNI.load(obj.getAbsolutePath());
+              OpenConstructor.this.runOnUiThread(new Runnable()
               {
-                mProgress.setVisibility(View.GONE);
-              }
-            });
+                @Override
+                public void run()
+                {
+                  mProgress.setVisibility(View.GONE);
+                }
+              });
+            }
             mInitialised = true;
           }
         }).start();
@@ -262,9 +310,6 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
         });
       break;
     case R.id.save_button:
-      //pause
-      m3drRunning = false;
-      JNI.onToggleButtonClicked(false);
       save();
       break;
     }
@@ -302,7 +347,8 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
     } else
     {
       mRunning = true;
-      new Thread(this).start();
+      if (mRes != Integer.MAX_VALUE)
+        new Thread(this).start();
 
       if(!mInitialised && !mTangoBinded) {
         TangoInitHelper.bindTangoService(this, mTangoServiceConnection);
@@ -314,23 +360,10 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
   @Override
   protected void onPause() {
     super.onPause();
-    new Thread(new Runnable()
-    {
-      @Override
-      public void run()
-      {
-        if (mTangoBinded)
-          unbindService(mTangoServiceConnection);
-      }
-    }).start();
-    if (Service.getRunning(this) <= Service.SERVICE_NOT_RUNNING)
+    if (mTangoBinded)
+      save();
+    else
       System.exit(0);
-  }
-
-  @Override
-  public void onBackPressed()
-  {
-    System.exit(0);
   }
 
   @Override
@@ -455,98 +488,6 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
     JNI.onGlSurfaceChanged(width, height);
   }
 
-  private void save() {
-    //filename dialog
-    if (mFirstSave) {
-      final Context context = OpenConstructor.this;
-      AlertDialog.Builder builder = new AlertDialog.Builder(context);
-      builder.setTitle(getString(R.string.enter_filename));
-      final EditText input = new EditText(context);
-      builder.setView(input);
-      builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
-        @Override
-        public void onClick(DialogInterface dialog, int which) {
-          //delete old during overwrite
-          File file = new File(getPath(), input.getText().toString() + FILE_EXT[0]);
-          try {
-            if (file.exists())
-              for(String s : getObjResources(file))
-                if (new File(getPath(), s).delete())
-                  Log.d(AbstractActivity.TAG, "File " + s + " deleted");
-          } catch(Exception e) {
-            e.printStackTrace();
-          }
-          mSaveFilename = input.getText().toString();
-          saveObj();
-          dialog.cancel();
-        }
-      });
-      builder.setNegativeButton(getString(android.R.string.cancel), null);
-      builder.create().show();
-    } else
-      saveObj();
-  }
-
-  private void saveObj()
-  {
-    mLayoutRec.setVisibility(View.GONE);
-    mProgress.setVisibility(View.VISIBLE);
-    new Thread(new Runnable(){
-      @Override
-      public void run()
-      {
-        mFirstSave = false;
-        long timestamp = System.currentTimeMillis();
-        final File obj = new File(getTempPath(), timestamp + FILE_EXT[0]);
-        JNI.save(obj.getAbsolutePath());
-        //open???
-        OpenConstructor.this.runOnUiThread(new Runnable()
-        {
-          @Override
-          public void run()
-          {
-            mProgress.setVisibility(View.GONE);
-            AlertDialog.Builder builder = new AlertDialog.Builder(OpenConstructor.this);
-            builder.setTitle(getString(R.string.view));
-            builder.setPositiveButton(getString(R.string.yes), new DialogInterface.OnClickListener() {
-              @Override
-              public void onClick(DialogInterface dialog, int which) {
-                mLayoutRec.setVisibility(View.VISIBLE);
-                dialog.cancel();
-              }
-            });
-            builder.setNegativeButton(getString(R.string.no), new DialogInterface.OnClickListener() {
-              @Override
-              public void onClick(DialogInterface dialog, int which) {
-                Service.process(getString(R.string.postprocessing), Service.SERVICE_POSTPROCESS,
-                        OpenConstructor.this, new Runnable()
-                {
-                  @Override
-                  public void run()
-                  {
-                    finish();
-                    mGLView.onPause();
-                    JNI.texturize(obj.getAbsolutePath());
-                    for(String s : getObjResources(obj.getAbsoluteFile()))
-                      if (new File(getTempPath(), s).renameTo(new File(getPath(), s)))
-                        Log.d(AbstractActivity.TAG, "File " + s + " saved");
-                    final File file2save = new File(getPath(), mSaveFilename + FILE_EXT[0]);
-                    if (obj.renameTo(file2save))
-                      Log.d(TAG, "Obj file " + file2save.toString() + " saved.");
-                    Service.finish(file2save.getName());
-                  }
-                });
-                dialog.cancel();
-              }
-            });
-            builder.setCancelable(false);
-            builder.create().show();
-          }
-        });
-      }
-    }).start();
-  }
-
   public static int getBatteryPercentage(Context context) {
     IntentFilter iFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
     Intent batteryStatus = context.registerReceiver(null, iFilter);
@@ -554,6 +495,23 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
     int scale = batteryStatus != null ? batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1) : -1;
     float batteryPct = level / (float) scale;
     return (int) (batteryPct * 100);
+  }
+
+  private void save()
+  {
+    Service.process(getString(R.string.saving), Service.SERVICE_SAVE, this, new Runnable() {
+      @Override
+      public void run()
+      {
+        JNI.onToggleButtonClicked(false);
+        mGLView.onPause();
+        finish();
+        long timestamp = System.currentTimeMillis();
+        final File obj = new File(getTempPath(), timestamp + FILE_EXT[0]);
+        JNI.save(obj.getAbsolutePath());
+        Service.finish(TEMP_DIRECTORY + "/" + obj.getName());
+      }
+    });
   }
 
   @Override

@@ -11,6 +11,7 @@ import com.lvonasek.openconstructor.R;
 public class Initializator extends AbstractActivity
 {
   private static boolean closeOnResume = false;
+  private static int index = -1;
   private static Notification.Builder builder;
   private static Initializator instance;
   private static NotificationManager nm;
@@ -30,10 +31,8 @@ public class Initializator extends AbstractActivity
         finish();
     } else {
       closeOnResume = true;
-      if (Service.getRunning(this) < Service.SERVICE_NOT_RUNNING) {
-        Service.reset(this);
+      if (Service.getRunning(this) < Service.SERVICE_NOT_RUNNING)
         hideNotification();
-      }
       startActivity(new Intent(this, FileManager.class));
     }
   }
@@ -53,7 +52,7 @@ public class Initializator extends AbstractActivity
   public static void hideNotification()
   {
     try {
-      nm.cancel(0);
+      nm.cancel(index);
     } catch(Exception e) {
       e.printStackTrace();
     }
@@ -69,26 +68,25 @@ public class Initializator extends AbstractActivity
               .setContentText(message)
               .setAutoCancel(false)
               .setOngoing(true);
+      index++;
 
       //show notification
       Intent intent = new Intent(instance, FileManager.class);
       PendingIntent pi = PendingIntent.getActivity(instance, 0, intent, 0);
       builder.setContentIntent(pi);
-      nm.notify(0, builder.build());
+      nm.notify(index, builder.build());
     } catch(Exception e) {
       e.printStackTrace();
     }
   }
 
-  public static void updateNotification(Intent intent)
+  public static void updateNotification()
   {
     try {
-      PendingIntent pi = PendingIntent.getActivity(instance, 0, intent, 0);
-      builder.setContentIntent(pi);
       builder.setContentText(instance.getString(R.string.finished));
       builder.setAutoCancel(true);
       builder.setOngoing(false);
-      nm.notify(0, builder.build());
+      nm.notify(index, builder.build());
     } catch(Exception e) {
       e.printStackTrace();
     }

@@ -235,6 +235,7 @@ namespace oc {
         render_mutex_.lock();
         if (texturize.Init(tango.Context(), tango.Camera())) {
             texturize.Process(filename);
+            tango.SaveAreaDescription();
 
             //merge with previous OBJ
             scan.Clear();
