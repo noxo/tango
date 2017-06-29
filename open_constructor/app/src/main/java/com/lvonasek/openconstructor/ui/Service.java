@@ -42,7 +42,7 @@ public class Service extends android.app.Service
         public void run()
         {
           while(running) {
-            message = new String(JNI.getEvent());
+            setMessage(new String(JNI.getEvent()));
             try
             {
               Thread.sleep(1000);
@@ -77,7 +77,7 @@ public class Service extends android.app.Service
     return null;
   }
 
-  public static void finish(String link)
+  public static synchronized void finish(String link)
   {
     running = false;
     service.stopService(new Intent(parent, Service.class));
@@ -89,7 +89,7 @@ public class Service extends android.app.Service
     System.exit(0);
   }
 
-  public static void process(String message, int serviceId, AbstractActivity activity, Runnable runnable)
+  public static synchronized void process(String message, int serviceId, AbstractActivity activity, Runnable runnable)
   {
     action = runnable;
     parent = activity;
@@ -103,7 +103,7 @@ public class Service extends android.app.Service
     activity.startService(new Intent(activity, Service.class));
   }
 
-  public static Intent getIntent(AbstractActivity activity) {
+  public static synchronized Intent getIntent(AbstractActivity activity) {
     SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(activity);
     String link = pref.getString(SERVICE_LINK, "");
     switch(Math.abs(getRunning(activity))) {
@@ -121,7 +121,7 @@ public class Service extends android.app.Service
     }
   }
 
-  public static String getLink(Context context)
+  public static synchronized String getLink(Context context)
   {
     SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
     return pref.getString(SERVICE_LINK, "");
@@ -132,13 +132,18 @@ public class Service extends android.app.Service
     return messageNotification + "\n" + message;
   }
 
-  public static int getRunning(Context context)
+  public static synchronized int getRunning(Context context)
   {
     SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
     return pref.getInt(SERVICE_RUNNING, SERVICE_NOT_RUNNING);
   }
 
-  public static void reset(Context context)
+  private static synchronized void setMessage(String msg)
+  {
+    message = msg;
+  }
+
+  public static synchronized void reset(Context context)
   {
     SharedPreferences.Editor e = PreferenceManager.getDefaultSharedPreferences(context).edit();
     e.putInt(SERVICE_RUNNING, SERVICE_NOT_RUNNING);
