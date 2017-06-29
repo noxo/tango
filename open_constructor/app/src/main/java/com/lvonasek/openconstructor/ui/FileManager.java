@@ -204,31 +204,8 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
     Intent intent = new Intent(FileManager.this, OpenConstructor.class);
     switch (v.getId()) {
       case R.id.add_button:
-        if (isAirplaneModeOn(this))
-          startScanning();
-        else {
-          AlertDialog.Builder builder = new AlertDialog.Builder(this);
-          builder.setTitle(getString(R.string.airplane_title));
-          builder.setMessage(getString(R.string.airplane_detail));
-          builder.setPositiveButton(R.string.yes, new DialogInterface.OnClickListener()
-          {
-            @Override
-            public void onClick(DialogInterface dialog, int i)
-            {
-              startScanning();
-              dialog.dismiss();
-            }
-          });
-          builder.setNegativeButton(R.string.no, new DialogInterface.OnClickListener()
-          {
-            @Override
-            public void onClick(DialogInterface dialog, int i)
-            {
-              dialog.dismiss();
-            }
-          });
-          builder.create().show();
-        }
+        showProgress();
+        startScanning();
         break;
       case R.id.settings:
         startActivity(new Intent(this, Settings.class));

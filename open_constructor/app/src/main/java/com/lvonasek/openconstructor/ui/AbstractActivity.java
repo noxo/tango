@@ -9,7 +9,6 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Environment;
 import android.preference.PreferenceManager;
-import android.provider.Settings;
 import android.util.Log;
 import android.view.WindowManager;
 
@@ -37,11 +36,6 @@ public abstract class AbstractActivity extends Activity
   protected static final String USER_AGENT = "Mozilla/5.0 Google";
   public static final String[] FILE_EXT = {".obj"};
   public static final String TAG = "tango_app";
-
-  public static boolean isAirplaneModeOn(Context context)
-  {
-    return Settings.Global.getInt(context.getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 0) != 0;
-  }
 
   public static void installCardboardApp(Context context)
   {

@@ -37,8 +37,6 @@
     <string name="editor_transform_scale">Scale</string>
 
     <!-- Recording !-->
-    <string name="airplane_title">The airplane mode is not active</string>
-    <string name="airplane_detail">An incoming call would cancel scanning without saving data. Do you want to continue?</string>
     <string name="distance">Max. dist.:</string>
     <string name="resolution">3D grid:</string>
     <string name="view">Saved. Do you want to continue the recording?</string>
