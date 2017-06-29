@@ -149,7 +149,7 @@ namespace oc {
         event = "Simplifying mesh";
         Tango3DR_Config textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
         Tango3DR_Status ret;
-        ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", finalize ? 0.002 : 0.01);
+        ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", finalize ? 0.005 : 0.01);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
         int simplify = (mesh->max_num_faces < 1000) ? 1 : (finalize ? 1 : 3);

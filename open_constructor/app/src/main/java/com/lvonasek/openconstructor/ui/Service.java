@@ -28,7 +28,7 @@ public class Service extends android.app.Service
   private static Service service;
 
   @Override
-  public void onCreate() {
+  public synchronized void onCreate() {
     super.onCreate();
     service = this;
     message = "";
@@ -127,7 +127,7 @@ public class Service extends android.app.Service
     return pref.getString(SERVICE_LINK, "");
   }
 
-  public static String getMessage()
+  public static synchronized String getMessage()
   {
     return messageNotification + "\n" + message;
   }
