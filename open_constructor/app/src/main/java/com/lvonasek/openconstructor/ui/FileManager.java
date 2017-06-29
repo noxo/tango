@@ -204,7 +204,6 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
     Intent intent = new Intent(FileManager.this, OpenConstructor.class);
     switch (v.getId()) {
       case R.id.add_button:
-        showProgress();
         startScanning();
         break;
       case R.id.settings:
