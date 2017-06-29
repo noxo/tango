@@ -12,7 +12,6 @@ public class Initializator extends AbstractActivity
 {
   private static boolean closeOnResume = false;
   private static int index = -1;
-  private static Notification.Builder builder;
   private static Initializator instance;
   private static NotificationManager nm;
 
@@ -31,8 +30,6 @@ public class Initializator extends AbstractActivity
         finish();
     } else {
       closeOnResume = true;
-      if (Service.getRunning(this) < Service.SERVICE_NOT_RUNNING)
-        hideNotification();
       startActivity(new Intent(this, FileManager.class));
     }
   }
@@ -60,9 +57,10 @@ public class Initializator extends AbstractActivity
 
   public static void showNotification(String message)
   {
+    hideNotification();
     try {
       //build notification
-      builder = new Notification.Builder(instance)
+      Notification.Builder builder = new Notification.Builder(instance)
               .setSmallIcon(R.drawable.ic_launcher)
               .setContentTitle(instance.getString(R.string.app_name))
               .setContentText(message)
@@ -74,18 +72,6 @@ public class Initializator extends AbstractActivity
       Intent intent = new Intent(instance, FileManager.class);
       PendingIntent pi = PendingIntent.getActivity(instance, 0, intent, 0);
       builder.setContentIntent(pi);
-      nm.notify(index, builder.build());
-    } catch(Exception e) {
-      e.printStackTrace();
-    }
-  }
-
-  public static void updateNotification()
-  {
-    try {
-      builder.setContentText(instance.getString(R.string.finished));
-      builder.setAutoCancel(true);
-      builder.setOngoing(false);
       nm.notify(index, builder.build());
     } catch(Exception e) {
       e.printStackTrace();

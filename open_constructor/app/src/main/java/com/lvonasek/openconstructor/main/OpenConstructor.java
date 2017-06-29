@@ -45,6 +45,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
   private String mToLoad;
   private boolean m3drRunning = false;
   private boolean mViewMode = false;
+  private boolean mPostprocess = false;
   private boolean mRunning = false;
 
   private LinearLayout mLayoutRec;
@@ -100,10 +101,10 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
             }
 
             //pause/resume
-            boolean continueScanning = mRes == Integer.MIN_VALUE;
-            boolean postprocess = mRes == Integer.MAX_VALUE;
+            final boolean continueScanning = mRes == Integer.MIN_VALUE;
+            mPostprocess = mRes == Integer.MAX_VALUE;
             File config = new File(getTempPath(), "config.txt");
-            if (continueScanning || postprocess) {
+            if (continueScanning || mPostprocess) {
               m3drRunning = false;
               try
               {
@@ -138,7 +139,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
             JNI.onToggleButtonClicked(m3drRunning);
             JNI.setView(0, 0, 0, 0, 0, true);
             final File obj = new File(getPath(), Service.getLink(OpenConstructor.this));
-            if (postprocess) {
+            if (mPostprocess) {
               Service.process(getString(R.string.postprocessing), Service.SERVICE_POSTPROCESS,
                       OpenConstructor.this, new Runnable()
                       {
@@ -161,6 +162,8 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
                 public void run()
                 {
                   mProgress.setVisibility(View.GONE);
+                  if (continueScanning)
+                    mToggleButton.setBackgroundResource(R.drawable.ic_record);
                 }
               });
             }
@@ -310,7 +313,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
         });
       break;
     case R.id.save_button:
-      save();
+      finish();
       break;
     }
     mToggleButton.setBackgroundResource(m3drRunning ? R.drawable.ic_pause : R.drawable.ic_record);
@@ -360,10 +363,12 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
   @Override
   protected void onPause() {
     super.onPause();
-    if (mTangoBinded)
-      save();
-    else
-      System.exit(0);
+    if (!mPostprocess) {
+      if (mTangoBinded)
+        save();
+      else
+        System.exit(0);
+    }
   }
 
   @Override

@@ -104,8 +104,10 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
       mText.setVisibility(View.VISIBLE);
       mText.setText(getString(R.string.finished) + "\n" + getString(R.string.turn_off));
       int service = Math.abs(Service.getRunning(this));
-      if ((service == Service.SERVICE_POSTPROCESS) || (service == Service.SERVICE_SKETCHFAB))
+      if (service == Service.SERVICE_SKETCHFAB)
         findViewById(R.id.service_continue).setVisibility(View.GONE);
+      else if (service == Service.SERVICE_POSTPROCESS)
+        finishScanning();
     } else if (first) {
       first = false;
       Intent intent1 = new Intent();
@@ -246,9 +248,7 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         break;
       case R.id.service_finish:
         int service = Math.abs(Service.getRunning(this));
-        if (service == Service.SERVICE_POSTPROCESS)
-          finishScanning();
-        else if (service == Service.SERVICE_SKETCHFAB)
+        if (service == Service.SERVICE_SKETCHFAB)
           finishOperation();
         else if (service == Service.SERVICE_SAVE)
         {
@@ -282,9 +282,11 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
 
   private void finishScanning()
   {
+    mOperations.setVisibility(View.GONE);
     AlertDialog.Builder builder = new AlertDialog.Builder(this);
     builder.setTitle(getString(R.string.enter_filename));
     final EditText input = new EditText(this);
+    builder.setCancelable(false);
     builder.setView(input);
     builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
       @Override
@@ -320,12 +322,14 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
             //finish
             deleteRecursive(getTempPath());
             Service.reset(FileManager.this);
-            System.exit(0);
+            Intent intent = new Intent(FileManager.this, OpenConstructor.class);
+            intent.putExtra(AbstractActivity.FILE_KEY, file2save.getName());
+            showProgress();
+            startActivity(intent);
           }
         }).start();
       }
     });
-    builder.setNegativeButton(getString(android.R.string.cancel), null);
     builder.create().show();
   }
 

@@ -85,7 +85,7 @@ public class Service extends android.app.Service
     e.putInt(SERVICE_RUNNING, -Math.abs(getRunning(parent)));
     e.putString(SERVICE_LINK, link);
     e.commit();
-    Initializator.updateNotification();
+    Initializator.hideNotification();
     System.exit(0);
   }
 

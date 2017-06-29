@@ -127,7 +127,7 @@ namespace oc {
 
 
     App::App() :  t3dr_is_running_(false),
-                  gyro(false),
+                  gyro(true),
                   landscape(false),
                   lastMovex(0),
                   lastMovey(0),
@@ -185,11 +185,19 @@ namespace oc {
                     0, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION, TANGO_COORDINATE_FRAME_DEVICE,
                     TANGO_SUPPORT_ENGINE_OPENGL, TANGO_SUPPORT_ENGINE_OPENGL,
                     landscape ? TANGO_SUPPORT_ROTATION_90 : TANGO_SUPPORT_ROTATION_0, &transform);
-            if (transform.status_code == TANGO_POSE_VALID) {
-                scene.renderer->camera.SetTransformation(glm::make_mat4(transform.matrix));
-                scene.UpdateFrustum(scene.renderer->camera.position, movez);
-                glm::vec4 move = scene.renderer->camera.GetTransformation() * glm::vec4(0, 0, movez, 0);
-                scene.renderer->camera.position += glm::vec3(move.x, move.y, move.z);
+
+            scene.renderer->camera.SetTransformation(glm::make_mat4(transform.matrix));
+            scene.UpdateFrustum(scene.renderer->camera.position, movez);
+            glm::vec4 move = scene.renderer->camera.GetTransformation() * glm::vec4(0, 0, movez, 0);
+            scene.renderer->camera.position += glm::vec3(move.x, move.y, move.z);
+
+            if ((transform.status_code != TANGO_POSE_VALID) && event_.empty()) {
+                if (transform.status_code == TANGO_POSE_INITIALIZING)
+                    event_ = "Initializing motion tracking";
+                else if (transform.status_code == TANGO_POSE_INVALID)
+                    event_ = "Undefined position";
+                else if (transform.status_code == TANGO_POSE_UNKNOWN)
+                    event_ = "Unknown position";
             }
         }
         //render
