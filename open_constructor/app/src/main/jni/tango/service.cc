@@ -69,13 +69,6 @@ namespace oc {
         TangoService_disconnect();
     }
 
-    void TangoService::SaveAreaDescription() {
-        TangoService_saveAreaDescription(&uuid);
-        FILE* file = fopen((dataset + "/uuid.txt").c_str(), "w");
-        fprintf(file, "%s", uuid);
-        fclose(file);
-    }
-
     void TangoService::Setup3DR(double res, double dmin, double dmax, int noise) {
         Tango3DR_Config t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_RECONSTRUCTION);
         Tango3DR_Status t3dr_err;
@@ -132,13 +125,13 @@ namespace oc {
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
-        // Enable learning.
-        ret = TangoConfig_setBool(config, "config_enable_learning_mode", true);
+        // Disable learning.
+        ret = TangoConfig_setBool(config, "config_enable_learning_mode", false);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
-        // Disable drift correction.
-        ret = TangoConfig_setBool(config, "config_enable_drift_correction", false);
+        // Enable drift correction.
+        ret = TangoConfig_setBool(config, "config_enable_drift_correction", true);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
@@ -151,16 +144,6 @@ namespace oc {
         ret = TangoConfig_setBool(config, "config_enable_color_camera", true);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
-
-        // Try to load area description
-        FILE* file = fopen((dataset + "/uuid.txt").c_str(), "r");
-        if (file) {
-            fscanf(file, "%s", &uuid);
-            fclose(file);
-            TangoErrorType err = TangoConfig_setString(config, "config_load_area_description_UUID", uuid);
-            if (err != TANGO_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-        }
 
         if (pointcloud == nullptr) {
             int32_t max_point_cloud_elements;

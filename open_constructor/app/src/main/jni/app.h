@@ -20,6 +20,7 @@ namespace oc {
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin, double dmax,
                                      int noise, bool land, std::string dataset);
         void onPointCloudAvailable(TangoPointCloud *point_cloud);
+        void onEyeFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer);
         void onFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer);
         void onTangoEvent(const TangoEvent *event);
         void OnSurfaceChanged(int width, int height);

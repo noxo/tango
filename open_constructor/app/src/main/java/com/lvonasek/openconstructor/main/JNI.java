@@ -8,8 +8,9 @@ import android.os.IBinder;
 public class JNI
 {
   static {
-    int arch = TangoInitHelper.loadTangoSharedLibrary();
-    TangoInitHelper.loadLibrary("openconstructor", arch);
+    TangoInitHelper.loadLibrary("com.google.tango", "TangoCore", "tango_client_api");
+    TangoInitHelper.loadLibrary("com.projecttango.tango", "TangoCore", "tango_client_api");
+    TangoInitHelper.loadLibrary("com.lvonasek.openconstructor", "OpenConstructor", "openconstructor");
   }
 
   // Called when the Tango service is connected successfully.

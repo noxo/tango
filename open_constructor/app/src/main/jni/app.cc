@@ -2,11 +2,22 @@
 #include "app.h"
 
 namespace {
+    int eyeIndex = 0;
     const int kSubdivisionSize = 20000;
 
     void onPointCloudAvailableRouter(void *context, const TangoPointCloud *point_cloud) {
         oc::App *app = static_cast<oc::App *>(context);
         app->onPointCloudAvailable((TangoPointCloud*)point_cloud);
+    }
+
+    void onEyeFrameAvailableRouter(void *context, TangoCameraId id, const TangoImageBuffer *buffer) {
+        if (eyeIndex == 0) {
+            oc::App *app = static_cast<oc::App *>(context);
+            app->onEyeFrameAvailable(id, buffer);
+        }
+        eyeIndex++;
+        if (eyeIndex > 20)
+            eyeIndex = 0;
     }
 
     void onFrameAvailableRouter(void *context, TangoCameraId id, const TangoImageBuffer *buffer) {
@@ -54,6 +65,31 @@ namespace oc {
         point_cloud_matrix_ = glm::make_mat4(matrix_transform.matrix);
         TangoSupport_updatePointCloud(tango.Pointcloud(), point_cloud);
         point_cloud_available_ = true;
+        binder_mutex_.unlock();
+    }
+
+    void App::onEyeFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer) {
+        if (id != TANGO_CAMERA_FISHEYE || !t3dr_is_running_)
+            return;
+
+        TangoSupport_MatrixTransformData matrix_transform;
+        TangoSupport_getMatrixTransformAtTime(
+                buffer->timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION,
+                TANGO_COORDINATE_FRAME_CAMERA_COLOR, TANGO_SUPPORT_ENGINE_OPENGL,
+                TANGO_SUPPORT_ENGINE_TANGO, TANGO_SUPPORT_ROTATION_0, &matrix_transform);
+        if (matrix_transform.status_code != TANGO_POSE_VALID)
+            return;
+
+        binder_mutex_.lock();
+        glm::mat4 matrix = glm::make_mat4(matrix_transform.matrix);
+        Tango3DR_ImageBuffer t3dr_image;
+        t3dr_image.width = buffer->width;
+        t3dr_image.height = buffer->height;
+        t3dr_image.stride = buffer->stride;
+        t3dr_image.timestamp = buffer->timestamp;
+        t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(buffer->format);
+        t3dr_image.data = buffer->data;
+        texturize.Add(t3dr_image, matrix, tango.Dataset(), true);
         binder_mutex_.unlock();
     }
 
@@ -113,7 +149,7 @@ namespace oc {
             return;
         }
 
-        texturize.Add(t3dr_image, image_matrix, tango.Dataset());
+        texturize.Add(t3dr_image, image_matrix, tango.Dataset(), false);
         std::vector<std::pair<GridIndex, Tango3DR_Mesh*> > added;
         added = scan.Process(tango.Context(), &t3dr_updated);
         render_mutex_.lock();
@@ -124,7 +160,6 @@ namespace oc {
         point_cloud_available_ = false;
         binder_mutex_.unlock();
     }
-
 
     App::App() :  t3dr_is_running_(false),
                   gyro(true),
@@ -148,6 +183,9 @@ namespace oc {
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
         ret = TangoService_connectOnFrameAvailable(TANGO_CAMERA_COLOR, this, onFrameAvailableRouter);
+        if (ret != TANGO_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+        ret = TangoService_connectOnFrameAvailable(TANGO_CAMERA_FISHEYE, this, onEyeFrameAvailableRouter);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
         ret = TangoService_connectOnTangoEvent(onTangoEventRouter);
@@ -243,7 +281,6 @@ namespace oc {
         render_mutex_.lock();
         if (texturize.Init(tango.Context(), tango.Camera())) {
             texturize.Process(filename);
-            tango.SaveAreaDescription();
 
             //merge with previous OBJ
             scan.Clear();

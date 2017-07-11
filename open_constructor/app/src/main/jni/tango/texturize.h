@@ -9,7 +9,7 @@ namespace oc {
     class TangoTexturize {
     public:
         TangoTexturize();
-        void Add(Tango3DR_ImageBuffer t3dr_image, glm::mat4 image_matrix, std::string dataset);
+        void Add(Tango3DR_ImageBuffer t3dr_image, glm::mat4 image_matrix, std::string dataset, bool eye);
         void ApplyFrames(std::string dataset);
         void Clear();
         bool Init(std::string filename, Tango3DR_CameraCalibration* camera);
@@ -23,7 +23,7 @@ namespace oc {
         std::string GetFileName(int index, std::string dataset, std::string extension);
         void UpdatePoses(std::string dataset);
 
-        int poses;
+        int eyePoses, poses;
         float resolution;
         std::string event;
         Tango3DR_TexturingContext context;

@@ -12,7 +12,6 @@ namespace oc {
         void Clear();
         void Connect(void* app);
         void Disconnect();
-        void SaveAreaDescription();
         void SetupConfig(std::string datapath);
         void Setup3DR(double res, double dmin, double dmax, int noise);
 
@@ -28,7 +27,6 @@ namespace oc {
         Tango3DR_CameraCalibration depth;
         Tango3DR_ReconstructionContext context;
         TangoSupport_PointCloudManager* pointcloud;
-        TangoUUID uuid;
 
         double res_;
         double dmin_;

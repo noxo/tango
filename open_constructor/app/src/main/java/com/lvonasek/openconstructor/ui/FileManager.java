@@ -1,7 +1,6 @@
 package com.lvonasek.openconstructor.ui;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -30,9 +29,6 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
   private ProgressBar mProgress;
   private TextView mText;
   private boolean first = true;
-
-  private static final String EXTRA_KEY_PERMISSIONTYPE = "PERMISSIONTYPE";
-  private static final String EXTRA_VALUE_ADF = "ADF_LOAD_SAVE_PERMISSION";
   private static final int PERMISSIONS_CODE = 1987;
 
   @Override
@@ -110,10 +106,7 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         finishScanning();
     } else if (first) {
       first = false;
-      Intent intent1 = new Intent();
-      intent1.setAction("android.intent.action.REQUEST_TANGO_PERMISSION");
-      intent1.putExtra(EXTRA_KEY_PERMISSIONTYPE, EXTRA_VALUE_ADF);
-      startActivityForResult(intent1, 1);
+      setupPermissions();
     }
   }
 
@@ -159,16 +152,6 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
   }
 
   @Override
-  protected void onActivityResult(int requestCode, int resultCode, Intent data)
-  {
-    super.onActivityResult(requestCode, resultCode, data);
-    if(resultCode == Activity.RESULT_OK)
-      setupPermissions();
-    else
-      finish();
-  }
-
-  @Override
   public synchronized void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults)
   {
     switch (requestCode)
@@ -176,20 +159,6 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
       case PERMISSIONS_CODE:
       {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-          if (Build.DEVICE.toLowerCase().contains("asus_a002")) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle(getString(R.string.unsupported));
-            builder.setMessage(getString(R.string.unsupported_asus));
-            builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener()
-            {
-              @Override
-              public void onClick(DialogInterface dialog, int i)
-              {
-                dialog.dismiss();
-              }
-            });
-            builder.create().show();
-          }
           refreshUI();
         } else
           finish();

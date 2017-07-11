@@ -14,6 +14,7 @@ void png_read_file(png_structp, png_bytep data, png_size_t length)
 tjhandle jpegC = tjInitCompress();
 tjhandle jpegD = tjInitDecompress();
 unsigned char* srcPlanes[3] = {0, 0, 0};
+unsigned char* graySrcPlanes[3] = {0, 0, 0};
 
 std::vector<long> image_textureToDelete;
 
@@ -58,6 +59,12 @@ namespace oc {
             delete srcPlanes[2];
         srcPlanes[1] = 0;
         srcPlanes[2] = 0;
+        if (graySrcPlanes[1])
+            delete graySrcPlanes[1];
+        if (graySrcPlanes[2])
+            delete graySrcPlanes[2];
+        graySrcPlanes[1] = 0;
+        graySrcPlanes[2] = 0;
     }
 
     unsigned char* Image::ExtractYUV(unsigned int s) {
@@ -290,7 +297,7 @@ namespace oc {
         delete[] src;
     }
 
-    void Image::YUV2JPG(unsigned char *data, int width, int height, std::string filename) {
+    void Image::YUV2JPG(unsigned char *data, int width, int height, std::string filename, bool gray) {
         //compress data
         long unsigned int size = (unsigned long) (width * height);
         unsigned char* dst = NULL;
@@ -298,32 +305,48 @@ namespace oc {
         strides[0] = width;
         strides[1] = width;
         strides[2] = width;
-        srcPlanes[0] = data;
-        if (!srcPlanes[1])
-            srcPlanes[1] = new unsigned char[size];
-        if (!srcPlanes[2])
-            srcPlanes[2] = new unsigned char[size];
-        int len = 0;
-        int UV = height - 1;
-        for (int y = height / 2 - 1; y >= 0; y--) {
-            memcpy(srcPlanes[1] + width * UV, data + size + width * y, (size_t) width);
-            memcpy(srcPlanes[2] + width * UV, data + size + width * y, (size_t) width);
-            len = width * UV + width;
-            for (int x = width * UV; x < len; x += 2) {
-                srcPlanes[1][x] = srcPlanes[1][x + 1];
-                srcPlanes[2][x + 1] = srcPlanes[2][x];
+        if (gray)
+        {
+            graySrcPlanes[0] = data;
+            if (!graySrcPlanes[1]) {
+                graySrcPlanes[1] = new unsigned char[size];
+                for (unsigned int i = 0; i < size; i++)
+                    graySrcPlanes[1][i] = 0;
             }
-            UV--;
-            memcpy(srcPlanes[1] + width * UV, data + size + width * y, (size_t) width);
-            memcpy(srcPlanes[2] + width * UV, data + size + width * y, (size_t) width);
-            len = width * UV + width;
-            for (int x = width * UV; x < len; x += 2) {
-                srcPlanes[1][x] = srcPlanes[1][x + 1];
-                srcPlanes[2][x + 1] = srcPlanes[2][x];
+            if (!graySrcPlanes[2]) {
+                graySrcPlanes[2] = new unsigned char[size];
+                for (unsigned int i = 0; i < size; i++)
+                    graySrcPlanes[2][i] = 0;
             }
-            UV--;
+            tjCompressFromYUVPlanes(jpegC, graySrcPlanes, width, strides, height, TJ_GRAYSCALE, &dst, &size, JPEG_QUALITY, TJFLAG_FASTDCT);
+        } else {
+            srcPlanes[0] = data;
+            if (!srcPlanes[1])
+                srcPlanes[1] = new unsigned char[size];
+            if (!srcPlanes[2])
+                srcPlanes[2] = new unsigned char[size];
+            int len = 0;
+            int UV = height - 1;
+            for (int y = height / 2 - 1; y >= 0; y--) {
+                memcpy(srcPlanes[1] + width * UV, data + size + width * y, (size_t) width);
+                memcpy(srcPlanes[2] + width * UV, data + size + width * y, (size_t) width);
+                len = width * UV + width;
+                for (int x = width * UV; x < len; x += 2) {
+                    srcPlanes[1][x] = srcPlanes[1][x + 1];
+                    srcPlanes[2][x + 1] = srcPlanes[2][x];
+                }
+                UV--;
+                memcpy(srcPlanes[1] + width * UV, data + size + width * y, (size_t) width);
+                memcpy(srcPlanes[2] + width * UV, data + size + width * y, (size_t) width);
+                len = width * UV + width;
+                for (int x = width * UV; x < len; x += 2) {
+                    srcPlanes[1][x] = srcPlanes[1][x + 1];
+                    srcPlanes[2][x + 1] = srcPlanes[2][x];
+                }
+                UV--;
+            }
+            tjCompressFromYUVPlanes(jpegC, srcPlanes, width, strides, height, TJSAMP_444, &dst, &size, JPEG_QUALITY, TJFLAG_FASTDCT);
         }
-        tjCompressFromYUVPlanes(jpegC, srcPlanes, width, strides, height, TJSAMP_444, &dst, &size, JPEG_QUALITY, TJFLAG_FASTDCT);
 
         //write data into file
         temp = fopen(filename.c_str(), "wb");

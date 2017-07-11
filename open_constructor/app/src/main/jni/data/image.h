@@ -26,7 +26,7 @@ namespace oc {
         long GetTexture() { return texture; }
 
         static void JPG2YUV(std::string filename, unsigned char* data, int width, int height);
-        static void YUV2JPG(unsigned char* data, int width, int height, std::string filename);
+        static void YUV2JPG(unsigned char* data, int width, int height, std::string filename, bool gray);
         static std::vector<unsigned int> TexturesToDelete();
 
     private:
