@@ -1,6 +1,7 @@
 package com.lvonasek.openconstructor.main;
 
 import android.os.IBinder;
+import android.util.Log;
 
 /**
  * Interfaces between native C++ code and Java code.
@@ -8,9 +9,9 @@ import android.os.IBinder;
 public class JNI
 {
   static {
-    TangoInitHelper.loadLibrary("com.google.tango", "TangoCore", "tango_client_api");
-    TangoInitHelper.loadLibrary("com.projecttango.tango", "TangoCore", "tango_client_api");
-    TangoInitHelper.loadLibrary("com.lvonasek.openconstructor", "OpenConstructor", "openconstructor");
+    if (TangoInitHelper.loadTangoSharedLibrary() == TangoInitHelper.ARCH_ERROR)
+      Log.e("JNI", "ERROR! Unable to load libtango_client_api.so!");
+    System.loadLibrary("openconstructor");
   }
 
   // Called when the Tango service is connected successfully.
