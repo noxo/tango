@@ -9,7 +9,7 @@ import android.util.Log;
 public class JNI
 {
   static {
-    if (TangoInitHelper.loadTangoSharedLibrary() == TangoInitHelper.ARCH_ERROR)
+    if (!TangoInitHelper.loadTangoSharedLibrary())
       Log.e("JNI", "ERROR! Unable to load libtango_client_api.so!");
     System.loadLibrary("openconstructor");
   }
