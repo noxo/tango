@@ -185,9 +185,9 @@ namespace oc {
         ret = TangoService_connectOnFrameAvailable(TANGO_CAMERA_COLOR, this, onFrameAvailableRouter);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
-        ret = TangoService_connectOnFrameAvailable(TANGO_CAMERA_FISHEYE, this, onEyeFrameAvailableRouter);
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
+//        ret = TangoService_connectOnFrameAvailable(TANGO_CAMERA_FISHEYE, this, onEyeFrameAvailableRouter);
+//        if (ret != TANGO_SUCCESS)
+//            std::exit(EXIT_SUCCESS);
         ret = TangoService_connectOnTangoEvent(onTangoEventRouter);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
