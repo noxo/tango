@@ -2,22 +2,11 @@
 #include "app.h"
 
 namespace {
-    int eyeIndex = 0;
     const int kSubdivisionSize = 20000;
 
     void onPointCloudAvailableRouter(void *context, const TangoPointCloud *point_cloud) {
         oc::App *app = static_cast<oc::App *>(context);
         app->onPointCloudAvailable((TangoPointCloud*)point_cloud);
-    }
-
-    void onEyeFrameAvailableRouter(void *context, TangoCameraId id, const TangoImageBuffer *buffer) {
-        if (eyeIndex == 0) {
-            oc::App *app = static_cast<oc::App *>(context);
-            app->onEyeFrameAvailable(id, buffer);
-        }
-        eyeIndex++;
-        if (eyeIndex > 20)
-            eyeIndex = 0;
     }
 
     void onFrameAvailableRouter(void *context, TangoCameraId id, const TangoImageBuffer *buffer) {
@@ -49,78 +38,66 @@ namespace oc {
         return output;
     }
 
-    void App::onPointCloudAvailable(TangoPointCloud *point_cloud) {
+    void App::onPointCloudAvailable(TangoPointCloud *pc) {
         if (!t3dr_is_running_)
             return;
 
-        TangoSupport_MatrixTransformData matrix_transform;
-        TangoSupport_getMatrixTransformAtTime(
-                point_cloud->timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION,
-                TANGO_COORDINATE_FRAME_CAMERA_DEPTH, TANGO_SUPPORT_ENGINE_OPENGL,
-                TANGO_SUPPORT_ENGINE_TANGO, TANGO_SUPPORT_ROTATION_0, &matrix_transform);
-        if (matrix_transform.status_code != TANGO_POSE_VALID)
+        std::vector<TangoSupport_MatrixTransformData> transform = tango.Pose(pc->timestamp, 0);
+        if (transform[DEPTH_CAMERA].status_code != TANGO_POSE_VALID)
             return;
 
         binder_mutex_.lock();
-        point_cloud_matrix_ = glm::make_mat4(matrix_transform.matrix);
-        TangoSupport_updatePointCloud(tango.Pointcloud(), point_cloud);
+        point_cloud_matrix_ = tango.Convert(transform)[DEPTH_CAMERA];
+        TangoSupport_updatePointCloud(tango.Pointcloud(), pc);
         point_cloud_available_ = true;
         binder_mutex_.unlock();
     }
 
-    void App::onEyeFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer) {
-        if (id != TANGO_CAMERA_FISHEYE || !t3dr_is_running_)
+    void App::onFrameAvailable(TangoCameraId id, const TangoImageBuffer *im) {
+        if (id != TANGO_CAMERA_COLOR || (!t3dr_is_running_ && !scene.IsFullScreenActive()))
             return;
 
-        TangoSupport_MatrixTransformData matrix_transform;
-        TangoSupport_getMatrixTransformAtTime(
-                buffer->timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION,
-                TANGO_COORDINATE_FRAME_CAMERA_COLOR, TANGO_SUPPORT_ENGINE_OPENGL,
-                TANGO_SUPPORT_ENGINE_TANGO, TANGO_SUPPORT_ROTATION_0, &matrix_transform);
-        if (matrix_transform.status_code != TANGO_POSE_VALID)
+        std::vector<TangoSupport_MatrixTransformData> transform = tango.Pose(im->timestamp, 0);
+        if (transform[COLOR_CAMERA].status_code != TANGO_POSE_VALID)
             return;
 
         binder_mutex_.lock();
-        glm::mat4 matrix = glm::make_mat4(matrix_transform.matrix);
-        Tango3DR_ImageBuffer t3dr_image;
-        t3dr_image.width = buffer->width;
-        t3dr_image.height = buffer->height;
-        t3dr_image.stride = buffer->stride;
-        t3dr_image.timestamp = buffer->timestamp;
-        t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(buffer->format);
-        t3dr_image.data = buffer->data;
-        texturize.Add(t3dr_image, matrix, tango.Dataset(), true);
-        binder_mutex_.unlock();
-    }
-
-    void App::onFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer) {
-        if (id != TANGO_CAMERA_COLOR || !t3dr_is_running_)
-            return;
-
-        TangoSupport_MatrixTransformData matrix_transform;
-        TangoSupport_getMatrixTransformAtTime(
-                        buffer->timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION,
-                        TANGO_COORDINATE_FRAME_CAMERA_COLOR, TANGO_SUPPORT_ENGINE_OPENGL,
-                        TANGO_SUPPORT_ENGINE_TANGO, TANGO_SUPPORT_ROTATION_0, &matrix_transform);
-        if (matrix_transform.status_code != TANGO_POSE_VALID)
-            return;
-
-        binder_mutex_.lock();
-        if (!point_cloud_available_) {
+        if (!point_cloud_available_ && !scene.IsFullScreenActive()) {
             binder_mutex_.unlock();
             return;
         }
 
-        image_matrix = glm::make_mat4(matrix_transform.matrix);
         Tango3DR_ImageBuffer t3dr_image;
-        t3dr_image.width = buffer->width;
-        t3dr_image.height = buffer->height;
-        t3dr_image.stride = buffer->stride;
-        t3dr_image.timestamp = buffer->timestamp;
-        t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(buffer->format);
-        t3dr_image.data = buffer->data;
+        t3dr_image.width = im->width;
+        t3dr_image.height = im->height;
+        t3dr_image.stride = im->stride;
+        t3dr_image.timestamp = im->timestamp;
+        t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(im->format);
+        t3dr_image.data = im->data;
 
-        Tango3DR_Pose t3dr_image_pose = GLCamera::Extract3DRPose(image_matrix);
+        if (scene.IsFullScreenActive()) {
+            Image* img = new Image(t3dr_image.data, t3dr_image.width, t3dr_image.height, 1);
+            render_mutex_.lock();
+            scene.SetPreview(img);
+            float match = 100.0f * (float)scene.CountMatching();
+            char res[8];
+            sprintf(res, "%.1f", match);
+            event_ = "Matching: current=" + std::string(res) + "%";
+            sprintf(res, "%.1f", best_match);
+            event_ += " best=" + std::string(res) + "%";
+            if (best_match < match) {
+                best_match = match;
+            }
+            if (best_match > 75)
+                event_ += "\nPress the record icon to continue";
+            else
+                event_ += "\nFind position matching this photo";
+            render_mutex_.unlock();
+            binder_mutex_.unlock();
+            return;
+        }
+
+        Tango3DR_Pose t3dr_image_pose = GLCamera::Extract3DRPose(tango.Convert(transform)[COLOR_CAMERA]);
         glm::quat rot = glm::quat((float) t3dr_image_pose.orientation[0],
                                   (float) t3dr_image_pose.orientation[1],
                                   (float) t3dr_image_pose.orientation[2],
@@ -143,13 +120,12 @@ namespace oc {
         Tango3DR_Status ret;
         ret = Tango3DR_updateFromPointCloud(tango.Context(), &t3dr_depth, &t3dr_depth_pose,
                                             &t3dr_image, &t3dr_image_pose, &t3dr_updated);
-        if (ret != TANGO_3DR_SUCCESS)
-        {
+        if (ret != TANGO_3DR_SUCCESS) {
             binder_mutex_.unlock();
             return;
         }
 
-        texturize.Add(t3dr_image, image_matrix, tango.Dataset(), false);
+        texturize.Add(t3dr_image, tango.Convert(transform), tango.Dataset());
         std::vector<std::pair<GridIndex, Tango3DR_Mesh*> > added;
         added = scan.Process(tango.Context(), &t3dr_updated);
         render_mutex_.lock();
@@ -185,9 +161,6 @@ namespace oc {
         ret = TangoService_connectOnFrameAvailable(TANGO_CAMERA_COLOR, this, onFrameAvailableRouter);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
-//        ret = TangoService_connectOnFrameAvailable(TANGO_CAMERA_FISHEYE, this, onEyeFrameAvailableRouter);
-//        if (ret != TANGO_SUCCESS)
-//            std::exit(EXIT_SUCCESS);
         ret = TangoService_connectOnTangoEvent(onTangoEventRouter);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
@@ -218,25 +191,12 @@ namespace oc {
             scene.renderer->camera.rotation = glm::quat(glm::vec3(lastYaw, lastPitch, 0));
             scene.renderer->camera.scale    = glm::vec3(1, 1, 1);
         } else {
-            TangoSupport_MatrixTransformData transform;
-            TangoSupport_getMatrixTransformAtTime(
-                    0, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION, TANGO_COORDINATE_FRAME_DEVICE,
-                    TANGO_SUPPORT_ENGINE_OPENGL, TANGO_SUPPORT_ENGINE_OPENGL,
-                    landscape ? TANGO_SUPPORT_ROTATION_90 : TANGO_SUPPORT_ROTATION_0, &transform);
-
-            scene.renderer->camera.SetTransformation(glm::make_mat4(transform.matrix));
+            std::vector<TangoSupport_MatrixTransformData> transform = tango.Pose(0, landscape);
+            glm::mat4 matrix = tango.Convert(transform)[OPENGL_CAMERA];
+            scene.renderer->camera.SetTransformation(matrix);
             scene.UpdateFrustum(scene.renderer->camera.position, movez);
             glm::vec4 move = scene.renderer->camera.GetTransformation() * glm::vec4(0, 0, movez, 0);
             scene.renderer->camera.position += glm::vec3(move.x, move.y, move.z);
-
-            if ((transform.status_code != TANGO_POSE_VALID) && event_.empty()) {
-                if (transform.status_code == TANGO_POSE_INITIALIZING)
-                    event_ = "Initializing motion tracking";
-                else if (transform.status_code == TANGO_POSE_INVALID)
-                    event_ = "Undefined position";
-                else if (transform.status_code == TANGO_POSE_UNKNOWN)
-                    event_ = "Unknown position";
-            }
         }
         //render
         scene.Render(gyro);
@@ -251,6 +211,12 @@ namespace oc {
     void App::OnToggleButtonClicked(bool t3dr_is_running) {
         binder_mutex_.lock();
         t3dr_is_running_ = t3dr_is_running;
+        if (t3dr_is_running && scene.IsFullScreenActive()) {
+            render_mutex_.lock();
+            scene.SetFullScreen(0);
+            scene.SetPreview(0);
+            render_mutex_.unlock();
+        }
         binder_mutex_.unlock();
     }
 
@@ -322,7 +288,7 @@ namespace oc {
         binder_mutex_.lock();
         render_mutex_.lock();
 
-        //check if texturizing is valid
+        //check if texturize is valid
         if (!texturize.Init(filename, tango.Camera())) {
             render_mutex_.unlock();
             binder_mutex_.unlock();
@@ -432,6 +398,11 @@ namespace oc {
         editor.SetPitch(pitch);
         scene.uniformPitch = pitch;
     }
+
+    void App::OnResumeScanning() {
+        best_match = 0;
+        scene.SetFullScreen(texturize.GetLatestImage(tango.Dataset()));
+    }
 }
 
 
@@ -475,7 +446,12 @@ Java_com_lvonasek_openconstructor_main_JNI_onToggleButtonClicked(
 
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_main_JNI_onClearButtonClicked(JNIEnv*, jobject) {
-  app.OnClearButtonClicked();
+    app.OnClearButtonClicked();
+}
+
+JNIEXPORT void JNICALL
+Java_com_lvonasek_openconstructor_main_JNI_onResumeScanning(JNIEnv*, jobject) {
+    app.OnResumeScanning();
 }
 
 JNIEXPORT void JNICALL

@@ -155,7 +155,10 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
                       });
             } else {
               if (continueScanning)
+              {
                 JNI.load(obj.getAbsolutePath());
+                JNI.onResumeScanning();
+              }
               OpenConstructor.this.runOnUiThread(new Runnable()
               {
                 @Override

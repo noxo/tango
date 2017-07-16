@@ -12,18 +12,29 @@ namespace oc {
     public:
         Scene();
         ~Scene();
-        void SetupViewPort(int w, int h);
+        double CountMatching();
+        bool IsFullScreenActive() { return fullscreen_ != 0; }
         void Render(bool frustum);
+        void SetupViewPort(int w, int h);
+        void SetFullScreen(Image* img);
+        void SetPreview(Image* img);
         void UpdateFrustum(glm::vec3 pos, float zoom);
 
         std::string ColorFragmentShader();
         std::string ColorVertexShader();
+        std::string FullScreenFragmentShader();
+        std::string FullScreenVertexShader();
         std::string TexturedFragmentShader();
         std::string TexturedVertexShader();
+        GLuint Image2GLTexture(Image* img);
 
+        int fullscreenTexture, previewTexture;
+        Image* fullscreen_;
+        Image* preview_;
         Mesh frustum_;
         std::vector<Mesh> static_meshes_;
         GLSL* color_vertex_shader;
+        GLSL* full_screen_shader;
         GLSL* textured_shader;
         GLRenderer* renderer;
 

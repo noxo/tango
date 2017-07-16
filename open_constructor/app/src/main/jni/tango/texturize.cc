@@ -1,44 +1,35 @@
 #include <sstream>
 #include "data/image.h"
 #include "gl/camera.h"
+#include "tango/service.h"
 #include "tango/texturize.h"
 
 namespace oc {
 
-    TangoTexturize::TangoTexturize() : eyePoses(0), poses(0) {}
+    TangoTexturize::TangoTexturize() : poses(0) {}
 
-    void TangoTexturize::Add(Tango3DR_ImageBuffer t3dr_image, glm::mat4 image_matrix, std::string dataset, bool eye) {
-        if ((!eye && (poses == 0)) || (eye && (eyePoses == 0)))
+    void TangoTexturize::Add(Tango3DR_ImageBuffer t3dr_image, std::vector<glm::mat4> matrix, std::string dataset) {
+        if (poses == 0)
             UpdatePoses(dataset);
 
         //save frame
-        if (eye)
-        {
-            Image::YUV2JPG(t3dr_image.data, t3dr_image.width, t3dr_image.height, GetFileName(eyePoses, dataset, "_e.jpg"), true);
-        } else {
-            width = t3dr_image.width;
-            height = t3dr_image.height;
-            Image::YUV2JPG(t3dr_image.data, t3dr_image.width, t3dr_image.height, GetFileName(poses, dataset, "_c.jpg"), false);
-        }
+        width = t3dr_image.width;
+        height = t3dr_image.height;
+        Image::YUV2JPG(t3dr_image.data, t3dr_image.width, t3dr_image.height, GetFileName(poses, dataset, ".jpg"), false);
 
         //save transform
-        FILE* file;
-        if (eye)
-            file = fopen(GetFileName(eyePoses, dataset, "_e.txt").c_str(), "w");
-        else
-            file = fopen(GetFileName(poses, dataset, "_c.txt").c_str(), "w");
-        for (int i = 0; i < 4; i++)
-            fprintf(file, "%f %f %f %f\n", image_matrix[i][0], image_matrix[i][1],
-                                           image_matrix[i][2], image_matrix[i][3]);
+        FILE* file = fopen(GetFileName(poses, dataset, ".txt").c_str(), "w");
+        fprintf(file, "%d\n", (int) matrix.size());
+        for (int k = 0; k < matrix.size(); k++)
+            for (int i = 0; i < 4; i++)
+                fprintf(file, "%f %f %f %f\n", matrix[k][i][0], matrix[k][i][1],
+                                               matrix[k][i][2], matrix[k][i][3]);
         fprintf(file, "%lf\n", t3dr_image.timestamp);
         fclose(file);
-        if (eye)
-            eyePoses++;
-        else
-            poses++;
+        poses++;
 
         file = fopen(GetFileName(-1, dataset, ".txt").c_str(), "w");
-        fprintf(file, "%d %d %d %d\n", eyePoses, poses, width, height);
+        fprintf(file, "%d %d %d\n", poses, width, height);
         fclose(file);
     }
 
@@ -59,17 +50,23 @@ namespace oc {
             ss << poses;
             event = ss.str();
 
+            int count;
             glm::mat4 mat;
             double timestamp;
-            FILE* file = fopen(GetFileName(i, dataset, "_c.txt").c_str(), "r");
-            for (int j = 0; j < 4; j++)
-                fscanf(file, "%f %f %f %f\n", &mat[j][0], &mat[j][1], &mat[j][2], &mat[j][3]);
+            std::vector<glm::mat4> output;
+            FILE* file = fopen(GetFileName(i, dataset, ".txt").c_str(), "r");
+            fscanf(file, "%d\n", &count);
+            for (int k = 0; k < count; k++) {
+                for (int j = 0; j < 4; j++)
+                    fscanf(file, "%f %f %f %f\n", &mat[j][0], &mat[j][1], &mat[j][2], &mat[j][3]);
+                output.push_back(mat);
+            }
             fscanf(file, "%lf\n", &timestamp);
             fclose(file);
 
             image.timestamp = timestamp;
-            Image::JPG2YUV(GetFileName(i, dataset, "_c.jpg"), image.data, width, height);
-            Tango3DR_Pose t3dr_image_pose = GLCamera::Extract3DRPose(mat);
+            Image::JPG2YUV(GetFileName(i, dataset, ".jpg"), image.data, width, height);
+            Tango3DR_Pose t3dr_image_pose = GLCamera::Extract3DRPose(output[COLOR_CAMERA]);
             Tango3DR_Status ret;
             ret = Tango3DR_updateTexture(context, &image, &t3dr_image_pose);
             if (ret != TANGO_3DR_SUCCESS)
@@ -80,6 +77,27 @@ namespace oc {
 
     void TangoTexturize::Clear() {
         poses = 0;
+    }
+
+    Image* TangoTexturize::GetLatestImage(std::string dataset) {
+        UpdatePoses(dataset);
+        return new Image(GetFileName(poses - 1, dataset, ".jpg"));
+    }
+
+    std::vector<glm::mat4> TangoTexturize::GetLatestPose(std::string dataset) {
+        UpdatePoses(dataset);
+        int count = 0;
+        glm::mat4 mat;
+        std::vector<glm::mat4> output;
+        FILE* file = fopen(GetFileName(poses - 1, dataset, ".txt").c_str(), "r");
+        fscanf(file, "%d\n", &count);
+        for (int i = 0; i < count; i++) {
+            for (int j = 0; j < 4; j++)
+                fscanf(file, "%f %f %f %f\n", &mat[j][0], &mat[j][1], &mat[j][2], &mat[j][3]);
+            output.push_back(mat);
+        }
+        fclose(file);
+        return output;
     }
 
     bool TangoTexturize::Init(std::string filename, Tango3DR_CameraCalibration* camera) {
@@ -184,17 +202,17 @@ namespace oc {
 
     std::string TangoTexturize::GetFileName(int index, std::string dataset, std::string extension) {
         std::ostringstream ss;
-        ss << dataset.c_str();
-        ss << "/";
         ss << index;
-        ss << extension.c_str();
-        return ss.str();
+        std::string number = ss.str();
+        while(number.size() < 8)
+            number = "0" + number;
+        return dataset + "/" + number + extension;
     }
 
     void TangoTexturize::UpdatePoses(std::string dataset) {
         FILE* file = fopen(GetFileName(-1, dataset, ".txt").c_str(), "r");
         if (file) {
-            fscanf(file, "%d %d %d %d\n", &eyePoses, &poses, &width, &height);
+            fscanf(file, "%d %d %d\n", &poses, &width, &height);
             fclose(file);
         }
     }

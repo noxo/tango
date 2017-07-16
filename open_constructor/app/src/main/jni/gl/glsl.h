@@ -61,6 +61,13 @@ namespace oc {
         void UniformMatrix(const char* name, const float* value);
 
         /**
+         * @brief UniformTexture send int into shader
+         * @param name is uniform name
+         * @param value is uniform value
+         */
+        void UniformTexture(const char* name, int value);
+
+        /**
          * @brief UniformVec3 send vec3 into shader
          * @param name is uniform name
          * @param x is uniform value in x coordinate

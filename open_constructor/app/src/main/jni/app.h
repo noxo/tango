@@ -19,14 +19,14 @@ namespace oc {
         App();
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin, double dmax,
                                      int noise, bool land, std::string dataset);
-        void onPointCloudAvailable(TangoPointCloud *point_cloud);
-        void onEyeFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer);
-        void onFrameAvailable(TangoCameraId id, const TangoImageBuffer *buffer);
+        void onPointCloudAvailable(TangoPointCloud *pc);
+        void onFrameAvailable(TangoCameraId id, const TangoImageBuffer *im);
         void onTangoEvent(const TangoEvent *event);
         void OnSurfaceChanged(int width, int height);
         void OnDrawFrame();
         void OnToggleButtonClicked(bool t3dr_is_running);
         void OnClearButtonClicked();
+        void OnResumeScanning();
 
         void Load(std::string filename);
         void Save(std::string filename);
@@ -46,11 +46,11 @@ namespace oc {
         void RectSelection(float x1, float y1, float x2, float y2);
 
     private:
+        float best_match;
         bool t3dr_is_running_;
         bool point_cloud_available_;
         TangoPointCloud* front_cloud_;
         glm::mat4 point_cloud_matrix_;
-        glm::mat4 image_matrix;
         glm::quat image_rotation;
         std::mutex binder_mutex_;
         std::mutex render_mutex_;

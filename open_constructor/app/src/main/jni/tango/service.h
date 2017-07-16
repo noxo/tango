@@ -4,8 +4,12 @@
 #include <tango_3d_reconstruction_api.h>
 #include <tango_client_api.h>
 #include <tango_support.h>
+#include <vector>
+#include "gl/opengl.h"
 
 namespace oc {
+    enum Pose { COLOR_CAMERA, DEPTH_CAMERA, OPENGL_CAMERA };
+
     class TangoService {
     public:
         ~TangoService();
@@ -15,10 +19,12 @@ namespace oc {
         void SetupConfig(std::string datapath);
         void Setup3DR(double res, double dmin, double dmax, int noise);
 
+        static std::vector<glm::mat4> Convert(std::vector<TangoSupport_MatrixTransformData> m);
         std::string Dataset() { return dataset; }
         Tango3DR_CameraCalibration* Camera() { return &camera; }
         Tango3DR_ReconstructionContext Context() { return context; }
         TangoSupport_PointCloudManager* Pointcloud() { return pointcloud; }
+        std::vector<TangoSupport_MatrixTransformData> Pose(double timestamp, bool land);
 
     private:
         std::string dataset;

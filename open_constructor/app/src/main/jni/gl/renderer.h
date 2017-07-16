@@ -48,14 +48,14 @@ namespace oc {
          */
         void Rtt(bool enable);
 
-        GLCamera camera;
+        GLCamera camera;                      ///< Camera object
+        int width;                            ///< Screen width
+        int height;                           ///< Screen height
 
     private:
         void Cleanup();
 
         float aliasing;                       ///< Screen detail
-        int width;                            ///< Screen width
-        int height;                           ///< Screen height
         GLSL* scene;                          ///< Scene shader
         unsigned int* rendertexture;          ///< Texture for color buffer
         unsigned int* fboID;                  ///< Frame buffer object id
