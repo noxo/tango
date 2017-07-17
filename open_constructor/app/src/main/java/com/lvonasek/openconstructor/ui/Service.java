@@ -85,7 +85,6 @@ public class Service extends android.app.Service
     e.putInt(SERVICE_RUNNING, -Math.abs(getRunning(parent)));
     e.putString(SERVICE_LINK, link);
     e.commit();
-    Initializator.hideNotification();
     System.exit(0);
   }
 
@@ -94,7 +93,6 @@ public class Service extends android.app.Service
     action = runnable;
     parent = activity;
     messageNotification = message;
-    Initializator.showNotification(message);
 
     SharedPreferences.Editor e = PreferenceManager.getDefaultSharedPreferences(activity).edit();
     e.putInt(SERVICE_RUNNING, serviceId);
@@ -129,6 +127,10 @@ public class Service extends android.app.Service
 
   public static synchronized String getMessage()
   {
+    if (messageNotification == null)
+      return null;
+    if (message == null)
+      return null;
     return messageNotification + "\n" + message;
   }
 

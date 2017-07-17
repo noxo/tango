@@ -9,7 +9,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.EditText;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
@@ -20,12 +20,15 @@ import com.lvonasek.openconstructor.main.OpenConstructor;
 import com.lvonasek.openconstructor.sketchfab.Home;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 
 public class FileManager extends AbstractActivity implements View.OnClickListener {
+  private ArrayList<Button> buttons;
   private ListView mList;
   private LinearLayout mLayout;
-  private LinearLayout mOperations;
   private ProgressBar mProgress;
   private TextView mText;
   private boolean first = true;
@@ -38,16 +41,20 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
     setContentView(R.layout.activity_files);
 
     mLayout = (LinearLayout) findViewById(R.id.layout_menu_action);
-    mOperations = (LinearLayout) findViewById(R.id.layout_service_action);
     mList = (ListView) findViewById(R.id.list);
     mText = (TextView) findViewById(R.id.info_text);
     mProgress = (ProgressBar) findViewById(R.id.progressBar);
     findViewById(R.id.settings).setOnClickListener(this);
     findViewById(R.id.add_button).setOnClickListener(this);
     findViewById(R.id.sketchfab).setOnClickListener(this);
-    findViewById(R.id.service_continue).setOnClickListener(this);
-    findViewById(R.id.service_show_result).setOnClickListener(this);
-    findViewById(R.id.service_finish).setOnClickListener(this);
+
+    buttons = new ArrayList<>();
+    buttons.add((Button) findViewById(R.id.service_continue));
+    buttons.add((Button) findViewById(R.id.service_show_result));
+    buttons.add((Button) findViewById(R.id.service_finish));
+    buttons.add((Button) findViewById(R.id.service_cancel));
+    for (Button b : buttons)
+      b.setOnClickListener(this);
   }
 
   @Override
@@ -62,9 +69,13 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
   {
     super.onResume();
     mLayout.setVisibility(View.VISIBLE);
-    mOperations.setVisibility(View.GONE);
+    for (Button b : buttons)
+      b.setVisibility(View.GONE);
     mProgress.setVisibility(View.GONE);
     if (Service.getRunning(this) > Service.SERVICE_NOT_RUNNING) {
+      for (Button b : buttons)
+        if (b.getId() == R.id.service_cancel)
+          b.setVisibility(View.VISIBLE);
       mLayout.setVisibility(View.GONE);
       mList.setVisibility(View.GONE);
       mText.setVisibility(View.VISIBLE);
@@ -87,7 +98,10 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
               @Override
               public void run()
               {
-                mText.setText(getString(R.string.working) + "\n\n" + Service.getMessage());
+                if (Service.getMessage() == null)
+                  mText.setText(getString(R.string.failed));
+                else
+                  mText.setText(getString(R.string.working) + "\n\n" + Service.getMessage());
               }
             });
           }
@@ -96,9 +110,12 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
     } else if (Service.getRunning(this) < Service.SERVICE_NOT_RUNNING) {
       mLayout.setVisibility(View.GONE);
       mList.setVisibility(View.GONE);
-      mOperations.setVisibility(View.VISIBLE);
+      for (Button b : buttons)
+        b.setVisibility(View.VISIBLE);
       mText.setVisibility(View.VISIBLE);
-      mText.setText(getString(R.string.finished) + "\n" + getString(R.string.turn_off));
+      boolean paused = Math.abs(Service.getRunning(this)) == Service.SERVICE_SAVE;
+      int text = paused ? R.string.paused : R.string.finished;
+      mText.setText(getString(text) + "\n" + getString(R.string.turn_off));
       int service = Math.abs(Service.getRunning(this));
       if (service == Service.SERVICE_SKETCHFAB)
         findViewById(R.id.service_continue).setVisibility(View.GONE);
@@ -202,6 +219,10 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
           startActivity(intent);
         }
         break;
+      case R.id.service_cancel:
+        Service.reset(this);
+        System.exit(0);
+        break;
     }
   }
 
@@ -227,55 +248,48 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
 
   private void finishScanning()
   {
-    mOperations.setVisibility(View.GONE);
-    AlertDialog.Builder builder = new AlertDialog.Builder(this);
-    builder.setTitle(getString(R.string.enter_filename));
-    final EditText input = new EditText(this);
-    builder.setCancelable(false);
-    builder.setView(input);
-    builder.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
+    for (Button b : buttons)
+      b.setVisibility(View.GONE);
+    showProgress();
+    Date date = new Date() ;
+    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
+    final String filename = dateFormat.format(date);
+    new Thread(new Runnable()
+    {
       @Override
-      public void onClick(DialogInterface dialog, int which) {
-
-        showProgress();
-        new Thread(new Runnable()
+      public void run()
+      {
+        //delete old files during overwrite
+        try
         {
-          @Override
-          public void run()
-          {
-            //delete old files during overwrite
-            try {
-              File file = new File(getPath(), input.getText().toString() + FILE_EXT[0]);
-              if (file.exists())
-                for(String s : getObjResources(file))
-                  if (new File(getPath(), s).delete())
-                    Log.d(AbstractActivity.TAG, "File " + s + " deleted");
-            } catch(Exception e) {
-              e.printStackTrace();
-            }
+          File file = new File(getPath(), filename + FILE_EXT[0]);
+          if (file.exists())
+            for (String s : getObjResources(file))
+              if (new File(getPath(), s).delete())
+                Log.d(AbstractActivity.TAG, "File " + s + " deleted");
+        } catch (Exception e)
+        {
+          e.printStackTrace();
+        }
 
-            //move file from temp into folder
-            File obj = new File(getPath(), Service.getLink(FileManager.this));
-            String saveFilename = input.getText().toString();
-            for(String s : getObjResources(obj.getAbsoluteFile()))
-              if (new File(getTempPath(), s).renameTo(new File(getPath(), s)))
-                Log.d(AbstractActivity.TAG, "File " + s + " saved");
-            File file2save = new File(getPath(), saveFilename + FILE_EXT[0]);
-            if (obj.renameTo(file2save))
-              Log.d(TAG, "Obj file " + file2save.toString() + " saved.");
+        //move file from temp into folder
+        File obj = new File(getPath(), Service.getLink(FileManager.this));
+        for (String s : getObjResources(obj.getAbsoluteFile()))
+          if (new File(getTempPath(), s).renameTo(new File(getPath(), s)))
+            Log.d(AbstractActivity.TAG, "File " + s + " saved");
+        File file2save = new File(getPath(), filename + FILE_EXT[0]);
+        if (obj.renameTo(file2save))
+          Log.d(TAG, "Obj file " + file2save.toString() + " saved.");
 
-            //finish
-            deleteRecursive(getTempPath());
-            Service.reset(FileManager.this);
-            Intent intent = new Intent(FileManager.this, OpenConstructor.class);
-            intent.putExtra(AbstractActivity.FILE_KEY, file2save.getName());
-            showProgress();
-            startActivity(intent);
-          }
-        }).start();
+        //finish
+        deleteRecursive(getTempPath());
+        Service.reset(FileManager.this);
+        Intent intent = new Intent(FileManager.this, OpenConstructor.class);
+        intent.putExtra(AbstractActivity.FILE_KEY, file2save.getName());
+        showProgress();
+        startActivity(intent);
       }
-    });
-    builder.create().show();
+    }).start();
   }
 
   private void finishOperation()

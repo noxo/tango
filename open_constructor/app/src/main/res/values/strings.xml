@@ -66,8 +66,11 @@
     <string name="action_continue">Continue scanning</string>
     <string name="action_show_result">Show result</string>
     <string name="action_finish">Finish</string>
+    <string name="action_cancel">Cancel operation</string>
     <string name="enter_filename">Enter the file name</string>
+    <string name="failed">Processing failed, scanned data are lost!\n\nPossible causes of the problem:\nThe app was killed during processing\nThe device was out of memory\nAnother Tango app was used</string>
     <string name="finished">Operation finished</string>
+    <string name="paused">Scanning paused</string>
     <string name="postprocessing">Postprocessing the model…</string>
     <string name="saving">Saving the model…</string>
     <string name="sketchfab_uploading">Uploading the model to Sketchfab…</string>
