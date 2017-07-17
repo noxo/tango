@@ -4,6 +4,9 @@
 
 namespace oc {
 
+    TangoService::TangoService() : toArea(ZeroPose()), toAreaTemp(ZeroPose()),
+                                   toZero(ZeroPose()), toZeroTemp(ZeroPose()) {}
+
     TangoService::~TangoService() {
         if (config != nullptr) {
             TangoConfig_free(config);
@@ -17,6 +20,11 @@ namespace oc {
             Tango3DR_ReconstructionContext_destroy(context);
             context = nullptr;
         }
+    }
+
+    void TangoService::ApplyTransform() {
+        toArea = toAreaTemp;
+        toZero = toZeroTemp;
     }
 
     void TangoService::Clear() {
@@ -157,6 +165,11 @@ namespace oc {
         }
     }
 
+    void TangoService::SetupTransform(std::vector<glm::mat4> area, std::vector<glm::mat4> zero) {
+        toAreaTemp = area;
+        toZeroTemp = zero;
+    }
+
     std::vector<TangoSupport_MatrixTransformData> TangoService::Pose(double timestamp, bool land) {
         //init objects
         std::vector<TangoSupport_MatrixTransformData> output;
@@ -183,13 +196,21 @@ namespace oc {
                 land ? TANGO_SUPPORT_ROTATION_90 : TANGO_SUPPORT_ROTATION_0, &matrix_transform);
         output.push_back(matrix_transform);
 
+        assert(output.size() == MAX_CAMERA);
         return output;
     }
 
     std::vector<glm::mat4> TangoService::Convert(std::vector<TangoSupport_MatrixTransformData> m) {
         std::vector<glm::mat4> output;
         for (int i = 0; i < m.size(); i++)
-            output.push_back(glm::make_mat4(m[i].matrix));
+            output.push_back(toArea[i] * toZero[i] * glm::make_mat4(m[i].matrix));
+        return output;
+    }
+
+    std::vector<glm::mat4> TangoService::ZeroPose() {
+        std::vector<glm::mat4> output;
+        for (int i = 0; i < MAX_CAMERA; i++)
+            output.push_back(glm::mat4(1));
         return output;
     }
 }

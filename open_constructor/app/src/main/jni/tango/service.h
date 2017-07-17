@@ -8,23 +8,27 @@
 #include "gl/opengl.h"
 
 namespace oc {
-    enum Pose { COLOR_CAMERA, DEPTH_CAMERA, OPENGL_CAMERA };
+    enum Pose { COLOR_CAMERA, DEPTH_CAMERA, OPENGL_CAMERA, MAX_CAMERA };
 
     class TangoService {
     public:
+        TangoService();
         ~TangoService();
+        void ApplyTransform();
         void Clear();
         void Connect(void* app);
         void Disconnect();
         void SetupConfig(std::string datapath);
         void Setup3DR(double res, double dmin, double dmax, int noise);
+        void SetupTransform(std::vector<glm::mat4> area, std::vector<glm::mat4> zero);
 
-        static std::vector<glm::mat4> Convert(std::vector<TangoSupport_MatrixTransformData> m);
+        std::vector<glm::mat4> Convert(std::vector<TangoSupport_MatrixTransformData> m);
         std::string Dataset() { return dataset; }
         Tango3DR_CameraCalibration* Camera() { return &camera; }
         Tango3DR_ReconstructionContext Context() { return context; }
         TangoSupport_PointCloudManager* Pointcloud() { return pointcloud; }
         std::vector<TangoSupport_MatrixTransformData> Pose(double timestamp, bool land);
+        std::vector<glm::mat4> ZeroPose();
 
     private:
         std::string dataset;
@@ -33,6 +37,8 @@ namespace oc {
         Tango3DR_CameraCalibration depth;
         Tango3DR_ReconstructionContext context;
         TangoSupport_PointCloudManager* pointcloud;
+        std::vector<glm::mat4> toArea, toAreaTemp;
+        std::vector<glm::mat4> toZero, toZeroTemp;
 
         double res_;
         double dmin_;

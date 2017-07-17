@@ -82,16 +82,22 @@ namespace oc {
             float match = 100.0f * (float)scene.CountMatching();
             char res[8];
             sprintf(res, "%.1f", match);
+            event_mutex_.lock();
             event_ = "Matching: current=" + std::string(res) + "%";
             sprintf(res, "%.1f", best_match);
             event_ += " best=" + std::string(res) + "%";
             if (best_match < match) {
                 best_match = match;
+                std::vector<glm::mat4> toZero = tango.Convert(transform);
+                for (unsigned int i = 0; i < toZero.size(); i++)
+                    toZero[i] = glm::inverse(toZero[i]);
+                tango.SetupTransform(texturize.GetLatestPose(tango.Dataset()), toZero);
             }
             if (best_match > 75)
                 event_ += "\nPress the record icon to continue";
             else
                 event_ += "\nFind position matching this photo";
+            event_mutex_.unlock();
             render_mutex_.unlock();
             binder_mutex_.unlock();
             return;
@@ -215,6 +221,7 @@ namespace oc {
             render_mutex_.lock();
             scene.SetFullScreen(0);
             scene.SetPreview(0);
+            tango.ApplyTransform();
             render_mutex_.unlock();
         }
         binder_mutex_.unlock();
