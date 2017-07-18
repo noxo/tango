@@ -12,8 +12,8 @@ import com.lvonasek.openconstructor.sketchfab.Home;
 
 public class Service extends android.app.Service
 {
-  private static final String SERVICE_LINK = "service_link";
-  private static final String SERVICE_RUNNING = "service_running";
+  public static final String SERVICE_LINK = "service_link";
+  public static final String SERVICE_RUNNING = "service_running";
 
   public static final int SERVICE_NOT_RUNNING = 0;
   public static final int SERVICE_SKETCHFAB = 1;

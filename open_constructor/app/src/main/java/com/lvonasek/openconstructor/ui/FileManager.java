@@ -4,9 +4,11 @@ import android.Manifest;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -198,6 +200,7 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
       case R.id.sketchfab:
         showProgress();
         startActivity(new Intent(this, Home.class));
+        //restartPostprocessing();
         break;
       case R.id.service_continue:
         showProgress();
@@ -303,6 +306,35 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         deleteRecursive(getTempPath());
         Service.reset(FileManager.this);
         finish();
+      }
+    }).start();
+  }
+
+  private void restartPostprocessing()
+  {
+    new Thread(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        File obj = null;
+        long max = 0;
+        File dir = getTempPath();
+        for (File f : dir.listFiles())
+        {
+          if (max < f.length())
+          {
+            max = f.length();
+            obj = f;
+          }
+        }
+        SharedPreferences.Editor e = PreferenceManager.getDefaultSharedPreferences(getBaseContext()).edit();
+        e.putInt(Service.SERVICE_RUNNING, Service.SERVICE_NOT_RUNNING);
+        e.putString(Service.SERVICE_LINK, TEMP_DIRECTORY + "/" + obj.getName());
+        e.commit();
+        Intent intent = new Intent(FileManager.this, OpenConstructor.class);
+        intent.putExtra(AbstractActivity.RESOLUTION_KEY, Integer.MAX_VALUE);
+        startActivity(intent);
       }
     }).start();
   }

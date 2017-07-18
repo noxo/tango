@@ -182,6 +182,9 @@ namespace oc {
         ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", finalize ? 0.005 : 0.01);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
+        ret = Tango3DR_Config_setInt32(textureConfig, "max_num_textures", 4);
+        if (ret != TANGO_3DR_SUCCESS)
+            std::exit(EXIT_SUCCESS);
         int simplify = (mesh->max_num_faces < 1000) ? 1 : (finalize ? 1 : 3);
         if (resolution < 0.006)
             simplify = 1;

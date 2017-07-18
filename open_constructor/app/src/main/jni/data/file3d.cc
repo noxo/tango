@@ -111,7 +111,11 @@ namespace oc {
                     meshIndex = output.size();
                     output.push_back(Mesh());
                     if (images.find(key) == images.end()) {
-                        images[key] = new Image(keyToFile[std::string(key)]);
+                        std::string imagefile = keyToFile[std::string(key)];
+                        if (imagefile.empty())
+                            images[key] = new Image(1, 1);
+                        else
+                          images[key] = new Image(imagefile);
                         output[meshIndex].imageOwner = true;
                     } else
                         output[meshIndex].imageOwner = false;
