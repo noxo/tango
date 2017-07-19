@@ -72,5 +72,8 @@ public class JNI
   // Select object by rect
   public static native void rectSelection(float x1, float y1, float x2, float y2);
 
+  // Indicate that last setview was applied
+  public static native boolean animFinished();
+
   public static native byte[] clientSecret();
 }

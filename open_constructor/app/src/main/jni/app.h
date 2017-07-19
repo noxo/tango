@@ -33,6 +33,7 @@ namespace oc {
         void SaveWithTextures(std::string filename);
         void Texturize(std::string filename);
 
+        bool AnimFinished();
         float GetFloorLevel(float x, float y, float z);
         void SetView(float p, float y, float mx, float my, float mz, bool g);
         std::string GetEvent();

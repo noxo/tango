@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,15 +20,20 @@ import com.lvonasek.openconstructor.sketchfab.OAuth;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 class FileAdapter extends BaseAdapter
 {
   private FileManager mContext;
   private ArrayList<String> mItems;
+  private HashMap<String, String> mDescriptions;
+  private HashMap<String, Drawable> mIcons;
 
   FileAdapter(FileManager context)
   {
     mContext = context;
+    mDescriptions = new HashMap<>();
+    mIcons = new HashMap<>();
     mItems = new ArrayList<>();
   }
 
@@ -65,6 +71,16 @@ class FileAdapter extends BaseAdapter
     });
     TextView name = (TextView) view.findViewById(R.id.name);
     name.setText(mItems.get(index));
+
+    //set description
+    TextView desc = (TextView) view.findViewById(R.id.description);
+    desc.setText(mDescriptions.get(mItems.get(index)));
+
+    //set icon
+    View icon = view.findViewById(R.id.icon);
+    icon.setBackground(mIcons.get(mItems.get(index)));
+
+    //set open action
     view.setOnClickListener(new View.OnClickListener()
     {
       @Override
@@ -91,10 +107,34 @@ class FileAdapter extends BaseAdapter
   void addItem(String name)
   {
     mItems.add(name);
+    //load description
+    if (!mDescriptions.containsKey(name)) {
+      File obj = new File(AbstractActivity.getPath(), name);
+      long length = obj.length();
+      for (String s : AbstractActivity.getObjResources(obj))
+        length += new File(AbstractActivity.getPath(), s).length();
+      String description = "";
+      description += AbstractActivity.getMtlResource(obj.getAbsolutePath()) + "\n";
+      description += (int)(length / 1024 / 1024) + "MB";
+      mDescriptions.put(name, description);
+    }
+    //load icon
+    if (!mIcons.containsKey(name)) {
+      File obj = new File(AbstractActivity.getPath(), name);
+      String mtl = AbstractActivity.getMtlResource(obj.getAbsolutePath());
+      final File thumbFile = new File(AbstractActivity.getPath(), mtl + ".png");
+      if (thumbFile.exists()) {
+        Drawable d = Drawable.createFromPath(thumbFile.getAbsolutePath());
+        mIcons.put(name, d);
+      } else
+        mIcons.put(name, mContext.getDrawable(R.drawable.ic_model_icon));
+    }
   }
 
   void clearItems()
   {
+    mDescriptions.clear();
+    mIcons.clear();
     mItems.clear();
   }
 

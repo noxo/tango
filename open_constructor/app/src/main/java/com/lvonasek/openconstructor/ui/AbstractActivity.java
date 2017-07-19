@@ -86,19 +86,15 @@ public abstract class AbstractActivity extends Activity
     return -1;
   }
 
-  public static ArrayList<String> getObjResources(File file)
+  public static String getMtlResource(String obj)
   {
-    ArrayList<String> output = new ArrayList<>();
-    String mtlLib = null;
     try
     {
-      Scanner sc = new Scanner(new FileInputStream(file.getAbsolutePath()));
+      Scanner sc = new Scanner(new FileInputStream(obj));
       while(sc.hasNext()) {
         String line = sc.nextLine();
         if (line.startsWith("mtllib")) {
-          mtlLib = line.substring(7);
-          output.add(mtlLib);
-          break;
+          return line.substring(7);
         }
       }
       sc.close();
@@ -106,7 +102,16 @@ public abstract class AbstractActivity extends Activity
     {
       e.printStackTrace();
     }
+    return null;
+  }
+
+  public static ArrayList<String> getObjResources(File file)
+  {
+    ArrayList<String> output = new ArrayList<>();
+    String mtlLib = getMtlResource(file.getAbsolutePath());
     if (mtlLib != null) {
+      output.add(mtlLib);
+      output.add(mtlLib + ".png");
       mtlLib = file.getParent() + "/" + mtlLib;
       try
       {

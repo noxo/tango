@@ -3,21 +3,39 @@
               android:layout_width="match_parent"
               android:layout_height="match_parent">
 
+    <View
+        android:layout_width="100sp"
+        android:layout_height="100sp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_margin="5dp"
+        android:background="@drawable/ic_model_icon"
+        android:id="@+id/icon" />
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="35sp"
-        android:layout_margin="5dp"
-        android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
         android:textSize="28sp"
-        android:id="@+id/name" />
+        android:id="@+id/name"
+        android:layout_marginStart="5dp"
+        android:layout_toEndOf="@+id/icon"/>
 
     <View
         android:layout_width="35sp"
         android:layout_height="35sp"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="5sp"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
         android:background="@drawable/ic_context_menu"
         android:id="@+id/context" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:id="@+id/description"
+        android:layout_below="@+id/name"
+        android:layout_alignParentEnd="true"
+        android:layout_alignStart="@+id/name"/>
+
 </RelativeLayout>

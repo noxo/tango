@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.net.Uri;
@@ -29,10 +30,13 @@ import com.lvonasek.openconstructor.R;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Scanner;
 
+import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.egl.EGLContext;
 import javax.microedition.khronos.opengles.GL10;
 
 public class OpenConstructor extends AbstractActivity implements View.OnClickListener,
@@ -42,7 +46,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
   private ActivityManager.MemoryInfo mMemoryInfo;
   private ProgressBar mProgress;
   private GLSurfaceView mGLView;
-  private String mToLoad;
+  private String mToLoad, mOpenedFile;
   private boolean m3drRunning = false;
   private boolean mViewMode = false;
   private boolean mPostprocess = false;
@@ -59,6 +63,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
   private Button mCardboardButton;
   private Button mEditorButton;
   private Button mModeButton;
+  private Button mThumbnailButton;
   private int mRes = 3;
 
   private LinearLayout mLayoutEditor;
@@ -203,6 +208,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
     mInfoRight = (TextView) findViewById(R.id.info_right);
     mInfoLog = (TextView) findViewById(R.id.infolog);
     mBattery = findViewById(R.id.info_battery);
+    mThumbnailButton = (Button) findViewById(R.id.thumbnail_button);
 
     // Editor
     mLayoutEditor = (LinearLayout) findViewById(R.id.layout_editor);
@@ -330,6 +336,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
     if (mViewMode) {
       if (mToLoad != null) {
         final String file = "" + mToLoad;
+        mOpenedFile = mToLoad;
         mToLoad = null;
         new Thread(new Runnable()
         {
@@ -338,6 +345,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
           {
             JNI.load(file);
             JNI.setView(mYawM + mYawR, mPitch, mMoveX, mMoveY, mMoveZ, !mViewMode);
+            captureBitmap(false);
             OpenConstructor.this.runOnUiThread(new Runnable()
             {
               @Override
@@ -433,6 +441,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
       public void onClick(View view)
       {
         mCardboardButton.setVisibility(View.GONE);
+        mThumbnailButton.setVisibility(View.GONE);
         mEditorButton.setVisibility(View.GONE);
         mLayoutEditor.setVisibility(View.VISIBLE);
         setOrientation(false, OpenConstructor.this);
@@ -454,6 +463,33 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
         }
       });
     }
+    mThumbnailButton.setVisibility(View.VISIBLE);
+    mThumbnailButton.setOnClickListener(new View.OnClickListener()
+    {
+      @Override
+      public void onClick(View view)
+      {
+        mProgress.setVisibility(View.VISIBLE);
+        mThumbnailButton.setVisibility(View.GONE);
+        new Thread(new Runnable()
+        {
+          @Override
+          public void run()
+          {
+            captureBitmap(true);
+            runOnUiThread(new Runnable()
+            {
+              @Override
+              public void run()
+              {
+                mProgress.setVisibility(View.GONE);
+                mThumbnailButton.setVisibility(View.VISIBLE);
+              }
+            });
+          }
+        }).start();
+      }
+    });
     float floor = JNI.getFloorLevel(mMoveX, mMoveY, mMoveZ);
     if (floor < -9999)
       floor = 0;
@@ -596,6 +632,87 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
             mRunning = false;
         }
       });
+    }
+  }
+
+  private Bitmap createBitmapFromGLSurface(int x, int y, int w, int h, GL10 gl) {
+    int bitmapBuffer[] = new int[w * h];
+    int bitmapSource[] = new int[w * h];
+    IntBuffer intBuffer = IntBuffer.wrap(bitmapBuffer);
+    intBuffer.position(0);
+
+    try {
+      gl.glReadPixels(x, y, w, h, GL10.GL_RGBA, GL10.GL_UNSIGNED_BYTE, intBuffer);
+      int offset1, offset2;
+      for (int i = 0; i < h; i++) {
+        offset1 = i * w;
+        offset2 = (h - i - 1) * w;
+        for (int j = 0; j < w; j++) {
+          int texturePixel = bitmapBuffer[offset1 + j];
+          int blue = (texturePixel >> 16) & 0xff;
+          int red = (texturePixel << 16) & 0x00ff0000;
+          int pixel = (texturePixel & 0xff00ff00) | red | blue;
+          bitmapSource[offset2 + j] = pixel;
+        }
+      }
+    } catch (Exception e) {
+      return null;
+    }
+    return Bitmap.createBitmap(bitmapSource, w, h, Bitmap.Config.ARGB_8888);
+  }
+
+  private void captureBitmap(boolean forced)
+  {
+    try {
+      while(!JNI.animFinished())
+      {
+        Thread.sleep(20);
+      }
+    } catch (InterruptedException e)
+    {
+      e.printStackTrace();
+    }
+    final boolean[] finished = {false};
+    final File thumbFile = new File(getPath(), AbstractActivity.getMtlResource(mOpenedFile) + ".png");
+    if (forced || !thumbFile.exists())
+    {
+      mGLView.queueEvent(new Runnable()
+      {
+        @Override
+        public void run()
+        {
+          int size = Math.min(mGLView.getWidth(), mGLView.getHeight());
+          int x = (mGLView.getWidth() - size) / 2;
+          int y = (mGLView.getHeight() - size) / 2;
+          EGL10 egl = (EGL10) EGLContext.getEGL();
+          GL10 gl = (GL10) egl.eglGetCurrentContext().getGL();
+          Bitmap bitmap = createBitmapFromGLSurface(x, y, size, size, gl);
+          if (bitmap != null)
+          {
+            try
+            {
+              File temp = new File(getTempPath(), "thumb.png");
+              FileOutputStream out = new FileOutputStream(temp);
+              bitmap = Bitmap.createScaledBitmap(bitmap, 256, 256, false);
+              bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+              temp.renameTo(thumbFile);
+            } catch (Exception e)
+            {
+              e.printStackTrace();
+            }
+          }
+          finished[0] = true;
+        }
+      });
+      try {
+        while(!finished[0])
+        {
+          Thread.sleep(20);
+        }
+      } catch (InterruptedException e)
+      {
+        e.printStackTrace();
+      }
     }
   }
 }

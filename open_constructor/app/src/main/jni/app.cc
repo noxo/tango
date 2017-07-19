@@ -410,6 +410,13 @@ namespace oc {
         best_match = 0;
         scene.SetFullScreen(texturize.GetLatestImage(tango.Dataset()));
     }
+
+    bool App::AnimFinished() {
+        render_mutex_.lock();
+        bool output = (fabs(lastPitch - pitch) < 0.01f) && (fabs(lastYaw - yaw) < 0.01f);
+        render_mutex_.unlock();
+        return output;
+    }
 }
 
 
@@ -521,6 +528,11 @@ JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_main_JNI_rectSelection(JNIEnv*, jobject, jfloat x1, jfloat y1,
                                                                jfloat x2, jfloat y2) {
     app.RectSelection(x1, y1, x2, y2);
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_lvonasek_openconstructor_main_JNI_animFinished(JNIEnv*, jobject) {
+    return (jboolean) app.AnimFinished();
 }
 
 JNIEXPORT jbyteArray JNICALL
