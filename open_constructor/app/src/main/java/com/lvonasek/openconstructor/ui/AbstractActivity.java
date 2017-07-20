@@ -76,6 +76,13 @@ public abstract class AbstractActivity extends Activity
     return pref.getBoolean(key, false);
   }
 
+  public boolean isSharpPhotosOn()
+  {
+    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+    String key = getString(R.string.pref_sharpphotos);
+    return pref.getBoolean(key, false);
+  }
+
   public static int getModelType(String filename) {
     for(int i = 0; i < FILE_EXT.length; i++) {
       int begin = filename.length() - FILE_EXT[i].length();

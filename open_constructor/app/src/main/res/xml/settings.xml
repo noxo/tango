@@ -26,6 +26,13 @@
             android:title="@string/realtime_noise_filter">
         </CheckBoxPreference>
 
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="@string/pref_sharpphotos"
+            android:summary="@string/sharp_photos_only_summary"
+            android:title="@string/sharp_photos_only">
+        </CheckBoxPreference>
+
     </PreferenceCategory>
 
 </PreferenceScreen>

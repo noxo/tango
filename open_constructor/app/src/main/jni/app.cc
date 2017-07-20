@@ -104,15 +104,23 @@ namespace oc {
         }
 
         Tango3DR_Pose t3dr_image_pose = GLCamera::Extract3DRPose(tango.Convert(transform)[COLOR_CAMERA]);
-        glm::quat rot = glm::quat((float) t3dr_image_pose.orientation[0],
-                                  (float) t3dr_image_pose.orientation[1],
-                                  (float) t3dr_image_pose.orientation[2],
-                                  (float) t3dr_image_pose.orientation[3]);
-        float diff = GLCamera::Diff(rot, image_rotation);
-        image_rotation = rot;
-        if (diff > 1) {
-            binder_mutex_.unlock();
-            return;
+        if (sharp) {
+            glm::vec3 pos = glm::vec3((float) t3dr_image_pose.translation[0],
+                                      (float) t3dr_image_pose.translation[1],
+                                      (float) t3dr_image_pose.translation[2]);
+            glm::quat rot = glm::quat((float) t3dr_image_pose.orientation[0],
+                                      (float) t3dr_image_pose.orientation[1],
+                                      (float) t3dr_image_pose.orientation[2],
+                                      (float) t3dr_image_pose.orientation[3]);
+            float value = GLCamera::Diff(pos, image_position, rot, image_rotation);
+            float diff = value > last_diff ? value : 0.95f * last_diff + 0.05f * value;
+            last_diff = diff;
+            image_position = pos;
+            image_rotation = rot;
+            if (diff > 1) {
+                binder_mutex_.unlock();
+                return;
+            }
         }
 
         Tango3DR_PointCloud t3dr_depth;
@@ -146,6 +154,7 @@ namespace oc {
     App::App() :  t3dr_is_running_(false),
                   gyro(true),
                   landscape(false),
+                  last_diff(2),
                   lastMovex(0),
                   lastMovey(0),
                   lastMovez(0),
@@ -153,9 +162,11 @@ namespace oc {
                   lastYaw(0),
                   point_cloud_available_(false) {}
 
-    void App::OnTangoServiceConnected(JNIEnv *env, jobject binder, double res,
-               double dmin, double dmax, int noise, bool land, std::string dataset) {
+    void App::OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin,
+                                      double dmax, int noise, bool land, bool sharpPhotos,
+                                      std::string dataset) {
         landscape = land;
+        sharp = sharpPhotos;
 
         TangoService_setBinder(env, binder);
         tango.SetupConfig(dataset);
@@ -232,7 +243,7 @@ namespace oc {
         render_mutex_.lock();
         scan.Clear();
         tango.Clear();
-        texturize.Clear();
+        texturize.Clear(tango.Dataset());
         for (unsigned int i = 0; i < scene.static_meshes_.size(); i++)
             scene.static_meshes_[i].Destroy();
         scene.static_meshes_.clear();
@@ -307,7 +318,7 @@ namespace oc {
         tango.Clear();
         texturize.ApplyFrames(tango.Dataset());
         texturize.Process(filename);
-        texturize.Clear();
+        texturize.Clear(tango.Dataset());
 
         render_mutex_.unlock();
         binder_mutex_.unlock();
@@ -437,8 +448,8 @@ extern "C" {
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_main_JNI_onTangoServiceConnected(JNIEnv* env, jobject,
           jobject iBinder, jdouble res, jdouble dmin, jdouble dmax, jint noise, jboolean land,
-                                                                              jstring dataset) {
-  app.OnTangoServiceConnected(env, iBinder, res, dmin, dmax, noise, land, jstring2string(env, dataset));
+                                                                   jboolean sharp, jstring d) {
+  app.OnTangoServiceConnected(env, iBinder, res, dmin, dmax, noise, land, sharp, jstring2string(env, d));
 }
 
 JNIEXPORT void JNICALL

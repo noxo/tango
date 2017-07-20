@@ -10,7 +10,7 @@ namespace oc {
 
         static void DecomposeMatrix(const glm::mat4& matrix, glm::vec3* translation,
                                     glm::quat* rotation, glm::vec3* scale);
-        static float Diff(const glm::quat &a, const glm::quat &b);
+        static float Diff(glm::vec3& pa, glm::vec3& pb, glm::quat &a, glm::quat &b);
         static Tango3DR_Pose Extract3DRPose(const glm::mat4 &mat);
 
         glm::mat4 GetTransformation() const;

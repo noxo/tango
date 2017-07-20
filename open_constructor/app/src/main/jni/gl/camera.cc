@@ -15,13 +15,13 @@ namespace oc {
             scale->x = -scale->x;
     }
 
-    float GLCamera::Diff(const glm::quat &a, const glm::quat &b)
+    float GLCamera::Diff(glm::vec3& pa, glm::vec3& pb, glm::quat &a, glm::quat &b)
     {
         if (glm::abs(b.x) < 0.005)
             if (glm::abs(b.y) < 0.005)
                 if (glm::abs(b.z) < 0.005)
                     if (glm::abs(b.w) - 1 < 0.005)
-                        return 0;
+                        return 1;
         glm::vec3 diff = glm::eulerAngles(glm::inverse(a) * b);
         diff = glm::abs(diff);
         if (diff.x > M_PI)
@@ -30,7 +30,9 @@ namespace oc {
             diff.y -= M_PI;
         if (diff.z > M_PI)
             diff.z -= M_PI;
-        return glm::degrees(glm::max(glm::max(diff.x, diff.y), diff.z));
+        float pos = glm::length(pa - pb) * 100.0f;
+        float rot = glm::degrees(glm::max(glm::max(diff.x, diff.y), diff.z));
+        return glm::max(pos, rot);
     }
 
     Tango3DR_Pose GLCamera::Extract3DRPose(const glm::mat4 &mat) {

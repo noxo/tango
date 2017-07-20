@@ -11,7 +11,7 @@ namespace oc {
         TangoTexturize();
         void Add(Tango3DR_ImageBuffer t3dr_image, std::vector<glm::mat4> matrix, std::string dataset);
         void ApplyFrames(std::string dataset);
-        void Clear();
+        void Clear(std::string dataset);
         std::string GetEvent() { return event; }
         Image* GetLatestImage(std::string dataset);
         std::vector<glm::mat4> GetLatestPose(std::string dataset);

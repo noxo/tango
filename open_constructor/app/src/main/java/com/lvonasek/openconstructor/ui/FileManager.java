@@ -74,7 +74,8 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
     for (Button b : buttons)
       b.setVisibility(View.GONE);
     mProgress.setVisibility(View.GONE);
-    if (Service.getRunning(this) > Service.SERVICE_NOT_RUNNING) {
+    int service = Service.getRunning(this);
+    if (service > Service.SERVICE_NOT_RUNNING) {
       for (Button b : buttons)
         if (b.getId() == R.id.service_cancel)
           b.setVisibility(View.VISIBLE);
@@ -118,7 +119,7 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
       boolean paused = Math.abs(Service.getRunning(this)) == Service.SERVICE_SAVE;
       int text = paused ? R.string.paused : R.string.finished;
       mText.setText(getString(text) + "\n" + getString(R.string.turn_off));
-      int service = Math.abs(Service.getRunning(this));
+      service = Math.abs(Service.getRunning(this));
       if (service == Service.SERVICE_SKETCHFAB)
         findViewById(R.id.service_continue).setVisibility(View.GONE);
       else if (service == Service.SERVICE_POSTPROCESS)
@@ -189,6 +190,7 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
   @Override
   public void onClick(View v)
   {
+    int service = Service.getRunning(this);
     Intent intent = new Intent(FileManager.this, OpenConstructor.class);
     switch (v.getId()) {
       case R.id.add_button:
@@ -212,10 +214,9 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         startActivity(Service.getIntent(this));
         break;
       case R.id.service_finish:
-        int service = Math.abs(Service.getRunning(this));
-        if (service == Service.SERVICE_SKETCHFAB)
+        if (Math.abs(service) == Service.SERVICE_SKETCHFAB)
           finishOperation();
-        else if (service == Service.SERVICE_SAVE)
+        else if (Math.abs(service) == Service.SERVICE_SAVE)
         {
           showProgress();
           intent.putExtra(AbstractActivity.RESOLUTION_KEY, Integer.MAX_VALUE);
@@ -223,8 +224,31 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         }
         break;
       case R.id.service_cancel:
-        Service.reset(this);
-        System.exit(0);
+        if ((service > Service.SERVICE_NOT_RUNNING) && (service != Service.SERVICE_SKETCHFAB)) {
+          AlertDialog.Builder builder = new AlertDialog.Builder(this);
+          builder.setTitle(getString(R.string.warning));
+          builder.setMessage(getString(R.string.warning_reset));
+          builder.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener()
+          {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i)
+            {
+              Service.reset(FileManager.this);
+              System.exit(0);
+            }
+          });
+          builder.setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener()
+          {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i)
+            {
+            }
+          });
+          builder.show();
+        } else {
+          Service.reset(this);
+          System.exit(0);
+        }
         break;
     }
   }

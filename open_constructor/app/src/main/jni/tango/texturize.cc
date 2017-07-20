@@ -75,8 +75,11 @@ namespace oc {
         delete[] image.data;
     }
 
-    void TangoTexturize::Clear() {
+    void TangoTexturize::Clear(std::string dataset) {
         poses = 0;
+        FILE* file = fopen(GetFileName(-1, dataset, ".txt").c_str(), "w");
+        fprintf(file, "%d %d %d\n", poses, width, height);
+        fclose(file);
     }
 
     Image* TangoTexturize::GetLatestImage(std::string dataset) {

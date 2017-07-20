@@ -18,7 +18,7 @@ namespace oc {
     public:
         App();
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin, double dmax,
-                                     int noise, bool land, std::string dataset);
+                                     int noise, bool land, bool sharpPhotos, std::string dataset);
         void onPointCloudAvailable(TangoPointCloud *pc);
         void onFrameAvailable(TangoCameraId id, const TangoImageBuffer *im);
         void onTangoEvent(const TangoEvent *event);
@@ -48,10 +48,12 @@ namespace oc {
 
     private:
         float best_match;
+        float last_diff;
         bool t3dr_is_running_;
         bool point_cloud_available_;
         TangoPointCloud* front_cloud_;
         glm::mat4 point_cloud_matrix_;
+        glm::vec3 image_position;
         glm::quat image_rotation;
         std::mutex binder_mutex_;
         std::mutex render_mutex_;
@@ -67,6 +69,7 @@ namespace oc {
 
         bool gyro;
         bool landscape;
+        bool sharp;
         float movex, lastMovex;
         float movey, lastMovey;
         float movez, lastMovez;
