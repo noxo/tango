@@ -14,7 +14,6 @@ import java.util.List;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -24,6 +23,7 @@ import android.widget.Button;
 
 import android.widget.EditText;
 
+import com.lvonasek.openconstructor.main.Exporter;
 import com.lvonasek.openconstructor.ui.AbstractActivity;
 import com.lvonasek.openconstructor.R;
 import com.lvonasek.openconstructor.ui.Service;
@@ -117,7 +117,7 @@ public class Uploader extends AbstractActivity implements OnClickListener
       {
         try
         {
-          zip(filesToZip, zipOutput);
+          Exporter.zip(filesToZip, zipOutput);
           runOnUiThread(new Runnable()
           {
             public void run()

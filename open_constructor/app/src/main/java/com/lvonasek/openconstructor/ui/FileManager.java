@@ -18,6 +18,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.lvonasek.openconstructor.R;
+import com.lvonasek.openconstructor.main.Exporter;
 import com.lvonasek.openconstructor.main.OpenConstructor;
 import com.lvonasek.openconstructor.sketchfab.Home;
 

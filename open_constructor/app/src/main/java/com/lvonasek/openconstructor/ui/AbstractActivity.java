@@ -26,7 +26,6 @@ import java.util.zip.ZipOutputStream;
 
 public abstract class AbstractActivity extends Activity
 {
-  protected static final int BUFFER_SIZE = 65536;
   protected static final String CARDBOARD_APP = "com.lvonasek.daydreamOBJ";
   protected static final String FILE_KEY = "FILE2OPEN";
   protected static final String MODEL_DIRECTORY = "/Models/";
@@ -187,26 +186,5 @@ public abstract class AbstractActivity extends Activity
     if (dir.mkdir())
       Log.d(TAG, "Directory " + dir + " created");
     return dir;
-  }
-
-  protected void zip(String[] files, String zip) throws Exception {
-    try (ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip))))
-    {
-      byte data[] = new byte[BUFFER_SIZE];
-      for (String file : files)
-      {
-        FileInputStream fi = new FileInputStream(file);
-        try (BufferedInputStream origin = new BufferedInputStream(fi, BUFFER_SIZE))
-        {
-          ZipEntry entry = new ZipEntry(file.substring(file.lastIndexOf("/") + 1));
-          out.putNextEntry(entry);
-          int count;
-          while ((count = origin.read(data, 0, BUFFER_SIZE)) != -1)
-          {
-            out.write(data, 0, count);
-          }
-        }
-      }
-    }
   }
 }
