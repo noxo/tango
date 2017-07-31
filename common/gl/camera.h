@@ -1,7 +1,6 @@
 #ifndef GL_CAMERA_H
 #define GL_CAMERA_H
 
-#include <tango_3d_reconstruction_api.h>
 #include "gl/opengl.h"
 
 namespace oc {
@@ -11,7 +10,6 @@ namespace oc {
         static void DecomposeMatrix(const glm::mat4& matrix, glm::vec3* translation,
                                     glm::quat* rotation, glm::vec3* scale);
         static float Diff(glm::vec3& pa, glm::vec3& pb, glm::quat &a, glm::quat &b);
-        static Tango3DR_Pose Extract3DRPose(const glm::mat4 &mat);
 
         glm::mat4 GetTransformation() const;
         glm::mat4 GetView() const;

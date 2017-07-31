@@ -10,22 +10,23 @@ LOCAL_CFLAGS           := -std=c++11
 
 LOCAL_C_INCLUDES := $(PROJECT_ROOT)/third_party/glm/ \
                     $(PROJECT_ROOT)/third_party/libjpeg-turbo/include/ \
-                    $(PROJECT_ROOT)/third_party/libpng/include/
+                    $(PROJECT_ROOT)/third_party/libpng/include/ \
+                    $(PROJECT_ROOT)/common/
 
-LOCAL_SRC_FILES := app.cc \
-                   scene.cc \
-                   data/file3d.cc \
-                   data/image.cc \
-                   data/mesh.cc \
-                   editor/effector.cc \
-                   editor/rasterizer.cc \
-                   editor/selector.cc \
-                   gl/camera.cc \
-                   gl/glsl.cc \
-                   gl/renderer.cc \
-                   tango/scan.cc \
-                   tango/service.cc \
-                   tango/texturize.cc
+LOCAL_SRC_FILES := ../../../../../common/data/file3d.cc \
+                   ../../../../../common/data/image.cc \
+                   ../../../../../common/data/mesh.cc \
+                   ../../../../../common/editor/effector.cc \
+                   ../../../../../common/editor/rasterizer.cc \
+                   ../../../../../common/editor/selector.cc \
+                   ../../../../../common/gl/camera.cc \
+                   ../../../../../common/gl/glsl.cc \
+                   ../../../../../common/gl/renderer.cc \
+                   ../../../../../common/tango/scan.cc \
+                   ../../../../../common/tango/service.cc \
+                   ../../../../../common/tango/texturize.cc \
+                   app.cc \
+                   scene.cc
 
 LOCAL_LDLIBS    := -llog -lGLESv2 -L$(SYSROOT)/usr/lib -lz -landroid
 include $(BUILD_SHARED_LIBRARY)

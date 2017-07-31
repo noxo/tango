@@ -47,12 +47,6 @@
         <data android:pathPattern=".*\\..*\\..*\\..*\\.obj"/>
         <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.obj"/>
         <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.obj"/>
-        <data android:pathPattern=".*\\.ply"/>
-        <data android:pathPattern=".*\\..*\\.ply"/>
-        <data android:pathPattern=".*\\..*\\..*\\.ply"/>
-        <data android:pathPattern=".*\\..*\\..*\\..*\\.ply"/>
-        <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.ply"/>
-        <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.ply"/>
       </intent-filter>
     </activity>
   </application>

@@ -61,7 +61,6 @@ class Renderer {
   int reticle_modelview_projection_param_;
 
   const gvr::Sizei reticle_render_size_;
-  bool textured_;
 
   gvr::Mat4f head_view_;
   gvr::Mat4f camera_;

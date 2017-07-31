@@ -168,7 +168,6 @@ Renderer::Renderer(gvr_context* gvr_context, std::string filename)
   }
 
   oc::File3d io(filename, false);
-  textured_ = io.GetType() == oc::OBJ;
   io.ReadModel(20000, static_meshes_);
 }
 
@@ -178,9 +177,8 @@ Renderer::~Renderer() {
 void Renderer::InitializeGl() {
   gvr_api_->InitializeGl();
 
-  int index = textured_ ? 0 : 1;
-  const int vertex_shader = LoadGLShader(GL_VERTEX_SHADER, &kTextureVertexShaders[index]);
-  const int fragment_shader = LoadGLShader(GL_FRAGMENT_SHADER, &kTextureFragmentShaders[index]);
+  const int vertex_shader = LoadGLShader(GL_VERTEX_SHADER, &kTextureVertexShaders[0]);
+  const int fragment_shader = LoadGLShader(GL_FRAGMENT_SHADER, &kTextureFragmentShaders[0]);
   const int pass_through_shader = LoadGLShader(GL_FRAGMENT_SHADER, &kPassthroughFragmentShaders[0]);
   const int reticle_vertex_shader = LoadGLShader(GL_VERTEX_SHADER, &kReticleVertexShaders[0]);
   const int reticle_fragment_shader = LoadGLShader(GL_FRAGMENT_SHADER, &kReticleFragmentShaders[0]);
@@ -192,10 +190,7 @@ void Renderer::InitializeGl() {
   glUseProgram(model_program_);
 
   model_position_param_ = glGetAttribLocation(model_program_, "a_Position");
-  if (textured_)
-    model_uv_param_ = glGetAttribLocation(model_program_, "a_UV");
-  else
-    model_uv_param_ = glGetAttribLocation(model_program_, "a_Color");
+  model_uv_param_ = glGetAttribLocation(model_program_, "a_UV");
   model_modelview_projection_param_ = glGetUniformLocation(model_program_, "u_MVP");
   model_translatex_param_ = glGetUniformLocation(model_program_, "u_X");
   model_translatey_param_ = glGetUniformLocation(model_program_, "u_Y");
@@ -426,10 +421,10 @@ void Renderer::DrawModel(ViewType view) {
 
   glEnableVertexAttribArray(model_position_param_);
   for(oc::Mesh& mesh : static_meshes_) {
-    if (mesh.image && (mesh.texture == -1)) {
+    if (mesh.image && (mesh.image->GetTexture() == -1)) {
       GLuint textureID;
       glGenTextures(1, &textureID);
-      mesh.texture = textureID;
+      mesh.image->SetTexture(textureID);
       glBindTexture(GL_TEXTURE_2D, textureID);
       glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
       glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -439,17 +434,9 @@ void Renderer::DrawModel(ViewType view) {
                              0, GL_RGB, GL_UNSIGNED_BYTE, mesh.image->GetData());
     }
     glVertexAttribPointer(model_position_param_, 3, GL_FLOAT, false, 0, mesh.vertices.data());
-    if (textured_)
-    {
-      glBindTexture(GL_TEXTURE_2D, (unsigned int)mesh.texture);
-      glVertexAttribPointer(model_uv_param_, 2, GL_FLOAT, false, 0, mesh.uv.data());
-      glDrawArrays(GL_TRIANGLES, 0, mesh.vertices.size());
-    }
-    else
-    {
-      glVertexAttribPointer(model_uv_param_, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, mesh.colors.data());
-      glDrawArrays(GL_TRIANGLES, 0, mesh.vertices.size());
-    }
+    glBindTexture(GL_TEXTURE_2D, (unsigned int)mesh.image->GetTexture());
+    glVertexAttribPointer(model_uv_param_, 2, GL_FLOAT, false, 0, mesh.uv.data());
+    glDrawArrays(GL_TRIANGLES, 0, mesh.vertices.size());
   }
   glDisableVertexAttribArray(model_position_param_);
 }

@@ -35,22 +35,6 @@ namespace oc {
         return glm::max(pos, rot);
     }
 
-    Tango3DR_Pose GLCamera::Extract3DRPose(const glm::mat4 &mat) {
-        Tango3DR_Pose pose;
-        glm::vec3 translation;
-        glm::quat rotation;
-        glm::vec3 scale;
-        DecomposeMatrix(mat, &translation, &rotation, &scale);
-        pose.translation[0] = translation[0];
-        pose.translation[1] = translation[1];
-        pose.translation[2] = translation[2];
-        pose.orientation[0] = rotation[0];
-        pose.orientation[1] = rotation[1];
-        pose.orientation[2] = rotation[2];
-        pose.orientation[3] = rotation[3];
-        return pose;
-    }
-
     glm::mat4 GLCamera::GetTransformation() const {
         glm::mat4 transform = glm::scale(glm::mat4_cast(rotation), scale);
         transform[3][0] = position.x;

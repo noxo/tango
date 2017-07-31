@@ -11,14 +11,19 @@ LOCAL_STATIC_LIBRARIES := jpeg-turbo png
 LOCAL_C_INCLUDES += $(PROJECT_ROOT)/third_party/glm/ \
                     $(PROJECT_ROOT)/third_party/libjpeg-turbo/include/ \
                     $(PROJECT_ROOT)/third_party/libpng/include/ \
-                    $(LOCAL_PATH)/../../../../../open_constructor/app/src/main/jni/
+                    $(PROJECT_ROOT)/common/
 
-LOCAL_CFLAGS    += -DNOTANGO
-LOCAL_SRC_FILES := renderer_jni.cc \
-                   renderer.cc \
-                   ../../../../../open_constructor/app/src/main/jni/data/file3d.cc \
-                   ../../../../../open_constructor/app/src/main/jni/data/image.cc \
-                   ../../../../../open_constructor/app/src/main/jni/data/mesh.cc
+LOCAL_SRC_FILES := ../../../../../common/data/file3d.cc \
+                   ../../../../../common/data/image.cc \
+                   ../../../../../common/data/mesh.cc \
+                   ../../../../../common/editor/effector.cc \
+                   ../../../../../common/editor/rasterizer.cc \
+                   ../../../../../common/editor/selector.cc \
+                   ../../../../../common/gl/camera.cc \
+                   ../../../../../common/gl/glsl.cc \
+                   ../../../../../common/gl/renderer.cc \
+                   renderer_jni.cc \
+                   renderer.cc
 
 LOCAL_LDLIBS    := -llog -lGLESv2 -L$(SYSROOT)/usr/lib -lz -landroid
 include $(BUILD_SHARED_LIBRARY)

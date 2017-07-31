@@ -66,7 +66,7 @@ namespace oc {
 
             image.timestamp = timestamp;
             Image::JPG2YUV(GetFileName(i, dataset, ".jpg"), image.data, width, height);
-            Tango3DR_Pose t3dr_image_pose = GLCamera::Extract3DRPose(output[COLOR_CAMERA]);
+            Tango3DR_Pose t3dr_image_pose = TangoService::Extract3DRPose(output[COLOR_CAMERA]);
             Tango3DR_Status ret;
             ret = Tango3DR_updateTexture(context, &image, &t3dr_image_pose);
             if (ret != TANGO_3DR_SUCCESS)

@@ -22,6 +22,9 @@ namespace oc {
         void Setup3DR(double res, double dmin, double dmax, int noise);
         void SetupTransform(std::vector<glm::mat4> area, std::vector<glm::mat4> zero);
 
+        static void DecomposeMatrix(const glm::mat4& matrix, glm::vec3* translation, glm::quat* rotation, glm::vec3* scale);
+        static Tango3DR_Pose Extract3DRPose(const glm::mat4 &mat);
+
         std::vector<glm::mat4> Convert(std::vector<TangoSupport_MatrixTransformData> m);
         std::string Dataset() { return dataset; }
         Tango3DR_CameraCalibration* Camera() { return &camera; }

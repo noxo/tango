@@ -77,6 +77,35 @@ namespace oc {
         TangoService_disconnect();
     }
 
+    void TangoService::DecomposeMatrix(const glm::mat4& matrix, glm::vec3* translation,
+                                       glm::quat* rotation, glm::vec3* scale) {
+        translation->x = matrix[3][0];
+        translation->y = matrix[3][1];
+        translation->z = matrix[3][2];
+        *rotation = glm::quat_cast(matrix);
+        scale->x = glm::length(glm::vec3(matrix[0][0], matrix[1][0], matrix[2][0]));
+        scale->y = glm::length(glm::vec3(matrix[0][1], matrix[1][1], matrix[2][1]));
+        scale->z = glm::length(glm::vec3(matrix[0][2], matrix[1][2], matrix[2][2]));
+        if (glm::determinant(matrix) < 0.0)
+            scale->x = -scale->x;
+    }
+
+    Tango3DR_Pose TangoService::Extract3DRPose(const glm::mat4 &mat) {
+        Tango3DR_Pose pose;
+        glm::vec3 translation;
+        glm::quat rotation;
+        glm::vec3 scale;
+        DecomposeMatrix(mat, &translation, &rotation, &scale);
+        pose.translation[0] = translation[0];
+        pose.translation[1] = translation[1];
+        pose.translation[2] = translation[2];
+        pose.orientation[0] = rotation[0];
+        pose.orientation[1] = rotation[1];
+        pose.orientation[2] = rotation[2];
+        pose.orientation[3] = rotation[3];
+        return pose;
+    }
+
     void TangoService::Setup3DR(double res, double dmin, double dmax, int noise) {
         Tango3DR_Config t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_RECONSTRUCTION);
         Tango3DR_Status t3dr_err;

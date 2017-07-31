@@ -103,7 +103,7 @@ namespace oc {
             return;
         }
 
-        Tango3DR_Pose t3dr_image_pose = GLCamera::Extract3DRPose(tango.Convert(transform)[COLOR_CAMERA]);
+        Tango3DR_Pose t3dr_image_pose = TangoService::Extract3DRPose(tango.Convert(transform)[COLOR_CAMERA]);
         if (sharp) {
             glm::vec3 pos = glm::vec3((float) t3dr_image_pose.translation[0],
                                       (float) t3dr_image_pose.translation[1],
@@ -129,7 +129,7 @@ namespace oc {
         t3dr_depth.num_points = front_cloud_->num_points;
         t3dr_depth.points = front_cloud_->points;
 
-        Tango3DR_Pose t3dr_depth_pose = GLCamera::Extract3DRPose(point_cloud_matrix_);
+        Tango3DR_Pose t3dr_depth_pose = TangoService::Extract3DRPose(point_cloud_matrix_);
         Tango3DR_GridIndexArray t3dr_updated;
         Tango3DR_Status ret;
         ret = Tango3DR_updateFromPointCloud(tango.Context(), &t3dr_depth, &t3dr_depth_pose,
