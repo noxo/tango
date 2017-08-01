@@ -18,14 +18,7 @@ PROJECT_ROOT:= $(LOCAL_PATH)/..
 include $(CLEAR_VARS)
 LOCAL_MODULE := tango_support
 LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/include
-
-ifeq ($(TARGET_ARCH), arm64)
-	LOCAL_SRC_FILES := lib/arm64-v8a/libtango_support.so
-endif
-
-ifeq ($(TARGET_ARCH), arm)
-	LOCAL_SRC_FILES := lib/armeabi-v7a/libtango_support.so
-endif
+LOCAL_SRC_FILES := lib/arm64-v8a/libtango_support.so
 
 include $(PREBUILT_SHARED_LIBRARY)
 

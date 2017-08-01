@@ -8,6 +8,8 @@ import android.os.Vibrator;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Toast;
+
 import com.google.vr.ndk.base.AndroidCompat;
 import com.google.vr.ndk.base.GvrLayout;
 
@@ -28,6 +30,7 @@ public class MainActivity extends Activity {
 
   private GvrLayout gvrLayout;
   private GLSurfaceView surfaceView;
+  private boolean initialized;
 
   // Note that pause and resume signals to the native renderer are performed on the GL thread,
   // ensuring thread-safety.
@@ -66,14 +69,24 @@ public class MainActivity extends Activity {
             });
 
     // Initialize GvrLayout and the native renderer.
-    String filename = getIntent().getData().toString().substring(7);
+    initialized = false;
+    String filename = null;
     try
     {
-      filename = URLDecoder.decode(filename, "UTF-8");
-    } catch (UnsupportedEncodingException e)
-    {
-      e.printStackTrace();
+      filename = getIntent().getData().toString().substring(7);
+      try
+      {
+        filename = URLDecoder.decode(filename, "UTF-8");
+      } catch (UnsupportedEncodingException e)
+      {
+        e.printStackTrace();
+      }
+    } catch(Exception e) {
+      Toast.makeText(this, R.string.no_file, Toast.LENGTH_LONG).show();
+      finish();
+      return;
     }
+    initialized = true;
     gvrLayout = new GvrLayout(this);
     nativeTreasureHuntRenderer =
         nativeCreateRenderer(getClass().getClassLoader(), this.getApplicationContext(),
@@ -134,26 +147,32 @@ public class MainActivity extends Activity {
 
   @Override
   protected void onPause() {
-    surfaceView.queueEvent(pauseNativeRunnable);
-    surfaceView.onPause();
-    gvrLayout.onPause();
+    if (initialized) {
+      surfaceView.queueEvent(pauseNativeRunnable);
+      surfaceView.onPause();
+      gvrLayout.onPause();
+    }
     super.onPause();
   }
 
   @Override
   protected void onResume() {
     super.onResume();
-    gvrLayout.onResume();
-    surfaceView.onResume();
-    surfaceView.queueEvent(resumeNativeRunnable);
+    if (initialized) {
+      gvrLayout.onResume();
+      surfaceView.onResume();
+      surfaceView.queueEvent(resumeNativeRunnable);
+    }
   }
 
   @Override
   protected void onDestroy() {
     super.onDestroy();
-    gvrLayout.shutdown();
-    nativeDestroyRenderer(nativeTreasureHuntRenderer);
-    nativeTreasureHuntRenderer = 0;
+    if (initialized) {
+      gvrLayout.shutdown();
+      nativeDestroyRenderer(nativeTreasureHuntRenderer);
+      nativeTreasureHuntRenderer = 0;
+    }
   }
 
   @Override

@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">VR Obj Viewer</string>
+    <string name="no_file">Click on OBJ file from file manager</string>
 </resources>
