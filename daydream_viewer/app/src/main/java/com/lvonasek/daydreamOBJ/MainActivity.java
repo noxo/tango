@@ -1,8 +1,11 @@
 package com.lvonasek.daydreamOBJ;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.opengl.GLSurfaceView;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.view.KeyEvent;
@@ -31,6 +34,10 @@ public class MainActivity extends Activity {
   private GvrLayout gvrLayout;
   private GLSurfaceView surfaceView;
   private boolean initialized;
+  private boolean permissions;
+  private String filename = null;
+
+  private static final int PERMISSIONS_CODE = 1985;
 
   // Note that pause and resume signals to the native renderer are performed on the GL thread,
   // ensuring thread-safety.
@@ -70,7 +77,7 @@ public class MainActivity extends Activity {
 
     // Initialize GvrLayout and the native renderer.
     initialized = false;
-    String filename = null;
+    permissions = false;
     try
     {
       filename = getIntent().getData().toString().substring(7);
@@ -88,9 +95,6 @@ public class MainActivity extends Activity {
     }
     initialized = true;
     gvrLayout = new GvrLayout(this);
-    nativeTreasureHuntRenderer =
-        nativeCreateRenderer(getClass().getClassLoader(), this.getApplicationContext(),
-            gvrLayout.getGvrApi().getNativeGvrContext(), filename);
 
     // Add the GLSurfaceView to the GvrLayout.
     surfaceView = new GLSurfaceView(this);
@@ -148,7 +152,8 @@ public class MainActivity extends Activity {
   @Override
   protected void onPause() {
     if (initialized) {
-      surfaceView.queueEvent(pauseNativeRunnable);
+      if (permissions)
+        surfaceView.queueEvent(pauseNativeRunnable);
       surfaceView.onPause();
       gvrLayout.onPause();
     }
@@ -161,7 +166,10 @@ public class MainActivity extends Activity {
     if (initialized) {
       gvrLayout.onResume();
       surfaceView.onResume();
-      surfaceView.queueEvent(resumeNativeRunnable);
+      if (permissions)
+        surfaceView.queueEvent(resumeNativeRunnable);
+      else
+        setupPermissions();
     }
   }
 
@@ -204,6 +212,46 @@ public class MainActivity extends Activity {
                 | View.SYSTEM_UI_FLAG_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
   }
+
+
+  protected void setupPermissions() {
+    String[] permissions = {
+            Manifest.permission.VIBRATE,
+            Manifest.permission.READ_EXTERNAL_STORAGE
+    };
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      boolean ok = true;
+      for (String s : permissions)
+        if (checkSelfPermission(s) != PackageManager.PERMISSION_GRANTED)
+          ok = false;
+
+      if (!ok)
+        requestPermissions(permissions, PERMISSIONS_CODE);
+      else
+        onRequestPermissionsResult(PERMISSIONS_CODE, null, new int[]{PackageManager.PERMISSION_GRANTED});
+    } else
+      onRequestPermissionsResult(PERMISSIONS_CODE, null, new int[]{PackageManager.PERMISSION_GRANTED});
+  }
+
+  @Override
+  public synchronized void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults)
+  {
+    switch (requestCode)
+    {
+      case PERMISSIONS_CODE:
+      {
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+          nativeTreasureHuntRenderer = nativeCreateRenderer(getClass().getClassLoader(),
+                  getApplicationContext(), gvrLayout.getGvrApi().getNativeGvrContext(), filename);
+          surfaceView.queueEvent(resumeNativeRunnable);
+          this.permissions = true;
+        } else
+          finish();
+        break;
+      }
+    }
+  }
+
 
   private native long nativeCreateRenderer(ClassLoader appClassLoader, Context context, long gvr, String filename);
   private native void nativeDestroyRenderer(long nativeTreasureHuntRenderer);
