@@ -25,7 +25,8 @@
                   android:layout_height="wrap_content"
                   android:layout_marginLeft="5dp"
                   android:layout_marginRight="5dp"
-                  android:text="@string/model_name" />
+                  android:text="@string/model_name"
+                  android:textColor="@android:color/black" />
 
         <EditText
             android:id="@+id/editText_filename"
@@ -35,7 +36,8 @@
             android:layout_marginRight="5dp"
             android:maxLength="48"
             android:imeOptions="flagNoExtractUi"
-            android:ems="10" />
+            android:ems="10"
+            android:textColor="@android:color/black" />
 
         <TextView
             android:id="@+id/textView1"
@@ -43,7 +45,8 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="5dp"
             android:layout_marginRight="5dp"
-            android:text="@string/description" />
+            android:text="@string/description"
+            android:textColor="@android:color/black" />
 
         <EditText
             android:id="@+id/editText_description"
@@ -59,7 +62,8 @@
             android:maxLength="1024"
             android:scrollbars="vertical"
             android:imeOptions="flagNoExtractUi"
-            android:inputType="textMultiLine" >
+            android:inputType="textMultiLine"
+            android:textColor="@android:color/black" >
 
             <requestFocus />
         </EditText>
@@ -70,7 +74,8 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="5dp"
             android:layout_marginRight="5dp"
-            android:text="@string/tags" />
+            android:text="@string/tags"
+            android:textColor="@android:color/black" />
 
         <EditText
             android:id="@+id/editText_tags"
@@ -79,7 +84,8 @@
             android:layout_marginLeft="5dp"
             android:layout_marginRight="5dp"
             android:imeOptions="flagNoExtractUi"
-            android:ems="10" />
+            android:ems="10"
+            android:textColor="@android:color/black" />
 
         <Button
             android:id="@+id/button_ok"
@@ -87,7 +93,8 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="5dp"
             android:layout_marginRight="5dp"
-            android:text="@string/upload" />
+            android:text="@string/upload"
+            android:textColor="@android:color/white" />
 
     </LinearLayout>
 </ScrollView>
