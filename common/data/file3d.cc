@@ -104,16 +104,26 @@ namespace oc {
         while (true) {
             if (!fgets(buffer, 1024, file))
                 break;
-            if (buffer[0] == 'u') {
+            std::string sbuf = buffer;
+            while(!sbuf.empty() && isspace(sbuf[0])) {
+                sbuf = sbuf.substr(1);
+            }
+            if (sbuf[0] == 'u') {
                 char key[1024];
-                sscanf(buffer, "usemtl %s", key);
+                sscanf(sbuf.c_str(), "usemtl %s", key);
                 if (lastKey.compare(key) != 0) {
                     meshIndex = output.size();
                     output.push_back(Mesh());
                     if (images.find(key) == images.end()) {
                         std::string imagefile = keyToFile[std::string(key)];
                         if (imagefile.empty())
+                        {
+                            glm::vec3 color = keyToColor[std::string(key)];
                             images[key] = new Image(1, 1);
+                            images[key]->GetData()[0] = (unsigned char) (255 * color.r);
+                            images[key]->GetData()[1] = (unsigned char) (255 * color.g);
+                            images[key]->GetData()[2] = (unsigned char) (255 * color.b);
+                        }
                         else
                           images[key] = new Image(imagefile);
                         output[meshIndex].imageOwner = true;
@@ -122,27 +132,27 @@ namespace oc {
                     output[meshIndex].image = images[key];
                     lastKey = key;
                 }
-            } else if ((buffer[0] == 'v') && (buffer[1] == ' ')) {
-                sscanf(buffer, "v %f %f %f", &v.x, &v.y, &v.z);
+            } else if ((sbuf[0] == 'v') && (sbuf[1] == ' ')) {
+                sscanf(sbuf.c_str(), "v %f %f %f", &v.x, &v.y, &v.z);
                 vertices.push_back(v);
-            } else if ((buffer[0] == 'v') && (buffer[1] == 't')) {
-                sscanf(buffer, "vt %f %f", &t.x, &t.y);
+            } else if ((sbuf[0] == 'v') && (sbuf[1] == 't')) {
+                sscanf(sbuf.c_str(), "vt %f %f", &t.x, &t.y);
                 uvs.push_back(t);
                 hasCoords = true;
-            } else if ((buffer[0] == 'v') && (buffer[1] == 'n')) {
-                sscanf(buffer, "vn %f %f %f", &n.x, &n.y, &n.z);
+            } else if ((sbuf[0] == 'v') && (sbuf[1] == 'n')) {
+                sscanf(sbuf.c_str(), "vn %f %f %f", &n.x, &n.y, &n.z);
                 normals.push_back(n);
                 hasNormals = true;
-            } else if ((buffer[0] == 'f') && (buffer[1] == ' ')) {
+            } else if ((sbuf[0] == 'f') && (sbuf[1] == ' ')) {
                 va = 0;
                 vb = 0;
                 vc = 0;
                 if (!hasCoords && !hasNormals)
-                    sscanf(buffer, "f %d %d %d", &va, &vb, &vc);
+                    sscanf(sbuf.c_str(), "f %d %d %d", &va, &vb, &vc);
                 else if (hasCoords && !hasNormals)
-                    sscanf(buffer, "f %d/%d %d/%d %d/%d", &va, &vta, &vb, &vtb, &vc, &vtc);
+                    sscanf(sbuf.c_str(), "f %d/%d %d/%d %d/%d", &va, &vta, &vb, &vtb, &vc, &vtc);
                 else if (hasCoords && hasNormals)
-                    sscanf(buffer, "f %d/%d/%d %d/%d/%d %d/%d/%d",
+                    sscanf(sbuf.c_str(), "f %d/%d/%d %d/%d/%d %d/%d/%d",
                            &va, &vta, &vna, &vb, &vtb, &vnb, &vc, &vtc, &vnc);
                 else if (!hasCoords && hasNormals)
                     sscanf(buffer, "f %d//%d %d//%d %d//%d", &va, &vna, &vb, &vnb, &vc, &vnc);
@@ -251,8 +261,12 @@ namespace oc {
             while (true) {
                 if (!fgets(buffer, 1024, file))
                     break;
-                if (StartsWith(buffer, "mtllib")) {
-                    sscanf(buffer, "mtllib %s", mtlFile);
+                std::string sbuf = buffer;
+                while(!sbuf.empty() && isspace(sbuf[0])) {
+                    sbuf = sbuf.substr(1);
+                }
+                if (StartsWith(sbuf, "mtllib")) {
+                    sscanf(sbuf.c_str(), "mtllib %s", mtlFile);
                     break;
                 }
             }
@@ -268,11 +282,20 @@ namespace oc {
             while (true) {
                 if (!fgets(buffer, 1024, mtl))
                     break;
-                if (StartsWith(buffer, "newmtl")) {
-                    sscanf(buffer, "newmtl %s", key);
+                std::string sbuf = buffer;
+                while(!sbuf.empty() && isspace(sbuf[0])) {
+                    sbuf = sbuf.substr(1);
                 }
-                if (StartsWith(buffer, "map_Kd")) {
-                    sscanf(buffer, "map_Kd %s", pngFile);
+                if (StartsWith(sbuf, "newmtl")) {
+                    sscanf(sbuf.c_str(), "newmtl %s", key);
+                }
+                if (StartsWith(sbuf, "Kd")) {
+                    glm::vec3 color;
+                    sscanf(sbuf.c_str(), "Kd %f %f %f", &color.r, &color.g, &color.b);
+                    keyToColor[std::string(key)] = color;
+                }
+                if (StartsWith(sbuf, "map_Kd")) {
+                    sscanf(sbuf.c_str(), "map_Kd %s", pngFile);
                     keyToFile[std::string(key)] = data + pngFile;
                 }
             }

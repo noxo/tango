@@ -35,6 +35,7 @@ private:
     FILE* file;
     Mesh data;
     std::map<std::string, int> fileToIndex;
+    std::map<std::string, glm::vec3> keyToColor;
     std::map<std::string, std::string> keyToFile;
 };
 }
