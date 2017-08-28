@@ -1,6 +1,7 @@
 package com.lvonasek.openconstructor.ui;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -18,7 +19,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.lvonasek.openconstructor.R;
-import com.lvonasek.openconstructor.main.Exporter;
 import com.lvonasek.openconstructor.main.OpenConstructor;
 import com.lvonasek.openconstructor.sketchfab.Home;
 
@@ -36,6 +36,9 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
   private TextView mText;
   private boolean first = true;
   private static final int PERMISSIONS_CODE = 1987;
+
+  private static final String EXTRA_KEY_PERMISSIONTYPE = "PERMISSIONTYPE";
+  private static final String EXTRA_VALUE_DATASET = "DATASET_PERMISSION";
 
   @Override
   protected void onCreate(Bundle savedInstanceState)
@@ -76,7 +79,10 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
       b.setVisibility(View.GONE);
     mProgress.setVisibility(View.GONE);
     int service = Service.getRunning(this);
-    if (service > Service.SERVICE_NOT_RUNNING) {
+    if (first) {
+      first = false;
+      setupPermissions();
+    } else if (service > Service.SERVICE_NOT_RUNNING) {
       for (Button b : buttons)
         if (b.getId() == R.id.service_cancel)
           b.setVisibility(View.VISIBLE);
@@ -125,9 +131,6 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         findViewById(R.id.service_continue).setVisibility(View.GONE);
       else if (service == Service.SERVICE_POSTPROCESS)
         finishScanning();
-    } else if (first) {
-      first = false;
-      setupPermissions();
     }
   }
 
@@ -150,7 +153,8 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
     String[] permissions = {
             Manifest.permission.CAMERA,
             Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            "com.google.tango.permission.DATASETS"
     };
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       boolean ok = true;
@@ -173,6 +177,16 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
   }
 
   @Override
+  protected void onActivityResult(int requestCode, int resultCode, Intent data)
+  {
+    super.onActivityResult(requestCode, resultCode, data);
+    if (resultCode == Activity.RESULT_OK)
+      refreshUI();
+    else
+      finish();
+  }
+
+    @Override
   public synchronized void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults)
   {
     switch (requestCode)
@@ -180,7 +194,10 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
       case PERMISSIONS_CODE:
       {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-          refreshUI();
+          Intent intent = new Intent();
+          intent.setAction("android.intent.action.REQUEST_TANGO_PERMISSION");
+          intent.putExtra(EXTRA_KEY_PERMISSIONTYPE, EXTRA_VALUE_DATASET);
+          startActivityForResult(intent, 1);
         } else
           finish();
         break;

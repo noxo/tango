@@ -26,7 +26,6 @@ namespace oc {
         void OnDrawFrame();
         void OnToggleButtonClicked(bool t3dr_is_running);
         void OnClearButtonClicked();
-        void OnResumeScanning();
 
         void Load(std::string filename);
         void Save(std::string filename);
@@ -47,7 +46,6 @@ namespace oc {
         void RectSelection(float x1, float y1, float x2, float y2);
 
     private:
-        float best_match;
         float last_diff;
         bool t3dr_is_running_;
         bool point_cloud_available_;

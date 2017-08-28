@@ -54,7 +54,7 @@ namespace oc {
     }
 
     void App::onFrameAvailable(TangoCameraId id, const TangoImageBuffer *im) {
-        if (id != TANGO_CAMERA_COLOR || (!t3dr_is_running_ && !scene.IsFullScreenActive()))
+        if (id != TANGO_CAMERA_COLOR || !t3dr_is_running_)
             return;
 
         std::vector<TangoSupport_MatrixTransformData> transform = tango.Pose(im->timestamp, 0);
@@ -62,7 +62,7 @@ namespace oc {
             return;
 
         binder_mutex_.lock();
-        if (!point_cloud_available_ && !scene.IsFullScreenActive()) {
+        if (!point_cloud_available_) {
             binder_mutex_.unlock();
             return;
         }
@@ -74,34 +74,6 @@ namespace oc {
         t3dr_image.timestamp = im->timestamp;
         t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(im->format);
         t3dr_image.data = im->data;
-
-        if (scene.IsFullScreenActive()) {
-            Image* img = new Image(t3dr_image.data, t3dr_image.width, t3dr_image.height, 1);
-            render_mutex_.lock();
-            scene.SetPreview(img);
-            float match = 100.0f * (float)scene.CountMatching();
-            char res[8];
-            sprintf(res, "%.1f", match);
-            event_mutex_.lock();
-            event_ = "Matching: current=" + std::string(res) + "%";
-            sprintf(res, "%.1f", best_match);
-            event_ += " best=" + std::string(res) + "%";
-            if (best_match < match) {
-                best_match = match;
-                std::vector<glm::mat4> toZero = tango.Convert(transform);
-                for (unsigned int i = 0; i < toZero.size(); i++)
-                    toZero[i] = glm::inverse(toZero[i]);
-                tango.SetupTransform(texturize.GetLatestPose(tango.Dataset()), toZero);
-            }
-            if (best_match > 75)
-                event_ += "\nPress the record icon to continue";
-            else
-                event_ += "\nFind position matching this photo";
-            event_mutex_.unlock();
-            render_mutex_.unlock();
-            binder_mutex_.unlock();
-            return;
-        }
 
         Tango3DR_Pose t3dr_image_pose = TangoService::Extract3DRPose(tango.Convert(transform)[COLOR_CAMERA]);
         if (sharp) {
@@ -228,13 +200,6 @@ namespace oc {
     void App::OnToggleButtonClicked(bool t3dr_is_running) {
         binder_mutex_.lock();
         t3dr_is_running_ = t3dr_is_running;
-        if (t3dr_is_running && scene.IsFullScreenActive()) {
-            render_mutex_.lock();
-            scene.SetFullScreen(0);
-            scene.SetPreview(0);
-            tango.ApplyTransform();
-            render_mutex_.unlock();
-        }
         binder_mutex_.unlock();
     }
 
@@ -272,6 +237,8 @@ namespace oc {
             File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
         }
         File3d(filename, true).WriteModel(scene.static_meshes_);
+        tango.SaveDataset();
+        tango.Disconnect();
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -417,11 +384,6 @@ namespace oc {
         scene.uniformPitch = pitch;
     }
 
-    void App::OnResumeScanning() {
-        best_match = 0;
-        scene.SetFullScreen(texturize.GetLatestImage(tango.Dataset()));
-    }
-
     bool App::AnimFinished() {
         render_mutex_.lock();
         bool output = (fabs(lastPitch - pitch) < 0.01f) && (fabs(lastYaw - yaw) < 0.01f);
@@ -472,11 +434,6 @@ Java_com_lvonasek_openconstructor_main_JNI_onToggleButtonClicked(
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_main_JNI_onClearButtonClicked(JNIEnv*, jobject) {
     app.OnClearButtonClicked();
-}
-
-JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_main_JNI_onResumeScanning(JNIEnv*, jobject) {
-    app.OnResumeScanning();
 }
 
 JNIEXPORT void JNICALL
