@@ -4,7 +4,8 @@
 
 namespace oc {
 
-    TangoService::TangoService() {}
+    TangoService::TangoService() : toArea(ZeroPose()), toAreaTemp(ZeroPose()),
+                                   toZero(ZeroPose()), toZeroTemp(ZeroPose()) {}
 
     TangoService::~TangoService() {
         if (config != nullptr) {
@@ -19,6 +20,11 @@ namespace oc {
             Tango3DR_ReconstructionContext_destroy(context);
             context = nullptr;
         }
+    }
+
+    void TangoService::ApplyTransform() {
+        toArea = toAreaTemp;
+        toZero = toZeroTemp;
     }
 
     void TangoService::Clear() {
@@ -140,13 +146,6 @@ namespace oc {
         noise_ = noise;
     }
 
-    void TangoService::SaveDataset() {
-        TangoService_Experimental_getCurrentDatasetUUID(&uuid);
-        FILE* file = fopen((dataset + "/uuid.txt").c_str(), "w");
-        fprintf(file, "%s", uuid);
-        fclose(file);
-    }
-
     void TangoService::SetupConfig(std::string datapath) {
         dataset = datapath;
         config = TangoService_getConfig(TANGO_CONFIG_DEFAULT);
@@ -183,28 +182,6 @@ namespace oc {
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
-        // Set datasets
-        ret = TangoConfig_setString(config, "config_datasets_path", dataset.c_str());
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-        ret = TangoConfig_setBool(config, "config_enable_dataset_recording", true);
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-        ret = TangoConfig_setInt32(config, "config_dataset_recording_mode", TANGO_RECORDING_MODE_MOTION_TRACKING);
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-
-        // Try to load area description
-        FILE* file = fopen((dataset + "/uuid.txt").c_str(), "r");
-        if (file) {
-            fscanf(file, "%s", &uuid);
-            fclose(file);
-            std::string id = std::string(uuid).substr(0, 24); //TANGO bug
-            ret = TangoConfig_setString(config, "config_experimental_load_dataset_UUID", id.c_str());
-            if (ret != TANGO_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-        }
-
         if (pointcloud == nullptr) {
             int32_t max_point_cloud_elements;
             ret = TangoConfig_getInt32(config, "max_point_cloud_elements", &max_point_cloud_elements);
@@ -215,6 +192,11 @@ namespace oc {
             if (ret != TANGO_SUCCESS)
                 std::exit(EXIT_SUCCESS);
         }
+    }
+
+    void TangoService::SetupTransform(std::vector<glm::mat4> area, std::vector<glm::mat4> zero) {
+        toAreaTemp = area;
+        toZeroTemp = zero;
     }
 
     std::vector<TangoSupport_MatrixTransformData> TangoService::Pose(double timestamp, bool land) {
@@ -250,7 +232,14 @@ namespace oc {
     std::vector<glm::mat4> TangoService::Convert(std::vector<TangoSupport_MatrixTransformData> m) {
         std::vector<glm::mat4> output;
         for (int i = 0; i < m.size(); i++)
-            output.push_back(glm::make_mat4(m[i].matrix));
+            output.push_back(toArea[i] * toZero[i] * glm::make_mat4(m[i].matrix));
+        return output;
+    }
+
+    std::vector<glm::mat4> TangoService::ZeroPose() {
+        std::vector<glm::mat4> output;
+        for (int i = 0; i < MAX_CAMERA; i++)
+            output.push_back(glm::mat4(1));
         return output;
     }
 }

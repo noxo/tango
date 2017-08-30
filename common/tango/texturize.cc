@@ -82,6 +82,27 @@ namespace oc {
         fclose(file);
     }
 
+    Image* TangoTexturize::GetLatestImage(std::string dataset) {
+        UpdatePoses(dataset);
+        return new Image(GetFileName(poses - 1, dataset, ".jpg"));
+    }
+
+    std::vector<glm::mat4> TangoTexturize::GetLatestPose(std::string dataset) {
+        UpdatePoses(dataset);
+        int count = 0;
+        glm::mat4 mat;
+        std::vector<glm::mat4> output;
+        FILE* file = fopen(GetFileName(poses - 1, dataset, ".txt").c_str(), "r");
+        fscanf(file, "%d\n", &count);
+        for (int i = 0; i < count; i++) {
+            for (int j = 0; j < 4; j++)
+                fscanf(file, "%f %f %f %f\n", &mat[j][0], &mat[j][1], &mat[j][2], &mat[j][3]);
+            output.push_back(mat);
+        }
+        fclose(file);
+        return output;
+    }
+
     bool TangoTexturize::Init(std::string filename, Tango3DR_CameraCalibration* camera) {
         event = "Merging results";
         Tango3DR_Mesh mesh;

@@ -31,6 +31,9 @@ public class JNI
   // Called when the clear button is clicked
   public static native void onClearButtonClicked();
 
+  // Resume scanning
+  public static native void onResumeScanning();
+
   // Load 3D model from file
   public static native void load(String name);
 
