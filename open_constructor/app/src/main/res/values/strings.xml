@@ -43,7 +43,7 @@
     <string name="no">No</string>
 
     <!-- Settings !-->
-    <string name="cardboard">Cardboard/Daydream support</string>
+    <string name="cardboard">Cardboard support</string>
     <string name="cardboard_summary">Allow to show a model in the virtual reality</string>
     <string name="cardboard_support">The cardboard plugin for this app is not installed. Do you want to install it now?</string>
     <string name="landscape">Landscape mode</string>
