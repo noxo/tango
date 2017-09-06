@@ -63,7 +63,6 @@ namespace oc {
             int offset = 0;
             if (type == OBJ)
                 offset++;
-            int texture = -1;
             for (unsigned int i = 0; i < model.size(); i++) {
                 if (model[i].vertices.empty()) {
                     offset += vectorSize[i];
@@ -77,6 +76,16 @@ namespace oc {
             }
         } else
             assert(false);
+    }
+
+    void File3d::CleanStr(std::string& str) {
+        while(!str.empty()) {
+            char c = str[str.size() - 1];
+            if ((c == '\r') || (c == '\n') || isspace(c))
+                str = str.substr(0, str.size() - 1);
+            else
+                break;
+        }
     }
 
     glm::ivec3 File3d::DecodeColor(unsigned int c) {
@@ -109,16 +118,16 @@ namespace oc {
                 sbuf = sbuf.substr(1);
             }
             if (sbuf[0] == 'u') {
-                char key[1024];
-                sscanf(sbuf.c_str(), "usemtl %s", key);
-                if (lastKey.compare(key) != 0) {
+                std::string key = sbuf.substr(7);
+                CleanStr(key);
+                if (lastKey.empty() || (lastKey.compare(key) != 0)) {
                     meshIndex = output.size();
                     output.push_back(Mesh());
                     if (images.find(key) == images.end()) {
-                        std::string imagefile = keyToFile[std::string(key)];
+                        std::string imagefile = keyToFile[key];
                         if (imagefile.empty())
                         {
-                            glm::vec3 color = keyToColor[std::string(key)];
+                            glm::vec3 color = keyToColor[key];
                             images[key] = new Image(1, 1);
                             images[key]->GetData()[0] = (unsigned char) (255 * color.r);
                             images[key]->GetData()[1] = (unsigned char) (255 * color.g);
@@ -257,7 +266,7 @@ namespace oc {
                     break;
             }
         } else if (type == OBJ) {
-            char mtlFile[1024];
+            std::string mtlFile;
             while (true) {
                 if (!fgets(buffer, 1024, file))
                     break;
@@ -266,7 +275,8 @@ namespace oc {
                     sbuf = sbuf.substr(1);
                 }
                 if (StartsWith(sbuf, "mtllib")) {
-                    sscanf(sbuf.c_str(), "mtllib %s", mtlFile);
+                    mtlFile = sbuf.substr(7);
+                    CleanStr(mtlFile);
                     break;
                 }
             }
@@ -275,10 +285,10 @@ namespace oc {
                 if (path[i] == '/')
                     index = (unsigned int) i;
             }
-            char key[1024];
-            char pngFile[1024];
+            std::string key, imgFile;
             std::string data = path.substr(0, index + 1);
-            FILE* mtl = fopen((data + mtlFile).c_str(), "r");
+            std::string filepath = data + mtlFile;
+            FILE* mtl = fopen(filepath.c_str(), "r");
             while (true) {
                 if (!fgets(buffer, 1024, mtl))
                     break;
@@ -287,16 +297,18 @@ namespace oc {
                     sbuf = sbuf.substr(1);
                 }
                 if (StartsWith(sbuf, "newmtl")) {
-                    sscanf(sbuf.c_str(), "newmtl %s", key);
+                    key = sbuf.substr(7);
+                    CleanStr(key);
                 }
                 if (StartsWith(sbuf, "Kd")) {
                     glm::vec3 color;
                     sscanf(sbuf.c_str(), "Kd %f %f %f", &color.r, &color.g, &color.b);
-                    keyToColor[std::string(key)] = color;
+                    keyToColor[key] = color;
                 }
                 if (StartsWith(sbuf, "map_Kd")) {
-                    sscanf(sbuf.c_str(), "map_Kd %s", pngFile);
-                    keyToFile[std::string(key)] = data + pngFile;
+                    imgFile = data + sbuf.substr(7);
+                    CleanStr(imgFile);
+                    keyToFile[key] = imgFile;
                 }
             }
             fclose(mtl);

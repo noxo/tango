@@ -2,45 +2,14 @@
 #include "shaders.h"  // NOLINT
 #include "data/file3d.h"
 
-#include <android/log.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <cmath>
-#include <random>
-
 namespace {
-static const float kReticleDistance = 3.0f;
-static const int kCoordsPerVertex = 3;
 static const uint64_t kPredictionTimeWithoutVsyncNanos = 50000000;
-static const float kAngleLimit = 0.12f;
-static const float kPitchLimit = 0.12f;
-static const float kYawLimit = 0.12f;
-
-float reticle_vertices_[] = {
-        -1.f, 1.f, 0.0f,
-        -1.f, -1.f, 0.0f,
-        1.f, 1.f, 0.0f,
-        -1.f, -1.f, 0.0f,
-        1.f, -1.f, 0.0f,
-        1.f, 1.f, 0.0f,
-};
 
 static std::array<float, 16> MatrixToGLArray(const gvr::Mat4f& matrix) {
   std::array<float, 16> result;
   for (int i = 0; i < 4; ++i) {
     for (int j = 0; j < 4; ++j) {
       result[j * 4 + i] = matrix.m[i][j];
-    }
-  }
-  return result;
-}
-
-static std::array<float, 4> MatrixVectorMul(const gvr::Mat4f& matrix, const std::array<float, 4>& vec) {
-  std::array<float, 4> result;
-  for (int i = 0; i < 4; ++i) {
-    result[i] = 0;
-    for (int k = 0; k < 4; ++k) {
-      result[i] += matrix.m[i][k] * vec[k];
     }
   }
   return result;
@@ -57,10 +26,6 @@ static gvr::Mat4f MatrixMul(const gvr::Mat4f& matrix1, const gvr::Mat4f& matrix2
     }
   }
   return result;
-}
-
-static std::array<float, 3> Vec4ToVec3(const std::array<float, 4>& vec) {
-  return {vec[0], vec[1], vec[2]};
 }
 
 static gvr::Mat4f PerspectiveMatrixFromView(const gvr::Rectf& fov, float z_near, float z_far) {
@@ -117,38 +82,6 @@ static gvr::Sizei HalfPixelCount(const gvr::Sizei& in) {
   out.height = (7 * in.height) / 10;
   return out;
 }
-
-static gvr::Mat4f ControllerQuatToMatrix(const gvr::ControllerQuat& quat) {
-  gvr::Mat4f result;
-  const float x = quat.qx;
-  const float x2 = quat.qx * quat.qx;
-  const float y = quat.qy;
-  const float y2 = quat.qy * quat.qy;
-  const float z = quat.qz;
-  const float z2 = quat.qz * quat.qz;
-  const float w = quat.qw;
-  const float xy = quat.qx * quat.qy;
-  const float xz = quat.qx * quat.qz;
-  const float xw = quat.qx * quat.qw;
-  const float yz = quat.qy * quat.qz;
-  const float yw = quat.qy * quat.qw;
-  const float zw = quat.qz * quat.qw;
-
-  const float m11 = 1.0f - 2.0f * y2 - 2.0f * z2;
-  const float m12 = 2.0f * (xy - zw);
-  const float m13 = 2.0f * (xz + yw);
-  const float m21 = 2.0f * (xy + zw);
-  const float m22 = 1.0f - 2.0f * x2 - 2.0f * z2;
-  const float m23 = 2.0f * (yz - xw);
-  const float m31 = 2.0f * (xz - yw);
-  const float m32 = 2.0f * (yz + xw);
-  const float m33 = 1.0f - 2.0f * x2 - 2.0f * y2;
-
-  return {{{m11, m12, m13, 0.0f},
-           {m21, m22, m23, 0.0f},
-           {m31, m32, m33, 0.0f},
-           {0.0f, 0.0f, 0.0f, 1.0f}}};
-}
 }  // anonymous namespace
 
 Renderer::Renderer(gvr_context* gvr_context, std::string filename)
@@ -156,9 +89,7 @@ Renderer::Renderer(gvr_context* gvr_context, std::string filename)
       viewport_left_(gvr_api_->CreateBufferViewport()),
       viewport_right_(gvr_api_->CreateBufferViewport()),
       reticle_render_size_{128, 128},
-      gvr_controller_api_(nullptr),
       gvr_viewer_type_(gvr_api_->GetViewerType()) {
-  ResumeControllerApiAsNeeded();
   if (gvr_viewer_type_ == GVR_VIEWER_TYPE_CARDBOARD) {
     LOGI("Viewer type: CARDBOARD");
   } else if (gvr_viewer_type_ == GVR_VIEWER_TYPE_DAYDREAM) {
@@ -179,9 +110,6 @@ void Renderer::InitializeGl() {
 
   const int vertex_shader = LoadGLShader(GL_VERTEX_SHADER, &kTextureVertexShaders[0]);
   const int fragment_shader = LoadGLShader(GL_FRAGMENT_SHADER, &kTextureFragmentShaders[0]);
-  const int pass_through_shader = LoadGLShader(GL_FRAGMENT_SHADER, &kPassthroughFragmentShaders[0]);
-  const int reticle_vertex_shader = LoadGLShader(GL_VERTEX_SHADER, &kReticleVertexShaders[0]);
-  const int reticle_fragment_shader = LoadGLShader(GL_FRAGMENT_SHADER, &kReticleFragmentShaders[0]);
 
   model_program_ = glCreateProgram();
   glAttachShader(model_program_, vertex_shader);
@@ -196,25 +124,11 @@ void Renderer::InitializeGl() {
   model_translatey_param_ = glGetUniformLocation(model_program_, "u_Y");
   model_translatez_param_ = glGetUniformLocation(model_program_, "u_Z");
 
-  reticle_program_ = glCreateProgram();
-  glAttachShader(reticle_program_, reticle_vertex_shader);
-  glAttachShader(reticle_program_, reticle_fragment_shader);
-  glLinkProgram(reticle_program_);
-  glUseProgram(reticle_program_);
-
-  reticle_position_param_ = glGetAttribLocation(reticle_program_, "a_Position");
-  reticle_modelview_projection_param_ = glGetUniformLocation(reticle_program_, "u_MVP");
-
   // Object first appears directly in front of user.
   model_model_ = {{{100.0f, 0.0f, 0.0f, 0.0f},
                    {0.0f, 100.0f, 0.0f, 0.0},
                    {0.0f, 0.0f, 100.0f, 0.0f},
                    {0.0f, 0.0f, 0.0f, 1.0f}}};
-  const float rs = 0.04f;  // Reticle scale.
-  model_reticle_ = {{{rs, 0.0f, 0.0f, 0.0f},
-                     {0.0f, rs, 0.0f, 0.0f},
-                     {0.0f, 0.0f, rs, -kReticleDistance},
-                     {0.0f, 0.0f, 0.0f, 1.0f}}};
 
   // Because we are using 2X MSAA, we can render to half as many pixels and
   // achieve similar quality.
@@ -238,46 +152,7 @@ void Renderer::InitializeGl() {
       new gvr::BufferViewportList(gvr_api_->CreateEmptyBufferViewportList()));
 }
 
-void Renderer::ResumeControllerApiAsNeeded() {
-  switch (gvr_viewer_type_) {
-    case GVR_VIEWER_TYPE_CARDBOARD:
-      gvr_controller_api_.reset();
-      break;
-    case GVR_VIEWER_TYPE_DAYDREAM:
-      if (!gvr_controller_api_) {
-        // Initialized controller api.
-        gvr_controller_api_.reset(new gvr::ControllerApi);
-        gvr_controller_api_->Init(gvr::ControllerApi::DefaultOptions(), gvr_api_->cobj());
-      }
-      gvr_controller_api_->Resume();
-      break;
-    default:
-      LOGE("unexpected viewer type.");
-      break;
-  }
-}
-
-void Renderer::ProcessControllerInput() {
-  const int old_status = gvr_controller_state_.GetApiStatus();
-  const int old_connection_state = gvr_controller_state_.GetConnectionState();
-
-  // Read current controller state.
-  gvr_controller_state_.Update(*gvr_controller_api_);
-  if (gvr_controller_state_.GetApiStatus() != old_status ||
-      gvr_controller_state_.GetConnectionState() != old_connection_state) {
-  }
-
-  // Trigger click event if app/click button is clicked.
-  if (gvr_controller_state_.GetButtonDown(GVR_CONTROLLER_BUTTON_APP) ||
-      gvr_controller_state_.GetButtonDown(GVR_CONTROLLER_BUTTON_CLICK)) {
-    OnTriggerEvent();
-  }
-}
-
 void Renderer::DrawFrame() {
-  if (gvr_viewer_type_ == GVR_VIEWER_TYPE_DAYDREAM) {
-    ProcessControllerInput();
-  }
   PrepareFramebuffer();
   gvr::Frame frame = swapchain_->AcquireFrame();
 
@@ -287,14 +162,6 @@ void Renderer::DrawFrame() {
   gvr::BufferViewport* viewport[2] = { &viewport_left_, &viewport_right_, };
   head_view_ = gvr_api_->GetHeadSpaceFromStartSpaceRotation(target_time);
   viewport_list_->SetToRecommendedBufferViewports();
-  gvr::BufferViewport reticle_viewport = gvr_api_->CreateBufferViewport();
-  reticle_viewport.SetSourceBufferIndex(1);
-  reticle_viewport.SetReprojection(GVR_REPROJECTION_NONE);
-  const gvr_rectf fullscreen = { 0, 1, 0, 1 };
-  reticle_viewport.SetSourceUv(fullscreen);
-
-  gvr::Mat4f controller_matrix = ControllerQuatToMatrix(gvr_controller_state_.GetOrientation());
-  model_cursor_ = MatrixMul(controller_matrix, model_reticle_);
 
   gvr::Mat4f eye_views[2];
   for (int eye = 0; eye < 2; ++eye) {
@@ -303,15 +170,10 @@ void Renderer::DrawFrame() {
     eye_views[eye] = MatrixMul(eye_from_head, head_view_);
 
     viewport_list_->GetBufferViewport(eye, viewport[eye]);
-    reticle_viewport.SetTransform(MatrixMul(eye_from_head, model_reticle_));
-    reticle_viewport.SetTargetEye(gvr_eye);
-    viewport_list_->SetBufferViewport(2 + eye, reticle_viewport);
-
     modelview_model_[eye] = MatrixMul(eye_views[eye], model_model_);
     const gvr_rectf fov = viewport[eye]->GetSourceFov();
     const gvr::Mat4f perspective = PerspectiveMatrixFromView(fov, 1, 10000);
     modelview_projection_model_[eye] = MatrixMul(perspective, modelview_model_[eye]);
-    modelview_projection_cursor_[eye] = MatrixMul(perspective, MatrixMul(eye_views[eye], model_cursor_));
   }
 
   cur_position = 0.95f * cur_position + 0.05f * dst_position;
@@ -332,9 +194,6 @@ void Renderer::DrawFrame() {
   frame.BindBuffer(1);
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);  // Transparent background.
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  if (gvr_viewer_type_ == GVR_VIEWER_TYPE_CARDBOARD)
-    DrawCardboardReticle();
   frame.Unbind();
 
   // Submit frame.
@@ -364,14 +223,12 @@ void Renderer::OnTriggerEvent() {
 
 void Renderer::OnPause() {
   gvr_api_->PauseTracking();
-  if (gvr_controller_api_) gvr_controller_api_->Pause();
 }
 
 void Renderer::OnResume() {
   gvr_api_->ResumeTracking();
   gvr_api_->RefreshViewerProfile();
   gvr_viewer_type_ = gvr_api_->GetViewerType();
-  ResumeControllerApiAsNeeded();
 }
 
 int Renderer::LoadGLShader(int type, const char** shadercode) {
@@ -407,13 +264,10 @@ void Renderer::DrawWorld(ViewType view) {
                pixel_rect.right - pixel_rect.left,
                pixel_rect.top - pixel_rect.bottom);
     DrawModel(view);
-    if (gvr_viewer_type_ == GVR_VIEWER_TYPE_DAYDREAM)
-      DrawDaydreamCursor(view);
 }
 
 void Renderer::DrawModel(ViewType view) {
   glUseProgram(model_program_);
-  float* matrix = MatrixToGLArray(modelview_projection_model_[view]).data();
   glUniform1f(model_translatex_param_, cur_position.x);
   glUniform1f(model_translatey_param_, cur_position.y);
   glUniform1f(model_translatez_param_, cur_position.z);
@@ -439,27 +293,4 @@ void Renderer::DrawModel(ViewType view) {
     glDrawArrays(GL_TRIANGLES, 0, mesh.vertices.size());
   }
   glDisableVertexAttribArray(model_position_param_);
-}
-
-void Renderer::DrawDaydreamCursor(ViewType view) {
-  glUseProgram(reticle_program_);
-    glUniformMatrix4fv(reticle_modelview_projection_param_, 1, GL_FALSE, MatrixToGLArray(modelview_projection_cursor_[view]).data());
-  glVertexAttribPointer(reticle_position_param_, kCoordsPerVertex, GL_FLOAT, false, 0, reticle_vertices_);
-  glEnableVertexAttribArray(reticle_position_param_);
-  glDrawArrays(GL_TRIANGLES, 0, 6);
-  glDisableVertexAttribArray(reticle_position_param_);
-}
-
-void Renderer::DrawCardboardReticle() {
-  glViewport(0, 0, reticle_render_size_.width, reticle_render_size_.height);
-  glUseProgram(reticle_program_);
-  const gvr::Mat4f uniform_matrix = {{{1.f, 0.f, 0.f, 0.f},
-                                      {0.f, 1.f, 0.f, 0.f},
-                                      {0.f, 0.f, 1.f, 0.f},
-                                      {0.f, 0.f, 0.f, 1.f}}};
-  glUniformMatrix4fv(reticle_modelview_projection_param_, 1, GL_FALSE, MatrixToGLArray(uniform_matrix).data());
-  glVertexAttribPointer(reticle_position_param_, kCoordsPerVertex, GL_FLOAT, false, 0, reticle_vertices_);
-  glEnableVertexAttribArray(reticle_position_param_);
-  glDrawArrays(GL_TRIANGLES, 0, 6);
-  glDisableVertexAttribArray(reticle_position_param_);
 }

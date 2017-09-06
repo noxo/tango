@@ -1,13 +1,11 @@
 package com.lvonasek.daydreamOBJ;
 
-import android.Manifest;
-import android.app.Activity;
+import android.app.PendingIntent;
 import android.content.Context;
-import android.content.pm.PackageManager;
+import android.content.Intent;
+import android.nfc.NfcAdapter;
 import android.opengl.GLSurfaceView;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Vibrator;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -16,13 +14,10 @@ import android.widget.Toast;
 import com.google.vr.ndk.base.AndroidCompat;
 import com.google.vr.ndk.base.GvrLayout;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-public class MainActivity extends Activity {
+public class MainActivity extends AbstractActivity {
   static {
     System.loadLibrary("gvr");
     System.loadLibrary("daydream");
@@ -33,11 +28,6 @@ public class MainActivity extends Activity {
 
   private GvrLayout gvrLayout;
   private GLSurfaceView surfaceView;
-  private boolean initialized;
-  private boolean permissions;
-  private String filename = null;
-
-  private static final int PERMISSIONS_CODE = 1985;
 
   // Note that pause and resume signals to the native renderer are performed on the GL thread,
   // ensuring thread-safety.
@@ -58,7 +48,25 @@ public class MainActivity extends Activity {
       };
 
   @Override
-  protected void onCreate(Bundle savedInstanceState) {
+  protected void onAddressChanged(String address)
+  {
+    Toast.makeText(this, "Connected to controller " + address, Toast.LENGTH_LONG).show();
+  }
+
+  @Override
+  protected void onConnectionChanged(boolean on)
+  {
+  }
+
+  @Override
+  protected void onDataReceived()
+  {
+    if (DaydreamController.getStatus().get(DaydreamController.BTN_CLICK) > 0)
+      nativeOnTriggerEvent(nativeTreasureHuntRenderer);
+  }
+
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
     // Ensure fullscreen immersion.
@@ -76,24 +84,6 @@ public class MainActivity extends Activity {
             });
 
     // Initialize GvrLayout and the native renderer.
-    initialized = false;
-    permissions = false;
-    try
-    {
-      filename = getIntent().getData().toString().substring(7);
-      try
-      {
-        filename = URLDecoder.decode(filename, "UTF-8");
-      } catch (UnsupportedEncodingException e)
-      {
-        e.printStackTrace();
-      }
-    } catch(Exception e) {
-      Toast.makeText(this, R.string.no_file, Toast.LENGTH_LONG).show();
-      finish();
-      return;
-    }
-    initialized = true;
     gvrLayout = new GvrLayout(this);
 
     // Add the GLSurfaceView to the GvrLayout.
@@ -122,7 +112,6 @@ public class MainActivity extends Activity {
           public boolean onTouch(View v, MotionEvent event) {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
               // Give user feedback and signal a trigger event.
-              ((Vibrator) getSystemService(Context.VIBRATOR_SERVICE)).vibrate(50);
               surfaceView.queueEvent(
                   new Runnable() {
                     @Override
@@ -145,17 +134,23 @@ public class MainActivity extends Activity {
       AndroidCompat.setSustainedPerformanceMode(this, true);
     }
 
+    nativeTreasureHuntRenderer = nativeCreateRenderer(getClass().getClassLoader(),
+            getApplicationContext(), gvrLayout.getGvrApi().getNativeGvrContext(), EntryActivity.filename);
+
     // Enable VR Mode.
     AndroidCompat.setVrModeEnabled(this, true);
   }
 
   @Override
   protected void onPause() {
-    if (initialized) {
-      if (permissions)
-        surfaceView.queueEvent(pauseNativeRunnable);
-      surfaceView.onPause();
-      gvrLayout.onPause();
+    surfaceView.queueEvent(pauseNativeRunnable);
+    surfaceView.onPause();
+    gvrLayout.onPause();
+    //NFC
+    try {
+      NfcAdapter.getDefaultAdapter(this).disableForegroundDispatch(this);
+    } catch(Exception e) {
+      e.printStackTrace();
     }
     super.onPause();
   }
@@ -163,24 +158,26 @@ public class MainActivity extends Activity {
   @Override
   protected void onResume() {
     super.onResume();
-    if (initialized) {
-      gvrLayout.onResume();
-      surfaceView.onResume();
-      if (permissions)
-        surfaceView.queueEvent(resumeNativeRunnable);
-      else
-        setupPermissions();
+    gvrLayout.onResume();
+    surfaceView.onResume();
+    surfaceView.queueEvent(resumeNativeRunnable);
+    //NFC
+    try {
+      NfcAdapter adapter = NfcAdapter.getDefaultAdapter(this);
+      PendingIntent pendingIntent = PendingIntent.getActivity(
+              this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
+      adapter.enableForegroundDispatch(this, pendingIntent, null, null);
+    } catch(Exception e) {
+      e.printStackTrace();
     }
   }
 
   @Override
   protected void onDestroy() {
     super.onDestroy();
-    if (initialized) {
-      gvrLayout.shutdown();
-      nativeDestroyRenderer(nativeTreasureHuntRenderer);
-      nativeTreasureHuntRenderer = 0;
-    }
+    gvrLayout.shutdown();
+    nativeDestroyRenderer(nativeTreasureHuntRenderer);
+    nativeTreasureHuntRenderer = 0;
   }
 
   @Override
@@ -192,13 +189,10 @@ public class MainActivity extends Activity {
   }
 
   @Override
-  public boolean dispatchKeyEvent(KeyEvent event) {
+  public boolean dispatchKeyEvent(KeyEvent event)
+  {
     // Avoid accidental volume key presses while the phone is in the VR headset.
-    if (event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_UP
-        || event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_DOWN) {
-      return true;
-    }
-    return super.dispatchKeyEvent(event);
+    return event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_UP || event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_DOWN || super.dispatchKeyEvent(event);
   }
 
   private void setImmersiveSticky() {
@@ -213,45 +207,8 @@ public class MainActivity extends Activity {
                 | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
   }
 
-
-  protected void setupPermissions() {
-    String[] permissions = {
-            Manifest.permission.VIBRATE,
-            Manifest.permission.READ_EXTERNAL_STORAGE
-    };
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      boolean ok = true;
-      for (String s : permissions)
-        if (checkSelfPermission(s) != PackageManager.PERMISSION_GRANTED)
-          ok = false;
-
-      if (!ok)
-        requestPermissions(permissions, PERMISSIONS_CODE);
-      else
-        onRequestPermissionsResult(PERMISSIONS_CODE, null, new int[]{PackageManager.PERMISSION_GRANTED});
-    } else
-      onRequestPermissionsResult(PERMISSIONS_CODE, null, new int[]{PackageManager.PERMISSION_GRANTED});
-  }
-
   @Override
-  public synchronized void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults)
-  {
-    switch (requestCode)
-    {
-      case PERMISSIONS_CODE:
-      {
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-          nativeTreasureHuntRenderer = nativeCreateRenderer(getClass().getClassLoader(),
-                  getApplicationContext(), gvrLayout.getGvrApi().getNativeGvrContext(), filename);
-          surfaceView.queueEvent(resumeNativeRunnable);
-          this.permissions = true;
-        } else
-          finish();
-        break;
-      }
-    }
-  }
-
+  public void onNewIntent(Intent intent) {}
 
   private native long nativeCreateRenderer(ClassLoader appClassLoader, Context context, long gvr, String filename);
   private native void nativeDestroyRenderer(long nativeTreasureHuntRenderer);

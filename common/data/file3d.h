@@ -16,6 +16,7 @@ public:
     void WriteModel(std::vector<Mesh>& model);
 
 private:
+    void CleanStr(std::string& str);
     glm::ivec3 DecodeColor(unsigned int c);
     void ParseOBJ(int subdivision, std::vector<oc::Mesh> &output);
     void ParsePLYFaces(int subdivision, std::vector<oc::Mesh> &output);
