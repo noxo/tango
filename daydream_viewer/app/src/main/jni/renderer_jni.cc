@@ -33,9 +33,9 @@ extern "C" {
 
 JNI_METHOD(jlong, nativeCreateRenderer)
 (JNIEnv *env, jclass clazz, jobject class_loader, jobject android_context,
- jlong native_gvr_api, jstring filename) {
+ jlong native_gvr_api, jstring filename, jint w, jint h) {
   return jptr(new Renderer(reinterpret_cast<gvr_context *>(native_gvr_api),
-  jstring2string(env, filename)));
+  jstring2string(env, filename), w, h));
 }
 
 JNI_METHOD(void, nativeDestroyRenderer)
@@ -54,8 +54,8 @@ JNI_METHOD(void, nativeDrawFrame)
 }
 
 JNI_METHOD(void, nativeOnTriggerEvent)
-(JNIEnv *env, jobject obj, jlong renderer_instance) {
-  native(renderer_instance)->OnTriggerEvent();
+(JNIEnv *env, jobject obj, jlong renderer_instance, jfloat value) {
+  native(renderer_instance)->OnTriggerEvent(value);
 }
 
 JNI_METHOD(void, nativeOnPause)

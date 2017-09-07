@@ -1,6 +1,7 @@
 package com.lvonasek.daydreamOBJ;
 
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
@@ -12,9 +13,9 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.nfc.NfcAdapter;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.util.SparseIntArray;
 
 public abstract class AbstractActivity extends Activity implements BluetoothAdapter.LeScanCallback
 {
@@ -56,22 +57,32 @@ public abstract class AbstractActivity extends Activity implements BluetoothAdap
   protected void onResume()
   {
     super.onResume();
-    if (mBluetoothSupport)
-    {
-      final IntentFilter intentFilter = new IntentFilter();
-      intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
-      intentFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
-      intentFilter.addAction(BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED);
-      intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE);
-      registerReceiver(mGattUpdateReceiver, intentFilter);
-      if (mDeviceAddress != null)
-        mBluetooth.connect(mDeviceAddress);
+    try {
+      //NFC
+      NfcAdapter adapter = NfcAdapter.getDefaultAdapter(this);
+      PendingIntent pendingIntent = PendingIntent.getActivity(
+              this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
+      adapter.enableForegroundDispatch(this, pendingIntent, null, null);
+      //BT
+      if (mBluetoothSupport)
+      {
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
+        intentFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
+        intentFilter.addAction(BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED);
+        intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE);
+        registerReceiver(mGattUpdateReceiver, intentFilter);
+        if (mDeviceAddress != null)
+          mBluetooth.connect(mDeviceAddress);
 
-      // Ensures Bluetooth is enabled on the device.  If Bluetooth is not currently enabled,
-      // fire an intent to display a dialog asking the user to grant permission to enable it.
-      if (!mBluetoothAdapter.isEnabled())
-        startActivityForResult(new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE), REQUEST_ENABLE_BT);
-      scanLeDevice(true);
+        // Ensures Bluetooth is enabled on the device.  If Bluetooth is not currently enabled,
+        // fire an intent to display a dialog asking the user to grant permission to enable it.
+        if (!mBluetoothAdapter.isEnabled())
+          startActivityForResult(new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE), REQUEST_ENABLE_BT);
+        scanLeDevice(true);
+      }
+    } catch(Exception e) {
+      e.printStackTrace();
     }
   }
 
@@ -94,10 +105,14 @@ public abstract class AbstractActivity extends Activity implements BluetoothAdap
   protected void onDestroy()
   {
     super.onDestroy();
-    if (mBluetoothSupport)
-    {
-      unbindService(mServiceConnection);
-      mBluetooth = null;
+    try {
+      if (mBluetoothSupport)
+      {
+        unbindService(mServiceConnection);
+        mBluetooth = null;
+      }
+    } catch(Exception e) {
+      e.printStackTrace();
     }
   }
 
@@ -105,12 +120,19 @@ public abstract class AbstractActivity extends Activity implements BluetoothAdap
   protected void onPause()
   {
     super.onPause();
-    if (mBluetoothSupport)
-    {
-      scanLeDevice(false);
-      unregisterReceiver(mGattUpdateReceiver);
-      mDeviceAddress = null;
-      onAddressChanged("");
+    try {
+      //NFC
+      NfcAdapter.getDefaultAdapter(this).disableForegroundDispatch(this);
+      //BT
+      if (mBluetoothSupport)
+      {
+        scanLeDevice(false);
+        unregisterReceiver(mGattUpdateReceiver);
+        mDeviceAddress = null;
+        onAddressChanged("");
+      }
+    } catch(Exception e) {
+      e.printStackTrace();
     }
   }
 

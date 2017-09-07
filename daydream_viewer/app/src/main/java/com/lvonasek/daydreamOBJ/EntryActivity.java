@@ -11,14 +11,32 @@ import android.widget.Toast;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 
-public class EntryActivity extends Activity {
+public class EntryActivity extends AbstractActivity {
 
   public static String filename = null;
 
   private static final int PERMISSIONS_CODE = 1985;
 
   @Override
-  protected void onCreate(Bundle savedInstanceState) {
+  protected void onAddressChanged(String address)
+  {
+
+  }
+
+  @Override
+  protected void onConnectionChanged(boolean on)
+  {
+
+  }
+
+  @Override
+  protected void onDataReceived()
+  {
+
+  }
+
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
     try

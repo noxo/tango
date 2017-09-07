@@ -5,7 +5,7 @@ import android.util.SparseIntArray;
 import java.util.HashMap;
 import java.util.UUID;
 
-class DaydreamController
+public class DaydreamController
 {
   // status IDs
   public static final int BTN_CLICK = 0x1;
@@ -17,6 +17,8 @@ class DaydreamController
   public static final int SYN_TIME = 0x12;
   public static final int TPD_X = 0x13;
   public static final int TPD_Y = 0x14;
+  public static final int SWP_X = 0x15;
+  public static final int SWP_Y = 0x16;
   public static final int ACC_X = 0x21;
   public static final int ACC_Y = 0x22;
   public static final int ACC_Z = 0x23;
@@ -27,10 +29,10 @@ class DaydreamController
   public static final int ORI_Y = 0x42;
   public static final int ORI_Z = 0x43;
 
-  public static final int[] BUTTONS = {BTN_CLICK, BTN_HOME, BTN_APP, BTN_VOL_DOWN, BTN_VOL_UP};
-
   // Controller status
   private static SparseIntArray status = new SparseIntArray();
+  private static int touchInitX;
+  private static int touchInitY;
 
   // Remote connection
   private static HashMap<String, String> attributes = new HashMap<>();
@@ -103,6 +105,27 @@ class DaydreamController
     status.put(ORI_Y, (value << 19) >> 19);
     value = (data[5] & 0xFF) << 5 | (data[6] & 0xF8) >> 3;
     status.put(ORI_Z, (value << 19) >> 19);
+
+    generateVirtualStatuses();
+  }
+
+  private static void generateVirtualStatuses()
+  {
+    int touchX = status.get(TPD_X);
+    int touchY = status.get(TPD_Y);
+    if ((touchX == 0) && (touchY == 0))
+    {
+      status.put(SWP_X, 0);
+      status.put(SWP_Y, 0);
+      touchInitX = 0;
+      touchInitY = 0;
+    } else if ((touchInitX == 0) && (touchInitY == 0)) {
+      touchInitX = touchX;
+      touchInitY = touchY;
+    } else {
+      status.put(SWP_X, touchX - touchInitX);
+      status.put(SWP_Y, touchY - touchInitY);
+    }
   }
 
   public synchronized static SparseIntArray getStatus()
@@ -110,7 +133,7 @@ class DaydreamController
     return status.clone();
   }
 
-  public static synchronized String rawValues()
+  static synchronized String rawValues()
   {
     String output = "SYN_TIME: " + status.get(SYN_TIME) + ", SYN_SEQ: " + status.get(SYN_SEQ) + "\n";
     output += "ACC: " + status.get(ACC_X) + ", " + status.get(ACC_Y) + ", " + status.get(ACC_Z) + "\n";

@@ -1,17 +1,16 @@
 package com.lvonasek.daydreamOBJ;
 
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.nfc.NfcAdapter;
+import android.graphics.Point;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.view.Display;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
-import com.google.vr.ndk.base.AndroidCompat;
 import com.google.vr.ndk.base.GvrLayout;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -28,6 +27,7 @@ public class MainActivity extends AbstractActivity {
 
   private GvrLayout gvrLayout;
   private GLSurfaceView surfaceView;
+  private boolean loaded = false;
 
   // Note that pause and resume signals to the native renderer are performed on the GL thread,
   // ensuring thread-safety.
@@ -50,7 +50,8 @@ public class MainActivity extends AbstractActivity {
   @Override
   protected void onAddressChanged(String address)
   {
-    Toast.makeText(this, "Connected to controller " + address, Toast.LENGTH_LONG).show();
+    if (!address.isEmpty())
+      Toast.makeText(this, "Connected to controller " + address, Toast.LENGTH_LONG).show();
   }
 
   @Override
@@ -62,7 +63,7 @@ public class MainActivity extends AbstractActivity {
   protected void onDataReceived()
   {
     if (DaydreamController.getStatus().get(DaydreamController.BTN_CLICK) > 0)
-      nativeOnTriggerEvent(nativeTreasureHuntRenderer);
+      nativeOnTriggerEvent(nativeTreasureHuntRenderer, 0.05f);
   }
 
   @Override
@@ -116,7 +117,7 @@ public class MainActivity extends AbstractActivity {
                   new Runnable() {
                     @Override
                     public void run() {
-                      nativeOnTriggerEvent(nativeTreasureHuntRenderer);
+                      nativeOnTriggerEvent(nativeTreasureHuntRenderer, 1);
                     }
                   });
               return true;
@@ -128,17 +129,6 @@ public class MainActivity extends AbstractActivity {
 
     // Add the GvrLayout to the View hierarchy.
     setContentView(gvrLayout);
-
-    // Enable scan line racing.
-    if (gvrLayout.setAsyncReprojectionEnabled(true)) {
-      AndroidCompat.setSustainedPerformanceMode(this, true);
-    }
-
-    nativeTreasureHuntRenderer = nativeCreateRenderer(getClass().getClassLoader(),
-            getApplicationContext(), gvrLayout.getGvrApi().getNativeGvrContext(), EntryActivity.filename);
-
-    // Enable VR Mode.
-    AndroidCompat.setVrModeEnabled(this, true);
   }
 
   @Override
@@ -146,30 +136,26 @@ public class MainActivity extends AbstractActivity {
     surfaceView.queueEvent(pauseNativeRunnable);
     surfaceView.onPause();
     gvrLayout.onPause();
-    //NFC
-    try {
-      NfcAdapter.getDefaultAdapter(this).disableForegroundDispatch(this);
-    } catch(Exception e) {
-      e.printStackTrace();
-    }
     super.onPause();
   }
 
   @Override
-  protected void onResume() {
+  protected synchronized void onResume() {
     super.onResume();
+    //scene
+    if (!loaded)
+    {
+      Display display = getWindowManager().getDefaultDisplay();
+      Point size = new Point();
+      display.getSize(size);
+      nativeTreasureHuntRenderer = nativeCreateRenderer(getClass().getClassLoader(), getApplicationContext(),
+              gvrLayout.getGvrApi().getNativeGvrContext(), EntryActivity.filename, size.x, size.y);
+      loaded = true;
+    }
+    //GVR
     gvrLayout.onResume();
     surfaceView.onResume();
     surfaceView.queueEvent(resumeNativeRunnable);
-    //NFC
-    try {
-      NfcAdapter adapter = NfcAdapter.getDefaultAdapter(this);
-      PendingIntent pendingIntent = PendingIntent.getActivity(
-              this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
-      adapter.enableForegroundDispatch(this, pendingIntent, null, null);
-    } catch(Exception e) {
-      e.printStackTrace();
-    }
   }
 
   @Override
@@ -210,11 +196,11 @@ public class MainActivity extends AbstractActivity {
   @Override
   public void onNewIntent(Intent intent) {}
 
-  private native long nativeCreateRenderer(ClassLoader appClassLoader, Context context, long gvr, String filename);
+  private native long nativeCreateRenderer(ClassLoader appClassLoader, Context context, long gvr, String filename, int w, int h);
   private native void nativeDestroyRenderer(long nativeTreasureHuntRenderer);
   private native void nativeInitializeGl(long nativeTreasureHuntRenderer);
   private native long nativeDrawFrame(long nativeTreasureHuntRenderer);
-  private native void nativeOnTriggerEvent(long nativeTreasureHuntRenderer);
+  private native void nativeOnTriggerEvent(long nativeTreasureHuntRenderer, float value);
   private native void nativeOnPause(long nativeTreasureHuntRenderer);
   private native void nativeOnResume(long nativeTreasureHuntRenderer);
 }

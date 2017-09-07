@@ -1,9 +1,9 @@
 #ifndef SHADERS_H
 #define SHADERS_H
 
-
 static const char* kTextureVertexShaders[] = {
     R"glsl(
+    precision mediump float;
     uniform mat4 u_MVP;
     uniform float u_X;
     uniform float u_Y;
@@ -34,4 +34,4 @@ static const char* kTextureFragmentShaders[] = {
     })glsl"
 };
 
-#endif  // TREASUREHUNT_APP_SRC_MAIN_JNI_TREASUREHUNTSHADERS_H_ // NOLINT
+#endif
