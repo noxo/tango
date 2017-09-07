@@ -17,7 +17,7 @@
 
 class Renderer {
  public:
-  Renderer(gvr_context* gvr_context, std::string filename, int w, int h);
+  Renderer(gvr_context* gvr_context, std::string filename);
   ~Renderer();
   void InitializeGl();
   void DrawFrame();
@@ -26,14 +26,15 @@ class Renderer {
   void OnResume();
 
  private:
-  GLuint LoadGLShader(GLuint type, const char** shadercode);
+  void PrepareFramebuffer();
+  int LoadGLShader(int type, const char** shadercode);
 
   enum ViewType {
     kLeftView,
     kRightView
   };
-  void DrawWorld(ViewType view, float* matrix);
-  void DrawModel(float* matrix);
+  void DrawWorld(ViewType view);
+  void DrawModel(ViewType view);
 
   std::unique_ptr<gvr::GvrApi> gvr_api_;
   std::unique_ptr<gvr::BufferViewportList> viewport_list_;
@@ -41,16 +42,23 @@ class Renderer {
   gvr::BufferViewport viewport_left_;
   gvr::BufferViewport viewport_right_;
 
-  GLuint model_program_;
+  int model_program_;
   int model_position_param_;
   int model_translatex_param_;
   int model_translatey_param_;
   int model_translatez_param_;
   int model_uv_param_;
   int model_modelview_projection_param_;
+  const gvr::Sizei reticle_render_size_;
 
-  gvr::Sizei render_size_;
   gvr::Mat4f head_view_;
+  gvr::Mat4f model_model_;
+  gvr::Sizei render_size_;
+
+  gvr::Mat4f modelview_projection_model_[2];
+  gvr::Mat4f modelview_model_[2];
+
+  gvr::ViewerType gvr_viewer_type_;
   std::vector<oc::Mesh> static_meshes_;
   glm::vec4 cur_position;
   glm::vec4 dst_position;

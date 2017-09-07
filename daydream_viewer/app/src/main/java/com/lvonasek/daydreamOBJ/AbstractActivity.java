@@ -16,6 +16,7 @@ import android.content.pm.PackageManager;
 import android.nfc.NfcAdapter;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.util.Log;
 
 public abstract class AbstractActivity extends Activity implements BluetoothAdapter.LeScanCallback
 {
@@ -24,10 +25,10 @@ public abstract class AbstractActivity extends Activity implements BluetoothAdap
   private String mDeviceAddress;
   private boolean mScanning;
   private boolean mBluetoothSupport;
+  private long mTimestamp;
 
   private static final int REQUEST_ENABLE_BT = 1;
 
-  protected abstract void onAddressChanged(String address);
   protected abstract void onConnectionChanged(boolean on);
   protected abstract void onDataReceived();
 
@@ -129,7 +130,6 @@ public abstract class AbstractActivity extends Activity implements BluetoothAdap
         scanLeDevice(false);
         unregisterReceiver(mGattUpdateReceiver);
         mDeviceAddress = null;
-        onAddressChanged("");
       }
     } catch(Exception e) {
       e.printStackTrace();
@@ -162,6 +162,7 @@ public abstract class AbstractActivity extends Activity implements BluetoothAdap
 
       // Automatically connects to the device upon successful start-up initialization.
       mBluetooth.connect(mDeviceAddress);
+      Log.d("Daydreamctrl", "Testing " + mDeviceAddress);
     }
 
     @Override
@@ -193,6 +194,11 @@ public abstract class AbstractActivity extends Activity implements BluetoothAdap
         }
       } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action))
       {
+        if (mScanning)
+        {
+          mBluetoothAdapter.stopLeScan(AbstractActivity.this);
+          mScanning = false;
+        }
         onDataReceived();
       }
     }
@@ -201,6 +207,9 @@ public abstract class AbstractActivity extends Activity implements BluetoothAdap
   @Override
   public void onLeScan(final BluetoothDevice device, int i, byte[] bytes)
   {
+    if (mTimestamp + 2000 > System.currentTimeMillis())
+      return;
+    mTimestamp = System.currentTimeMillis();
     runOnUiThread(new Runnable()
     {
       @Override
@@ -208,15 +217,17 @@ public abstract class AbstractActivity extends Activity implements BluetoothAdap
       {
         if (device == null)
           return;
+        try {
+          if (mBluetoothSupport)
+          {
+            unbindService(mServiceConnection);
+            mBluetooth = null;
+          }
+        } catch(Exception e) {
+        }
         mDeviceAddress = device.getAddress();
-        onAddressChanged(mDeviceAddress);
         Intent gattServiceIntent = new Intent(AbstractActivity.this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
-        if (mScanning)
-        {
-          mBluetoothAdapter.stopLeScan(AbstractActivity.this);
-          mScanning = false;
-        }
       }
     });
   }

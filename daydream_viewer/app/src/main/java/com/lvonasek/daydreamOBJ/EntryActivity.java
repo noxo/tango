@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.widget.Toast;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -14,14 +13,9 @@ import java.net.URLDecoder;
 public class EntryActivity extends AbstractActivity {
 
   public static String filename = null;
+  public static Activity activity = null;
 
   private static final int PERMISSIONS_CODE = 1985;
-
-  @Override
-  protected void onAddressChanged(String address)
-  {
-
-  }
 
   @Override
   protected void onConnectionChanged(boolean on)
@@ -32,13 +26,12 @@ public class EntryActivity extends AbstractActivity {
   @Override
   protected void onDataReceived()
   {
-
+    FileBrowser.onControllerData(DaydreamController.getStatus());
   }
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-
     try
     {
       filename = getIntent().getData().toString().substring(7);
@@ -50,9 +43,8 @@ public class EntryActivity extends AbstractActivity {
         e.printStackTrace();
       }
     } catch(Exception e) {
-      Toast.makeText(this, R.string.no_file, Toast.LENGTH_LONG).show();
-      finish();
-      return;
+      activity = this;
+      setContentView(R.layout.activity_main);
     }
   }
 
@@ -60,7 +52,8 @@ public class EntryActivity extends AbstractActivity {
   protected void onResume() {
     super.onResume();
     setupPermissions();
-    finish();
+    if (activity == null)
+      finish();
   }
 
   protected void setupPermissions() {
@@ -93,7 +86,8 @@ public class EntryActivity extends AbstractActivity {
       case PERMISSIONS_CODE:
       {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
-          startActivity(new Intent(this, MainActivity.class));
+          if (filename != null)
+            startActivity(new Intent(this, MainActivity.class));
         break;
       }
     }
@@ -101,4 +95,10 @@ public class EntryActivity extends AbstractActivity {
 
   @Override
   public void onNewIntent(Intent intent) {}
+
+  @Override
+  public void onBackPressed()
+  {
+    System.exit(0);
+  }
 }

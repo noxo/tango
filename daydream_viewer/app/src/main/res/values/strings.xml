@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">VR Obj Viewer</string>
-    <string name="no_file">Click on OBJ file from file manager</string>
+    <string name="no_controller">Press \"O\" on the controller.</string>
+    <string name="no_daydream">To open VR using cardboard use\nfile manager and open OBJ file.</string>
 </resources>

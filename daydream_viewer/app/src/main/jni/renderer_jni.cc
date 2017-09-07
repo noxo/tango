@@ -33,9 +33,9 @@ extern "C" {
 
 JNI_METHOD(jlong, nativeCreateRenderer)
 (JNIEnv *env, jclass clazz, jobject class_loader, jobject android_context,
- jlong native_gvr_api, jstring filename, jint w, jint h) {
+ jlong native_gvr_api, jstring filename) {
   return jptr(new Renderer(reinterpret_cast<gvr_context *>(native_gvr_api),
-  jstring2string(env, filename), w, h));
+  jstring2string(env, filename)));
 }
 
 JNI_METHOD(void, nativeDestroyRenderer)

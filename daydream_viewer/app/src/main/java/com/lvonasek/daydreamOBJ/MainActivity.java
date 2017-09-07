@@ -9,9 +9,9 @@ import android.view.Display;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.Toast;
 
 import com.google.vr.ndk.base.GvrLayout;
+import com.google.vr.sdk.base.AndroidCompat;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -48,13 +48,6 @@ public class MainActivity extends AbstractActivity {
       };
 
   @Override
-  protected void onAddressChanged(String address)
-  {
-    if (!address.isEmpty())
-      Toast.makeText(this, "Connected to controller " + address, Toast.LENGTH_LONG).show();
-  }
-
-  @Override
   protected void onConnectionChanged(boolean on)
   {
   }
@@ -64,6 +57,9 @@ public class MainActivity extends AbstractActivity {
   {
     if (DaydreamController.getStatus().get(DaydreamController.BTN_CLICK) > 0)
       nativeOnTriggerEvent(nativeTreasureHuntRenderer, 0.05f);
+    if (DaydreamController.getStatus().get(DaydreamController.BTN_HOME) > 0)
+      if (EntryActivity.activity != null)
+        finish();
   }
 
   @Override
@@ -129,6 +125,11 @@ public class MainActivity extends AbstractActivity {
 
     // Add the GvrLayout to the View hierarchy.
     setContentView(gvrLayout);
+
+    // Enable scan line racing.
+    if (gvrLayout.setAsyncReprojectionEnabled(true))
+      AndroidCompat.setSustainedPerformanceMode(this, true);
+    AndroidCompat.setVrModeEnabled(this, true);
   }
 
   @Override
@@ -150,6 +151,7 @@ public class MainActivity extends AbstractActivity {
       display.getSize(size);
       nativeTreasureHuntRenderer = nativeCreateRenderer(getClass().getClassLoader(), getApplicationContext(),
               gvrLayout.getGvrApi().getNativeGvrContext(), EntryActivity.filename, size.x, size.y);
+      EntryActivity.filename = null;
       loaded = true;
     }
     //GVR
