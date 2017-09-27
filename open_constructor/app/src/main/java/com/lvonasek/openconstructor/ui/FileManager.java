@@ -12,15 +12,14 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
 import com.lvonasek.openconstructor.R;
-import com.lvonasek.openconstructor.main.Exporter;
 import com.lvonasek.openconstructor.main.OpenConstructor;
-import com.lvonasek.openconstructor.sketchfab.Home;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -31,7 +30,9 @@ import java.util.Date;
 public class FileManager extends AbstractActivity implements View.OnClickListener {
   private ArrayList<Button> buttons;
   private ListView mList;
-  private LinearLayout mLayout;
+  private AdView mAdView;
+  private Button mAdd;
+  private Button mSettings;
   private ProgressBar mProgress;
   private TextView mText;
   private boolean first = true;
@@ -43,13 +44,12 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_files);
 
-    mLayout = (LinearLayout) findViewById(R.id.layout_menu_action);
+    mAdd = (Button) findViewById(R.id.add_button);
     mList = (ListView) findViewById(R.id.list);
     mText = (TextView) findViewById(R.id.info_text);
     mProgress = (ProgressBar) findViewById(R.id.progressBar);
-    findViewById(R.id.settings).setOnClickListener(this);
-    findViewById(R.id.add_button).setOnClickListener(this);
-    findViewById(R.id.sketchfab).setOnClickListener(this);
+    mSettings = (Button) findViewById(R.id.settings);
+    mAdView = (AdView)findViewById(R.id.adMob);
 
     buttons = new ArrayList<>();
     buttons.add((Button) findViewById(R.id.service_continue));
@@ -58,6 +58,8 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
     buttons.add((Button) findViewById(R.id.service_cancel));
     for (Button b : buttons)
       b.setOnClickListener(this);
+    mAdd.setOnClickListener(this);
+    mSettings.setOnClickListener(this);
   }
 
   @Override
@@ -71,7 +73,9 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
   protected void onResume()
   {
     super.onResume();
-    mLayout.setVisibility(View.VISIBLE);
+    mAdd.setVisibility(View.VISIBLE);
+    mSettings.setVisibility(View.VISIBLE);
+    showAd(false);
     for (Button b : buttons)
       b.setVisibility(View.GONE);
     mProgress.setVisibility(View.GONE);
@@ -80,7 +84,9 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
       for (Button b : buttons)
         if (b.getId() == R.id.service_cancel)
           b.setVisibility(View.VISIBLE);
-      mLayout.setVisibility(View.GONE);
+      mAdd.setVisibility(View.GONE);
+      mSettings.setVisibility(View.GONE);
+      showAd(true);
       mList.setVisibility(View.GONE);
       mText.setVisibility(View.VISIBLE);
       mText.setText("");
@@ -112,7 +118,9 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         }
       }).start();
     } else if (Service.getRunning(this) < Service.SERVICE_NOT_RUNNING) {
-      mLayout.setVisibility(View.GONE);
+      mAdd.setVisibility(View.GONE);
+      mSettings.setVisibility(View.GONE);
+      showAd(true);
       mList.setVisibility(View.GONE);
       for (Button b : buttons)
         b.setVisibility(View.VISIBLE);
@@ -142,7 +150,8 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         adapter.addItem(s);
     mText.setVisibility(adapter.getCount() == 0 ? View.VISIBLE : View.GONE);
     mList.setAdapter(adapter);
-    mLayout.setVisibility(View.VISIBLE);
+    mAdd.setVisibility(View.VISIBLE);
+    mSettings.setVisibility(View.VISIBLE);
     mProgress.setVisibility(View.GONE);
   }
 
@@ -168,7 +177,8 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
 
   public void showProgress()
   {
-    mLayout.setVisibility(View.GONE);
+    mAdd.setVisibility(View.GONE);
+    mSettings.setVisibility(View.GONE);
     mProgress.setVisibility(View.VISIBLE);
   }
 
@@ -199,11 +209,6 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         break;
       case R.id.settings:
         startActivity(new Intent(this, Settings.class));
-        break;
-      case R.id.sketchfab:
-        showProgress();
-        startActivity(new Intent(this, Home.class));
-        //restartPostprocessing();
         break;
       case R.id.service_continue:
         showProgress();
@@ -362,5 +367,22 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         startActivity(intent);
       }
     }).start();
+  }
+
+  private void showAd(boolean show)
+  {
+    if (show)
+    {
+
+      try {
+        mAdView.setVisibility(View.VISIBLE);
+        mAdView.loadAd(new AdRequest.Builder().build());
+      } catch (Exception e)
+      {
+        e.printStackTrace();
+      }
+    }
+    else
+      mAdView.setVisibility(View.GONE);
   }
 }

@@ -457,8 +457,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
         public void onClick(View view)
         {
           Intent i = new Intent(Intent.ACTION_VIEW);
-          i.setDataAndType(Uri.parse("file://" + filename), "application/" + CARDBOARD_APP);
-          i.setPackage(CARDBOARD_APP);
+          i.setDataAndType(Uri.parse("file://" + filename), "text/plain");
           startActivity(i);
           System.exit(0);
         }

@@ -69,16 +69,17 @@ class FileAdapter extends BaseAdapter
         contextMenu(index);
       }
     });
+    String key = (String)getItem(index);
     TextView name = (TextView) view.findViewById(R.id.name);
-    name.setText(mItems.get(index));
+    name.setText(key);
 
     //set description
     TextView desc = (TextView) view.findViewById(R.id.description);
-    desc.setText(mDescriptions.get(mItems.get(index)));
+    desc.setText(mDescriptions.get(key));
 
     //set icon
     View icon = view.findViewById(R.id.icon);
-    icon.setBackground(mIcons.get(mItems.get(index)));
+    icon.setBackground(mIcons.get(key));
 
     //set open action
     view.setOnClickListener(new View.OnClickListener()

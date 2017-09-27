@@ -3,6 +3,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
+    <Button
+        android:id="@+id/settings"
+        android:layout_width="28sp"
+        android:layout_height="28dp"
+        android:layout_margin="10dp"
+        android:background="@drawable/ic_settings"/>
+
     <TextView
         android:text="@string/app_name"
         android:layout_width="wrap_content"
@@ -20,13 +27,15 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true" >
+        android:layout_centerVertical="true"
+        android:id="@+id/linearLayout">
 
         <TextView
             android:text="@string/no_data"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="50dp"
+            android:layout_marginTop="75dp"
+            android:layout_marginBottom="25dp"
             android:gravity="center"
             android:textSize="20sp"
             android:id="@+id/info_text"
@@ -90,32 +99,30 @@
         android:layout_centerHorizontal="true" >
 
         <Button
-            android:text="@string/settings"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:id="@+id/settings" />
-
-        <Button
-            android:text="@string/sketchfab"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:id="@+id/sketchfab" />
-
-        <Button
             android:text="@string/capture"
             android:layout_width="0dp"
-            android:layout_height="match_parent"
+            android:layout_height="60sp"
             android:layout_weight="1"
+            android:textSize="20sp"
             android:id="@+id/add_button" />
 
     </LinearLayout>
+
+    <com.google.android.gms.ads.AdView
+        xmlns:ads="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/adMob"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/title"
+        android:layout_marginTop="25dp"
+        ads:adSize="BANNER"
+        ads:adUnitId="ca-app-pub-4116662758291059/8561055224" />
 
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_below="@id/title"
-        android:background="@android:color/white"/>
+        android:background="@android:color/white"
+        android:id="@+id/view"/>
 
 </RelativeLayout>

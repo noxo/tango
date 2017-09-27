@@ -2,10 +2,8 @@ package com.lvonasek.openconstructor.ui;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Environment;
 import android.preference.PreferenceManager;
@@ -14,19 +12,13 @@ import android.view.WindowManager;
 
 import com.lvonasek.openconstructor.R;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Scanner;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 public abstract class AbstractActivity extends Activity
 {
-  protected static final String CARDBOARD_APP = "com.lvonasek.daydreamOBJ";
   protected static final String FILE_KEY = "FILE2OPEN";
   protected static final String MODEL_DIRECTORY = "/Models/";
   protected static final String RESOLUTION_KEY = "RESOLUTION";
@@ -36,27 +28,8 @@ public abstract class AbstractActivity extends Activity
   public static final String[] FILE_EXT = {".obj"};
   public static final String TAG = "tango_app";
 
-  public static void installCardboardApp(Context context)
-  {
-    Intent i = new Intent(Intent.ACTION_VIEW);
-    i.setData(Uri.parse("https://play.google.com/store/apps/details?id=" + CARDBOARD_APP));
-    context.startActivity(i);
-  }
-
-  public static boolean isCardboardAppInstalled(Context context)
-  {
-    try {
-      context.getPackageManager().getPackageInfo(CARDBOARD_APP, 0);
-      return true;
-    } catch (PackageManager.NameNotFoundException e) {
-      return false;
-    }
-  }
-
   public static boolean isCardboardEnabled(Context context)
   {
-    if (!isCardboardAppInstalled(context))
-      return false;
     SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
     String key = context.getString(R.string.pref_cardboard);
     return pref.getBoolean(key, false);
