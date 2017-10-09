@@ -1,208 +1,120 @@
 package com.lvonasek.daydreamOBJ;
 
-import android.content.Context;
-import android.content.Intent;
-import android.graphics.Point;
-import android.opengl.GLSurfaceView;
+import android.opengl.GLES20;
+import android.opengl.Matrix;
 import android.os.Bundle;
-import android.view.Display;
-import android.view.KeyEvent;
-import android.view.MotionEvent;
-import android.view.View;
 
-import com.google.vr.ndk.base.GvrLayout;
 import com.google.vr.sdk.base.AndroidCompat;
+import com.google.vr.sdk.base.Eye;
+import com.google.vr.sdk.base.GvrActivity;
+import com.google.vr.sdk.base.GvrView;
+import com.google.vr.sdk.base.HeadTransform;
+import com.google.vr.sdk.base.Viewport;
+import com.google.vr.sdk.controller.Controller;
+import com.google.vr.sdk.controller.ControllerManager;
 
 import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
 
-public class MainActivity extends AbstractActivity {
-  static {
-    System.loadLibrary("gvr");
-    System.loadLibrary("daydream");
-  }
+public class MainActivity extends GvrActivity implements GvrView.StereoRenderer, Runnable
+{
+  private ControllerManager controllerManager;
 
-  // Opaque native pointer to the native TreasureHuntRenderer instance.
-  private long nativeTreasureHuntRenderer;
-
-  private GvrLayout gvrLayout;
-  private GLSurfaceView surfaceView;
-  private boolean loaded = false;
-
-  // Note that pause and resume signals to the native renderer are performed on the GL thread,
-  // ensuring thread-safety.
-  private final Runnable pauseNativeRunnable =
-      new Runnable() {
-        @Override
-        public void run() {
-          nativeOnPause(nativeTreasureHuntRenderer);
-        }
-      };
-
-  private final Runnable resumeNativeRunnable =
-      new Runnable() {
-        @Override
-        public void run() {
-          nativeOnResume(nativeTreasureHuntRenderer);
-        }
-      };
-
-  @Override
-  protected void onConnectionChanged(boolean on)
-  {
-  }
-
-  @Override
-  protected void onDataReceived()
-  {
-    if (DaydreamController.getStatus().get(DaydreamController.BTN_CLICK) > 0)
-      nativeOnTriggerEvent(nativeTreasureHuntRenderer, 0.05f);
-    if (DaydreamController.getStatus().get(DaydreamController.BTN_HOME) > 0)
-      if (EntryActivity.activity != null)
-        finish();
-  }
+  private float[] headView = new float[16];
+  private float[] modelViewProjection = new float[16];
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+    setContentView(R.layout.common_ui);
 
-    // Ensure fullscreen immersion.
-    setImmersiveSticky();
-    getWindow()
-        .getDecorView()
-        .setOnSystemUiVisibilityChangeListener(
-            new View.OnSystemUiVisibilityChangeListener() {
-              @Override
-              public void onSystemUiVisibilityChange(int visibility) {
-                if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
-                  setImmersiveSticky();
-                }
-              }
-            });
-
-    // Initialize GvrLayout and the native renderer.
-    gvrLayout = new GvrLayout(this);
-
-    // Add the GLSurfaceView to the GvrLayout.
-    surfaceView = new GLSurfaceView(this);
-    surfaceView.setEGLContextClientVersion(2);
-    surfaceView.setEGLConfigChooser(8, 8, 8, 0, 0, 0);
-    surfaceView.setPreserveEGLContextOnPause(true);
-    surfaceView.setRenderer(
-        new GLSurfaceView.Renderer() {
-          @Override
-          public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-            nativeInitializeGl(nativeTreasureHuntRenderer);
-          }
-
-          @Override
-          public void onSurfaceChanged(GL10 gl, int width, int height) {}
-
-          @Override
-          public void onDrawFrame(GL10 gl) {
-            nativeDrawFrame(nativeTreasureHuntRenderer);
-          }
-        });
-    surfaceView.setOnTouchListener(
-        new View.OnTouchListener() {
-          @Override
-          public boolean onTouch(View v, MotionEvent event) {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-              // Give user feedback and signal a trigger event.
-              surfaceView.queueEvent(
-                  new Runnable() {
-                    @Override
-                    public void run() {
-                      nativeOnTriggerEvent(nativeTreasureHuntRenderer, 1);
-                    }
-                  });
-              return true;
-            }
-            return false;
-          }
-        });
-    gvrLayout.setPresentationView(surfaceView);
-
-    // Add the GvrLayout to the View hierarchy.
-    setContentView(gvrLayout);
-
-    // Enable scan line racing.
-    if (gvrLayout.setAsyncReprojectionEnabled(true))
+    //stereo view
+    GvrView gvrView = (GvrView) findViewById(R.id.gvr_view);
+    gvrView.setEGLConfigChooser(8, 8, 8, 8, 16, 8);
+    gvrView.setRenderer(this);
+    gvrView.setTransitionViewEnabled(true);
+    gvrView.setDistortionCorrectionEnabled(true);
+    if (gvrView.setAsyncReprojectionEnabled(true))
       AndroidCompat.setSustainedPerformanceMode(this, true);
-    AndroidCompat.setVrModeEnabled(this, true);
+    setGvrView(gvrView);
   }
 
-  @Override
-  protected void onPause() {
-    surfaceView.queueEvent(pauseNativeRunnable);
-    surfaceView.onPause();
-    gvrLayout.onPause();
-    super.onPause();
-  }
 
   @Override
-  protected synchronized void onResume() {
-    super.onResume();
-    //scene
-    if (!loaded)
+  protected void onStart() {
+    super.onStart();
+    controllerManager = new ControllerManager(this, new ControllerManager.EventListener()
     {
-      Display display = getWindowManager().getDefaultDisplay();
-      Point size = new Point();
-      display.getSize(size);
-      nativeTreasureHuntRenderer = nativeCreateRenderer(getClass().getClassLoader(), getApplicationContext(),
-              gvrLayout.getGvrApi().getNativeGvrContext(), EntryActivity.filename, size.x, size.y);
-      EntryActivity.filename = null;
-      loaded = true;
-    }
-    //GVR
-    gvrLayout.onResume();
-    surfaceView.onResume();
-    surfaceView.queueEvent(resumeNativeRunnable);
+      @Override
+      public void onApiStatusChanged(int i)
+      {
+      }
+
+      @Override
+      public void onRecentered()
+      {
+      }
+    });
+    controllerManager.start();
   }
 
   @Override
-  protected void onDestroy() {
-    super.onDestroy();
-    gvrLayout.shutdown();
-    nativeDestroyRenderer(nativeTreasureHuntRenderer);
-    nativeTreasureHuntRenderer = 0;
+  protected void onStop() {
+    controllerManager.stop();
+    controllerManager = null;
+    super.onStop();
   }
 
   @Override
-  public void onWindowFocusChanged(boolean hasFocus) {
-    super.onWindowFocusChanged(hasFocus);
-    if (hasFocus) {
-      setImmersiveSticky();
-    }
+  public synchronized void onRendererShutdown() {
+    nativeDestroyRenderer();
   }
 
   @Override
-  public boolean dispatchKeyEvent(KeyEvent event)
+  public synchronized void onSurfaceChanged(int width, int height) {
+  }
+
+  @Override
+  public synchronized void onSurfaceCreated(EGLConfig config) {
+    GLES20.glClearColor(0.1f, 0.1f, 0.1f, 0.5f);
+    System.loadLibrary("daydream");
+    nativeInitializeGl();
+    nativeCreateRenderer(EntryActivity.filename);
+    nativeDrawFrame(modelViewProjection);
+  }
+
+  @Override
+  public synchronized void onNewFrame(HeadTransform headTransform) {
+    headTransform.getHeadView(headView, 0);
+  }
+
+  @Override
+  public synchronized void onDrawEye(Eye eye) {
+    GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+    GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+    float[] perspective = eye.getPerspective(0.1f, 1000.0f);
+    Matrix.multiplyMM(modelViewProjection, 0, perspective, 0, eye.getEyeView(), 0);
+    nativeDrawFrame(modelViewProjection);
+  }
+
+  @Override
+  public synchronized void onFinishFrame(Viewport viewport) {
+    runOnUiThread(this);
+    nativeUpdate();
+  }
+
+  @Override
+  public void run()
   {
-    // Avoid accidental volume key presses while the phone is in the VR headset.
-    return event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_UP || event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_DOWN || super.dispatchKeyEvent(event);
+    Controller controller = controllerManager.getController();
+    controller.update();
+    if (controller.clickButtonState)
+      nativeOnTriggerEvent(0, 0, 0.05f, headView);
   }
 
-  private void setImmersiveSticky() {
-    getWindow()
-        .getDecorView()
-        .setSystemUiVisibility(
-            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
-  }
-
-  @Override
-  public void onNewIntent(Intent intent) {}
-
-  private native long nativeCreateRenderer(ClassLoader appClassLoader, Context context, long gvr, String filename, int w, int h);
-  private native void nativeDestroyRenderer(long nativeTreasureHuntRenderer);
-  private native void nativeInitializeGl(long nativeTreasureHuntRenderer);
-  private native long nativeDrawFrame(long nativeTreasureHuntRenderer);
-  private native void nativeOnTriggerEvent(long nativeTreasureHuntRenderer, float value);
-  private native void nativeOnPause(long nativeTreasureHuntRenderer);
-  private native void nativeOnResume(long nativeTreasureHuntRenderer);
+  private synchronized native void nativeCreateRenderer(String filename);
+  private synchronized native void nativeDestroyRenderer();
+  private synchronized native void nativeInitializeGl();
+  private synchronized native void nativeDrawFrame(float[] matrix);
+  private synchronized native void nativeOnTriggerEvent(float x, float y, float z, float[] matrix);
+  private synchronized native void nativeUpdate();
 }
