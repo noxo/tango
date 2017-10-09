@@ -16,11 +16,20 @@
       android:label="@string/app_name"
       android:theme="@style/VrActivityTheme"
       android:allowBackup="false">
+
     <activity
         android:name=".EntryActivity"
         android:label="@string/app_name"
+        android:enableVrMode="@string/gvr_vr_mode_component"
+        android:resizeableActivity="false"
         android:screenOrientation="landscape"
+        android:theme="@style/VrActivityTheme"
         android:launchMode="singleTop" >
+
+      <meta-data android:name="com.google.android.vr.icon"
+                 android:resource="@drawable/ic_model_icon" />
+      <meta-data android:name="com.google.android.vr.icon_background"
+                 android:resource="@drawable/ic_model_background" />
 
       <intent-filter>
         <action android:name="android.intent.action.MAIN"/>
@@ -49,6 +58,7 @@
         android:name=".MainActivity"
         android:label="@string/app_name"
         android:screenOrientation="landscape"
+        android:theme="@style/VrActivityTheme"
         android:configChanges="orientation|keyboardHidden|screenSize"
         android:enableVrMode="@string/gvr_vr_mode_component"
         android:resizeableActivity="false"

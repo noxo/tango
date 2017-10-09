@@ -5,16 +5,22 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+
+import com.google.vr.ndk.base.DaydreamApi;
+
 import java.net.URLDecoder;
 
 public class EntryActivity extends Activity {
 
+  public static String[] permissions = { Manifest.permission.READ_EXTERNAL_STORAGE };
+
   public static String filename = null;
-  private static final int PERMISSIONS_CODE = 1985;
+  private DaydreamApi daydream;
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+    daydream = DaydreamApi.create(this);
     try
     {
       filename = null;
@@ -26,43 +32,71 @@ public class EntryActivity extends Activity {
   }
 
   @Override
+  public void onBackPressed()
+  {
+    super.onBackPressed();
+    System.exit(0);
+  }
+
+  @Override
   protected void onResume() {
     super.onResume();
     setupPermissions();
   }
 
   protected void setupPermissions() {
-    String[] permissions = { Manifest.permission.READ_EXTERNAL_STORAGE };
     boolean ok = true;
     for (String s : permissions)
       if (checkSelfPermission(s) != PackageManager.PERMISSION_GRANTED)
         ok = false;
 
     if (!ok)
-      requestPermissions(permissions, PERMISSIONS_CODE);
-    else
-      onRequestPermissionsResult(PERMISSIONS_CODE, null, new int[]{PackageManager.PERMISSION_GRANTED});
+    {
+      try
+      {
+        daydream.exitFromVr(this, 1, null);
+        new Thread(new Runnable()
+        {
+          @Override
+          public void run()
+          {
+            try
+            {
+              Thread.sleep(5000);
+            } catch (InterruptedException e)
+            {
+              e.printStackTrace();
+            }
+            runOnUiThread(new Runnable()
+            {
+              @Override
+              public void run()
+              {
+                requestPermissions(permissions, 2);
+              }
+            });
+          }
+        }).start();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+    else {
+      if (filename == null)
+      {
+        SelectorView.active = true;
+        filename = "";
+      }
+      DaydreamApi.create(this).launchInVr(new Intent(this, MainActivity.class));
+      finish();
+    }
   }
 
   @Override
-  public synchronized void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults)
+  public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
   {
-    switch (requestCode)
-    {
-      case PERMISSIONS_CODE:
-      {
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
-        {
-          if (filename == null)
-          {
-            SelectorView.active = true;
-            filename = "";
-          }
-          startActivity(new Intent(this, MainActivity.class));
-        }
-        finish();
-        break;
-      }
-    }
+    super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+      recreate();
   }
 }

@@ -122,8 +122,8 @@ public class MainActivity extends GvrActivity implements GvrView.StereoRenderer,
     if (SelectorView.active)
     {
       // model selector
-      final String filename = SelectorView.getSelected();
-      if (controller.clickButtonState && (filename != null))
+      nativeLoadModel("");
+      if (controller.clickButtonState)
       {
         SelectorView.activate(false);
         new Thread(new Runnable()
@@ -131,15 +131,19 @@ public class MainActivity extends GvrActivity implements GvrView.StereoRenderer,
           @Override
           public void run()
           {
-            nativeLoadModel(filename);
+            EntryActivity.filename = SelectorView.getSelected();
+            nativeLoadModel(EntryActivity.filename);
           }
         }).start();
         timestamp = System.currentTimeMillis() + 500;
       }
       else if (controller.appButtonState)
       {
-        SelectorView.activate(false);
-        timestamp = System.currentTimeMillis() + 500;
+        if (!EntryActivity.filename.isEmpty())
+        {
+          SelectorView.activate(false);
+          timestamp = System.currentTimeMillis() + 500;
+        }
       }
       else if (controller.isTouching)
       {
@@ -158,7 +162,6 @@ public class MainActivity extends GvrActivity implements GvrView.StereoRenderer,
       //scene moving
       if (controller.appButtonState)
       {
-        nativeLoadModel("");
         SelectorView.activate(true);
         timestamp = System.currentTimeMillis() + 500;
       }
