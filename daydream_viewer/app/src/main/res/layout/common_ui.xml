@@ -5,12 +5,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
-
     <com.google.vr.sdk.base.GvrView
         android:id="@+id/gvr_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_alignParentTop="true"
         android:layout_alignParentLeft="true" />
+
+    <com.lvonasek.daydreamOBJ.SelectorView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"/>
 
 </RelativeLayout>

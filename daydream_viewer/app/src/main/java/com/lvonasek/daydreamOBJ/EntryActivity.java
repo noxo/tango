@@ -5,8 +5,6 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 
 public class EntryActivity extends Activity {
@@ -19,16 +17,11 @@ public class EntryActivity extends Activity {
     super.onCreate(savedInstanceState);
     try
     {
+      filename = null;
       filename = getIntent().getData().toString().substring(7);
-      try
-      {
-        filename = URLDecoder.decode(filename, "UTF-8");
-      } catch (UnsupportedEncodingException e)
-      {
-        e.printStackTrace();
-      }
+      filename = URLDecoder.decode(filename, "UTF-8");
     } catch(Exception e) {
-      System.exit(0);
+      e.printStackTrace();
     }
   }
 
@@ -60,6 +53,11 @@ public class EntryActivity extends Activity {
       {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
         {
+          if (filename == null)
+          {
+            SelectorView.active = true;
+            filename = "";
+          }
           startActivity(new Intent(this, MainActivity.class));
         }
         finish();

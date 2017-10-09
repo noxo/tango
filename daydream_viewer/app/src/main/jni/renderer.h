@@ -13,10 +13,9 @@
 
 class Renderer {
 public:
-  Renderer(std::string filename);
-  ~Renderer();
   void DrawModel(float* view);
   void InitializeGl();
+  void Load(std::string filename);
   void OnTriggerEvent(float x, float y, float z, float* view);
   void Update();
 

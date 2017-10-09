@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">VR Obj Viewer</string>
+    <string name="storage">Internal storage/Models</string>
+    <string name="no_models">contains no models</string>
 </resources>

@@ -33,12 +33,15 @@ static const char* kTextureShader[] = {R"glsl(
     })glsl"
 };
 
-Renderer::Renderer(std::string filename) {
-  oc::File3d io(filename, false);
-  io.ReadModel(20000, static_meshes_);
-}
-
-Renderer::~Renderer() {
+void Renderer::Load(std::string filename) {
+  static_meshes_.clear();
+  if (!filename.empty())
+  {
+    oc::File3d io(filename, false);
+    io.ReadModel(20000, static_meshes_);
+  }
+  cur_position = glm::vec4();
+  dst_position = glm::vec4();
 }
 
 void Renderer::InitializeGl() {
@@ -125,48 +128,35 @@ std::string jstring2string(JNIEnv* env, jstring name)
 
 extern "C" {
 
-Renderer* renderer = 0;
+Renderer renderer;
 
-JNI_METHOD(void, nativeCreateRenderer)
+JNI_METHOD(void, nativeLoadModel)
 (JNIEnv *env, jobject, jstring filename) {
-  if (renderer)
-    delete renderer;
-  renderer = new Renderer(jstring2string(env, filename));
-}
-
-JNI_METHOD(void, nativeDestroyRenderer)
-(JNIEnv *, jclass) {
-  if (renderer)
-    delete renderer;
-  renderer = 0;
+  renderer.Load(jstring2string(env, filename));
 }
 
 JNI_METHOD(void, nativeInitializeGl)
 (JNIEnv *, jobject) {
-  if (renderer)
-    renderer->InitializeGl();
+  renderer.InitializeGl();
 }
 
 JNI_METHOD(void, nativeOnTriggerEvent)
 (JNIEnv *env, jobject, jfloat x, jfloat y, jfloat z, jfloatArray matrix_) {
   jfloat *matrix = env->GetFloatArrayElements(matrix_, NULL);
-  if (renderer)
-    renderer->OnTriggerEvent(x, y, z, matrix);
+  renderer.OnTriggerEvent(x, y, z, matrix);
   env->ReleaseFloatArrayElements(matrix_, matrix, 0);
 }
 
 JNI_METHOD(void, nativeDrawFrame)
 (JNIEnv *env, jobject, jfloatArray matrix_) {
   jfloat *matrix = env->GetFloatArrayElements(matrix_, NULL);
-  if (renderer)
-    renderer->DrawModel(matrix);
+  renderer.DrawModel(matrix);
   env->ReleaseFloatArrayElements(matrix_, matrix, 0);
 }
 
 JNI_METHOD(void, nativeUpdate)
 (JNIEnv *, jobject) {
-  if (renderer)
-    renderer->Update();
+  renderer.Update();
 }
 
 }  // extern "C"
