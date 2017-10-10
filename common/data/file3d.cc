@@ -48,31 +48,29 @@ namespace oc {
         //count vertices and faces
         faceCount = 0;
         vertexCount = 0;
-        std::vector<unsigned int> vectorSize;
+        std::vector<unsigned long> vectorSize;
         for(unsigned int i = 0; i < model.size(); i++) {
-            unsigned int max = model[i].vertices.size() + 1;
+            unsigned long max = model[i].vertices.size() + 1;
             faceCount += model[i].vertices.size() / 3;
-            vertexCount += max;
+            vertexCount += model[i].vertices.size();
             vectorSize.push_back(max);
         }
         //write
         if ((type == PLY) || (type == OBJ)) {
             WriteHeader(model);
             for (unsigned int i = 0; i < model.size(); i++)
-                WritePointCloud(model[i], vectorSize[i]);
-            int offset = 0;
-            if (type == OBJ)
-                offset++;
-            for (unsigned int i = 0; i < model.size(); i++) {
-                if (model[i].vertices.empty()) {
-                    offset += vectorSize[i];
-                    continue;
+                WritePointCloud(model[i]);
+            if (type == OBJ) {
+                int offset = 1;
+                for (unsigned int i = 0; i < model.size(); i++) {
+                    if (model[i].vertices.empty())
+                        continue;
+                    if (type == OBJ) {
+                        fprintf(file, "usemtl %d\n", fileToIndex[model[i].image->GetName()]);
+                    }
+                    WriteFaces(model[i], offset);
+                    offset += model[i].vertices.size() / 3;
                 }
-                if (type == OBJ) {
-                    fprintf(file, "usemtl %d\n", fileToIndex[model[i].image->GetName()]);
-                }
-                WriteFaces(model[i], offset);
-                offset += vectorSize[i];
             }
         } else
             assert(false);
@@ -110,6 +108,20 @@ namespace oc {
         bool hasCoords = false;
         unsigned int va, vna, vta, vb, vnb, vtb, vc, vnc, vtc;
         std::map<std::string, Image*> images;
+
+        //dummy material
+        std::string key;
+        meshIndex = output.size();
+        output.push_back(Mesh());
+        images[key] = new Image(1, 1);
+        images[key]->GetData()[0] = 255;
+        images[key]->GetData()[1] = 255;
+        images[key]->GetData()[2] = 255;
+        output[meshIndex].imageOwner = true;
+        output[meshIndex].image = images[key];
+        lastKey = key;
+
+        //parse
         while (true) {
             if (!fgets(buffer, 1024, file))
                 break;
@@ -118,7 +130,7 @@ namespace oc {
                 sbuf = sbuf.substr(1);
             }
             if (sbuf[0] == 'u') {
-                std::string key = sbuf.substr(7);
+                key = sbuf.substr(7);
                 CleanStr(key);
                 if (lastKey.empty() || (lastKey.compare(key) != 0)) {
                     meshIndex = output.size();
@@ -184,12 +196,20 @@ namespace oc {
                     output[meshIndex].uv.push_back(uvs[vta - 1]);
                     output[meshIndex].uv.push_back(uvs[vtb - 1]);
                     output[meshIndex].uv.push_back(uvs[vtc - 1]);
+                } else {
+                    output[meshIndex].uv.push_back(glm::vec2(0, 0));
+                    output[meshIndex].uv.push_back(glm::vec2(0, 0));
+                    output[meshIndex].uv.push_back(glm::vec2(0, 0));
                 }
                 //normals
                 if (hasNormals) {
                     output[meshIndex].normals.push_back(normals[vna - 1]);
                     output[meshIndex].normals.push_back(normals[vnb - 1]);
                     output[meshIndex].normals.push_back(normals[vnc - 1]);
+                } else {
+                    output[meshIndex].normals.push_back(glm::vec3(0, 0, 0));
+                    output[meshIndex].normals.push_back(glm::vec3(0, 0, 0));
+                    output[meshIndex].normals.push_back(glm::vec3(0, 0, 0));
                 }
                 //create new model if it is already too big
                 if (output[meshIndex].vertices.size() >= subdivision * 3) {
@@ -230,10 +250,13 @@ namespace oc {
                     if ((a == b) || (a == c) || (b == c))
                         continue;
                     output[meshIndex].vertices.push_back(data.vertices[a]);
+                    output[meshIndex].normals.push_back(data.normals[a]);
                     output[meshIndex].colors.push_back(data.colors[a]);
                     output[meshIndex].vertices.push_back(data.vertices[b]);
+                    output[meshIndex].normals.push_back(data.normals[b]);
                     output[meshIndex].colors.push_back(data.colors[b]);
                     output[meshIndex].vertices.push_back(data.vertices[c]);
+                    output[meshIndex].normals.push_back(data.normals[c]);
                     output[meshIndex].colors.push_back(data.colors[c]);
                 }
             offset += count;
@@ -244,10 +267,12 @@ namespace oc {
         assert(!writeMode);
         unsigned int a, b, c;
         glm::vec3 v;
+        glm::vec3 n;
         for (int i = 0; i < vertexCount; i++) {
-            fscanf(file, "%f %f %f %d %d %d", &v.x, &v.z, &v.y, &a, &b, &c);
+            fscanf(file, "%f %f %f %f %f %f %d %d %d", &v.x, &v.z, &v.y,&n.x, &n.z, &n.y, &a, &b, &c);
             v.x *= -1.0f;
             data.vertices.push_back(v);
+            data.normals.push_back(n);
             data.colors.push_back(a + (b << 8) + (c << 16));
         }
     }
@@ -288,30 +313,36 @@ namespace oc {
             std::string key, imgFile;
             std::string data = path.substr(0, index + 1);
             std::string filepath = data + mtlFile;
-            FILE* mtl = fopen(filepath.c_str(), "r");
-            while (true) {
-                if (!fgets(buffer, 1024, mtl))
-                    break;
-                std::string sbuf = buffer;
-                while(!sbuf.empty() && isspace(sbuf[0])) {
-                    sbuf = sbuf.substr(1);
-                }
-                if (StartsWith(sbuf, "newmtl")) {
-                    key = sbuf.substr(7);
-                    CleanStr(key);
-                }
-                if (StartsWith(sbuf, "Kd")) {
-                    glm::vec3 color;
-                    sscanf(sbuf.c_str(), "Kd %f %f %f", &color.r, &color.g, &color.b);
-                    keyToColor[key] = color;
-                }
-                if (StartsWith(sbuf, "map_Kd")) {
-                    imgFile = data + sbuf.substr(7);
-                    CleanStr(imgFile);
-                    keyToFile[key] = imgFile;
-                }
+            if (!mtlFile.empty())
+            {
+                FILE* mtl = fopen(filepath.c_str(), "r");
+                while (true) {
+                    if (!fgets(buffer, 1024, mtl))
+                        break;
+                    std::string sbuf = buffer;
+                    while(!sbuf.empty() && isspace(sbuf[0])) {
+                        sbuf = sbuf.substr(1);
+                    }
+                    if (StartsWith(sbuf, "newmtl")) {
+                        key = sbuf.substr(7);
+                        CleanStr(key);
+                    }
+                    if (StartsWith(sbuf, "Kd")) {
+                        glm::vec3 color;
+                        sscanf(sbuf.c_str(), "Kd %f %f %f", &color.r, &color.g, &color.b);
+                        keyToColor[key] = color;
+                    }
+                    if (StartsWith(sbuf, "map_Kd")) {
+                        imgFile = data + sbuf.substr(7);
+                        CleanStr(imgFile);
+                        keyToFile[key] = imgFile;
+                    }
+              }
+              fclose(mtl);
+            } else {
+              fclose(file);
+              file = fopen(path.c_str(), "r");
             }
-            fclose(mtl);
         } else
             assert(false);
     }
@@ -342,10 +373,13 @@ namespace oc {
             fprintf(file, "property float x\n");
             fprintf(file, "property float y\n");
             fprintf(file, "property float z\n");
+            fprintf(file, "property float nx\n");
+            fprintf(file, "property float ny\n");
+            fprintf(file, "property float nz\n");
             fprintf(file, "property uchar red\n");
             fprintf(file, "property uchar green\n");
             fprintf(file, "property uchar blue\n");
-            fprintf(file, "element face %d\n", faceCount);
+            fprintf(file, "element face %d\n", 0);
             fprintf(file, "property list uchar uint vertex_indices\n");
             fprintf(file, "end_header\n");
         } else if (type == OBJ) {
@@ -388,18 +422,18 @@ namespace oc {
         }
     }
 
-    void File3d::WritePointCloud(Mesh& mesh, int size) {
+    void File3d::WritePointCloud(Mesh& mesh) {
         glm::vec3 v;
         glm::vec3 n;
         glm::vec2 t;
         glm::ivec3 c;
-        for(unsigned int j = 0; j < size; j++) {
+        for(unsigned int j = 0; j < mesh.vertices.size(); j++) {
             v = mesh.vertices[j];
+            n = mesh.normals[j];
             if (type == PLY) {
                 c = DecodeColor(mesh.colors[j]);
-                fprintf(file, "%f %f %f %d %d %d\n", -v.x, v.z, v.y, c.r, c.g, c.b);
+                fprintf(file, "%f %f %f %f %f %f %d %d %d\n", -v.x, v.z, v.y, -n.x, n.z, n.y, c.r, c.g, c.b);
             } else if (type == OBJ) {
-                n = mesh.normals[j];
                 t = mesh.uv[j];
                 fprintf(file, "v %f %f %f\n", v.x, v.y, v.z);
                 fprintf(file, "vn %f %f %f\n", n.x, n.y, n.z);

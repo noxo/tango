@@ -25,7 +25,7 @@ private:
     unsigned int ScanDec(char *line, int offset);
     bool StartsWith(std::string s, std::string e);
     void WriteHeader(std::vector<Mesh>& model);
-    void WritePointCloud(Mesh& mesh, int size);
+    void WritePointCloud(Mesh& mesh);
     void WriteFaces(Mesh& mesh, int offset);
 
     TYPE type;

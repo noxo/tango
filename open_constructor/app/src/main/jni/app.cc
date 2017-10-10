@@ -263,6 +263,24 @@ namespace oc {
     void App::Save(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
+        {
+            //save complete model to obj
+            Tango3DR_Mesh mesh;
+            Tango3DR_Status ret = Tango3DR_extractFullMesh(tango.Context(), &mesh);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+            ret = Tango3DR_Mesh_saveToObj(&mesh, filename.c_str());
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+            ret = Tango3DR_Mesh_destroy(&mesh);
+            if (ret != TANGO_3DR_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+
+            //convert to ply
+            std::vector<Mesh> data;
+            File3d(filename, false).ReadModel(kSubdivisionSize, data);
+            File3d(filename + ".ply", true).WriteModel(data);
+        }
         if (texturize.Init(tango.Context(), tango.Camera())) {
             texturize.Process(filename);
 
