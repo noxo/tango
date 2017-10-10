@@ -11,7 +11,8 @@ LOCAL_CFLAGS           := -std=c++11
 LOCAL_C_INCLUDES := $(PROJECT_ROOT)/third_party/glm/ \
                     $(PROJECT_ROOT)/third_party/libjpeg-turbo/include/ \
                     $(PROJECT_ROOT)/third_party/libpng/include/ \
-                    $(PROJECT_ROOT)/common/
+                    $(PROJECT_ROOT)/common/ \
+                    $(PROJECT_ROOT)/common/poisson
 
 LOCAL_SRC_FILES := ../../../../../common/data/file3d.cc \
                    ../../../../../common/data/image.cc \
@@ -22,6 +23,12 @@ LOCAL_SRC_FILES := ../../../../../common/data/file3d.cc \
                    ../../../../../common/gl/camera.cc \
                    ../../../../../common/gl/glsl.cc \
                    ../../../../../common/gl/renderer.cc \
+                   ../../../../../common/poisson/CmdLineParser.cpp \
+                   ../../../../../common/poisson/Factor.cpp \
+                   ../../../../../common/poisson/Geometry.cpp \
+                   ../../../../../common/poisson/MarchingCubes.cpp \
+                   ../../../../../common/poisson/PlyFile.cpp \
+                   ../../../../../common/poisson/PoissonRecon.cpp \
                    ../../../../../common/tango/scan.cc \
                    ../../../../../common/tango/service.cc \
                    ../../../../../common/tango/texturize.cc \
