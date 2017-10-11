@@ -48,6 +48,13 @@ public abstract class AbstractActivity extends Activity
     return pref.getBoolean(key, false);
   }
 
+  public boolean isPoissonReconstructionOn()
+  {
+    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+    String key = getString(R.string.pref_poisson);
+    return pref.getBoolean(key, false);
+  }
+
   public boolean isSharpPhotosOn()
   {
     SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);

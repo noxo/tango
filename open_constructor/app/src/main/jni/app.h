@@ -18,7 +18,8 @@ namespace oc {
     public:
         App();
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin, double dmax,
-                                     int noise, bool land, bool sharpPhotos, std::string dataset);
+                                     int noise, bool land, bool sharpPhotos, bool fixHoles,
+                                     std::string dataset);
         void onPointCloudAvailable(TangoPointCloud *pc);
         void onFrameAvailable(TangoCameraId id, const TangoImageBuffer *im);
         void onTangoEvent(const TangoEvent *event);
@@ -70,6 +71,7 @@ namespace oc {
 
         bool gyro;
         bool landscape;
+        bool poisson;
         bool sharp;
         float movex, lastMovex;
         float movey, lastMovey;
