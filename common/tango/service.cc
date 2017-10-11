@@ -236,6 +236,20 @@ namespace oc {
         return output;
     }
 
+    void TangoService::SavePointCloud(std::string filename) {
+        //save complete model to obj
+        Tango3DR_Mesh mesh;
+        Tango3DR_Status ret = Tango3DR_extractFullMesh(context, &mesh);
+        if (ret != TANGO_3DR_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+        ret = Tango3DR_Mesh_saveToObj(&mesh, filename.c_str());
+        if (ret != TANGO_3DR_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+        ret = Tango3DR_Mesh_destroy(&mesh);
+        if (ret != TANGO_3DR_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+    }
+
     std::vector<glm::mat4> TangoService::ZeroPose() {
         std::vector<glm::mat4> output;
         for (int i = 0; i < MAX_CAMERA; i++)

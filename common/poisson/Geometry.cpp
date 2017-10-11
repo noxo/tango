@@ -49,7 +49,11 @@ BufferedReadWriteFile::BufferedReadWriteFile( char* fileName , int bufferSize )
 	if( fileName ) strcpy( _fileName , fileName ) , tempFile = false , _fp = fopen( _fileName , "w+b" );
 	else
 	{
+#ifdef ANDROID
+		strcpy( _fileName , "/mnt/sdcard/Models/dataset/PR_XXXXXX" );
+#else
 		strcpy( _fileName , "PR_XXXXXX" );
+#endif
 #ifdef _WIN32
 		_mktemp( _fileName );
 		_fp = fopen( _fileName , "w+b" );

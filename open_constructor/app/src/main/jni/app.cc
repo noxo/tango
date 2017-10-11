@@ -1,6 +1,8 @@
 #include <sstream>
 #include "app.h"
 
+extern int main( int argc , char* argv[] );
+
 namespace {
     const int kSubdivisionSize = 20000;
 
@@ -247,15 +249,19 @@ namespace oc {
         for (unsigned int i = 0; i < scene.static_meshes_.size(); i++)
             scene.static_meshes_[i].Destroy();
         scene.static_meshes_.clear();
+        filenameFull.clear();
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
+
+    bool poisson = true;
 
     void App::Load(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
         File3d io(filename, false);
         io.ReadModel(kSubdivisionSize, scene.static_meshes_);
+        filenameFull = filename + ".obj";
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -263,24 +269,31 @@ namespace oc {
     void App::Save(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
-        {
-            //save complete model to obj
-            Tango3DR_Mesh mesh;
-            Tango3DR_Status ret = Tango3DR_extractFullMesh(tango.Context(), &mesh);
-            if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-            ret = Tango3DR_Mesh_saveToObj(&mesh, filename.c_str());
-            if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-            ret = Tango3DR_Mesh_destroy(&mesh);
-            if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
 
-            //convert to ply
+        if (poisson) {
+            texturize.SetEvent("Extracting point cloud");
             std::vector<Mesh> data;
-            File3d(filename, false).ReadModel(kSubdivisionSize, data);
-            File3d(filename + ".ply", true).WriteModel(data);
+
+            //load previous data
+            FILE* file = fopen(filenameFull.c_str(), "r");
+            if (file) {
+                fclose(file);
+                File3d(filenameFull, false).ReadModel(kSubdivisionSize, data);
+            }
+
+            //extract new data
+            {
+                std::string newdata = filename + ".tango.obj";
+                tango.SavePointCloud(newdata);
+                File3d(newdata, false).ReadModel(kSubdivisionSize, data);
+            }
+
+            //merge data
+            filenameFull = filename + ".obj";
+            File3d(filenameFull, true).WriteModel(data);
+            texturize.SetEvent("");
         }
+
         if (texturize.Init(tango.Context(), tango.Camera())) {
             texturize.Process(filename);
 
@@ -323,6 +336,37 @@ namespace oc {
     void App::Texturize(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
+
+        if (poisson) {
+            texturize.SetEvent("Poisson reconstruction");
+            std::string pointcloud = filenameFull + ".ply";
+
+            //convert to ply
+            {
+                std::vector<Mesh> data;
+                File3d(filenameFull, false).ReadModel(kSubdivisionSize, data);
+                File3d(pointcloud, true).WriteModel(data);
+            }
+
+            //poisson reconstruction
+            LOGI("Running possion reconstruction");
+            std::vector<std::string> argv;
+            argv.push_back("--in");
+            argv.push_back(pointcloud);
+            argv.push_back("--out");
+            argv.push_back(pointcloud);
+            std::vector<const char *> av;
+            av.push_back(0);
+            for (std::vector<std::string>::const_iterator i = argv.begin(); i != argv.end(); ++i)
+                av.push_back(i->c_str());
+            main((int) av.size(), (char **) &av[0]);
+
+            //convert to obj
+            std::vector<Mesh> data;
+            File3d(pointcloud, false).ReadModel(kSubdivisionSize, data);
+            File3d(filename, true).WriteModel(data);
+            texturize.SetEvent("");
+        }
 
         //check if texturize is valid
         if (!texturize.Init(filename, tango.Camera())) {

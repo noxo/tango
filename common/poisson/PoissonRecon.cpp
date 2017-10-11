@@ -63,7 +63,11 @@ void DumpOutput2( std::vector< char* >& comments , const char* format , ... );
 #endif // DEFAULT_FULL_DEPTH
 
 #include <stdarg.h>
+#ifdef ANDROID
+char* outputFile="/mnt/sdcard/Models/dataset/poisson.log.txt";
+#else
 char* outputFile=NULL;
+#endif
 int echoStdout=0;
 void DumpOutput( const char* format , ... )
 {
@@ -641,6 +645,9 @@ int _Execute( int argc , char* argv[] )
 
 		if( colorData ) delete colorData , colorData = NULL;
 
+#ifdef ANDROID
+		PlyWritePolygons( Out.value , &mesh , PLY_ASCII         , NULL , 0 , iXForm );
+#else
 		if( NoComments.set )
 		{
 			if( ASCII.set ) PlyWritePolygons( Out.value , &mesh , PLY_ASCII         , NULL , 0 , iXForm );
@@ -651,6 +658,7 @@ int _Execute( int argc , char* argv[] )
 			if( ASCII.set ) PlyWritePolygons( Out.value , &mesh , PLY_ASCII         , &comments[0] , (int)comments.size() , iXForm );
 			else            PlyWritePolygons( Out.value , &mesh , PLY_BINARY_NATIVE , &comments[0] , (int)comments.size() , iXForm );
 		}
+#endif
 	}
 	if( density ) delete density , density = NULL;
 	DumpOutput2( comments , "#          Total Solve: %9.1f (s), %9.1f (MB)\n" , Time()-startTime , tree.maxMemoryUsage() );

@@ -19,9 +19,8 @@ private:
     void CleanStr(std::string& str);
     glm::ivec3 DecodeColor(unsigned int c);
     void ParseOBJ(int subdivision, std::vector<oc::Mesh> &output);
-    void ParsePLYFaces(int subdivision, std::vector<oc::Mesh> &output);
+    void ParsePLY(int subdivision, std::vector<Mesh> &output);
     void ReadHeader();
-    void ReadPLYVertices();
     unsigned int ScanDec(char *line, int offset);
     bool StartsWith(std::string s, std::string e);
     void WriteHeader(std::vector<Mesh>& model);
@@ -32,9 +31,7 @@ private:
     std::string path;
     bool writeMode;
     unsigned int vertexCount;
-    unsigned int faceCount;
     FILE* file;
-    Mesh data;
     std::map<std::string, int> fileToIndex;
     std::map<std::string, glm::vec3> keyToColor;
     std::map<std::string, std::string> keyToFile;

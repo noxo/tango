@@ -6,7 +6,6 @@ namespace oc {
         path = filename;
         writeMode = writeAccess;
         vertexCount = 0;
-        faceCount = 0;
 
         if (writeMode)
             LOGI("Writing into %s", filename.c_str());
@@ -35,8 +34,7 @@ namespace oc {
         assert(!writeMode);
         ReadHeader();
         if (type == PLY) {
-            ReadPLYVertices();
-            ParsePLYFaces(subdivision, output);
+            ParsePLY(subdivision, output);
         } else if (type == OBJ) {
             ParseOBJ(subdivision, output);
         } else
@@ -46,12 +44,10 @@ namespace oc {
     void File3d::WriteModel(std::vector<Mesh>& model) {
         assert(writeMode);
         //count vertices and faces
-        faceCount = 0;
         vertexCount = 0;
         std::vector<unsigned long> vectorSize;
         for(unsigned int i = 0; i < model.size(); i++) {
             unsigned long max = model[i].vertices.size() + 1;
-            faceCount += model[i].vertices.size() / 3;
             vertexCount += model[i].vertices.size();
             vectorSize.push_back(max);
         }
@@ -69,7 +65,7 @@ namespace oc {
                         fprintf(file, "usemtl %d\n", fileToIndex[model[i].image->GetName()]);
                     }
                     WriteFaces(model[i], offset);
-                    offset += model[i].vertices.size() / 3;
+                    offset += model[i].vertices.size();
                 }
             }
         } else
@@ -225,56 +221,60 @@ namespace oc {
         std::vector<glm::vec2>().swap(uvs);
     }
 
-    void File3d::ParsePLYFaces(int subdivision, std::vector<Mesh> &output) {
-        unsigned int offset = 0;
-        int parts = faceCount / subdivision;
-        if(faceCount % subdivision > 0)
-            parts++;
-        unsigned int t, a, b, c;
-
-        //subdivision cycle
-        for (int j = 0; j < parts; j++)  {
-            int count = subdivision;
-            if (j == parts - 1)
-                count = faceCount % subdivision;
-                unsigned long meshIndex = output.size();
-                output.push_back(Mesh());
-
-                //face cycle
-                for (int i = 0; i < count; i++)  {
-                    fscanf(file, "%d %d %d %d", &t, &a, &b, &c);
-                    //unsupported format
-                    if (t != 3)
-                        continue;
-                    //broken topology ignored
-                    if ((a == b) || (a == c) || (b == c))
-                        continue;
-                    output[meshIndex].vertices.push_back(data.vertices[a]);
-                    output[meshIndex].normals.push_back(data.normals[a]);
-                    output[meshIndex].colors.push_back(data.colors[a]);
-                    output[meshIndex].vertices.push_back(data.vertices[b]);
-                    output[meshIndex].normals.push_back(data.normals[b]);
-                    output[meshIndex].colors.push_back(data.colors[b]);
-                    output[meshIndex].vertices.push_back(data.vertices[c]);
-                    output[meshIndex].normals.push_back(data.normals[c]);
-                    output[meshIndex].colors.push_back(data.colors[c]);
-                }
-            offset += count;
-        }
-    }
-
-    void File3d::ReadPLYVertices() {
+    void File3d::ParsePLY(int subdivision, std::vector<Mesh> &output) {
         assert(!writeMode);
-        unsigned int a, b, c;
-        glm::vec3 v;
-        glm::vec3 n;
-        for (int i = 0; i < vertexCount; i++) {
-            fscanf(file, "%f %f %f %f %f %f %d %d %d", &v.x, &v.z, &v.y,&n.x, &n.z, &n.y, &a, &b, &c);
-            v.x *= -1.0f;
-            data.vertices.push_back(v);
-            data.normals.push_back(n);
-            data.colors.push_back(a + (b << 8) + (c << 16));
+        glm::vec3 a, b, c, n;
+        glm::vec2 t;
+        int i, d, e, f;
+
+        //load vertices
+        std::vector<glm::vec3> vertices;
+        for (i = 0; i < vertexCount; i++) {
+            fscanf(file, "%f %f %f", &a.x, &a.y, &a.z);
+            vertices.push_back(a);
         }
+
+        //first part
+        unsigned long meshIndex = output.size();
+        output.push_back(Mesh());
+        output[meshIndex].image = new Image(1, 1);
+        output[meshIndex].image->GetData()[0] = 255;
+        output[meshIndex].image->GetData()[1] = 0;
+        output[meshIndex].image->GetData()[2] = 255;
+        output[meshIndex].imageOwner = true;
+
+        while(true) {
+            if (feof(file))
+                break;
+            if (output[meshIndex].vertices.size() >= subdivision * 3) {
+                meshIndex = output.size();
+                output.push_back(Mesh());
+                output[meshIndex].image = new Image(1, 1);
+                output[meshIndex].image->GetData()[0] = 255;
+                output[meshIndex].image->GetData()[1] = 0;
+                output[meshIndex].image->GetData()[2] = 255;
+                output[meshIndex].imageOwner = true;
+            }
+            fscanf(file, "%d %d %d %d", &i, &d, &e, &f);
+            a = vertices[d];
+            b = vertices[e];
+            c = vertices[f];
+            n = glm::normalize(glm::cross(a - b, a - c));
+            t = glm::vec2();
+            output[meshIndex].vertices.push_back(a);
+            output[meshIndex].vertices.push_back(b);
+            output[meshIndex].vertices.push_back(c);
+            output[meshIndex].normals.push_back(n);
+            output[meshIndex].normals.push_back(n);
+            output[meshIndex].normals.push_back(n);
+            output[meshIndex].colors.push_back(0);
+            output[meshIndex].colors.push_back(0);
+            output[meshIndex].colors.push_back(0);
+            output[meshIndex].uv.push_back(t);
+            output[meshIndex].uv.push_back(t);
+            output[meshIndex].uv.push_back(t);
+        }
+        std::vector<glm::vec3>().swap(vertices);
     }
 
     void File3d::ReadHeader() {
@@ -285,8 +285,6 @@ namespace oc {
                     break;
                 if (StartsWith(buffer, "element vertex"))
                     vertexCount = ScanDec(buffer, 15);
-                else if (StartsWith(buffer, "element face"))
-                    faceCount = ScanDec(buffer, 13);
                 else if (StartsWith(buffer, "end_header"))
                     break;
             }
@@ -409,14 +407,17 @@ namespace oc {
                 std::string name = model[i].image->GetName();
                 fileToIndex[name] = i;
 
-                int start = 0;
-                for (unsigned int j = 0; j < name.size(); j++)
-                {
-                    char c = name[j];
-                    if (c == '/')
-                        start = j + 1;
+
+                if (!name.empty()) {
+                    unsigned long  start = 0;
+                    for (unsigned int j = 0; j < name.size(); j++)
+                    {
+                        char c = name[j];
+                        if (c == '/')
+                            start = j + 1;
+                    }
+                    fprintf(mtl, "map_Kd %s\n\n", name.substr(start, name.size()).c_str());
                 }
-                fprintf(mtl, "map_Kd %s\n\n", name.substr(start, name.size()).c_str());
             }
             fclose(mtl);
         }
@@ -432,7 +433,7 @@ namespace oc {
             n = mesh.normals[j];
             if (type == PLY) {
                 c = DecodeColor(mesh.colors[j]);
-                fprintf(file, "%f %f %f %f %f %f %d %d %d\n", -v.x, v.z, v.y, -n.x, n.z, n.y, c.r, c.g, c.b);
+                fprintf(file, "%f %f %f %f %f %f %d %d %d\n", v.x, v.y, v.z, n.x, n.y, n.z, c.r, c.g, c.b);
             } else if (type == OBJ) {
                 t = mesh.uv[j];
                 fprintf(file, "v %f %f %f\n", v.x, v.y, v.z);

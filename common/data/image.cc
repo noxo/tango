@@ -47,8 +47,12 @@ namespace oc {
             ReadJPG(filename);
         else if (ext.compare("png") == 0)
             ReadPNG(filename);
-        else
-            assert(false);
+        else {
+            data = new unsigned char[3];
+            data[0] = 255;
+            data[1] = 0;
+            data[2] = 255;
+        }
     }
 
     Image::~Image() {

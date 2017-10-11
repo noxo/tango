@@ -59,6 +59,7 @@ namespace oc {
         std::mutex render_mutex_;
         std::mutex event_mutex_;
         std::string event_;
+        std::string filenameFull;
 
         Effector editor;
         Scene scene;
