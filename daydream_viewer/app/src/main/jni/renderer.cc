@@ -38,7 +38,7 @@ void Renderer::Load(std::string filename) {
   if (!filename.empty())
   {
     oc::File3d io(filename, false);
-    io.ReadModel(20000, static_meshes_);
+    io.ReadModel(50000, static_meshes_);
   }
   cur_position = glm::vec4();
   dst_position = glm::vec4();
