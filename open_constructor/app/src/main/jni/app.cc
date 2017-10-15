@@ -250,7 +250,6 @@ namespace oc {
         for (unsigned int i = 0; i < scene.static_meshes_.size(); i++)
             scene.static_meshes_[i].Destroy();
         scene.static_meshes_.clear();
-        filenameFull.clear();
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -260,7 +259,6 @@ namespace oc {
         render_mutex_.lock();
         File3d io(filename, false);
         io.ReadModel(kSubdivisionSize, scene.static_meshes_);
-        filenameFull = filename + ".obj";
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -268,30 +266,6 @@ namespace oc {
     void App::Save(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
-
-        if (poisson) {
-            texturize.SetEvent("Extracting point cloud");
-            std::vector<Mesh> data;
-
-            //load previous data
-            FILE* file = fopen(filenameFull.c_str(), "r");
-            if (file) {
-                fclose(file);
-                File3d(filenameFull, false).ReadModel(kSubdivisionSize, data);
-            }
-
-            //extract new data
-            {
-                std::string newdata = filename + ".tango.obj";
-                tango.SavePointCloud(newdata);
-                File3d(newdata, false).ReadModel(kSubdivisionSize, data);
-            }
-
-            //merge data
-            filenameFull = filename + ".obj";
-            File3d(filenameFull, true).WriteModel(data);
-            texturize.SetEvent("");
-        }
 
         if (texturize.Init(tango.Context(), tango.Camera())) {
             texturize.Process(filename);
@@ -338,12 +312,12 @@ namespace oc {
 
         if (poisson) {
             texturize.SetEvent("Poisson reconstruction");
-            std::string pointcloud = filenameFull + ".ply";
+            std::string pointcloud = filename + ".ply";
 
             //convert to ply
             {
                 std::vector<Mesh> data;
-                File3d(filenameFull, false).ReadModel(kSubdivisionSize, data);
+                File3d(filename, false).ReadModel(kSubdivisionSize, data);
                 File3d(pointcloud, true).WriteModel(data);
             }
 
