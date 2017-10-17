@@ -76,13 +76,13 @@ void Renderer::OnTriggerEvent(float x, float y, float z, float* view) {
 
 void Renderer::DrawModel(float* view) {
   glUseProgram(model_program_);
-  glUniform1i(model_texture_param_, 0);
+  glUniform1i(model_texture_param_, 2);
   glUniform1f(model_translatex_param_, cur_position.x);
   glUniform1f(model_translatey_param_, cur_position.y);
   glUniform1f(model_translatez_param_, cur_position.z);
   glUniformMatrix4fv(model_modelview_projection_param_, 1, GL_FALSE, view);
 
-  glActiveTexture(GL_TEXTURE0);
+  glActiveTexture(GL_TEXTURE2);
   for(oc::Mesh& mesh : static_meshes_) {
     if (mesh.image && (mesh.image->GetTexture() == -1)) {
       GLuint textureID;
@@ -107,6 +107,7 @@ void Renderer::DrawModel(float* view) {
   glDisableVertexAttribArray((GLuint) model_position_param_);
   glDisableVertexAttribArray((GLuint) model_uv_param_);
   glUseProgram(0);
+  glActiveTexture(GL_TEXTURE0);
 }
 
 void Renderer::Update()
