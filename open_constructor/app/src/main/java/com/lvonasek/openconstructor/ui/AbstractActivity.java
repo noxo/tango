@@ -15,6 +15,7 @@ import com.lvonasek.openconstructor.R;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Scanner;
 
 public abstract class AbstractActivity extends Activity
@@ -93,6 +94,7 @@ public abstract class AbstractActivity extends Activity
 
   public static ArrayList<String> getObjResources(File file)
   {
+    HashSet<String> files = new HashSet<>();
     ArrayList<String> output = new ArrayList<>();
     String mtlLib = getMtlResource(file.getAbsolutePath());
     if (mtlLib != null) {
@@ -105,7 +107,12 @@ public abstract class AbstractActivity extends Activity
         while(sc.hasNext()) {
           String line = sc.nextLine();
           if (line.startsWith("map_Kd")) {
-            output.add(line.substring(7));
+            String filename = line.substring(7);
+            if (!files.contains(filename))
+            {
+              files.add(filename);
+              output.add(filename);
+            }
           }
         }
         sc.close();
