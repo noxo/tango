@@ -226,6 +226,9 @@ namespace oc {
         glm::vec3 a, b, c, n;
         glm::vec2 t;
         int i, d, e, f;
+        char buffer[1024];
+        std::string key;
+        std::map<std::string, glm::vec3> vertexNormal;
 
         //load vertices
         std::vector<glm::vec3> vertices;
@@ -259,7 +262,7 @@ namespace oc {
             a = vertices[d];
             b = vertices[e];
             c = vertices[f];
-            n = glm::normalize(glm::cross(a - b, a - c));
+            n = glm::vec3();
             t = glm::vec2();
             output[meshIndex].vertices.push_back(a);
             output[meshIndex].vertices.push_back(b);
@@ -273,8 +276,40 @@ namespace oc {
             output[meshIndex].uv.push_back(t);
             output[meshIndex].uv.push_back(t);
             output[meshIndex].uv.push_back(t);
+            //calculate vertex normals
+            n = glm::normalize(glm::cross(a - b, a - c));
+            sprintf(buffer, "%.3f,%.3f,%.3f", a.x, a.y, a.z);
+            key = std::string(buffer);
+            if (vertexNormal.find(key) == vertexNormal.end())
+                vertexNormal[key] = n;
+            else
+                vertexNormal[key] += n;
+            sprintf(buffer, "%.3f,%.3f,%.3f", b.x, b.y, b.z);
+            key = std::string(buffer);
+            if (vertexNormal.find(key) == vertexNormal.end())
+                vertexNormal[key] = n;
+            else
+                vertexNormal[key] += n;
+            sprintf(buffer, "%.3f,%.3f,%.3f", c.x, c.y, c.z);
+            key = std::string(buffer);
+            if (vertexNormal.find(key) == vertexNormal.end())
+                vertexNormal[key] = n;
+            else
+                vertexNormal[key] += n;
+        }
+        //apply vertex normals
+        for (meshIndex = 0; meshIndex < output.size(); meshIndex++)
+        {
+            for (i = 0; i < output[meshIndex].vertices.size(); i++)
+            {
+                a = output[meshIndex].vertices[i];
+                sprintf(buffer, "%.3f,%.3f,%.3f", a.x, a.y, a.z);
+                key = std::string(buffer);
+                output[meshIndex].normals[i] = glm::normalize(vertexNormal[key]);
+            }
         }
         std::vector<glm::vec3>().swap(vertices);
+        std::map<std::string, glm::vec3>().swap(vertexNormal);
     }
 
     void File3d::ReadHeader() {

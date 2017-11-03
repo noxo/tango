@@ -188,10 +188,7 @@ namespace oc {
         ret = Tango3DR_Config_setInt32(textureConfig, "max_num_textures", 4);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
-        int simplify = (mesh->max_num_faces < 1000) ? 1 : (finalize ? 1 : 3);
-        if (resolution < 0.006)
-            simplify = 1;
-        ret = Tango3DR_Config_setInt32(textureConfig, "mesh_simplification_factor", simplify);
+        ret = Tango3DR_Config_setInt32(textureConfig, "mesh_simplification_factor", 1);
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
         ret = Tango3DR_Config_setInt32(textureConfig, "texturing_backend", TANGO_3DR_CPU_TEXTURING);
