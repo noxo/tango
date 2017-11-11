@@ -44,7 +44,7 @@ namespace oc {
         if (!t3dr_is_running_)
             return;
 
-        std::vector<TangoSupport_MatrixTransformData> transform = tango.Pose(pc->timestamp, 0);
+        std::vector<TangoMatrixTransformData> transform = tango.Pose(pc->timestamp, 0);
         if (transform[DEPTH_CAMERA].status_code != TANGO_POSE_VALID)
             return;
 
@@ -59,7 +59,7 @@ namespace oc {
         if (id != TANGO_CAMERA_COLOR || (!t3dr_is_running_ && !scene.IsFullScreenActive()))
             return;
 
-        std::vector<TangoSupport_MatrixTransformData> transform = tango.Pose(im->timestamp, 0);
+        std::vector<TangoMatrixTransformData> transform = tango.Pose(im->timestamp, 0);
         if (transform[COLOR_CAMERA].status_code != TANGO_POSE_VALID)
             return;
 
@@ -211,7 +211,7 @@ namespace oc {
             scene.renderer->camera.rotation = glm::quat(glm::vec3(lastYaw, lastPitch, 0));
             scene.renderer->camera.scale    = glm::vec3(1, 1, 1);
         } else {
-            std::vector<TangoSupport_MatrixTransformData> transform = tango.Pose(0, landscape);
+            std::vector<TangoMatrixTransformData> transform = tango.Pose(0, landscape);
             glm::mat4 matrix = tango.Convert(transform)[OPENGL_CAMERA];
             scene.renderer->camera.SetTransformation(matrix);
             scene.UpdateFrustum(scene.renderer->camera.position, movez);

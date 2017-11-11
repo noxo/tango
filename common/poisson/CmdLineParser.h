@@ -31,7 +31,6 @@ DAMAGE.
 #include <stdarg.h>
 #include <string.h>
 
-
 #ifdef WIN32
 int strcasecmp(char* c1,char* c2);
 #endif

@@ -62,7 +62,9 @@ BufferedReadWriteFile::BufferedReadWriteFile( char* fileName , int bufferSize )
 #endif // _WIN32
 		tempFile = true;
 	}
+#ifndef ANDROID
 	if( !_fp ) fprintf( stderr , "[ERROR] Failed to open file: %s\n" , _fileName ) , exit( 0 );
+#endif
 	_buffer = (char*) malloc( _bufferSize );
 }
 BufferedReadWriteFile::~BufferedReadWriteFile( void )

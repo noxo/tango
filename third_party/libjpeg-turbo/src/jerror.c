@@ -106,7 +106,7 @@ output_message (j_common_ptr cinfo)
              MB_OK | MB_ICONERROR);
 #else
   /* Send it to stderr, adding a newline */
-  fprintf(stderr, "%s\n", buffer);
+  //fprintf(stderr, "%s\n", buffer);
 #endif
 }
 
