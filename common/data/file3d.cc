@@ -144,8 +144,10 @@ namespace oc {
                         else
                           images[key] = new Image(imagefile);
                         output[meshIndex].imageOwner = true;
-                    } else
+                    } else {
                         output[meshIndex].imageOwner = false;
+                        images[key]->AddInstance();
+                    }
                     output[meshIndex].image = images[key];
                     lastKey = key;
                 }
@@ -212,6 +214,7 @@ namespace oc {
                     meshIndex = output.size();
                     output.push_back(Mesh());
                     output[meshIndex].image = images[lastKey];
+                    output[meshIndex].image->AddInstance();
                     output[meshIndex].imageOwner = false;
                 }
             }

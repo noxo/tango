@@ -25,6 +25,7 @@ namespace oc {
         height = h;
         data = new unsigned char[w * h * 3];
         name = "";
+        instances = 1;
         texture = -1;
     }
 
@@ -33,6 +34,7 @@ namespace oc {
         width = w / scale;
         height = h / scale;
         name = "photo";
+        instances = 1;
         texture = -1;
         UpdateYUV(src, w, h, scale);
     }
@@ -40,6 +42,7 @@ namespace oc {
     Image::Image(std::string filename) {
         LOGI("Reading %s", filename.c_str());
         name = filename;
+        instances = 1;
         texture = -1;
 
         std::string ext = filename.substr(filename.size() - 3, filename.size() - 1);

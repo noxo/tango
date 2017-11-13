@@ -5,8 +5,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.net.Uri;
-import android.os.Build;
-import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -30,14 +28,6 @@ public abstract class AbstractActivity extends Activity
   protected static final String USER_AGENT = "Mozilla/5.0 Google";
   public static final String[] FILE_EXT = {".obj"};
   public static final String TAG = "tango_app";
-
-  @Override
-  protected void onCreate(Bundle savedInstanceState)
-  {
-    super.onCreate(savedInstanceState);
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-      setTheme(android.R.style.Theme_Material_NoActionBar_Fullscreen);
-  }
 
   public static boolean isCardboardEnabled(Context context)
   {

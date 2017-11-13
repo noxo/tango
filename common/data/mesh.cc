@@ -5,9 +5,12 @@ namespace oc {
     Mesh::Mesh() : aabbUpdate(0), image(NULL), imageOwner(true) {}
 
     void Mesh::Destroy() {
-        if (image && imageOwner) {
-            delete image;
-            image = 0;
+        if (image) {
+            image->DelInstance();
+            if (image->CanBeDeleted()) {
+                delete image;
+                image = 0;
+            }
         }
     }
 

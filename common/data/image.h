@@ -12,6 +12,9 @@ namespace oc {
         Image(unsigned char* src, int w, int h, int scale);
         Image(std::string filename);
         ~Image();
+        void AddInstance() { instances++; }
+        bool CanBeDeleted() { return instances <= 0; }
+        void DelInstance() { instances--; }
         unsigned char* ExtractYUV(unsigned int s);
         void SetName(std::string value) { name = value; }
         void SetTexture(long value) { texture = value; }
@@ -35,6 +38,7 @@ namespace oc {
         void WriteJPG(std::string filename);
         void WritePNG(std::string filename);
 
+        int instances;
         int width;
         int height;
         unsigned char* data;
