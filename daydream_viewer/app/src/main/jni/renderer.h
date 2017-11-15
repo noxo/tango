@@ -8,8 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "data/file3d.h"
-#include "data/mesh.h"
+#include "gl/scene.h"
 
 class Renderer {
 public:
@@ -29,9 +28,9 @@ private:
   GLint model_translatez_param_;
   GLint model_modelview_projection_param_;
 
-  std::vector<oc::Mesh> static_meshes_;
   glm::vec4 cur_position;
   glm::vec4 dst_position;
+  oc::GLScene scene;
 };
 
 #endif

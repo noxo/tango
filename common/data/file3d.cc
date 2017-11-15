@@ -109,10 +109,7 @@ namespace oc {
         std::string key;
         meshIndex = output.size();
         output.push_back(Mesh());
-        images[key] = new Image(1, 1);
-        images[key]->GetData()[0] = 255;
-        images[key]->GetData()[1] = 255;
-        images[key]->GetData()[2] = 255;
+        images[key] = new Image(255, 255, 255);
         output[meshIndex].imageOwner = true;
         output[meshIndex].image = images[key];
         lastKey = key;
@@ -136,10 +133,10 @@ namespace oc {
                         if (imagefile.empty())
                         {
                             glm::vec3 color = keyToColor[key];
-                            images[key] = new Image(1, 1);
-                            images[key]->GetData()[0] = (unsigned char) (255 * color.r);
-                            images[key]->GetData()[1] = (unsigned char) (255 * color.g);
-                            images[key]->GetData()[2] = (unsigned char) (255 * color.b);
+                            unsigned char r = (unsigned char) (255 * color.r);
+                            unsigned char g = (unsigned char) (255 * color.g);
+                            unsigned char b = (unsigned char) (255 * color.b);
+                            images[key] = new Image(r, g, b);
                         }
                         else
                           images[key] = new Image(imagefile);
@@ -243,10 +240,7 @@ namespace oc {
         //first part
         unsigned long meshIndex = output.size();
         output.push_back(Mesh());
-        output[meshIndex].image = new Image(1, 1);
-        output[meshIndex].image->GetData()[0] = 255;
-        output[meshIndex].image->GetData()[1] = 0;
-        output[meshIndex].image->GetData()[2] = 255;
+        output[meshIndex].image = new Image(255, 0, 255);
         output[meshIndex].imageOwner = true;
 
         while(true) {
@@ -255,10 +249,7 @@ namespace oc {
             if (output[meshIndex].vertices.size() >= subdivision * 3) {
                 meshIndex = output.size();
                 output.push_back(Mesh());
-                output[meshIndex].image = new Image(1, 1);
-                output[meshIndex].image->GetData()[0] = 255;
-                output[meshIndex].image->GetData()[1] = 0;
-                output[meshIndex].image->GetData()[2] = 255;
+                output[meshIndex].image = new Image(255, 0, 255);
                 output[meshIndex].imageOwner = true;
             }
             fscanf(file, "%d %d %d %d", &i, &d, &e, &f);

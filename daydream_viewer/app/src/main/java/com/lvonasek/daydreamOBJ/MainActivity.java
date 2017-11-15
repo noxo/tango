@@ -26,6 +26,7 @@ public class MainActivity extends GvrActivity implements GvrView.StereoRenderer,
   private float addYaw = 0;
   private float touchX = 0;
   private float yaw = 0;
+  private float speed = 0.05f;
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
@@ -34,7 +35,7 @@ public class MainActivity extends GvrActivity implements GvrView.StereoRenderer,
 
     //stereo view
     GvrView gvrView = (GvrView) findViewById(R.id.gvr_view);
-    gvrView.setEGLConfigChooser(8, 8, 8, 8, 16, 8);
+    gvrView.setEGLConfigChooser(8, 8, 8, 8, 24, 8);
     gvrView.setRenderer(this);
     gvrView.setTransitionViewEnabled(true);
     gvrView.setDistortionCorrectionEnabled(true);
@@ -166,7 +167,11 @@ public class MainActivity extends GvrActivity implements GvrView.StereoRenderer,
         timestamp = System.currentTimeMillis() + 500;
       }
       if (controller.clickButtonState)
-        nativeOnTriggerEvent(0, 0, 0.05f, headView);
+        nativeOnTriggerEvent(0, 0, speed, headView);
+      if (controller.volumeUpButtonState)
+        speed *= 1.25f;
+      if (controller.volumeDownButtonState)
+        speed /= 1.25f;
       if (controller.isTouching)
       {
         if (touchX == 0)

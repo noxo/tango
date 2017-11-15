@@ -20,11 +20,16 @@ std::vector<long> image_textureToDelete;
 
 namespace oc {
 
-    Image::Image(int w, int h) {
-        width = w;
-        height = h;
-        data = new unsigned char[w * h * 3];
-        name = "";
+    Image::Image(unsigned char r, unsigned char g, unsigned char b) {
+        width = 1;
+        height = 1;
+        data = new unsigned char[3];
+        data[0] = r;
+        data[1] = g;
+        data[2] = b;
+        char buffer[1024];
+        sprintf(buffer, "%d %d %d", r, g, b);
+        name = std::string(buffer);
         instances = 1;
         texture = -1;
     }

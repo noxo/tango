@@ -34,11 +34,13 @@ static const char* kTextureShader[] = {R"glsl(
 };
 
 void Renderer::Load(std::string filename) {
-  static_meshes_.clear();
+  scene.Clear();
   if (!filename.empty())
   {
+    std::vector<oc::Mesh> meshes;
     oc::File3d io(filename, false);
-    io.ReadModel(50000, static_meshes_);
+    io.ReadModel(50000, meshes);
+    scene.Load(meshes);
   }
   cur_position = glm::vec4();
   dst_position = glm::vec4();
@@ -83,31 +85,10 @@ void Renderer::DrawModel(float* view) {
   glUniformMatrix4fv(model_modelview_projection_param_, 1, GL_FALSE, view);
 
   glActiveTexture(GL_TEXTURE2);
-  for(oc::Mesh& mesh : static_meshes_) {
-    if (mesh.image && (mesh.image->GetTexture() == -1)) {
-      GLuint textureID;
-      glGenTextures(1, &textureID);
-      mesh.image->SetTexture(textureID);
-      glBindTexture(GL_TEXTURE_2D, textureID);
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, mesh.image->GetWidth(), mesh.image->GetHeight(),
-                             0, GL_RGB, GL_UNSIGNED_BYTE, mesh.image->GetData());
-    }
-    glBindTexture(GL_TEXTURE_2D, (unsigned int)mesh.image->GetTexture());
-    glEnableVertexAttribArray((GLuint) model_position_param_);
-    glEnableVertexAttribArray((GLuint) model_uv_param_);
-    glVertexAttribPointer((GLuint) model_position_param_, 3, GL_FLOAT, GL_FALSE, 0, mesh.vertices.data());
-    glVertexAttribPointer((GLuint) model_uv_param_, 2, GL_FLOAT, GL_FALSE, 0, mesh.uv.data());
-    glDrawArrays(GL_TRIANGLES, 0, (GLsizei) mesh.vertices.size());
-    glBindTexture(GL_TEXTURE_2D, 0);
-  }
-  glDisableVertexAttribArray((GLuint) model_position_param_);
-  glDisableVertexAttribArray((GLuint) model_uv_param_);
-  glUseProgram(0);
+  glm::vec4 dir = glm::vec4(0, 0, 1, 1) * glm::make_mat4(view);
+  scene.Render(-cur_position, dir, model_position_param_, model_uv_param_);
   glActiveTexture(GL_TEXTURE0);
+  glUseProgram(0);
 }
 
 void Renderer::Update()

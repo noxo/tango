@@ -87,7 +87,7 @@ public class EntryActivity extends Activity {
         SelectorView.active = true;
         filename = "";
       }
-      DaydreamApi.create(this).launchInVr(new Intent(this, MainActivity.class));
+      daydream.create(this).launchInVr(new Intent(this, MainActivity.class));
       finish();
     }
   }

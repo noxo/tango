@@ -8,7 +8,7 @@ namespace oc {
 
     class Image {
     public:
-        Image(int w, int h);
+        Image(unsigned char r, unsigned char g, unsigned char b);
         Image(unsigned char* src, int w, int h, int scale);
         Image(std::string filename);
         ~Image();

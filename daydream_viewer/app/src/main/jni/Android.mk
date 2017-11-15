@@ -21,6 +21,7 @@ LOCAL_SRC_FILES := ../../../../../common/data/file3d.cc \
                    ../../../../../common/gl/camera.cc \
                    ../../../../../common/gl/glsl.cc \
                    ../../../../../common/gl/renderer.cc \
+                   ../../../../../common/gl/scene.cc \
                    renderer.cc
 
 LOCAL_LDLIBS    := -llog -lGLESv2 -L$(SYSROOT)/usr/lib -lz -landroid
