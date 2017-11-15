@@ -20,22 +20,23 @@ std::vector<long> image_textureToDelete;
 
 namespace oc {
 
-    Image::Image(unsigned char r, unsigned char g, unsigned char b) {
+    Image::Image(unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
         width = 1;
         height = 1;
-        data = new unsigned char[3];
+        data = new unsigned char[4];
         data[0] = r;
         data[1] = g;
         data[2] = b;
+        data[3] = a;
         char buffer[1024];
-        sprintf(buffer, "%d %d %d", r, g, b);
+        sprintf(buffer, "%d %d %d %d", r, g, b, a);
         name = std::string(buffer);
         instances = 1;
         texture = -1;
     }
 
     Image::Image(unsigned char* src, int w, int h, int scale) {
-        data = new unsigned char[(w / scale) * (h / scale) * 3];
+        data = new unsigned char[(w / scale) * (h / scale) * 4];
         width = w / scale;
         height = h / scale;
         name = "photo";
@@ -56,10 +57,11 @@ namespace oc {
         else if (ext.compare("png") == 0)
             ReadPNG(filename);
         else {
-            data = new unsigned char[3];
+            data = new unsigned char[4];
             data[0] = 255;
             data[1] = 0;
             data[2] = 255;
+            data[3] = 255;
         }
     }
 
@@ -88,11 +90,12 @@ namespace oc {
         unsigned char* output = new unsigned char[uvIndex * 2];
         for (int y = 0; y < height * s; y++) {
             xRGBIndex = 0;
-            yRGBIndex = (y / s) * width * 3;
+            yRGBIndex = (y / s) * width * 4;
             for (unsigned int x = 0; x < width; x++) {
                 B = data[yRGBIndex + xRGBIndex++];
                 G = data[yRGBIndex + xRGBIndex++];
                 R = data[yRGBIndex + xRGBIndex++];
+                xRGBIndex++;
 
                 //RGB to YUV algorithm
                 Y = ( (  66 * R + 129 * G +  25 * B + 128) >> 8) +  16;
@@ -142,6 +145,7 @@ namespace oc {
                 data[index++] = (unsigned char) B;
                 data[index++] = (unsigned char) G;
                 data[index++] = (unsigned char) R;
+                data[index++] = 255;
             }
         }
     }
@@ -171,10 +175,10 @@ namespace oc {
         //read header of compressed data
         int sub;
         tjDecompressHeader2(jpegD, src, size, &width, &height, &sub);
-        data = new unsigned char[width * height * 3];
+        data = new unsigned char[width * height * 4];
 
         //decompress data
-        tjDecompress2(jpegD, src, size, data, width, 0, height, TJPF_RGB, TJFLAG_FASTDCT);
+        tjDecompress2(jpegD, src, size, data, width, 0, height, TJPF_RGBA, TJFLAG_FASTDCT);
         delete[] src;
     }
 
@@ -198,19 +202,20 @@ namespace oc {
         /// load PNG
         png_size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
         png_bytepp row_pointers = png_get_rows(png_ptr, info_ptr);
-        data = new unsigned char[3 * w * h];
+        data = new unsigned char[4 * w * h];
         switch (color_type) {
             case PNG_COLOR_TYPE_RGBA:
-                for (unsigned int i = 0; i < height; i++)
-                    for (unsigned int j = 0; j < w; j++) {
-                        data[3 * (i * w + j) + 0] = row_pointers[i][j * 4 + 0];
-                        data[3 * (i * w + j) + 1] = row_pointers[i][j * 4 + 1];
-                        data[3 * (i * w + j) + 2] = row_pointers[i][j * 4 + 2];
-                    }
-                break;
-            case PNG_COLOR_TYPE_RGB:
                 for (int i = 0; i < h; i++)
                     memcpy(data+(row_bytes * i), row_pointers[i], row_bytes);
+                break;
+            case PNG_COLOR_TYPE_RGB:
+                for (unsigned int i = 0; i < height; i++)
+                    for (unsigned int j = 0; j < w; j++) {
+                        data[4 * (i * w + j) + 0] = row_pointers[i][j * 3 + 0];
+                        data[4 * (i * w + j) + 1] = row_pointers[i][j * 3 + 1];
+                        data[4 * (i * w + j) + 2] = row_pointers[i][j * 3 + 2];
+                        data[4 * (i * w + j) + 3] = 255;
+                    }
                 break;
             case PNG_COLOR_TYPE_PALETTE:
                 int num_palette;
@@ -218,16 +223,19 @@ namespace oc {
                 png_get_PLTE(png_ptr, info_ptr, &palette, &num_palette);
                 for (unsigned int i = 0; i < h; i++)
                     for (unsigned int j = 0; j < row_bytes; j++) {
-                        data[3 * (i * row_bytes + j) + 0] = palette[row_pointers[i][j]].red;
-                        data[3 * (i * row_bytes + j) + 1] = palette[row_pointers[i][j]].green;
-                        data[3 * (i * row_bytes + j) + 2] = palette[row_pointers[i][j]].blue;
+                        data[4 * (i * row_bytes + j) + 0] = palette[row_pointers[i][j]].red;
+                        data[4 * (i * row_bytes + j) + 1] = palette[row_pointers[i][j]].green;
+                        data[4 * (i * row_bytes + j) + 2] = palette[row_pointers[i][j]].blue;
+                        data[4 * (i * row_bytes + j) + 3] = 255;
                     }
             break;
             case PNG_COLOR_TYPE_GRAY:
                 for (unsigned int i = 0; i < height; i++)
-                    for (unsigned int j = 0; j < row_bytes; j++)
+                    for (unsigned int j = 0; j < row_bytes; j++) {
                         for (unsigned int k = 0; k < 3; k++)
-                            data[3 * (i * row_bytes + j) + k] = row_pointers[i][j];
+                            data[4 * (i * row_bytes + j) + k] = row_pointers[i][j];
+                        data[4 * (i * row_bytes + j) + 3] = 255;
+                    }
                 break;
             default:
                 assert(false);
@@ -241,7 +249,7 @@ namespace oc {
         //compress data
         long unsigned int size = 0;
         unsigned char* dst = NULL;
-        tjCompress2(jpegC, data, width, 0, height, TJPF_RGB, &dst, &size, TJSAMP_444, JPEG_QUALITY, TJFLAG_FASTDCT);
+        tjCompress2(jpegC, data, width, 0, height, TJPF_RGBA, &dst, &size, TJSAMP_444, JPEG_QUALITY, TJFLAG_FASTDCT);
 
         //write data into file
         temp = fopen(filename.c_str(), "wb");
@@ -260,17 +268,18 @@ namespace oc {
         setjmp(png_jmpbuf(png_ptr));
         png_init_io(png_ptr, temp);
         png_set_IHDR(png_ptr, info_ptr, (png_uint_32) width, (png_uint_32) height,
-                     8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
+                     8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE,
                      PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
         png_write_info(png_ptr, info_ptr);
 
         // write image data
-        png_bytep row = (png_bytep) malloc(3 * width * sizeof(png_byte));
+        png_bytep row = (png_bytep) malloc(4 * width * sizeof(png_byte));
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                row[x * 3 + 0] = data[(y * width + x) * 3 + 0];
-                row[x * 3 + 1] = data[(y * width + x) * 3 + 1];
-                row[x * 3 + 2] = data[(y * width + x) * 3 + 2];
+                row[x * 4 + 0] = data[(y * width + x) * 4 + 0];
+                row[x * 4 + 1] = data[(y * width + x) * 4 + 1];
+                row[x * 4 + 2] = data[(y * width + x) * 4 + 2];
+                row[x * 4 + 3] = data[(y * width + x) * 4 + 3];
             }
             png_write_row(png_ptr, row);
         }

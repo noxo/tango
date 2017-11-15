@@ -105,6 +105,7 @@ namespace oc {
                         data[index - 2] = (unsigned char) g;
                         data[index - 1] = (unsigned char) b;
                     }
+                    index++;
                 }
                 if (img)
                     delete img;
@@ -120,7 +121,7 @@ namespace oc {
 
     void Effector::ApplyGeometryEffect(std::vector<Mesh> &mesh, Effector::Effect effect, float value, int axis) {
         for (Mesh& m : mesh) {
-            long size = m.vertices.size();
+            unsigned int size = m.vertices.size();
             //set axis to fit with view
             if ((effect == MOVE) || (effect == ROTATE)) {
                 int a = 1;

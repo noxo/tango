@@ -29,6 +29,8 @@ static const char* kTextureShader[] = {R"glsl(
 
     void main() {
       gl_FragColor = texture2D(u_color_texture, v_UV);
+      if (gl_FragColor.a < 0.5)
+        discard;
       gl_FragColor.a = 1.0;
     })glsl"
 };
