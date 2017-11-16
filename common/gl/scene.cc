@@ -147,6 +147,10 @@ glm::vec3 oc::GLScene::Dec(glm::vec3 &v, LOD& level) {
             a = 0.25f;
             b = 4.0f;
             break;
+        case LOD_LQ:
+            a = 0.1f;
+            b = 10.0f;
+            break;
     }
     float x = ((int)(v.x * a)) * b;
     float y = ((int)(v.y * a)) * b;
@@ -169,8 +173,10 @@ std::vector<std::pair<LOD, id3d> > oc::GLScene::GetVisibility(glm::vec4 camera, 
                 p.first = LOD_ORIG;
                 if ((abs(x) > 1) || (abs(y) > 1) || (abs(z) > 1))
                     p.first = LOD_HQ;
-                if ((abs(x) > 3) || (abs(y) > 3) || (abs(z) > 3))
+                if ((abs(x) > 2) || (abs(y) > 2) || (abs(z) > 2))
                     p.first = LOD_MQ;
+                if ((abs(x) > 4) || (abs(y) > 4) || (abs(z) > 4))
+                    p.first = LOD_LQ;
                 p.second.x = cx + x;
                 p.second.y = cy + y;
                 p.second.z = cz + z;

@@ -21,7 +21,7 @@ struct id3d
 
 bool operator<(const id3d& lhs, const id3d& rhs);
 
-enum LOD{ LOD_ORIG, LOD_HQ, LOD_MQ, LOD_COUNT };
+enum LOD{ LOD_ORIG, LOD_HQ, LOD_MQ, LOD_LQ, LOD_COUNT };
 
 #define CULLING_DST 65
 

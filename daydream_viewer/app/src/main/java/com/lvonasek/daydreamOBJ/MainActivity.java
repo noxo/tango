@@ -81,7 +81,7 @@ public class MainActivity extends GvrActivity implements GvrView.StereoRenderer,
 
   @Override
   public synchronized void onSurfaceCreated(EGLConfig config) {
-    GLES20.glClearColor(0.1f, 0.1f, 0.1f, 0.5f);
+    GLES20.glClearColor(0, 0, 0, 1);
     System.loadLibrary("daydream");
     nativeInitializeGl();
     nativeLoadModel(EntryActivity.filename);

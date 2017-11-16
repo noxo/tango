@@ -10,6 +10,7 @@ static const char* kTextureShader[] = {R"glsl(
     attribute vec4 a_Position;
     attribute vec2 a_UV;
     varying vec2 v_UV;
+    varying float v_Z;
 
     void main() {
       v_UV = a_UV;
@@ -19,6 +20,7 @@ static const char* kTextureShader[] = {R"glsl(
       pos.y += u_Y;
       pos.z += u_Z;
       gl_Position = u_MVP * pos;
+      v_Z = gl_Position.z * 0.0015;
     })glsl",
 
     R"glsl(
@@ -26,11 +28,15 @@ static const char* kTextureShader[] = {R"glsl(
     precision highp float;
     uniform sampler2D u_color_texture;
     varying vec2 v_UV;
+    varying float v_Z;
 
     void main() {
       gl_FragColor = texture2D(u_color_texture, v_UV);
       if (gl_FragColor.a < 0.5)
         discard;
+      gl_FragColor.r = clamp(gl_FragColor.r - v_Z, 0.0, 1.0);
+      gl_FragColor.g = clamp(gl_FragColor.g - v_Z, 0.0, 1.0);
+      gl_FragColor.b = clamp(gl_FragColor.b - v_Z, 0.0, 1.0);
       gl_FragColor.a = 1.0;
     })glsl"
 };
