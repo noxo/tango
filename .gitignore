@@ -9,4 +9,5 @@
 *gen/
 *local.properties
 .directory
+glut_viewer/out
 open_constructor/app/src/main/jni/secret.h

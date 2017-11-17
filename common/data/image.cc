@@ -339,7 +339,7 @@ namespace oc {
                 for (unsigned int i = 0; i < size; i++)
                     graySrcPlanes[2][i] = 0;
             }
-            tjCompressFromYUVPlanes(jpegC, graySrcPlanes, width, strides, height, TJ_GRAYSCALE, &dst, &size, JPEG_QUALITY, TJFLAG_FASTDCT);
+            tjCompressFromYUVPlanes(jpegC, (const unsigned char**)graySrcPlanes, width, strides, height, TJ_GRAYSCALE, &dst, &size, JPEG_QUALITY, TJFLAG_FASTDCT);
         } else {
             srcPlanes[0] = data;
             if (!srcPlanes[1])
@@ -366,7 +366,7 @@ namespace oc {
                 }
                 UV--;
             }
-            tjCompressFromYUVPlanes(jpegC, srcPlanes, width, strides, height, TJSAMP_444, &dst, &size, JPEG_QUALITY, TJFLAG_FASTDCT);
+            tjCompressFromYUVPlanes(jpegC, (const unsigned char**)srcPlanes, width, strides, height, TJSAMP_444, &dst, &size, JPEG_QUALITY, TJFLAG_FASTDCT);
         }
 
         //write data into file

@@ -7,10 +7,11 @@ namespace oc {
         writeMode = writeAccess;
         vertexCount = 0;
 
-        if (writeMode)
+        if (writeMode) {
             LOGI("Writing into %s", filename.c_str());
-        else
+        } else {
             LOGI("Loading from %s", filename.c_str());
+        }
 
         std::string ext = filename.substr(filename.size() - 3, filename.size() - 1);
         if (ext.compare("ply") == 0)
