@@ -103,7 +103,8 @@ namespace oc {
         std::vector<glm::vec2> uvs;
         bool hasNormals = false;
         bool hasCoords = false;
-        unsigned int va, vna, vta, vb, vnb, vtb, vc, vnc, vtc;
+        bool hasNumber = false;;
+        unsigned int va, vna, vta, vb, vnb, vtb, vc, vnc, vtc, vd, vnd, vtd, count;
         std::map<std::string, Image*> images;
 
         //dummy material
@@ -164,49 +165,101 @@ namespace oc {
                 va = 0;
                 vb = 0;
                 vc = 0;
-                if (!hasCoords && !hasNormals)
-                    sscanf(sbuf.c_str(), "f %d %d %d", &va, &vb, &vc);
-                else if (hasCoords && !hasNormals)
-                    sscanf(sbuf.c_str(), "f %d/%d %d/%d %d/%d", &va, &vta, &vb, &vtb, &vc, &vtc);
-                else if (hasCoords && hasNormals)
-                    sscanf(sbuf.c_str(), "f %d/%d/%d %d/%d/%d %d/%d/%d",
-                           &va, &vta, &vna, &vb, &vtb, &vnb, &vc, &vtc, &vnc);
-                else if (!hasCoords && hasNormals)
-                    sscanf(buffer, "f %d//%d %d//%d %d//%d", &va, &vna, &vb, &vnb, &vc, &vnc);
-                //broken topology ignored
-                if ((va == vb) || (va == vc) || (vb == vc))
-                    continue;
-                //incomplete line ignored
-                if ((va == 0) || (vb == 0) || (vc == 0))
-                    continue;
+                vd = 0;
+                count = 0;
+                hasNumber = false;
+                for (unsigned int i = 1; i < sbuf.size(); i++) {
+                    if ((sbuf[i] >= '0') && (sbuf[i] <= '9')) {
+                        if (!hasNumber) {
+                            hasNumber = true;
+                            count++;
+                        }
+                    } else if (sbuf[i] == ' ') {
+                        hasNumber = false;
+                    } else if (sbuf[i] == '#') {
+                        break;
+                    }
+                }
+
+                //process triangle
+                if (count == 3) {
+                    if (!hasCoords && !hasNormals)
+                        sscanf(sbuf.c_str(), "f %d %d %d", &va, &vb, &vc);
+                    else if (hasCoords && !hasNormals)
+                        sscanf(sbuf.c_str(), "f %d/%d %d/%d %d/%d", &va, &vta, &vb, &vtb, &vc, &vtc);
+                    else if (hasCoords && hasNormals)
+                        sscanf(sbuf.c_str(), "f %d/%d/%d %d/%d/%d %d/%d/%d",
+                               &va, &vta, &vna, &vb, &vtb, &vnb, &vc, &vtc, &vnc);
+                    else if (!hasCoords && hasNormals)
+                        sscanf(buffer, "f %d//%d %d//%d %d//%d", &va, &vna, &vb, &vnb, &vc, &vnc);
+                    //broken topology ignored
+                    if ((va == vb) || (va == vc) || (vb == vc))
+                        continue;
+                    //incomplete line ignored
+                    if ((va == 0) || (vb == 0) || (vc == 0))
+                        continue;
+                }
+
+                //process quad
+                if (count == 4) {
+                    if (!hasCoords && !hasNormals)
+                        sscanf(sbuf.c_str(), "f %d %d %d %d", &va, &vb, &vc, &vd);
+                    else if (hasCoords && !hasNormals)
+                        sscanf(sbuf.c_str(), "f %d/%d %d/%d %d/%d %d/%d", &va, &vta, &vb, &vtb, &vc, &vtc, &vd, &vtd);
+                    else if (hasCoords && hasNormals)
+                        sscanf(sbuf.c_str(), "f %d/%d/%d %d/%d/%d %d/%d/%d %d/%d/%d",
+                               &va, &vta, &vna, &vb, &vtb, &vnb, &vc, &vtc, &vnc, &vd, &vtd, &vnd);
+                    else if (!hasCoords && hasNormals)
+                        sscanf(buffer, "f %d//%d %d//%d %d//%d %d//%d", &va, &vna, &vb, &vnb, &vc, &vnc, &vd, &vnd);
+                    //broken topology ignored
+                    if ((va == vb) || (va == vc) || (vb == vc))
+                        continue;
+                    //incomplete line ignored
+                    if ((va == 0) || (vb == 0) || (vc == 0) || (vd == 0))
+                        continue;
+                }
+
                 //vertices
                 output[meshIndex].vertices.push_back(vertices[va - 1]);
                 output[meshIndex].vertices.push_back(vertices[vb - 1]);
                 output[meshIndex].vertices.push_back(vertices[vc - 1]);
+                if (count == 4) {
+                    output[meshIndex].vertices.push_back(vertices[vd - 1]);
+                    output[meshIndex].vertices.push_back(vertices[va - 1]);
+                    output[meshIndex].vertices.push_back(vertices[vc - 1]);
+                }
                 //selector
-                output[meshIndex].colors.push_back(0);
-                output[meshIndex].colors.push_back(0);
-                output[meshIndex].colors.push_back(0);
+                for (int i = 0; i < (count == 3 ? 3 : 6); i++)
+                    output[meshIndex].colors.push_back(0);
                 //uvs
                 if (hasCoords) {
                     output[meshIndex].uv.push_back(uvs[vta - 1]);
                     output[meshIndex].uv.push_back(uvs[vtb - 1]);
                     output[meshIndex].uv.push_back(uvs[vtc - 1]);
+                    if (count == 4) {
+                        output[meshIndex].uv.push_back(uvs[vtd - 1]);
+                        output[meshIndex].uv.push_back(uvs[vta - 1]);
+                        output[meshIndex].uv.push_back(uvs[vtc - 1]);
+                    }
                 } else {
-                    output[meshIndex].uv.push_back(glm::vec2(0, 0));
-                    output[meshIndex].uv.push_back(glm::vec2(0, 0));
-                    output[meshIndex].uv.push_back(glm::vec2(0, 0));
+                    for (int i = 0; i < (count == 3 ? 3 : 6); i++)
+                        output[meshIndex].uv.push_back(glm::vec2(0, 0));
                 }
                 //normals
                 if (hasNormals) {
                     output[meshIndex].normals.push_back(normals[vna - 1]);
                     output[meshIndex].normals.push_back(normals[vnb - 1]);
                     output[meshIndex].normals.push_back(normals[vnc - 1]);
+                    if (count == 4) {
+                        output[meshIndex].normals.push_back(normals[vnd - 1]);
+                        output[meshIndex].normals.push_back(normals[vna - 1]);
+                        output[meshIndex].normals.push_back(normals[vnc - 1]);
+                    }
                 } else {
-                    output[meshIndex].normals.push_back(glm::vec3(0, 0, 0));
-                    output[meshIndex].normals.push_back(glm::vec3(0, 0, 0));
-                    output[meshIndex].normals.push_back(glm::vec3(0, 0, 0));
+                    for (int i = 0; i < (count == 3 ? 3 : 6); i++)
+                        output[meshIndex].normals.push_back(glm::vec3(0, 0, 0));
                 }
+
                 //create new model if it is already too big
                 if (output[meshIndex].vertices.size() >= subdivision * 3) {
                     meshIndex = output.size();
