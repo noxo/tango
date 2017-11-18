@@ -111,13 +111,14 @@ void oc::GLScene::Render(glm::vec4 camera, glm::vec4 dir, GLint position_param, 
                     glGenTextures(1, &textureID);
                     m.second.image->SetTexture(textureID);
                     glBindTexture(GL_TEXTURE_2D, textureID);
-                    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
                     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
                     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m.second.image->GetWidth(),
                                  m.second.image->GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE,
                                  m.second.image->GetData());
+                    glGenerateMipmap(GL_TEXTURE_2D);
                 }
                 glBindTexture(GL_TEXTURE_2D, (unsigned int)m.second.image->GetTexture());
                 glEnableVertexAttribArray((GLuint) position_param);

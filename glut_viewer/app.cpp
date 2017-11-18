@@ -143,7 +143,7 @@ void idle(int v)
     if (keys[4])
       side *= 10.0f;
     else
-      side *= 0.1f;
+      side *= 0.3f;
     camera.x += side.x;
     camera.y += side.y;
     camera.z += side.z;
@@ -160,7 +160,7 @@ void idle(int v)
     if (keys[4])
       forward *= 10.0f;
     else
-      forward *= 0.1f;
+      forward *= 0.3f;
     camera.x += forward.x;
     camera.y += forward.y;
     camera.z += forward.z;
