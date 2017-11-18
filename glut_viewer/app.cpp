@@ -37,6 +37,9 @@ const char* kTextureShader[] = {R"glsl(
     R"glsl(
     #version 100
     precision highp float;
+    uniform float u_contrast;
+    uniform float u_gamma;
+    uniform float u_saturation;
     uniform sampler2D u_color_texture;
     varying vec2 v_UV;
     varying float v_Z;
@@ -45,6 +48,19 @@ const char* kTextureShader[] = {R"glsl(
       gl_FragColor = texture2D(u_color_texture, v_UV);
       if (gl_FragColor.a < 0.5)
         discard;
+
+      //contrast
+      gl_FragColor.r -= (0.5 - gl_FragColor.r) * u_contrast * 2.0;
+      gl_FragColor.g -= (0.5 - gl_FragColor.g) * u_contrast * 2.0;
+      gl_FragColor.b -= (0.5 - gl_FragColor.b) * u_contrast * 2.0;
+      //gamma
+      gl_FragColor.rgb += u_gamma;
+      //saturation
+      float c = (gl_FragColor.r + gl_FragColor.g + gl_FragColor.b) / 3.0;
+      gl_FragColor.r -= (c - gl_FragColor.r) * u_saturation * 2.0;
+      gl_FragColor.g -= (c - gl_FragColor.g) * u_saturation * 2.0;
+      gl_FragColor.b -= (c - gl_FragColor.b) * u_saturation * 2.0;
+      //dark "fog"
       gl_FragColor.r = clamp(gl_FragColor.r - v_Z, 0.0, 1.0);
       gl_FragColor.g = clamp(gl_FragColor.g - v_Z, 0.0, 1.0);
       gl_FragColor.b = clamp(gl_FragColor.b - v_Z, 0.0, 1.0);
@@ -57,11 +73,17 @@ GLuint model_program_;
 GLint model_position_param_;
 GLint model_texture_param_;
 GLint model_uv_param_;
+GLint model_contrast_param_;
+GLint model_gamma_param_;
+GLint model_saturation_param_;
 GLint model_translatex_param_;
 GLint model_translatey_param_;
 GLint model_translatez_param_;
 GLint model_modelview_projection_param_;
 
+float mod_contrast = 0;
+float mod_gamma = 0;
+float mod_saturation = 0;
 float mouseX;          ///< Last mouse X
 float mouseY;          ///< Last mouse X
 float pitch;           ///< Camera pitch
@@ -101,6 +123,9 @@ void display(void)
     /// bind shader
     glUseProgram(model_program_);
     glUniform1i(model_texture_param_, 2);
+    glUniform1f(model_contrast_param_, mod_contrast);
+    glUniform1f(model_gamma_param_, mod_gamma);
+    glUniform1f(model_saturation_param_, mod_saturation);
     glUniform1f(model_translatex_param_, camera.x);
     glUniform1f(model_translatey_param_, camera.y);
     glUniform1f(model_translatez_param_, camera.z);
@@ -112,6 +137,17 @@ void display(void)
     scene.Render(-camera, dir, model_position_param_, model_uv_param_);
     glActiveTexture(GL_TEXTURE0);
     glUseProgram(0);
+
+    /// render info
+    std::string text;
+    char buffer[1024];
+    sprintf(buffer, "pos(x=%.1f, y=%.1f, z=%.1f)", camera.x, camera.y, camera.z);
+    text += buffer;
+    sprintf(buffer, ", mod(c=%.1f, g=%.1f, s=%.1f)", mod_contrast, mod_gamma, mod_saturation);
+    text += buffer;
+    glColor3f(1, 0, 0);
+    glRasterPos2f(-1, 0.95f);
+    glutBitmapString(GLUT_BITMAP_TIMES_ROMAN_24, (unsigned char*)text.c_str());
 
     /// check if there is an error
     int i = glGetError();
@@ -200,6 +236,9 @@ void initializeGl()
   model_uv_param_ = glGetAttribLocation(model_program_, "a_UV");
   model_modelview_projection_param_ = glGetUniformLocation(model_program_, "u_MVP");
   model_texture_param_ = glGetUniformLocation(model_program_, "u_color_texture");
+  model_contrast_param_ = glGetUniformLocation(model_program_, "u_contrast");
+  model_gamma_param_ = glGetUniformLocation(model_program_, "u_gamma");
+  model_saturation_param_ = glGetUniformLocation(model_program_, "u_saturation");
   model_translatex_param_ = glGetUniformLocation(model_program_, "u_X");
   model_translatey_param_ = glGetUniformLocation(model_program_, "u_Y");
   model_translatez_param_ = glGetUniformLocation(model_program_, "u_Z");
@@ -231,6 +270,20 @@ void keyboardDown(unsigned char key, int x, int y)
         keys[3] = true;
     else if (key == KEY_NITRO)
         keys[4] = true;
+
+    // color modification
+    if (key == 'u')
+        mod_contrast += 0.1f;
+    else if (key == 'j')
+        mod_contrast -= 0.1f;
+    else if (key == 'i')
+        mod_gamma += 0.1f;
+    else if (key == 'k')
+        mod_gamma -= 0.1f;
+    else if (key == 'o')
+        mod_saturation += 0.1f;
+    else if (key == 'l')
+        mod_saturation -= 0.1f;
 }
 
 /**
