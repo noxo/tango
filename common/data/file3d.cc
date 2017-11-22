@@ -98,9 +98,9 @@ namespace oc {
         glm::vec3 n;
         glm::vec2 t;
         std::string lastKey;
-        std::vector<glm::vec3> vertices;
-        std::vector<glm::vec3> normals;
-        std::vector<glm::vec2> uvs;
+        std::deque<glm::vec3> vertices;
+        std::deque<glm::vec3> normals;
+        std::deque<glm::vec2> uvs;
         bool hasNormals = false;
         bool hasCoords = false;
         bool hasNumber = false;;
@@ -270,9 +270,9 @@ namespace oc {
                 }
             }
         }
-        std::vector<glm::vec3>().swap(vertices);
-        std::vector<glm::vec3>().swap(normals);
-        std::vector<glm::vec2>().swap(uvs);
+        std::deque<glm::vec3>().swap(vertices);
+        std::deque<glm::vec3>().swap(normals);
+        std::deque<glm::vec2>().swap(uvs);
     }
 
     void File3d::ParsePLY(int subdivision, std::vector<Mesh> &output) {

@@ -1,6 +1,7 @@
 #ifndef DATA_FILE3D_H
 #define DATA_FILE3D_H
 
+#include <deque>
 #include <map>
 #include <string>
 #include "data/mesh.h"

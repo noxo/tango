@@ -237,7 +237,16 @@ namespace oc {
                         data[4 * (i * row_bytes + j) + 3] = 255;
                     }
                 break;
+            case PNG_COLOR_MASK_ALPHA:
+                for (int i = 0; i < height; i++)
+                    for (unsigned int j = 0; j < row_bytes; j++) {
+                        for (unsigned int k = 0; k < 3; k++)
+                            data[4 * (i * row_bytes + j) + k] = 0;
+                        data[4 * (i * row_bytes + j) + 3] = row_pointers[i][j];
+                }
+                break;
             default:
+                LOGE("Unsupported PNG type: %d", color_type);
                 assert(false);
                 break;
         }
