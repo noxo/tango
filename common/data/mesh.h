@@ -32,6 +32,7 @@ namespace oc {
         std::vector<glm::vec2> uv;
         Image* image;
         bool imageOwner;
+        bool visible;
     };
 }
 #endif

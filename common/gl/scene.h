@@ -1,14 +1,27 @@
 #ifndef SCENE_H
 #define SCENE_H
 
+#include <set>
 #include <vector>
 #include "data/file3d.h"
+
+#define CULLING_DST 65
 
 struct id3d
 {
     int x;
     int y;
     int z;
+
+    id3d() {
+
+    }
+
+    id3d(glm::vec3 v) {
+        x = v.x;
+        y = v.y;
+        z = v.z;
+    }
 
     bool operator==(id3d v) {
         return (v.x == x) && (v.y == y) && (v.z == z);
@@ -22,8 +35,6 @@ struct id3d
 bool operator<(const id3d& lhs, const id3d& rhs);
 
 enum LOD{ LOD_ORIG, LOD_HQ, LOD_MQ, LOD_LQ, LOD_COUNT };
-
-#define CULLING_DST 65
 
 namespace oc {
     class GLScene {

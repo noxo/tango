@@ -26,8 +26,10 @@ void oc::GLScene::Clear() {
 }
 
 void oc::GLScene::Load(std::vector<oc::Mesh>& input) {
+    id3d v;
     glm::vec3 a, b, c;
     int index = 0;
+    std::set<id3d> geom[LOD_COUNT];
     for (Mesh& m : input) {
         std::string key = m.image->GetName();
         for (unsigned int i = 0; i < m.vertices.size(); i += 3) {
@@ -79,6 +81,10 @@ void oc::GLScene::Load(std::vector<oc::Mesh>& input) {
                     c = Dec(m.vertices[i + 2], (LOD &) d);
                     if (!Valid(a, b) || !Valid(b, c) || !Valid(c, a))
                         continue;
+                    v = id3d(a + b + c);
+                    if (geom[d].find(v) != geom[d].end())
+                      continue;
+                    geom[d].insert(v);
                     models[d][id[k]][key].vertices.push_back(a);
                     models[d][id[k]][key].vertices.push_back(b);
                     models[d][id[k]][key].vertices.push_back(c);
@@ -99,39 +105,62 @@ void oc::GLScene::Load(std::vector<oc::Mesh>& input) {
 }
 
 void oc::GLScene::Render(glm::vec4 camera, glm::vec4 dir, GLint position_param, GLint uv_param) {
+    GLuint gpuMeasuring[1];
+    glGenQueries(1,gpuMeasuring);
     std::vector<std::pair<LOD, id3d> > visible;
     visible = GetVisibility(camera, glm::normalize(glm::vec3(dir.x, dir.y, dir.z)));
-    for (std::pair<LOD, id3d> & param : visible) {
-        if (models[param.first].find(param.second) != models[param.first].end()) {
-            for (std::pair<const std::string, Mesh>& m : models[param.first][param.second]) {
-                if (m.second.vertices.empty())
-                    continue;
-                if (m.second.image && (m.second.image->GetTexture() == -1)) {
-                    GLuint textureID;
-                    glGenTextures(1, &textureID);
-                    m.second.image->SetTexture(textureID);
-                    glBindTexture(GL_TEXTURE_2D, textureID);
-                    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-                    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m.second.image->GetWidth(),
-                                 m.second.image->GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                                 m.second.image->GetData());
-                    glGenerateMipmap(GL_TEXTURE_2D);
+    glEnable(GL_STENCIL_TEST);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    glEnableVertexAttribArray((GLuint) position_param);
+    glEnableVertexAttribArray((GLuint) uv_param);
+    for (int l = 0; l < LOD_COUNT; l++) {
+        glStencilFunc(GL_LEQUAL, l, 0xFF);
+        for (std::pair<LOD, id3d> & param : visible) {
+            if (models[param.first].find(param.second) != models[param.first].end()) {
+                for (std::pair<const std::string, Mesh>& m : models[param.first][param.second]) {
+                    if (m.second.vertices.empty())
+                        continue;
+                    int d = (int)param.first;
+                    if (!m.second.visible) {
+                        d++;
+                        if (d == LOD_COUNT)
+                            d--;
+                    }
+                    if (l != d)
+                        continue;
+                    if (m.second.image && (m.second.image->GetTexture() == -1)) {
+                        GLuint textureID;
+                        glGenTextures(1, &textureID);
+                        m.second.image->SetTexture(textureID);
+                        glBindTexture(GL_TEXTURE_2D, textureID);
+                        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+                        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m.second.image->GetWidth(),
+                                     m.second.image->GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                                     m.second.image->GetData());
+                        glGenerateMipmap(GL_TEXTURE_2D);
+                    }
+                    glBindTexture(GL_TEXTURE_2D, (unsigned int)m.second.image->GetTexture());
+                    glBeginQuery(GL_ANY_SAMPLES_PASSED_CONSERVATIVE, gpuMeasuring[0]);
+                    glVertexAttribPointer((GLuint) position_param, 3, GL_FLOAT, GL_FALSE, 0, models[d][param.second][m.first].vertices.data());
+                    glVertexAttribPointer((GLuint) uv_param, 2, GL_FLOAT, GL_FALSE, 0, models[d][param.second][m.first].uv.data());
+                    glDrawArrays(GL_TRIANGLES, 0, (GLsizei) models[d][param.second][m.first].vertices.size());
+                    glBindTexture(GL_TEXTURE_2D, 0);
+                    glEndQuery(GL_ANY_SAMPLES_PASSED_CONSERVATIVE);
+
+                    GLint passed = 0;
+                    glGetQueryObjectiv(gpuMeasuring[0], GL_QUERY_RESULT, &passed);
+                    for (int d = 0; d < LOD_COUNT; d++)
+                        models[d][param.second][m.first].visible = passed > 0;
                 }
-                glBindTexture(GL_TEXTURE_2D, (unsigned int)m.second.image->GetTexture());
-                glEnableVertexAttribArray((GLuint) position_param);
-                glEnableVertexAttribArray((GLuint) uv_param);
-                glVertexAttribPointer((GLuint) position_param, 3, GL_FLOAT, GL_FALSE, 0, m.second.vertices.data());
-                glVertexAttribPointer((GLuint) uv_param, 2, GL_FLOAT, GL_FALSE, 0, m.second.uv.data());
-                glDrawArrays(GL_TRIANGLES, 0, (GLsizei) m.second.vertices.size());
-                glBindTexture(GL_TEXTURE_2D, 0);
             }
         }
     }
     glDisableVertexAttribArray((GLuint) position_param);
     glDisableVertexAttribArray((GLuint) uv_param);
+    glDisable(GL_STENCIL_TEST);
 }
 
 glm::vec3 oc::GLScene::Dec(glm::vec3 &v, LOD& level) {

@@ -108,7 +108,8 @@ void display(void)
 {
     /// set buffers
     glClearColor(0, 0, 0, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearStencil(255);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     glViewport(0, 0, resolution.x, resolution.y);
 
@@ -146,7 +147,7 @@ void display(void)
     sprintf(buffer, ", mod(c=%.1f, g=%.1f, s=%.1f)", mod_contrast, mod_gamma, mod_saturation);
     text += buffer;
     glColor3f(1, 0, 0);
-    glRasterPos2f(-1, 0.95f);
+    glRasterPos2f(-1, 0.9f);
     glutBitmapString(GLUT_BITMAP_TIMES_ROMAN_24, (unsigned char*)text.c_str());
 
     /// check if there is an error
@@ -334,6 +335,23 @@ void reshape(int w, int h)
 }
 
 /**
+ * @brief Loads obj file into scene
+ * @param filename is path to file
+ * @param position is model translation
+ */
+void load(std::string filename, glm::vec3 position)
+{
+    std::vector<oc::Mesh> meshes;
+    oc::File3d io(filename, false);
+    io.ReadModel(50000, meshes);
+    if (glm::length(position) > 0.005f)
+        for (oc::Mesh& m : meshes)
+            for (glm::vec3& v : m.vertices)
+                v += position;
+    scene.Load(meshes);
+}
+
+/**
  * @brief main loads data and prepares scene
  * @param argc is amount of arguments
  * @param argv is array of arguments
@@ -349,9 +367,9 @@ int main(int argc, char** argv)
     glutInitWindowSize(960,640);
     glutInitContextVersion(3,0);
     glutInitContextProfile(GLUT_CORE_PROFILE);
-    glutInitDisplayMode(GLUT_DEPTH | GLUT_RGB);
+    glutInitDisplayMode(GLUT_DEPTH | GLUT_RGB | GLUT_STENCIL);
     glutCreateWindow("GLUT OBJ Viewer");
-    glutFullScreen();
+    //glutFullScreen();
     initializeGl();
 
     /// set handlers
@@ -362,12 +380,15 @@ int main(int argc, char** argv)
     glutPassiveMotionFunc(mouseMove);
 
     /// load data
-    {
-        std::vector<oc::Mesh> meshes;
-        oc::File3d io(argv[1], false);
-        io.ReadModel(50000, meshes);
-        scene.Load(meshes);
+    if(strcmp(argv[1], "--demo") == 0) {
+        load("3d/church/model.obj", glm::vec3(30, -7.25, 0.25f));
+        load("3d/cathedrale/model.obj", glm::vec3(0, 0, 0));
+        load("3d/kingshall/model.obj", glm::vec3(-21.75f, -4.5f, -14.5f));
+        load("3d/vestibule/model.obj", glm::vec3(-46.25f, -7.75f, 1.35f));
+        load("3d/gallery/model.obj", glm::vec3(-1.25f, -8.0f, 38.0f));
     }
+    else
+        load(argv[1], glm::vec3(0, 0, 0));
     camera = glm::vec4(0, 1, 0, 1);
     pitch = 0;
     yaw = 0;

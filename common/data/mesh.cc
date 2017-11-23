@@ -2,7 +2,7 @@
 
 namespace oc {
 
-    Mesh::Mesh() : aabbUpdate(0), image(NULL), imageOwner(true) {}
+    Mesh::Mesh() : aabbUpdate(0), image(NULL), imageOwner(true), visible(true) {}
 
     void Mesh::Destroy() {
         if (image) {
