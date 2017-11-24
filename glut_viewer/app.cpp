@@ -31,7 +31,7 @@ const char* kTextureShader[] = {R"glsl(
       pos.y += u_Y;
       pos.z += u_Z;
       gl_Position = u_MVP * pos;
-      v_Z = gl_Position.z * 0.00125;
+      v_Z = gl_Position.z * 0.0015;
     })glsl",
 
     R"glsl(
@@ -117,7 +117,7 @@ void display(void)
     glm::vec3 eye = glm::vec3(0, 0, 0);
     glm::vec3 center = glm::vec3(sin(yaw), -sin(pitch), -cos(yaw));
     glm::vec3 up = glm::vec3(0, 1, 0);
-    proj = glm::perspective(glm::radians(60.0f), aspect, 0.01f, 1000.0f);
+    proj = glm::perspective(glm::radians(60.0f), aspect, 0.01f, 500.0f);
     view = glm::lookAt(eye, center, up);
 
     /// bind shader

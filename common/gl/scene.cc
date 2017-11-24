@@ -72,6 +72,7 @@ void oc::GLScene::Render(GLint position_param, GLint uv_param) {
             amountBind++;
             glDepthMask(false);
             glColorMask(false, false, false, true);
+            glBindTexture(GL_TEXTURE_2D, 0);
             glBeginQuery(GL_ANY_SAMPLES_PASSED_CONSERVATIVE, gpuMeasuring[0]);
             glVertexAttribPointer((GLuint) position_param, 3, GL_FLOAT, GL_FALSE, 0, n.aabb.data());
             glVertexAttribPointer((GLuint) uv_param, 2, GL_FLOAT, GL_FALSE, 0, n.aabb.data());
@@ -284,42 +285,6 @@ glm::vec4 oc::GLScene::GetTransform(int i) {
         default:
             return glm::vec4(0, 0, 0, 1);
     }
-}
-
-/**
- * Tells whether or not b is intersecting f.
- * @param f Viewing frustum.
- * @param b An axis aligned bounding box.
- * @return True if b intersects f, false otherwise.
- */
-bool oc::GLScene::IntersectAABB(const Frustum &f) {
-  // We have 6 planes defining the frustum
-  static const int NUM_PLANES = 6;
-  const Plane *planes[NUM_PLANES] =
-     { &f.n, &f.l, &f.r, &f.b, &f.t, &f.f };
-
-  // We only need to do 6 point-plane tests
-  for (int i = 0; i < NUM_PLANES; ++i)
-  {
-    // This is the current plane
-    const Plane &p = *planes[i];
-
-    // p-vertex selection (with the index trick)
-    // According to the plane normal we can know the
-    // indices of the positive vertex
-    const int px = static_cast<int>(p.a > 0.0f);
-    const int py = static_cast<int>(p.b > 0.0f);
-    const int pz = static_cast<int>(p.c > 0.0f);
-
-    // Dot product
-    // project p-vertex on plane normal
-    // (How far is p-vertex from the origin)
-    const float dp = (p.a*aabb[px].x) + (p.b*aabb[py].y) + (p.c*aabb[pz].z);
-
-    // Doesn't intersect if it is behind the plane
-    if (dp < -p.d) { return false; }
-  }
-  return true;
 }
 
 /*!
