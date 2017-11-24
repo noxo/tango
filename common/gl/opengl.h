@@ -2,8 +2,8 @@
 #define GL_OPENGL_H
 
 #ifdef ANDROID
-#include <GLES2/gl2.h>
-#include <GLES2/gl2ext.h>
+#include <GLES3/gl3.h>
+#include <GLES3/gl3ext.h>
 #else
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>

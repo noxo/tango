@@ -70,18 +70,18 @@ void oc::GLScene::Render(GLint position_param, GLint uv_param) {
         //occlusion
         if (n.distance > 0) {
             amountBind++;
-            glDepthMask(false);
-            glColorMask(false, false, false, true);
+            glDepthMask(GL_FALSE);
+            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
             glBindTexture(GL_TEXTURE_2D, 0);
             glBeginQuery(GL_ANY_SAMPLES_PASSED_CONSERVATIVE, gpuMeasuring[0]);
             glVertexAttribPointer((GLuint) position_param, 3, GL_FLOAT, GL_FALSE, 0, n.aabb.data());
             glVertexAttribPointer((GLuint) uv_param, 2, GL_FLOAT, GL_FALSE, 0, n.aabb.data());
             glDrawArrays(GL_TRIANGLES, 0, (GLsizei) n.aabb.size());
             glEndQuery(GL_ANY_SAMPLES_PASSED_CONSERVATIVE);
-            glColorMask(true, true, true, true);
-            glDepthMask(true);
-            GLint passed = 0;
-            glGetQueryObjectiv(gpuMeasuring[0], GL_QUERY_RESULT, &passed);
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+            glDepthMask(GL_TRUE);
+            GLuint passed = 0;
+            glGetQueryObjectuiv(gpuMeasuring[0], GL_QUERY_RESULT, &passed);
             if (passed == 0)
                 continue;
         }
@@ -336,7 +336,7 @@ void oc::GLScene::ProcessRecursive() {
             child[i]->aabb[0] = aabb[0];
             child[i]->aabb[1] = aabb[1];
             child[i]->size = size;
-            child[i]->UpdateAABB(i / 4, (i / 2) % 2, i % 2);
+            child[i]->UpdateAABB((bool) (i / 4), (bool) ((i / 2) % 2), (bool) (i % 2));
             for (unsigned int j = 0; j < models.size(); j++) {
                 Mesh m;
                 m.image = models[j].image;
@@ -380,7 +380,7 @@ void oc::GLScene::ProcessRecursive() {
         //clean empty and process childs
         for (int i = 0; i < 8; i++) {
             count = 0;
-            for (int j = child[i]->models.size() - 1; j >= 0; j--) {
+            for (long j = child[i]->models.size() - 1; j >= 0; j--) {
                 count += child[i]->models[j].vertices.size();
                 if (child[i]->models[j].vertices.empty())
                     child[i]->models.erase(child[i]->models.begin() + j);

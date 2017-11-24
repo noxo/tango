@@ -24,7 +24,7 @@ LOCAL_SRC_FILES := ../../../../../common/data/file3d.cc \
                    ../../../../../common/gl/scene.cc \
                    renderer.cc
 
-LOCAL_LDLIBS    := -llog -lGLESv2 -L$(SYSROOT)/usr/lib -lz -landroid
+LOCAL_LDLIBS    := -llog -lGLESv3 -L$(SYSROOT)/usr/lib -lz -landroid
 include $(BUILD_SHARED_LIBRARY)
 
 $(call import-add-path, $(PROJECT_ROOT))

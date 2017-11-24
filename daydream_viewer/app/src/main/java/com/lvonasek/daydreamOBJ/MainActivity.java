@@ -36,6 +36,7 @@ public class MainActivity extends GvrActivity implements GvrView.StereoRenderer,
     //stereo view
     GvrView gvrView = (GvrView) findViewById(R.id.gvr_view);
     gvrView.setEGLConfigChooser(8, 8, 8, 8, 24, 8);
+    gvrView.setEGLContextClientVersion(3);
     gvrView.setRenderer(this);
     gvrView.setTransitionViewEnabled(true);
     gvrView.setDistortionCorrectionEnabled(true);

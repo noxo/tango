@@ -93,8 +93,8 @@ void Renderer::DrawModel(float* view) {
   glUniformMatrix4fv(model_modelview_projection_param_, 1, GL_FALSE, view);
 
   glActiveTexture(GL_TEXTURE2);
-  glm::vec4 dir = glm::vec4(0, 0, 1, 1) * glm::make_mat4(view);
-  scene.Render(-cur_position, dir, model_position_param_, model_uv_param_);
+  scene.UpdateVisibility(glm::make_mat4(view), cur_position);
+  scene.Render(model_position_param_, model_uv_param_);
   glActiveTexture(GL_TEXTURE0);
   glUseProgram(0);
 }

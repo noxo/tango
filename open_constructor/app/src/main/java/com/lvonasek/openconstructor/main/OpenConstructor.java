@@ -230,7 +230,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
 
     // OpenGL view where all of the graphics are drawn
     mGLView = (GLSurfaceView) findViewById(R.id.gl_surface_view);
-    mGLView.setEGLContextClientVersion(2);
+    mGLView.setEGLContextClientVersion(3);
     mGLView.setRenderer(this);
     mProgress = (ProgressBar) findViewById(R.id.progressBar);
 
