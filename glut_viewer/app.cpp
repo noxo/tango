@@ -31,7 +31,7 @@ const char* kTextureShader[] = {R"glsl(
       pos.y += u_Y;
       pos.z += u_Z;
       gl_Position = u_MVP * pos;
-      v_Z = gl_Position.z * 0.0015;
+      v_Z = gl_Position.z * 0.00125;
     })glsl",
 
     R"glsl(
@@ -108,8 +108,7 @@ void display(void)
 {
     /// set buffers
     glClearColor(0, 0, 0, 1);
-    glClearStencil(255);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     glViewport(0, 0, resolution.x, resolution.y);
 
@@ -134,8 +133,8 @@ void display(void)
 
     /// render data
     glActiveTexture(GL_TEXTURE2);
-    glm::vec4 dir = glm::vec4(sin(yaw), -sin(pitch), -cos(yaw), 0);
-    scene.Render(-camera, dir, model_position_param_, model_uv_param_);
+    scene.UpdateVisibility(proj * view, camera);
+    scene.Render(model_position_param_, model_uv_param_);
     glActiveTexture(GL_TEXTURE0);
     glUseProgram(0);
 
@@ -145,6 +144,8 @@ void display(void)
     sprintf(buffer, "pos(x=%.1f, y=%.1f, z=%.1f)", camera.x, camera.y, camera.z);
     text += buffer;
     sprintf(buffer, ", mod(c=%.1f, g=%.1f, s=%.1f)", mod_contrast, mod_gamma, mod_saturation);
+    text += buffer;
+    sprintf(buffer, ", binding=%d, vertices=%ldK", scene.AmountOfBinding(), scene.AmountOfVertices() / 1000);
     text += buffer;
     glColor3f(1, 0, 0);
     glRasterPos2f(-1, 0.9f);
@@ -343,7 +344,7 @@ void load(std::string filename, glm::vec3 position)
 {
     std::vector<oc::Mesh> meshes;
     oc::File3d io(filename, false);
-    io.ReadModel(50000, meshes);
+    io.ReadModel(INT_MAX, meshes);
     if (glm::length(position) > 0.005f)
         for (oc::Mesh& m : meshes)
             for (glm::vec3& v : m.vertices)
@@ -367,7 +368,7 @@ int main(int argc, char** argv)
     glutInitWindowSize(960,640);
     glutInitContextVersion(3,0);
     glutInitContextProfile(GLUT_CORE_PROFILE);
-    glutInitDisplayMode(GLUT_DEPTH | GLUT_RGB | GLUT_STENCIL);
+    glutInitDisplayMode(GLUT_DEPTH | GLUT_RGB);
     glutCreateWindow("GLUT OBJ Viewer");
     //glutFullScreen();
     initializeGl();
@@ -389,6 +390,7 @@ int main(int argc, char** argv)
     }
     else
         load(argv[1], glm::vec3(0, 0, 0));
+    scene.Process();
     camera = glm::vec4(0, 1, 0, 1);
     pitch = 0;
     yaw = 0;

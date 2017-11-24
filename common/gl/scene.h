@@ -5,49 +5,92 @@
 #include <vector>
 #include "data/file3d.h"
 
-#define CULLING_DST 65
+struct Plane {
+    float a, b, c, d;
+};
 
-struct id3d
-{
-    int x;
-    int y;
-    int z;
+struct Frustum {
+    Plane l,r,b,t,n,f;
 
-    id3d() {
+    Frustum(float* mat) {
+        // Left Plane
+        // col4 + col1
+        l.a = mat[3] + mat[0];
+        l.b = mat[7] + mat[4];
+        l.c = mat[11] + mat[8];
+        l.d = mat[15] + mat[12];
 
-    }
+        // Right Plane
+        // col4 - col1
+        r.a = mat[3] - mat[0];
+        r.b = mat[7] - mat[4];
+        r.c = mat[11] - mat[8];
+        r.d = mat[15] - mat[12];
 
-    id3d(glm::vec3 v) {
-        x = v.x;
-        y = v.y;
-        z = v.z;
-    }
+        // Bottom Plane
+        // col4 + col2
+        b.a = mat[3] + mat[1];
+        b.b = mat[7] + mat[5];
+        b.c = mat[11] + mat[9];
+        b.d = mat[15] + mat[13];
 
-    bool operator==(id3d v) {
-        return (v.x == x) && (v.y == y) && (v.z == z);
-    }
+        // Top Plane
+        // col4 - col2
+        t.a = mat[3] - mat[1];
+        t.b = mat[7] - mat[5];
+        t.c = mat[11] - mat[9];
+        t.d = mat[15] - mat[13];
 
-    bool operator!=(id3d v) {
-        return !(*this==v);
+        // Near Plane
+        // col4 + col3
+        n.a = mat[3] + mat[2];
+        n.b = mat[7] + mat[6];
+        n.c = mat[11] + mat[10];
+        n.d = mat[15] + mat[14];
+
+        // Far Plane
+        // col4 - col3
+        f.a = mat[3] - mat[2];
+        f.b = mat[7] - mat[6];
+        f.c = mat[11] - mat[10];
+        f.d = mat[15] - mat[14];
     }
 };
 
-bool operator<(const id3d& lhs, const id3d& rhs);
-
-enum LOD{ LOD_ORIG, LOD_HQ, LOD_MQ, LOD_LQ, LOD_COUNT };
+struct RenderNode {
+    std::vector<glm::vec3> aabb;
+    float distance;
+    std::vector<oc::Mesh*> meshes;
+};
 
 namespace oc {
     class GLScene {
     public:
+        GLScene();
+        ~GLScene();
+        unsigned int AmountOfBinding();
+        unsigned long AmountOfVertices();
         void Clear();
         void Load(std::vector<oc::Mesh>& input);
-        void Render(glm::vec4 camera, glm::vec4 dir, GLint position_param, GLint uv_param);
+        void Process();
+        void Render(GLint position_param, GLint uv_param);
+        void UpdateVisibility(glm::mat4 mvp, glm::vec4 translate);
     private:
-        glm::vec3 Dec(glm::vec3 &v, LOD& level);
-        std::vector<std::pair<LOD, id3d> > GetVisibility(glm::vec4 camera, glm::vec3 dir);
-        bool Valid(glm::vec3 a, glm::vec3 &b);
+        int BasicTest(glm::mat4& mvp, glm::vec4& translate);
+        float DistanceToAABB(glm::vec3 p);
+        std::vector<RenderNode> GetRenderable();
+        glm::vec4 GetTransform(int i);
+        bool IntersectAABB(const Frustum &f);
+        void PatchAABB();
+        void ProcessRecursive();
+        void SetVisibility(bool on, bool childs);
+        void UpdateAABB(bool x, bool y, bool z);
 
-        std::map<id3d, std::map<std::string, Mesh> > models[LOD_COUNT];
+        glm::vec3 aabb[2];
+        glm::vec4 camera;
+        GLScene* child[8];
+        std::vector<Mesh> models;
+        float size;
     };
 }
 
