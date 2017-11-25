@@ -81,14 +81,15 @@ GLint model_translatey_param_;
 GLint model_translatez_param_;
 GLint model_modelview_projection_param_;
 
+bool mouseActive = true;
 float mod_contrast = 0;
 float mod_gamma = 0;
 float mod_saturation = 0;
 float mouseX;          ///< Last mouse X
 float mouseY;          ///< Last mouse X
-float pitch;           ///< Camera pitch
-float yaw;             ///< Camera yaw
-glm::vec4 camera;      ///< Camera position
+float pitch, npitch;   ///< Camera pitch
+float yaw, nyaw;       ///< Camera yaw
+glm::vec4 camera, ncam;///< Camera position
 glm::mat4 proj;        ///< Camera projection
 glm::mat4 view;        ///< Camera view
 bool keys[5];          ///< State of keyboard
@@ -106,6 +107,11 @@ oc::GLScene scene;     ///< Scene
  */
 void display(void)
 {
+    /// interpolate the movement
+    ncam = ncam * 0.95f + camera * 0.05f;
+    npitch = npitch * 0.95f + pitch * 0.05f;
+    nyaw = nyaw * 0.95f + yaw * 0.05f;
+
     /// set buffers
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -115,7 +121,7 @@ void display(void)
     /// set view
     float aspect = resolution.x / (float)resolution.y;
     glm::vec3 eye = glm::vec3(0, 0, 0);
-    glm::vec3 center = glm::vec3(sin(yaw), -sin(pitch), -cos(yaw));
+    glm::vec3 center = glm::vec3(sin(nyaw), -sin(npitch), -cos(nyaw));
     glm::vec3 up = glm::vec3(0, 1, 0);
     proj = glm::perspective(glm::radians(60.0f), aspect, 0.01f, 500.0f);
     view = glm::lookAt(eye, center, up);
@@ -126,14 +132,14 @@ void display(void)
     glUniform1f(model_contrast_param_, mod_contrast);
     glUniform1f(model_gamma_param_, mod_gamma);
     glUniform1f(model_saturation_param_, mod_saturation);
-    glUniform1f(model_translatex_param_, camera.x);
-    glUniform1f(model_translatey_param_, camera.y);
-    glUniform1f(model_translatez_param_, camera.z);
+    glUniform1f(model_translatex_param_, ncam.x);
+    glUniform1f(model_translatey_param_, ncam.y);
+    glUniform1f(model_translatez_param_, ncam.z);
     glUniformMatrix4fv(model_modelview_projection_param_, 1, GL_FALSE, glm::value_ptr(proj * view));
 
     /// render data
     glActiveTexture(GL_TEXTURE2);
-    scene.UpdateVisibility(proj * view, camera);
+    scene.UpdateVisibility(proj * view, ncam);
     scene.Render(model_position_param_, model_uv_param_);
     glActiveTexture(GL_TEXTURE0);
     glUseProgram(0);
@@ -203,9 +209,12 @@ void idle(int v)
     camera.y += forward.y;
     camera.z += forward.z;
 
-    pitch += (mouseY - resolution.y / 2) / (float)resolution.y;
-    yaw += (mouseX - resolution.x / 2) / (float)resolution.x;
-    glutWarpPointer(resolution.x / 2, resolution.y / 2);
+    if (mouseActive) {
+        pitch += (mouseY - resolution.y / 2) / (float)resolution.y;
+        yaw += (mouseX - resolution.x / 2) / (float)resolution.x;
+        glutWarpPointer(resolution.x / 2, resolution.y / 2);
+    }
+    glutSetCursor(mouseActive ? GLUT_CURSOR_NONE : GLUT_CURSOR_LEFT_ARROW);
 
     if (pitch < -1.57)
         pitch = -1.57;
@@ -312,16 +321,32 @@ void keyboardUp(unsigned char key, int x, int y)
     else if (key == KEY_NITRO)
         keys[4] = false;
 }
+/**
+ * @brief mouseMose is called when the mouse button was clicked
+ * @param x is mouse x positon in window
+ * @param y is mouse y positon in window
+ */
+void mouseClick(int button, int status, int x, int y)
+{
+    if ((button == GLUT_LEFT_BUTTON) && (status == GLUT_DOWN))
+        mouseActive = !mouseActive;
+    if (mouseActive) {
+        mouseX = x;
+        mouseY = y;
+    }
+}
 
 /**
- * @brief mouseMose is called when mouse moved
+ * @brief mouseMove is called when mouse moved
  * @param x is mouse x positon in window
  * @param y is mouse y positon in window
  */
 void mouseMove(int x, int y)
 {
-    mouseX = x;
-    mouseY = y;
+    if (mouseActive) {
+        mouseX = x;
+        mouseY = y;
+    }
 }
 
 /**
@@ -365,7 +390,7 @@ int main(int argc, char** argv)
 
     /// init glut
     glutInit(&argc, argv);
-    glutInitWindowSize(960,640);
+    glutInitWindowSize(960,540);
     glutInitContextVersion(3,0);
     glutInitContextProfile(GLUT_CORE_PROFILE);
     glutInitDisplayMode(GLUT_DEPTH | GLUT_RGB);
@@ -378,6 +403,7 @@ int main(int argc, char** argv)
     glutDisplayFunc(display);
     glutKeyboardFunc(keyboardDown);
     glutKeyboardUpFunc(keyboardUp);
+    glutMouseFunc(mouseClick);
     glutPassiveMotionFunc(mouseMove);
 
     /// load data
@@ -391,12 +417,11 @@ int main(int argc, char** argv)
     else
         load(argv[1], glm::vec3(0, 0, 0));
     scene.Process();
-    camera = glm::vec4(0, 1, 0, 1);
-    pitch = 0;
-    yaw = 0;
+    ncam = camera = glm::vec4(0, 1, 0, 1);
+    npitch = pitch = 0;
+    nyaw = yaw = 0;
 
     /// start loop
-    glutSetCursor(GLUT_CURSOR_NONE);
     glutTimerFunc(0, idle, 0);
     glutMainLoop();
     return 0;
