@@ -393,7 +393,7 @@ int main(int argc, char** argv)
     glutInitWindowSize(960,540);
     glutInitContextVersion(3,0);
     glutInitContextProfile(GLUT_CORE_PROFILE);
-    glutInitDisplayMode(GLUT_DEPTH | GLUT_RGB);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH | GLUT_RGB);
     glutCreateWindow("GLUT OBJ Viewer");
     //glutFullScreen();
     initializeGl();
