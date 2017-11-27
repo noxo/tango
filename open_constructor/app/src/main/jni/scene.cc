@@ -90,24 +90,27 @@ namespace oc {
         long lastTexture = INT_MAX;
         for (Mesh& mesh : static_meshes_) {
             if (mesh.image && (mesh.image->GetTexture() == -1))
-                mesh.image->SetTexture(Image2GLTexture(mesh.image));
+                mesh.image->SetTexture((long) Image2GLTexture(mesh.image));
             if (!mesh.image || (mesh.image->GetTexture() == -1)) {
                 if (color_vertex_shader) {
                     color_vertex_shader->Bind();
                     renderer->Render(&mesh.vertices[0].x, 0, 0, mesh.colors.data(), mesh.vertices.size());
                 }
             } else {
+                glActiveTexture(GL_TEXTURE2);
                 if (lastTexture != mesh.image->GetTexture()) {
-                    lastTexture = (unsigned int)mesh.image->GetTexture();
+                    lastTexture = mesh.image->GetTexture();
                     glBindTexture(GL_TEXTURE_2D, (unsigned int)mesh.image->GetTexture());
                 }
                 if (textured_shader) {
                     textured_shader->Bind();
+                    textured_shader->UniformInt("u_texture", 2);
                     textured_shader->UniformFloat("u_uniform", uniform);
                     textured_shader->UniformFloat("u_uniformPitch", uniformPitch);
                     textured_shader->UniformVec3("u_uniformPos", uniformPos.x, uniformPos.y, uniformPos.z);
                     renderer->Render(&mesh.vertices[0].x, 0, &mesh.uv[0].s, mesh.colors.data(), mesh.vertices.size());
                 }
+                glActiveTexture(GL_TEXTURE0);
             }
         }
         if (color_vertex_shader) {
@@ -123,7 +126,7 @@ namespace oc {
                 fullscreenTexture = Image2GLTexture(fullscreen_);
             glActiveTexture(GL_TEXTURE0);
             full_screen_shader->UniformTexture("u_texture", 0);
-            glBindTexture(GL_TEXTURE_2D, fullscreenTexture);
+            glBindTexture(GL_TEXTURE_2D, (GLuint) fullscreenTexture);
             glDisable(GL_BLEND);
             glDisable(GL_DEPTH_TEST);
             glDepthMask(GL_FALSE);
@@ -134,7 +137,7 @@ namespace oc {
                     glDeleteTextures(1, (GLuint*)&previewTexture);
                 previewTexture = Image2GLTexture(preview_);
                 full_screen_shader->UniformTexture("u_preview", 1);
-                glBindTexture(GL_TEXTURE_2D, previewTexture);
+                glBindTexture(GL_TEXTURE_2D, (GLuint) previewTexture);
                 glActiveTexture(GL_TEXTURE0);
             }
 
@@ -175,7 +178,7 @@ namespace oc {
             glDepthMask(GL_TRUE);
         }
 
-        for (long i : Image::TexturesToDelete())
+        for (unsigned int & i : Image::TexturesToDelete())
             glDeleteTextures(1, (const GLuint *) &i);
     }
 
@@ -287,12 +290,13 @@ namespace oc {
         GLuint textureID;
         glGenTextures(1, &textureID);
         glBindTexture(GL_TEXTURE_2D, textureID);
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->GetWidth(), img->GetHeight(),
                      0, GL_RGBA, GL_UNSIGNED_BYTE, img->GetData());
+        glGenerateMipmap(GL_TEXTURE_2D);
         return textureID;
     }
 }

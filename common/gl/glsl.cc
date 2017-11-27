@@ -112,6 +112,10 @@ namespace oc {
         glUniform1f(glGetUniformLocation(id, name), value);
     }
 
+    void GLSL::UniformInt(const char* name, int value) {
+        glUniform1i(glGetUniformLocation(id, name), value);
+    }
+
     void GLSL::UniformMatrix(const char* name, const float* value) {
         glUniformMatrix4fv(glGetUniformLocation(id,name),1, GL_FALSE, value);
     }

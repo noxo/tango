@@ -54,6 +54,13 @@ namespace oc {
         void UniformFloat(const char* name, float value);
 
         /**
+         * @brief UniformInt send int into shader
+         * @param name is uniform name
+         * @param value is uniform value
+         */
+        void UniformInt(const char* name, int value);
+
+        /**
          * @brief UniformMatrix send matrix into shader
          * @param name is uniform name
          * @param value is uniform value
