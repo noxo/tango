@@ -21,13 +21,6 @@
 
         <CheckBoxPreference
             android:defaultValue="false"
-            android:key="@string/pref_poisson"
-            android:summary="@string/possion_reconstruction_summary"
-            android:title="@string/possion_reconstruction">
-        </CheckBoxPreference>
-
-        <CheckBoxPreference
-            android:defaultValue="false"
             android:key="@string/pref_noisefilter"
             android:summary="@string/realtime_noise_filter_summary"
             android:title="@string/realtime_noise_filter">

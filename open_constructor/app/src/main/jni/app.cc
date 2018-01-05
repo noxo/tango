@@ -1,8 +1,6 @@
 #include <sstream>
 #include "app.h"
 
-extern int main( int argc , char* argv[] );
-
 namespace {
     const int kSubdivisionSize = 20000;
 
@@ -166,9 +164,8 @@ namespace oc {
 
     void App::OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin,
                                       double dmax, int noise, bool land, bool sharpPhotos,
-                                      bool fixHoles, std::string dataset) {
+                                      std::string dataset) {
         landscape = land;
-        poisson = fixHoles;
         sharp = sharpPhotos;
 
         TangoService_setBinder(env, binder);
@@ -309,37 +306,6 @@ namespace oc {
     void App::Texturize(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
-
-        if (poisson) {
-            texturize.SetEvent("Poisson reconstruction");
-            std::string pointcloud = filename + ".ply";
-
-            //convert to ply
-            {
-                std::vector<Mesh> data;
-                File3d(filename, false).ReadModel(kSubdivisionSize, data);
-                File3d(pointcloud, true).WriteModel(data);
-            }
-
-            //poisson reconstruction
-            LOGI("Running possion reconstruction");
-            std::vector<std::string> argv;
-            argv.push_back("--in");
-            argv.push_back(pointcloud);
-            argv.push_back("--out");
-            argv.push_back(pointcloud);
-            std::vector<const char *> av;
-            av.push_back(0);
-            for (std::vector<std::string>::const_iterator i = argv.begin(); i != argv.end(); ++i)
-                av.push_back(i->c_str());
-            main((int) av.size(), (char **) &av[0]);
-
-            //convert to obj
-            std::vector<Mesh> data;
-            File3d(pointcloud, false).ReadModel(kSubdivisionSize, data);
-            File3d(filename, true).WriteModel(data);
-            texturize.SetEvent("");
-        }
 
         //check if texturize is valid
         if (!texturize.Init(filename, tango.Camera())) {
@@ -483,8 +449,8 @@ extern "C" {
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_main_JNI_onTangoServiceConnected(JNIEnv* env, jobject,
           jobject iBinder, jdouble res, jdouble dmin, jdouble dmax, jint noise, jboolean land,
-          jboolean sharp, jboolean fixholes, jstring d) {
-  app.OnTangoServiceConnected(env, iBinder, res, dmin, dmax, noise, land, sharp, fixholes, jstring2string(env, d));
+          jboolean sharp, jstring d) {
+  app.OnTangoServiceConnected(env, iBinder, res, dmin, dmax, noise, land, sharp, jstring2string(env, d));
 }
 
 JNIEXPORT void JNICALL
