@@ -94,19 +94,6 @@
 
         <TextView
             android:text=""
-            android:textSize="16dp"
-            android:gravity="center_horizontal"
-            android:layout_width="wrap_content"
-            android:layout_height="30dp"
-            android:id="@+id/info_middle"/>
-
-        <View
-            android:layout_weight="1"
-            android:layout_width="0dp"
-            android:layout_height="30dp"/>
-
-        <TextView
-            android:text=""
             android:textSize="20dp"
             android:gravity="right"
             android:layout_width="wrap_content"

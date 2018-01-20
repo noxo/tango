@@ -56,7 +56,6 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
   private Button mToggleButton;
   private LinearLayout mLayoutInfo;
   private TextView mInfoLeft;
-  private TextView mInfoMiddle;
   private TextView mInfoRight;
   private TextView mInfoLog;
   private View mBattery;
@@ -205,7 +204,6 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
     mEditorButton = (Button) findViewById(R.id.editor_button);
     mLayoutInfo = (LinearLayout) findViewById(R.id.layout_info);
     mInfoLeft = (TextView) findViewById(R.id.info_left);
-    mInfoMiddle = (TextView) findViewById(R.id.info_middle);
     mInfoRight = (TextView) findViewById(R.id.info_right);
     mInfoLog = (TextView) findViewById(R.id.infolog);
     mBattery = findViewById(R.id.info_battery);
@@ -608,16 +606,8 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
           else
             mInfoRight.setTextColor(Color.WHITE);
 
-          //3d resolution
-          String text = getString(R.string.resolution) + " ";
-          if(mRes > 0)
-            text += mRes + " cm";
-          else if(mRes == 0)
-            text += "0.5 cm";
-          mInfoMiddle.setText(text);
-
           //update info about Tango
-          text = JNI.getEvent(OpenConstructor.this.getResources());
+          String text = JNI.getEvent(OpenConstructor.this.getResources());
           mInfoLog.setVisibility(text.length() > 0 ? View.VISIBLE : View.GONE);
           mInfoLog.setText(text);
 
