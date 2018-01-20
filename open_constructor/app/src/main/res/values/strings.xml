@@ -35,7 +35,6 @@
     <string name="editor_transform_scale">Scale</string>
 
     <!-- Recording !-->
-    <string name="distance">Max. dist.:</string>
     <string name="resolution">3D grid:</string>
     <string name="view">Saved. Do you want to continue the recording?</string>
     <string name="yes">Yes</string>
@@ -69,7 +68,7 @@
     <string name="action_finish">Finish</string>
     <string name="action_cancel">Cancel operation</string>
     <string name="enter_filename">Enter the file name</string>
-    <string name="failed">Processing failed, scanned data are lost!\n\nPossible causes of the problem:\nThe app was killed during processing\nThe device was out of memory\nAnother Tango app was used</string>
+    <string name="failed">Processing failed, scanned data are lost!\n\nPossible causes of the problem:\nThe app was killed during processing\nThe device was out of memory\nAnother AR app was used</string>
     <string name="finished">Operation finished</string>
     <string name="paused">Scanning paused</string>
     <string name="postprocessing">Postprocessing the model…</string>
@@ -77,8 +76,19 @@
     <string name="sketchfab_uploading">Uploading the model to Sketchfab…</string>
     <string name="turn_off">You can exit the app without losing data.</string>
     <string name="warning">Warning</string>
-    <string name="warning_reset">Canceling this process causes problem in Tango Core, you will need to restart the device. Continue?</string>
-    <string name="working">The app is working, please do not turn off the device or start another Tango app.</string>
+    <string name="warning_reset">Canceling this process causes problem in AR, you will need to restart the device. Continue?</string>
+    <string name="working">The app is working, please do not turn off the device or start another AR app.</string>
+
+    <!-- Event !-->
+    <string name="event_bright">Too bright for scanning</string>
+    <string name="event_dark">Too dark for scanning</string>
+    <string name="event_features">Motion tracking reported issues</string>
+    <string name="event_convert">Converting data</string>
+    <string name="event_image">Processing image</string>
+    <string name="event_merge">Merging results</string>
+    <string name="event_process">Processing model</string>
+    <string name="event_simplify">Simplifying mesh</string>
+    <string name="event_unwrap">Unwrapping model</string>
 
     <string-array name="file_operations">
         <item>Open</item>

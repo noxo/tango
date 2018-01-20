@@ -1,8 +1,8 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 25
-
+    compileSdkVersion 26
+    buildToolsVersion '27.0.2'
     defaultConfig {
         minSdkVersion 23
         targetSdkVersion 23
@@ -10,14 +10,11 @@ android {
             abiFilters 'armeabi-v7a'
         }
     }
-
     externalNativeBuild {
         ndkBuild {
             path 'src/main/jni/Android.mk'
         }
     }
-
-
     buildTypes {
         release {
             minifyEnabled false
@@ -27,6 +24,6 @@ android {
 }
 
 dependencies {
-    compile "cz.msebera.android:httpclient:4.4.1.2"
+    compile 'cz.msebera.android:httpclient:4.4.1.2'
     compile 'com.google.firebase:firebase-ads:10.2.4'
 }

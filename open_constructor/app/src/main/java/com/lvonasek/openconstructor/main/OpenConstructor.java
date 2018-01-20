@@ -608,14 +608,8 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
           else
             mInfoRight.setTextColor(Color.WHITE);
 
-          //max distance
-          String text = getString(R.string.distance) + " ";
-          if(mRes > 0)
-            text += (1.5f * mRes) + " m, ";
-          else if(mRes == 0)
-            text += "1.0 m, ";
           //3d resolution
-          text += getString(R.string.resolution) + " ";
+          String text = getString(R.string.resolution) + " ";
           if(mRes > 0)
             text += mRes + " cm";
           else if(mRes == 0)
@@ -623,7 +617,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
           mInfoMiddle.setText(text);
 
           //update info about Tango
-          text = new String(JNI.getEvent());
+          text = JNI.getEvent(OpenConstructor.this.getResources());
           mInfoLog.setVisibility(text.length() > 0 ? View.VISIBLE : View.GONE);
           mInfoLog.setText(text);
 

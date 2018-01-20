@@ -42,7 +42,7 @@ public class Service extends android.app.Service
         public void run()
         {
           while(running) {
-            setMessage(new String(JNI.getEvent()));
+            setMessage(JNI.getEvent(Service.this.getResources()));
             try
             {
               Thread.sleep(1000);

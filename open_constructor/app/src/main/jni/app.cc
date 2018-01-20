@@ -24,7 +24,26 @@ namespace oc {
 
     void App::onTangoEvent(const TangoEvent *event) {
         event_mutex_.lock();
-        event_ = "Tango: " + std::string(event->event_key) + " " + std::string(event->event_value);
+        if (strcmp(event->event_key, "ColorOverExposed") == 0)
+        {
+            event_ = "TOO_BRIGHT";
+        }
+        if (strcmp(event->event_key, "FisheyeOverExposed") == 0)
+        {
+            event_ = "TOO_BRIGHT";
+        }
+        if (strcmp(event->event_key, "ColorUnderExposed") == 0)
+        {
+            event_ = "TOO_DARK";
+        }
+        if (strcmp(event->event_key, "FisheyeUnderExposed") == 0)
+        {
+            event_ = "TOO_DARK";
+        }
+        if (strcmp(event->event_key, "TooFewFeaturesTracked") == 0)
+        {
+            event_ = "FEW_FEATURES";
+        }
         event_mutex_.unlock();
     }
 

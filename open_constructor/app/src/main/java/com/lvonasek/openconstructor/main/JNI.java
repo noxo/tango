@@ -1,7 +1,10 @@
 package com.lvonasek.openconstructor.main;
 
+import android.content.res.Resources;
 import android.os.IBinder;
 import android.util.Log;
+
+import com.lvonasek.openconstructor.R;
 
 /**
  * Interfaces between native C++ code and Java code.
@@ -53,7 +56,7 @@ public class JNI
   public static native float getFloorLevel(float x, float y, float z);
 
   // Get Tango event
-  public static native byte[] getEvent();
+  private static native byte[] getEvent();
 
   // Apply effect on model
   public static native void applyEffect(int effect, float value, int axis);
@@ -77,4 +80,19 @@ public class JNI
   public static native boolean animFinished();
 
   public static native byte[] clientSecret();
+
+  public static String getEvent(Resources r)
+  {
+    String event = new String(getEvent());
+    event = event.replace("TOO_BRIGHT", r.getString(R.string.event_bright));
+    event = event.replace("TOO_DARK", r.getString(R.string.event_dark));
+    event = event.replace("FEW_FEATURES", r.getString(R.string.event_features));
+    event = event.replace("CONVERT", r.getString(R.string.event_convert));
+    event = event.replace("IMAGE", r.getString(R.string.event_image));
+    event = event.replace("MERGE", r.getString(R.string.event_merge));
+    event = event.replace("PROCESS", r.getString(R.string.event_process));
+    event = event.replace("SIMPLIFY", r.getString(R.string.event_simplify));
+    event = event.replace("UNWRAP", r.getString(R.string.event_unwrap));
+    return event;
+  }
 }

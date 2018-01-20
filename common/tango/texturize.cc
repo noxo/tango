@@ -44,7 +44,7 @@ namespace oc {
 
         for (unsigned int i = 0; i < poses; i++) {
             std::ostringstream ss;
-            ss << "Processing image ";
+            ss << "IMAGE ";
             ss << i + 1;
             ss << "/";
             ss << poses;
@@ -104,7 +104,7 @@ namespace oc {
     }
 
     bool TangoTexturize::Init(std::string filename, Tango3DR_CameraCalibration* camera) {
-        event = "Merging results";
+        event = "MERGE";
         Tango3DR_Mesh mesh;
         Tango3DR_Status ret;
         ret = Tango3DR_Mesh_loadFromObj(filename.c_str(), &mesh);
@@ -129,7 +129,7 @@ namespace oc {
     }
 
     bool TangoTexturize::Init(Tango3DR_ReconstructionContext context, Tango3DR_CameraCalibration* camera) {
-        event = "Processing model";
+        event = "PROCESS";
         Tango3DR_Mesh mesh;
         Tango3DR_Status ret;
         ret = Tango3DR_extractFullMesh(context, &mesh);
@@ -155,7 +155,7 @@ namespace oc {
 
     void TangoTexturize::Process(std::string filename) {
         //texturize mesh
-        event = "Unwrapping model";
+        event = "UNWRAP";
         Tango3DR_Mesh mesh;
         Tango3DR_Status ret;
         ret = Tango3DR_getTexturedMesh(context, &mesh);
@@ -163,7 +163,7 @@ namespace oc {
             std::exit(EXIT_SUCCESS);
 
         //save
-        event = "Converting data";
+        event = "CONVERT";
         ret = Tango3DR_Mesh_saveToObj(&mesh, filename.c_str());
         if (ret != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
@@ -179,7 +179,7 @@ namespace oc {
     }
 
     void TangoTexturize::CreateContext(bool finalize, Tango3DR_Mesh* mesh, Tango3DR_CameraCalibration* camera) {
-        event = "Simplifying mesh";
+        event = "SIMPLIFY";
         Tango3DR_Config textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);
         Tango3DR_Status ret;
         ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", finalize ? 0.005 : 0.01);
