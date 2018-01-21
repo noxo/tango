@@ -5,7 +5,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.util.Log;
 
+import com.lvonasek.openconstructor.main.Exporter;
 import com.lvonasek.openconstructor.main.JNI;
 import com.lvonasek.openconstructor.main.OpenConstructor;
 import com.lvonasek.openconstructor.sketchfab.Home;

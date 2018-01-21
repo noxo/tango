@@ -26,7 +26,6 @@ public abstract class AbstractActivity extends Activity
   protected static final String TEMP_DIRECTORY = "dataset";
   protected static final String URL_KEY = "URL2OPEN";
   protected static final String USER_AGENT = "Mozilla/5.0 Google";
-  public static final String[] FILE_EXT = {".obj"};
   public static final String TAG = "tango_app";
 
   public static boolean isCardboardEnabled(Context context)
@@ -56,67 +55,6 @@ public abstract class AbstractActivity extends Activity
     return pref.getBoolean(key, false);
   }
 
-  public static int getModelType(String filename) {
-    for(int i = 0; i < FILE_EXT.length; i++) {
-      int begin = filename.length() - FILE_EXT[i].length();
-      if (begin >= 0)
-        if (filename.substring(begin).contains(FILE_EXT[i]))
-          return i;
-    }
-    return -1;
-  }
-
-  public static String getMtlResource(String obj)
-  {
-    try
-    {
-      Scanner sc = new Scanner(new FileInputStream(obj));
-      while(sc.hasNext()) {
-        String line = sc.nextLine();
-        if (line.startsWith("mtllib")) {
-          return line.substring(7);
-        }
-      }
-      sc.close();
-    } catch (Exception e)
-    {
-      e.printStackTrace();
-    }
-    return null;
-  }
-
-  public static ArrayList<String> getObjResources(File file)
-  {
-    HashSet<String> files = new HashSet<>();
-    ArrayList<String> output = new ArrayList<>();
-    String mtlLib = getMtlResource(file.getAbsolutePath());
-    if (mtlLib != null) {
-      output.add(mtlLib);
-      output.add(mtlLib + ".png");
-      mtlLib = file.getParent() + "/" + mtlLib;
-      try
-      {
-        Scanner sc = new Scanner(new FileInputStream(mtlLib));
-        while(sc.hasNext()) {
-          String line = sc.nextLine();
-          if (line.startsWith("map_Kd")) {
-            String filename = line.substring(7);
-            if (!files.contains(filename))
-            {
-              files.add(filename);
-              output.add(filename);
-            }
-          }
-        }
-        sc.close();
-      } catch (Exception e)
-      {
-        e.printStackTrace();
-      }
-    }
-    return output;
-  }
-
   public static void setOrientation(boolean portrait, Activity activity) {
     int value = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
     if (!portrait)
@@ -131,7 +69,7 @@ public abstract class AbstractActivity extends Activity
     setOrientation(isPortrait(this), this);
   }
 
-  public void deleteRecursive(File fileOrDirectory) {
+  public static void deleteRecursive(File fileOrDirectory) {
     if (fileOrDirectory.isDirectory())
       for (File child : fileOrDirectory.listFiles())
         deleteRecursive(child);
@@ -144,6 +82,15 @@ public abstract class AbstractActivity extends Activity
     if(filename == null)
       return null;
     return Uri.fromFile(new File(getPath(), filename));
+  }
+
+  public static File getModel(String name) {
+    //get the model file
+    File obj = new File(getPath(), name);
+    for (File f : obj.listFiles())
+      if (f.getAbsolutePath().toLowerCase().endsWith(".obj"))
+        return f;
+    return obj;
   }
 
   public static String getPath() {

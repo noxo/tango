@@ -14,6 +14,7 @@ import android.opengl.GLSurfaceView;
 import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
@@ -292,8 +293,17 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
     if ((filename != null) && (filename.length() > 0))
     {
       m3drRunning = false;
-      mToLoad = new File(getPath(), filename).toString();
-      setViewerMode(mToLoad);
+      try
+      {
+        if (new File(getPath(), filename).isFile())
+          mToLoad = new File(getPath(), filename).toString();
+        else
+          mToLoad = getModel(filename).toString();
+        setViewerMode(mToLoad);
+      } catch (Exception e) {
+        Log.e(TAG, "Unable to load " + filename);
+        e.printStackTrace();
+      }
     }
     else
       mRes = getIntent().getIntExtra(RESOLUTION_KEY, 3);
@@ -549,7 +559,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
         mGLView.onPause();
         finish();
         long timestamp = System.currentTimeMillis();
-        final File obj = new File(getTempPath(), timestamp + FILE_EXT[0]);
+        final File obj = new File(getTempPath(), timestamp + Exporter.FILE_EXT[0]);
         JNI.save(obj.getAbsolutePath());
         //Exporter.patchPath(getTempPath());
         Service.finish(TEMP_DIRECTORY + "/" + obj.getName());
@@ -658,7 +668,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
       e.printStackTrace();
     }
     final boolean[] finished = {false};
-    final File thumbFile = new File(getPath(), AbstractActivity.getMtlResource(mOpenedFile) + ".png");
+    final File thumbFile = new File(new File(mOpenedFile).getParent(), Exporter.getMtlResource(mOpenedFile) + ".png");
     if (forced || !thumbFile.exists())
     {
       mGLView.queueEvent(new Runnable()

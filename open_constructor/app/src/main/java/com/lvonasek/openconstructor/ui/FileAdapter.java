@@ -15,6 +15,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.lvonasek.openconstructor.R;
+import com.lvonasek.openconstructor.main.Exporter;
 import com.lvonasek.openconstructor.main.OpenConstructor;
 import com.lvonasek.openconstructor.sketchfab.OAuth;
 
@@ -108,22 +109,22 @@ class FileAdapter extends BaseAdapter
   void addItem(String name)
   {
     mItems.add(name);
+
     //load description
+    File obj = AbstractActivity.getModel(name);
     if (!mDescriptions.containsKey(name)) {
-      File obj = new File(AbstractActivity.getPath(), name);
       long length = obj.length();
-      for (String s : AbstractActivity.getObjResources(obj))
+      for (String s : Exporter.getObjResources(obj))
         length += new File(AbstractActivity.getPath(), s).length();
       String description = "";
-      description += AbstractActivity.getMtlResource(obj.getAbsolutePath()) + "\n";
+      description += Exporter.getMtlResource(obj.getAbsolutePath()) + "\n";
       description += (int)(length / 1024 / 1024) + "MB";
       mDescriptions.put(name, description);
     }
     //load icon
     if (!mIcons.containsKey(name)) {
-      File obj = new File(AbstractActivity.getPath(), name);
-      String mtl = AbstractActivity.getMtlResource(obj.getAbsolutePath());
-      final File thumbFile = new File(AbstractActivity.getPath(), mtl + ".png");
+      String mtl = Exporter.getMtlResource(obj.getAbsolutePath());
+      final File thumbFile = new File(obj.getParent(), mtl + ".png");
       if (thumbFile.exists()) {
         Drawable d = Drawable.createFromPath(thumbFile.getAbsolutePath());
         mIcons.put(name, d);
@@ -171,8 +172,8 @@ class FileAdapter extends BaseAdapter
             renameDlg.setPositiveButton(mContext.getString(android.R.string.ok), new DialogInterface.OnClickListener() {
               @Override
               public void onClick(DialogInterface dialog, int which) {
-                int type = AbstractActivity.getModelType(mItems.get(index));
-                String name = input.getText().toString() + AbstractActivity.FILE_EXT[type];
+                int type = Exporter.getModelType(mItems.get(index));
+                String name = input.getText().toString() + Exporter.FILE_EXT[type];
                 File newFile = new File(AbstractActivity.getPath(), name);
                 if(newFile.exists())
                   Toast.makeText(mContext, R.string.name_exists, Toast.LENGTH_LONG).show();
@@ -188,18 +189,7 @@ class FileAdapter extends BaseAdapter
             renameDlg.create().show();
             break;
           case 3://delete
-            try {
-              File file = new File(AbstractActivity.getPath(), mItems.get(index));
-              if (AbstractActivity.getModelType(mItems.get(index)) == 0) { //OBJ
-                for(String s : AbstractActivity.getObjResources(file))
-                  if (new File(AbstractActivity.getPath(), s).delete())
-                    Log.d(AbstractActivity.TAG, "File " + s + " deleted");
-              }
-              if (file.delete())
-                Log.d(AbstractActivity.TAG, "File " + mItems.get(index) + " deleted");
-            } catch(Exception e) {
-              e.printStackTrace();
-            }
+            AbstractActivity.deleteRecursive(new File(AbstractActivity.getPath(), mItems.get(index)));
             mContext.refreshUI();
             break;
         }

@@ -458,10 +458,10 @@ public class Editor extends View implements Button.OnClickListener, View.OnTouch
       @Override
       public void onClick(DialogInterface dialog, int which) {
         //delete old during overwrite
-        File file = new File(AbstractActivity.getPath(), input.getText().toString() + AbstractActivity.FILE_EXT[0]);
+        File file = new File(AbstractActivity.getPath(), input.getText().toString() + Exporter.FILE_EXT[0]);
         try {
           if (file.exists())
-            for(String s : AbstractActivity.getObjResources(file))
+            for(String s : Exporter.getObjResources(file))
               if (new File(AbstractActivity.getPath(), s).delete())
                 Log.d(AbstractActivity.TAG, "File " + s + " deleted");
         } catch(Exception e) {
@@ -474,12 +474,12 @@ public class Editor extends View implements Button.OnClickListener, View.OnTouch
           public void run()
           {
             long timestamp = System.currentTimeMillis();
-            final File obj = new File(AbstractActivity.getTempPath(), timestamp + AbstractActivity.FILE_EXT[0]);
+            final File obj = new File(AbstractActivity.getTempPath(), timestamp + Exporter.FILE_EXT[0]);
             JNI.saveWithTextures(obj.getAbsolutePath());
-            for(String s : AbstractActivity.getObjResources(obj.getAbsoluteFile()))
+            for(String s : Exporter.getObjResources(obj.getAbsoluteFile()))
               if (new File(AbstractActivity.getTempPath(), s).renameTo(new File(AbstractActivity.getPath(), s)))
                 Log.d(AbstractActivity.TAG, "File " + s + " saved");
-            final File file2save = new File(AbstractActivity.getPath(), input.getText().toString() + AbstractActivity.FILE_EXT[0]);
+            final File file2save = new File(AbstractActivity.getPath(), input.getText().toString() + Exporter.FILE_EXT[0]);
             if (obj.renameTo(file2save))
               Log.d(AbstractActivity.TAG, "Obj file " + file2save.toString() + " saved.");
             mContext.runOnUiThread(new Runnable()

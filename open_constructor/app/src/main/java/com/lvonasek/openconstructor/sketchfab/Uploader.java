@@ -1,4 +1,4 @@
-/**
+/*
  * This class is modified version of SketchfabActivity class from RTABMAP.
  * Do not use without reading licence conditions:
  * https://github.com/introlab/rtabmap
@@ -95,10 +95,8 @@ public class Uploader extends AbstractActivity implements OnClickListener
       case R.id.button_ok:
         File model2share = new File(AbstractActivity.getPath(), mFile);
         ArrayList<String> list = new ArrayList<>();
-        list.add(model2share.getAbsolutePath());
-        if (AbstractActivity.getModelType(mFile) == 0) //OBJ
-          for (String s : AbstractActivity.getObjResources(model2share))
-            list.add(new File(AbstractActivity.getPath(), s).getAbsolutePath());
+        for (String s : model2share.list())
+          list.add(new File(model2share, s).getAbsolutePath());
         zipAndPublish(list.toArray(new String[list.size()]), mFilename.getText().toString());
         break;
     }

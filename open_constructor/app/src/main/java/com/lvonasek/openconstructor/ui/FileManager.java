@@ -19,6 +19,7 @@ import android.widget.TextView;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.lvonasek.openconstructor.R;
+import com.lvonasek.openconstructor.main.Exporter;
 import com.lvonasek.openconstructor.main.OpenConstructor;
 
 import java.io.File;
@@ -141,18 +142,37 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
 
   public void refreshUI()
   {
-    FileAdapter adapter = new FileAdapter(this);
-    adapter.clearItems();
-    String[] files = new File(getPath()).list();
-    Arrays.sort(files);
-    for(String s : files)
-      if(getModelType(s) >= 0)
-        adapter.addItem(s);
-    mText.setVisibility(adapter.getCount() == 0 ? View.VISIBLE : View.GONE);
-    mList.setAdapter(adapter);
-    mAdd.setVisibility(View.VISIBLE);
-    mSettings.setVisibility(View.VISIBLE);
-    mProgress.setVisibility(View.GONE);
+    final FileAdapter adapter = new FileAdapter(this);
+    new Thread(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        //update file structure
+        Exporter.makeStructure(getPath());
+        //get list of files
+        adapter.clearItems();
+        String[] files = new File(getPath()).list();
+        Arrays.sort(files);
+        for(String s : files)
+          if(new File(getPath(), s).isDirectory())
+            if(Exporter.getModelType(s) >= 0)
+              adapter.addItem(s);
+
+        runOnUiThread(new Runnable()
+        {
+          @Override
+          public void run()
+          {
+            mText.setVisibility(adapter.getCount() == 0 ? View.VISIBLE : View.GONE);
+            mList.setAdapter(adapter);
+            mAdd.setVisibility(View.VISIBLE);
+            mSettings.setVisibility(View.VISIBLE);
+            mProgress.setVisibility(View.GONE);
+          }
+        });
+      }
+    }).start();
   }
 
   protected void setupPermissions() {
@@ -295,9 +315,9 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         //delete old files during overwrite
         try
         {
-          File file = new File(getPath(), filename + FILE_EXT[0]);
+          File file = new File(getPath(), filename + Exporter.FILE_EXT[0]);
           if (file.exists())
-            for (String s : getObjResources(file))
+            for (String s : Exporter.getObjResources(file))
               if (new File(getPath(), s).delete())
                 Log.d(AbstractActivity.TAG, "File " + s + " deleted");
         } catch (Exception e)
@@ -307,10 +327,10 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
 
         //move file from temp into folder
         File obj = new File(getPath(), Service.getLink(FileManager.this));
-        for (String s : getObjResources(obj.getAbsoluteFile()))
+        for (String s : Exporter.getObjResources(obj.getAbsoluteFile()))
           if (new File(getTempPath(), s).renameTo(new File(getPath(), s)))
             Log.d(AbstractActivity.TAG, "File " + s + " saved");
-        File file2save = new File(getPath(), filename + FILE_EXT[0]);
+        File file2save = new File(getPath(), filename + Exporter.FILE_EXT[0]);
         if (obj.renameTo(file2save))
           Log.d(TAG, "Obj file " + file2save.toString() + " saved.");
 

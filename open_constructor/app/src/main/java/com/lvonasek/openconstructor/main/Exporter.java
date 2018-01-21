@@ -12,14 +12,113 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Scanner;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class Exporter
 {
   private static final int BUFFER_SIZE = 65536;
+  public static final String[] FILE_EXT = {".obj"};
   private static boolean FOCAL_CACHED = false;
   private static float FOCAL_VALUE = 0;
+
+  public static int getModelType(String filename) {
+    for(int i = 0; i < FILE_EXT.length; i++) {
+      int begin = filename.length() - FILE_EXT[i].length();
+      if (begin >= 0)
+        if (filename.substring(begin).contains(FILE_EXT[i]))
+          return i;
+    }
+    return -1;
+  }
+
+  public static String getMtlResource(String obj)
+  {
+    try
+    {
+      Scanner sc = new Scanner(new FileInputStream(obj));
+      while(sc.hasNext()) {
+        String line = sc.nextLine();
+        if (line.startsWith("mtllib")) {
+          return line.substring(7);
+        }
+      }
+      sc.close();
+    } catch (Exception e)
+    {
+      e.printStackTrace();
+    }
+    return null;
+  }
+
+  public static ArrayList<String> getObjResources(File file)
+  {
+    HashSet<String> files = new HashSet<>();
+    ArrayList<String> output = new ArrayList<>();
+    String mtlLib = getMtlResource(file.getAbsolutePath());
+    if (mtlLib != null) {
+      output.add(mtlLib);
+      output.add(mtlLib + ".png");
+      mtlLib = file.getParent() + "/" + mtlLib;
+      try
+      {
+        Scanner sc = new Scanner(new FileInputStream(mtlLib));
+        while(sc.hasNext()) {
+          String line = sc.nextLine();
+          if (line.startsWith("map_Kd")) {
+            String filename = line.substring(7);
+            if (!files.contains(filename))
+            {
+              files.add(filename);
+              output.add(filename);
+            }
+          }
+        }
+        sc.close();
+      } catch (Exception e)
+      {
+        e.printStackTrace();
+      }
+    }
+    return output;
+  }
+
+  public static void makeStructure(String path) {
+    //get list of files
+    ArrayList<String> models = new ArrayList<>();
+    String[] files = new File(path).list();
+    Arrays.sort(files);
+    for(String s : files)
+      if(new File(path, s).isFile())
+        if(getModelType(s) >= 0)
+          models.add(s);
+
+    //restructure models
+    for (String s : models) {
+
+      //create temp folder
+      File temp = new File(path, "temp");
+      if (temp.exists())
+        AbstractActivity.deleteRecursive(temp);
+      temp.mkdir();
+
+      //get model files
+      ArrayList<String> res = getObjResources(new File(path, s));
+      res.add(s);
+
+      //restructure
+      for (String r : res) {
+        File f = new File(path, r);
+        if (f.exists())
+          f.renameTo(new File(temp, r));
+      }
+      temp.renameTo(new File(path, s));
+    }
+  }
 
   private static Camera openRearCamera() {
     Camera cam = null;
@@ -71,6 +170,8 @@ public class Exporter
   public static void zip(String[] files, String zip) throws Exception {
     try (ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip))))
     {
+      out.setMethod(ZipOutputStream.DEFLATED);
+      out.setLevel(9);
       byte data[] = new byte[BUFFER_SIZE];
       for (String file : files)
       {
