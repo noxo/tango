@@ -13,7 +13,9 @@ namespace oc {
         void ApplyFrames(std::string dataset);
         void Clear(std::string dataset);
         std::string GetEvent() { return event; }
+        std::string GetFileName(int index, std::string dataset, std::string extension);
         Image* GetLatestImage(std::string dataset);
+        int GetLatestIndex(std::string dataset);
         std::vector<glm::mat4> GetLatestPose(std::string dataset);
         bool Init(std::string filename, Tango3DR_CameraCalibration* camera);
         bool Init(Tango3DR_ReconstructionContext context, Tango3DR_CameraCalibration* camera);
@@ -23,7 +25,6 @@ namespace oc {
 
     private:
         void CreateContext(bool finalize, Tango3DR_Mesh* mesh, Tango3DR_CameraCalibration* camera);
-        std::string GetFileName(int index, std::string dataset, std::string extension);
         void UpdatePoses(std::string dataset);
 
         int poses;

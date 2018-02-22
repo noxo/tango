@@ -454,12 +454,16 @@ namespace oc {
             fprintf(file, "property float x\n");
             fprintf(file, "property float y\n");
             fprintf(file, "property float z\n");
+#ifdef WRITE_PLY_NORMALS
             fprintf(file, "property float nx\n");
             fprintf(file, "property float ny\n");
             fprintf(file, "property float nz\n");
+#endif
+#ifdef WRITE_PLY_COLORS
             fprintf(file, "property uchar red\n");
             fprintf(file, "property uchar green\n");
             fprintf(file, "property uchar blue\n");
+#endif
             fprintf(file, "element face %d\n", 0);
             fprintf(file, "property list uchar uint vertex_indices\n");
             fprintf(file, "end_header\n");
@@ -506,6 +510,7 @@ namespace oc {
         }
     }
 
+
     void File3d::WritePointCloud(Mesh& mesh) {
         glm::vec3 v;
         glm::vec3 n;
@@ -513,18 +518,33 @@ namespace oc {
         glm::ivec3 c;
         for(unsigned int j = 0; j < mesh.vertices.size(); j++) {
             v = mesh.vertices[j];
-            n = mesh.normals[j];
             if (type == PLY) {
+#ifdef WRITE_PLY_NORMALS
+                n = mesh.normals[j];
+#ifdef WRITE_PLY_COLORS
                 c = DecodeColor(mesh.colors[j]);
-                fprintf(file, "%f %f %f %f %f %f %d %d %d\n", v.x, v.y, v.z, n.x, n.y, n.z, c.r, c.g, c.b);
+                fprintf(file, "%f %f %f %f %f %f %d %d %d\n", v.x, v.z, v.y, n.x, n.z, n.y, c.r, c.g, c.b);
+#else
+                fprintf(file, "%f %f %f %f %f %f\n", v.x, v.z, v.y, n.x, n.z, n.y);
+#endif
+#else
+#ifdef WRITE_PLY_COLORS
+                c = DecodeColor(mesh.colors[j]);
+                fprintf(file, "%f %f %f %d %d %d\n", v.x, v.z, v.y, c.r, c.g, c.b);
+#else
+                fprintf(file, "%f %f %f\n", v.x, v.z, v.y);
+#endif
+#endif
             } else if (type == OBJ) {
-                t = mesh.uv[j];
+                n = mesh.normals[j];
                 fprintf(file, "v %f %f %f\n", v.x, v.y, v.z);
                 fprintf(file, "vn %f %f %f\n", n.x, n.y, n.z);
-                fprintf(file, "vt %f %f\n", t.x, t.y);
+                if (!mesh.uv.empty())
+                    fprintf(file, "vt %f %f\n", mesh.uv[j].x, mesh.uv[j].y);
             }
         }
     }
+
 
     void File3d::WriteFaces(Mesh& mesh, int offset) {
         glm::ivec3 i;

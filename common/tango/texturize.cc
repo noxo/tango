@@ -87,6 +87,11 @@ namespace oc {
         return new Image(GetFileName(poses - 1, dataset, ".jpg"));
     }
 
+    int TangoTexturize::GetLatestIndex(std::string dataset) {
+        UpdatePoses(dataset);
+        return poses - 1;
+    }
+
     std::vector<glm::mat4> TangoTexturize::GetLatestPose(std::string dataset) {
         UpdatePoses(dataset);
         int count = 0;
