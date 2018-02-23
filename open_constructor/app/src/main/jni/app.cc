@@ -1,6 +1,7 @@
 #include <sstream>
 #include "app.h"
 
+#define EXPORT_DEPTHMAP
 #define EXPORT_POINTCLOUD
 
 namespace {
@@ -60,6 +61,13 @@ namespace oc {
     }
 
     void App::StorePointCloud(Tango3DR_PointCloud t3dr_depth) {
+#ifdef EXPORT_DEPTHMAP
+        Tango3DR_ImageBuffer image;
+        Tango3DR_ImageBuffer_init(tango.Depth()->width, tango.Depth()->height, TANGO_3DR_HAL_PIXEL_FORMAT_DEPTH16, &image);
+        Tango3DR_PointCloudToRectifiedDepthImage(&t3dr_depth, tango.Depth(), &image);
+        Tango3DR_ImageBuffer_saveToPnm(&image, texturize.GetFileName(texturize.GetLatestIndex(tango.Dataset()), tango.Dataset(), ".pnm").c_str());
+        Tango3DR_ImageBuffer_destroy(&image);
+#endif
 #ifdef EXPORT_POINTCLOUD
         std::vector<Mesh> pcl;
         Mesh m;

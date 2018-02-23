@@ -29,6 +29,7 @@ namespace oc {
         std::vector<glm::mat4> Convert(std::vector<TangoMatrixTransformData> m);
         std::string Dataset() { return dataset; }
         Tango3DR_CameraCalibration* Camera() { return &camera; }
+        Tango3DR_CameraCalibration* Depth() { return &depth; }
         Tango3DR_ReconstructionContext Context() { return context; }
         TangoSupportPointCloudManager* Pointcloud() { return pointcloud; }
         std::vector<TangoMatrixTransformData> Pose(double timestamp, bool land);
