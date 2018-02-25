@@ -23,9 +23,4 @@ public class Initializator extends AbstractActivity
       startActivity(intent);
     }
   }
-
-  public static void letMeGo()
-  {
-    closeOnResume = true;
-  }
 }

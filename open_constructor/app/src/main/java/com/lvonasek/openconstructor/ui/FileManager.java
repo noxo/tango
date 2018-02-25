@@ -36,7 +36,6 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
   private Button mSettings;
   private ProgressBar mProgress;
   private TextView mText;
-  private boolean first = true;
   private static final int PERMISSIONS_CODE = 1987;
 
   @Override
@@ -66,8 +65,7 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
   @Override
   public void onBackPressed()
   {
-    Initializator.letMeGo();
-    super.onBackPressed();
+    moveTaskToBack(true);
   }
 
   @Override
@@ -134,8 +132,7 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         findViewById(R.id.service_continue).setVisibility(View.GONE);
       else if (service == Service.SERVICE_POSTPROCESS)
         finishScanning();
-    } else if (first) {
-      first = false;
+    } else {
       setupPermissions();
     }
   }
@@ -203,16 +200,21 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
   }
 
   @Override
-  public synchronized void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults)
+  public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults)
   {
     switch (requestCode)
     {
       case PERMISSIONS_CODE:
       {
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-          refreshUI();
-        } else
-          finish();
+        for (int r : grantResults)
+        {
+          if (r != PackageManager.PERMISSION_GRANTED)
+          {
+            finish();
+            return;
+          }
+        }
+        refreshUI();
         break;
       }
     }
