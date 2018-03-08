@@ -2,7 +2,8 @@
 #include "app.h"
 
 #define EXPORT_DEPTHMAP
-#define EXPORT_POINTCLOUD
+#define EXPORT_POINTCLOUD2D
+#define EXPORT_POINTCLOUD3D
 
 namespace {
     const int kSubdivisionSize = 20000;
@@ -62,25 +63,41 @@ namespace oc {
 
     void App::StorePointCloud(Tango3DR_PointCloud t3dr_depth) {
 #ifdef EXPORT_DEPTHMAP
-        Tango3DR_ImageBuffer image;
-        Tango3DR_ImageBuffer_init(tango.Depth()->width, tango.Depth()->height, TANGO_3DR_HAL_PIXEL_FORMAT_DEPTH16, &image);
-        Tango3DR_PointCloudToRectifiedDepthImage(&t3dr_depth, tango.Depth(), &image);
-        Tango3DR_ImageBuffer_saveToPnm(&image, texturize.GetFileName(texturize.GetLatestIndex(tango.Dataset()), tango.Dataset(), ".pnm").c_str());
-        Tango3DR_ImageBuffer_destroy(&image);
-#endif
-#ifdef EXPORT_POINTCLOUD
-        std::vector<Mesh> pcl;
-        Mesh m;
-        glm::vec4 v;
-        for (int i = 0; i < t3dr_depth.num_points; i++) {
-            v = glm::vec4 (t3dr_depth.points[i][0], t3dr_depth.points[i][1], t3dr_depth.points[i][2], 1);
-            v = point_cloud_matrix_ * v;
-            v /= fabs(v.w);
-            m.vertices.push_back(glm::vec3(v.x, v.y, -v.z));
+        {
+            Tango3DR_ImageBuffer image;
+            Tango3DR_ImageBuffer_init(tango.Depth()->width, tango.Depth()->height, TANGO_3DR_HAL_PIXEL_FORMAT_DEPTH16, &image);
+            Tango3DR_PointCloudToRectifiedDepthImage(&t3dr_depth, tango.Depth(), &image);
+            Tango3DR_ImageBuffer_saveToPnm(&image, texturize.GetFileName(texturize.GetLatestIndex(tango.Dataset()), tango.Dataset(), ".pnm").c_str());
+            Tango3DR_ImageBuffer_destroy(&image);
         }
-        pcl.push_back(m);
-        File3d file(texturize.GetFileName(texturize.GetLatestIndex(tango.Dataset()), tango.Dataset(), ".ply").c_str(), true);
-        file.WriteModel(pcl);
+#endif
+#ifdef EXPORT_POINTCLOUD2D
+        {
+            std::vector<Mesh> pcl;
+            Mesh m;
+            for (int i = 0; i < t3dr_depth.num_points; i++) {
+                m.vertices.push_back(glm::vec3(t3dr_depth.points[i][0], t3dr_depth.points[i][1], t3dr_depth.points[i][2]));
+            }
+            pcl.push_back(m);
+            File3d file(texturize.GetFileName(texturize.GetLatestIndex(tango.Dataset()), tango.Dataset(), ".2d.ply").c_str(), true);
+            file.WriteModel(pcl);
+        }
+#endif
+#ifdef EXPORT_POINTCLOUD3D
+        {
+            std::vector<Mesh> pcl;
+            Mesh m;
+            glm::vec4 v;
+            for (int i = 0; i < t3dr_depth.num_points; i++) {
+                v = glm::vec4 (t3dr_depth.points[i][0], t3dr_depth.points[i][1], t3dr_depth.points[i][2], 1);
+                v = point_cloud_matrix_ * v;
+                v /= fabs(v.w);
+                m.vertices.push_back(glm::vec3(v.x, v.y, -v.z));
+            }
+            pcl.push_back(m);
+            File3d file(texturize.GetFileName(texturize.GetLatestIndex(tango.Dataset()), tango.Dataset(), ".3d.ply").c_str(), true);
+            file.WriteModel(pcl);
+        };
 #endif
     }
 
