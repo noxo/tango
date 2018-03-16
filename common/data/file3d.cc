@@ -448,22 +448,30 @@ namespace oc {
     }
 
     void File3d::WriteHeader(std::vector<Mesh>& model) {
+        bool hasNormals = false;
+        bool hasColors = false;
+        for (Mesh& mesh : model) {
+            if (!mesh.normals.empty())
+                hasNormals = true;
+            if (!mesh.colors.empty())
+                hasColors = true;
+        }
         if (type == PLY) {
             fprintf(file, "ply\nformat ascii 1.0\ncomment ---\n");
             fprintf(file, "element vertex %d\n", vertexCount);
             fprintf(file, "property float x\n");
             fprintf(file, "property float y\n");
             fprintf(file, "property float z\n");
-#ifdef WRITE_PLY_NORMALS
-            fprintf(file, "property float nx\n");
-            fprintf(file, "property float ny\n");
-            fprintf(file, "property float nz\n");
-#endif
-#ifdef WRITE_PLY_COLORS
-            fprintf(file, "property uchar red\n");
-            fprintf(file, "property uchar green\n");
-            fprintf(file, "property uchar blue\n");
-#endif
+            if (hasNormals) {
+                fprintf(file, "property float nx\n");
+                fprintf(file, "property float ny\n");
+                fprintf(file, "property float nz\n");
+            }
+            if (hasColors) {
+                fprintf(file, "property uchar red\n");
+                fprintf(file, "property uchar green\n");
+                fprintf(file, "property uchar blue\n");
+            }
             fprintf(file, "element face %d\n", 0);
             fprintf(file, "property list uchar uint vertex_indices\n");
             fprintf(file, "end_header\n");
@@ -516,25 +524,27 @@ namespace oc {
         glm::vec3 n;
         glm::vec2 t;
         glm::ivec3 c;
+        bool hasNormals = !mesh.normals.empty();
+        bool hasColors = !mesh.colors.empty();
         for(unsigned int j = 0; j < mesh.vertices.size(); j++) {
             v = mesh.vertices[j];
             if (type == PLY) {
-#ifdef WRITE_PLY_NORMALS
-                n = mesh.normals[j];
-#ifdef WRITE_PLY_COLORS
-                c = DecodeColor(mesh.colors[j]);
-                fprintf(file, "%f %f %f %f %f %f %d %d %d\n", v.x, v.z, v.y, n.x, n.z, n.y, c.r, c.g, c.b);
-#else
-                fprintf(file, "%f %f %f %f %f %f\n", v.x, v.z, v.y, n.x, n.z, n.y);
-#endif
-#else
-#ifdef WRITE_PLY_COLORS
-                c = DecodeColor(mesh.colors[j]);
-                fprintf(file, "%f %f %f %d %d %d\n", v.x, v.z, v.y, c.r, c.g, c.b);
-#else
-                fprintf(file, "%f %f %f\n", v.x, v.z, v.y);
-#endif
-#endif
+                if (hasNormals) {
+                    n = mesh.normals[j];
+                    if (hasColors) {
+                        c = DecodeColor(mesh.colors[j]);
+                        fprintf(file, "%f %f %f %f %f %f %d %d %d\n", v.x, v.y, v.z, n.x, n.y, n.z, c.r, c.g, c.b);
+                    } else {
+                        fprintf(file, "%f %f %f %f %f %f\n", v.x, v.y, v.z, n.x, n.y, n.z);
+                    }
+                } else {
+                    if (hasColors) {
+                        c = DecodeColor(mesh.colors[j]);
+                        fprintf(file, "%f %f %f %d %d %d\n", v.x, v.y, v.z, c.r, c.g, c.b);
+                    } else {
+                        fprintf(file, "%f %f %f\n", v.x, v.y, v.z);
+                    }
+                }
             } else if (type == OBJ) {
                 n = mesh.normals[j];
                 fprintf(file, "v %f %f %f\n", v.x, v.y, v.z);

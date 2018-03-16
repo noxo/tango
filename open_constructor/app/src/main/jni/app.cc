@@ -1,9 +1,10 @@
 #include <sstream>
 #include "app.h"
 
-#define EXPORT_DEPTHMAP
-#define EXPORT_POINTCLOUD2D
-#define EXPORT_POINTCLOUD3D
+extern int main( int argc , char* argv[] );
+
+//#define EXPORT_DEPTHMAP
+#define EXPORT_POINTCLOUD
 
 namespace {
     const int kSubdivisionSize = 20000;
@@ -71,19 +72,7 @@ namespace oc {
             Tango3DR_ImageBuffer_destroy(&image);
         }
 #endif
-#ifdef EXPORT_POINTCLOUD2D
-        {
-            std::vector<Mesh> pcl;
-            Mesh m;
-            for (int i = 0; i < t3dr_depth.num_points; i++) {
-                m.vertices.push_back(glm::vec3(t3dr_depth.points[i][0], t3dr_depth.points[i][1], t3dr_depth.points[i][2]));
-            }
-            pcl.push_back(m);
-            File3d file(texturize.GetFileName(texturize.GetLatestIndex(tango.Dataset()), tango.Dataset(), ".2d.ply").c_str(), true);
-            file.WriteModel(pcl);
-        }
-#endif
-#ifdef EXPORT_POINTCLOUD3D
+#ifdef EXPORT_POINTCLOUD
         {
             std::vector<Mesh> pcl;
             Mesh m;
@@ -92,10 +81,10 @@ namespace oc {
                 v = glm::vec4 (t3dr_depth.points[i][0], t3dr_depth.points[i][1], t3dr_depth.points[i][2], 1);
                 v = point_cloud_matrix_ * v;
                 v /= fabs(v.w);
-                m.vertices.push_back(glm::vec3(v.x, v.y, -v.z));
+                m.vertices.push_back(glm::vec3(v.x, -v.z, v.y));
             }
             pcl.push_back(m);
-            File3d file(texturize.GetFileName(texturize.GetLatestIndex(tango.Dataset()), tango.Dataset(), ".3d.ply").c_str(), true);
+            File3d file(texturize.GetFileName(texturize.GetLatestIndex(tango.Dataset()), tango.Dataset(), ".ply").c_str(), true);
             file.WriteModel(pcl);
         };
 #endif
@@ -228,8 +217,9 @@ namespace oc {
 
     void App::OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin,
                                       double dmax, int noise, bool land, bool sharpPhotos,
-                                      std::string dataset) {
+                                      bool fixHoles, std::string dataset) {
         landscape = land;
+        poisson = fixHoles;
         sharp = sharpPhotos;
 
         TangoService_setBinder(env, binder);
@@ -370,6 +360,37 @@ namespace oc {
     void App::Texturize(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
+
+        if (poisson) {
+            texturize.SetEvent("Poisson reconstruction");
+            std::string pointcloud = filename + ".ply";
+
+            //convert to ply
+            {
+                std::vector<Mesh> data;
+                File3d(filename, false).ReadModel(kSubdivisionSize, data);
+                File3d(pointcloud, true).WriteModel(data);
+            }
+
+            //poisson reconstruction
+            LOGI("Running possion reconstruction");
+            std::vector<std::string> argv;
+            argv.push_back("--in");
+            argv.push_back(pointcloud);
+            argv.push_back("--out");
+            argv.push_back(pointcloud);
+            std::vector<const char *> av;
+            av.push_back(0);
+            for (std::vector<std::string>::const_iterator i = argv.begin(); i != argv.end(); ++i)
+                av.push_back(i->c_str());
+            main((int) av.size(), (char **) &av[0]);
+
+            //convert to obj
+            std::vector<Mesh> data;
+            File3d(pointcloud, false).ReadModel(kSubdivisionSize, data);
+            File3d(filename, true).WriteModel(data);
+            texturize.SetEvent("");
+        }
 
         //check if texturize is valid
         if (!texturize.Init(filename, tango.Camera())) {
@@ -513,8 +534,8 @@ extern "C" {
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_main_JNI_onTangoServiceConnected(JNIEnv* env, jobject,
           jobject iBinder, jdouble res, jdouble dmin, jdouble dmax, jint noise, jboolean land,
-          jboolean sharp, jstring d) {
-  app.OnTangoServiceConnected(env, iBinder, res, dmin, dmax, noise, land, sharp, jstring2string(env, d));
+          jboolean sharp, jboolean fixholes, jstring d) {
+  app.OnTangoServiceConnected(env, iBinder, res, dmin, dmax, noise, land, sharp, fixholes, jstring2string(env, d));
 }
 
 JNIEXPORT void JNICALL

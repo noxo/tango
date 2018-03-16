@@ -95,6 +95,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
             double dmin   = 0.6f;
             double dmax   = mRes * 1.5;
             int noise     = isNoiseFilterOn() ? 9 : 0;
+            boolean holes = isPoissonReconstructionOn();
             boolean sharp = isSharpPhotosOn();
             boolean land  = !isPortrait(OpenConstructor.this);
 
@@ -141,7 +142,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
             }
 
             String t = getTempPath().getAbsolutePath();
-            JNI.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, sharp, t);
+            JNI.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, sharp, holes, t);
             JNI.onToggleButtonClicked(m3drRunning);
             JNI.setView(0, 0, 0, 0, 0, true);
             final File obj = new File(getPath(), Service.getLink(OpenConstructor.this));

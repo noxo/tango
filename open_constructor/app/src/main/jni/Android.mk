@@ -5,12 +5,12 @@ PROJECT_ROOT:= $(call my-dir)/../../../../..
 include $(CLEAR_VARS)
 LOCAL_MODULE           := libopenconstructor
 LOCAL_SHARED_LIBRARIES := tango_client_api tango_3d_reconstruction tango_support
-LOCAL_STATIC_LIBRARIES := jpeg-turbo png
-LOCAL_CFLAGS           := -std=c++11
+LOCAL_STATIC_LIBRARIES := jpeg-turbo png poisson
 
 LOCAL_C_INCLUDES := $(PROJECT_ROOT)/third_party/glm/ \
                     $(PROJECT_ROOT)/third_party/libjpeg-turbo/include/ \
                     $(PROJECT_ROOT)/third_party/libpng/include/ \
+                    $(PROJECT_ROOT)/third_party/poisson/include \
                     $(PROJECT_ROOT)/common/
 
 LOCAL_SRC_FILES := ../../../../../common/data/file3d.cc \
@@ -35,6 +35,7 @@ $(call import-add-path, $(PROJECT_ROOT))
 $(call import-add-path, $(PROJECT_ROOT)/third_party)
 $(call import-module,libjpeg-turbo)
 $(call import-module,libpng)
+$(call import-module,poisson)
 $(call import-module,tango_client_api)
 $(call import-module,tango_3d_reconstruction)
 $(call import-module,tango_support)
