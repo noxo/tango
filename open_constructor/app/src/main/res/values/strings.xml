@@ -10,6 +10,8 @@
     <string name="settings">Settings</string>
     <string name="capture">Capture</string>
     <string name="textures"> textures</string>
+    <string name="ok"> OK</string>
+    <string name="asus_problem">You are running the Tango version of this app. Google will remove Tango from your device when updating to Android 8. Please avoid updating if you want to keep the 3D scanning functionality.\n\nNote that there is also an ARcore version of this app but that version is providing much worse results because of limitations of the ARcore technology.</string>
 
     <!-- Editor !-->
     <string name="editor_back">Back</string>
@@ -100,10 +102,10 @@
 
     <string-array name="resolutions">
         <item>0.5 cm - objects only</item>
-        <item>1 cm - small room</item>
-        <item>2 cm - big room</item>
-        <item>3 cm - small interior</item>
-        <item>4 cm - big interior</item>
-        <item>5 cm - outside</item>
+        <item>1 cm - small area</item>
+        <item>2 cm - small room</item>
+        <item>3 cm - big room</item>
+        <item>4 cm - interior</item>
+        <item>5 cm - exterior</item>
     </string-array>
 </resources>
