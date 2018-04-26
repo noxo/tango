@@ -104,7 +104,7 @@ public class Uploader extends AbstractActivity implements OnClickListener
 
   private void zipAndPublish(final String[] filesToZip, final String fileName)
   {
-    final String zipOutput = new File(getTempPath(), fileName + ".zip").getAbsolutePath();
+    final String zipOutput = new File(getTempPath(), "upload.zip").getAbsolutePath();
     mProgressDialog.setTitle(getString(R.string.sketchfab_dialog_title));
     mProgressDialog.setMessage(getString(R.string.compressing));
     mProgressDialog.show();
