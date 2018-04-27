@@ -40,6 +40,13 @@
             android:title="@string/sharp_photos_only">
         </CheckBoxPreference>
 
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="@string/pref_spaceclearing"
+            android:summary="@string/space_clearing_summary"
+            android:title="@string/space_clearing">
+        </CheckBoxPreference>
+
     </PreferenceCategory>
 
 </PreferenceScreen>

@@ -20,7 +20,7 @@ namespace oc {
         void Disconnect();
         void SavePointCloud(std::string filename);
         void SetupConfig(std::string datapath);
-        void Setup3DR(double res, double dmin, double dmax, int noise);
+        void Setup3DR(double res, double dmin, double dmax, int noise, bool clearing);
         void SetupTransform(std::vector<glm::mat4> area, std::vector<glm::mat4> zero);
 
         static void DecomposeMatrix(const glm::mat4& matrix, glm::vec3* translation, glm::quat* rotation, glm::vec3* scale);
@@ -45,6 +45,7 @@ namespace oc {
         std::vector<glm::mat4> toArea, toAreaTemp;
         std::vector<glm::mat4> toZero, toZeroTemp;
 
+        bool clearing_;
         double res_;
         double dmin_;
         double dmax_;

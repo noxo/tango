@@ -52,6 +52,8 @@
     <string name="realtime_noise_filter_summary">A noise filter can improve the quality a lot but it makes capturing slower</string>
     <string name="sharp_photos_only">Use sharp photos only</string>
     <string name="sharp_photos_only_summary">Filtering blurred photos improve scan quality a lot but it decrease capturing speed</string>
+    <string name="space_clearing">Use space clearing</string>
+    <string name="space_clearing_summary">This function removes incorrectly scanned data in runtime but it can make problems during scanning small objects</string>
 
     <!-- Sketchfab uploader !-->
     <string name="compressing">Compressing files…</string>

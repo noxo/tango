@@ -25,7 +25,7 @@ public class Settings extends PreferenceActivity implements Preference.OnPrefere
   public boolean onPreferenceChange(Preference preference, Object value)
   {
     if (Objects.equals(preference.getKey(), getString(R.string.pref_landscape)))
-      AbstractActivity.setOrientation(!((boolean)value), this);
+      AbstractActivity.setOrientation(((boolean)value), this);
     return true;
   }
 
@@ -33,6 +33,6 @@ public class Settings extends PreferenceActivity implements Preference.OnPrefere
   protected void onResume() {
     super.onResume();
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-    AbstractActivity.setOrientation(AbstractActivity.isPortrait(this), this);
+    AbstractActivity.setOrientation(AbstractActivity.isLandscape(this), this);
   }
 }

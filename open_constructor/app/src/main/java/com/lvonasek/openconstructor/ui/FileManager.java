@@ -224,6 +224,7 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
             alertDialog.show();
           }
         }
+        defaultSettings();
         refreshUI();
         break;
       }

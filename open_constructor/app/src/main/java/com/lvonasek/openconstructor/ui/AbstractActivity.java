@@ -13,10 +13,6 @@ import android.view.WindowManager;
 import com.lvonasek.openconstructor.R;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Scanner;
 
 public abstract class AbstractActivity extends Activity
 {
@@ -28,6 +24,18 @@ public abstract class AbstractActivity extends Activity
   protected static final String USER_AGENT = "Mozilla/5.0 Google";
   public static final String TAG = "tango_app";
 
+  protected void defaultSettings()
+  {
+    SharedPreferences.Editor e = PreferenceManager.getDefaultSharedPreferences(this).edit();
+    e.putBoolean(getString(R.string.pref_cardboard), isCardboardEnabled(this));
+    e.putBoolean(getString(R.string.pref_landscape), isLandscape(this));
+    e.putBoolean(getString(R.string.pref_noisefilter), isNoiseFilterOn(this));
+    e.putBoolean(getString(R.string.pref_poisson), isPoissonReconstructionOn(this));
+    e.putBoolean(getString(R.string.pref_sharpphotos), isSharpPhotosOn(this));
+    e.putBoolean(getString(R.string.pref_spaceclearing), isSpaceClearingOn(this));
+    e.apply();
+  }
+
   public static boolean isCardboardEnabled(Context context)
   {
     SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
@@ -35,37 +43,43 @@ public abstract class AbstractActivity extends Activity
     return pref.getBoolean(key, false);
   }
 
-  public static boolean isPortrait(Context context) {
+  public static boolean isLandscape(Context context) {
     SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
     String key = context.getString(R.string.pref_landscape);
-    return !pref.getBoolean(key, false);
-  }
-
-  public boolean isNoiseFilterOn()
-  {
-    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
-    String key = getString(R.string.pref_noisefilter);
     return pref.getBoolean(key, false);
   }
 
-  public boolean isPoissonReconstructionOn()
+  public static boolean isNoiseFilterOn(Context context)
   {
-    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
-    String key = getString(R.string.pref_poisson);
+    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
+    String key = context.getString(R.string.pref_noisefilter);
     return pref.getBoolean(key, false);
   }
 
-  public boolean isSharpPhotosOn()
+  public static boolean isPoissonReconstructionOn(Context context)
   {
-    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
-    String key = getString(R.string.pref_sharpphotos);
+    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
+    String key = context.getString(R.string.pref_poisson);
     return pref.getBoolean(key, false);
   }
 
-  public static void setOrientation(boolean portrait, Activity activity) {
-    int value = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
-    if (!portrait)
-      value = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+  public static boolean isSharpPhotosOn(Context context)
+  {
+    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
+    String key = context.getString(R.string.pref_sharpphotos);
+    return pref.getBoolean(key, false);
+  }
+  public static boolean isSpaceClearingOn(Context context)
+  {
+    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
+    String key = context.getString(R.string.pref_spaceclearing);
+    return pref.getBoolean(key, true);
+  }
+
+  public static void setOrientation(boolean land, Activity activity) {
+    int value = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+    if (!land)
+      value = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
     activity.setRequestedOrientation(value);
   }
 
@@ -73,7 +87,7 @@ public abstract class AbstractActivity extends Activity
   protected void onResume() {
     super.onResume();
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-    setOrientation(isPortrait(this), this);
+    setOrientation(isLandscape(this), this);
   }
 
   public static void deleteRecursive(File fileOrDirectory) {

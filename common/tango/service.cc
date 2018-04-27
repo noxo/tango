@@ -30,7 +30,7 @@ namespace oc {
     void TangoService::Clear() {
         Tango3DR_clear(context);
         Tango3DR_ReconstructionContext_destroy(context);
-        Setup3DR(res_, dmin_, dmax_, noise_);
+        Setup3DR(res_, dmin_, dmax_, noise_, clearing_);
     }
 
     void TangoService::Connect(void* app) {
@@ -106,7 +106,7 @@ namespace oc {
         return pose;
     }
 
-    void TangoService::Setup3DR(double res, double dmin, double dmax, int noise) {
+    void TangoService::Setup3DR(double res, double dmin, double dmax, int noise, bool clearing) {
         Tango3DR_Config t3dr_config = Tango3DR_Config_create(TANGO_3DR_CONFIG_RECONSTRUCTION);
         Tango3DR_Status t3dr_err;
         t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "resolution", res);
@@ -125,6 +125,10 @@ namespace oc {
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
+        t3dr_err = Tango3DR_Config_setBool(t3dr_config, "use_space_clearing", clearing);
+        if (t3dr_err != TANGO_3DR_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+
         t3dr_err = Tango3DR_Config_setBool(t3dr_config, "use_parallel_integration", true);
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
@@ -140,6 +144,7 @@ namespace oc {
         Tango3DR_ReconstructionContext_setColorCalibration(context, &camera);
         Tango3DR_ReconstructionContext_setDepthCalibration(context, &depth);
 
+        clearing_ = clearing;
         res_ = res;
         dmin_ = dmin;
         dmax_ = dmax;

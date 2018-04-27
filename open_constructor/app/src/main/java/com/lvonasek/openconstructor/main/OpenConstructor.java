@@ -94,10 +94,11 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
             double res    = mRes * 0.01;
             double dmin   = 0.6f;
             double dmax   = mRes * 1.5;
-            int noise     = isNoiseFilterOn() ? 9 : 0;
-            boolean holes = isPoissonReconstructionOn();
-            boolean sharp = isSharpPhotosOn();
-            boolean land  = !isPortrait(OpenConstructor.this);
+            boolean clear = isSpaceClearingOn(OpenConstructor.this);
+            int noise     = isNoiseFilterOn(OpenConstructor.this) ? 9 : 0;
+            boolean holes = isPoissonReconstructionOn(OpenConstructor.this);
+            boolean sharp = isSharpPhotosOn(OpenConstructor.this);
+            boolean land  = isLandscape(OpenConstructor.this);
 
             if (android.os.Build.DEVICE.toLowerCase().startsWith("yellowstone"))
               land = !land;
@@ -142,7 +143,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
             }
 
             String t = getTempPath().getAbsolutePath();
-            JNI.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, sharp, holes, t);
+            JNI.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, sharp, holes, clear, t);
             JNI.onToggleButtonClicked(m3drRunning);
             JNI.setView(0, 0, 0, 0, 0, true);
             final File obj = new File(getPath(), Service.getLink(OpenConstructor.this));
@@ -454,7 +455,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
         mThumbnailButton.setVisibility(View.GONE);
         mEditorButton.setVisibility(View.GONE);
         mLayoutEditor.setVisibility(View.VISIBLE);
-        setOrientation(false, OpenConstructor.this);
+        setOrientation(true, OpenConstructor.this);
         mEditor.init(mEditorAction, mEditorMsg, mEditorSeek, mProgress, OpenConstructor.this);
       }
     });

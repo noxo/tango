@@ -217,7 +217,7 @@ namespace oc {
 
     void App::OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin,
                                       double dmax, int noise, bool land, bool sharpPhotos,
-                                      bool fixHoles, std::string dataset) {
+                                      bool fixHoles, bool clearing, std::string dataset) {
         landscape = land;
         poisson = fixHoles;
         sharp = sharpPhotos;
@@ -238,7 +238,7 @@ namespace oc {
 
         binder_mutex_.lock();
         tango.Connect(this);
-        tango.Setup3DR(res, dmin, dmax, noise);
+        tango.Setup3DR(res, dmin, dmax, noise, clearing);
         binder_mutex_.unlock();
     }
 
@@ -534,8 +534,8 @@ extern "C" {
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_main_JNI_onTangoServiceConnected(JNIEnv* env, jobject,
           jobject iBinder, jdouble res, jdouble dmin, jdouble dmax, jint noise, jboolean land,
-          jboolean sharp, jboolean fixholes, jstring d) {
-  app.OnTangoServiceConnected(env, iBinder, res, dmin, dmax, noise, land, sharp, fixholes, jstring2string(env, d));
+          jboolean sharp, jboolean fixholes, jboolean clearing, jstring d) {
+  app.OnTangoServiceConnected(env, iBinder, res, dmin, dmax, noise, land, sharp, fixholes, clearing, jstring2string(env, d));
 }
 
 JNIEXPORT void JNICALL

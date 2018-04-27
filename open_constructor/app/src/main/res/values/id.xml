@@ -5,4 +5,5 @@
     <string name="pref_noisefilter">pref_noisefilter</string>
     <string name="pref_poisson">pref_poisson</string>
     <string name="pref_sharpphotos">pref_sharpphotos</string>
+    <string name="pref_spaceclearing">pref_spaceclearing</string>
 </resources>

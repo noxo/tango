@@ -19,7 +19,7 @@ namespace oc {
         App();
         void StorePointCloud(Tango3DR_PointCloud t3dr_depth);
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin, double dmax,
-                                     int noise, bool land, bool sharpPhotos, bool fixHoles,
+                                     int noise, bool land, bool sharpPhotos, bool fixHoles, bool clearing,
                                      std::string dataset);
         void onPointCloudAvailable(TangoPointCloud *pc);
         void onFrameAvailable(TangoCameraId id, const TangoImageBuffer *im);
