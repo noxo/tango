@@ -29,7 +29,7 @@ namespace oc {
         data[2] = b;
         data[3] = a;
         char buffer[1024];
-        sprintf(buffer, "%d %d %d %d", r, g, b, a);
+        sprintf(buffer, "%d-%d-%d-%d.png", r, g, b, a);
         name = std::string(buffer);
         instances = 1;
         texture = -1;

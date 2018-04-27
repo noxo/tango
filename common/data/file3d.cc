@@ -546,9 +546,9 @@ namespace oc {
                     }
                 }
             } else if (type == OBJ) {
-                n = mesh.normals[j];
                 fprintf(file, "v %f %f %f\n", v.x, v.y, v.z);
-                fprintf(file, "vn %f %f %f\n", n.x, n.y, n.z);
+                if (!mesh.normals.empty())
+                    fprintf(file, "vn %f %f %f\n", mesh.normals[j].x, mesh.normals[j].y, mesh.normals[j].z);
                 if (!mesh.uv.empty())
                     fprintf(file, "vt %f %f\n", mesh.uv[j].x, mesh.uv[j].y);
             }

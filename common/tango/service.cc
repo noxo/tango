@@ -125,6 +125,16 @@ namespace oc {
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
+#ifdef GENERATE_FLOORPLAN
+        t3dr_err = Tango3DR_Config_setBool(t3dr_config, "use_floorplan", true);
+        if (t3dr_err != TANGO_3DR_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+
+        t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "floorplan_max_error", 0.3);
+        if (t3dr_err != TANGO_3DR_SUCCESS)
+            std::exit(EXIT_SUCCESS);
+#endif
+
         t3dr_err = Tango3DR_Config_setBool(t3dr_config, "use_space_clearing", clearing);
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
