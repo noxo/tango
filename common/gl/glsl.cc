@@ -6,11 +6,6 @@ oc::GLSL* gl_last_shader = 0;
 
 namespace oc {
     GLSL::GLSL(std::string vert, std::string frag) {
-        /// add header
-        std::string header = "#version 100\nprecision highp float;\n";
-        vert = header + vert;
-        frag = header + frag;
-
         /// compile shader
         id = InitShader(vert.c_str(), frag.c_str());
 

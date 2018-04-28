@@ -33,6 +33,8 @@ namespace oc {
 
         static GLSL* CurrentShader();
 
+        unsigned int GetId() { return id; }
+
         /**
          * @brief initShader creates shader from code
          * @param vs is vertex shader code
