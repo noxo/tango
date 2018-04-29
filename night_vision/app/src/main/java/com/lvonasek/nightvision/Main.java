@@ -28,7 +28,7 @@ public class Main extends Activity implements GLSurfaceView.Renderer {
           {
 
             boolean updown = Build.MANUFACTURER.toUpperCase().contains("ASUS");
-            JNI.onTangoServiceConnected(srv, 5, 0.5f, 10, 0, updown);
+            JNI.onTangoServiceConnected(srv, updown);
             mInitialised = true;
           }
         }).start();

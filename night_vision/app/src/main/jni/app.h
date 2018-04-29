@@ -11,7 +11,7 @@ namespace oc {
 
     class App {
     public:
-        void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin, double dmax, int noise, bool updown);
+        void OnTangoServiceConnected(JNIEnv *env, jobject binder, bool updown);
         void onPointCloudAvailable(TangoPointCloud *pc);
         void OnSurfaceChanged(int width, int height);
         void OnDrawFrame();
