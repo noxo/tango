@@ -3,16 +3,18 @@
 
 namespace {
     std::string kVertexShader = "attribute vec4 vertex;\n"\
-    "varying float v_color;\n"\
+    "varying float v_depth;\n"\
     "void main() {\n"\
-    "  gl_PointSize = vertex.z * 2500.0;\n"\
-    "  gl_Position = vec4(vertex.xyz, 1.0);\n"\
-    "  v_color = gl_Position.z * 10.0;\n"\
+    "  gl_Position = vec4(vertex.x * 2.0, vertex.y, vertex.z * 0.01, 1.0);\n"\
+    "  gl_Position.xy /= vertex.z;     //perspective correction\n"\
+    "  gl_Position.xy *= 1.5;          //bigger picture\n"\
+    "  gl_PointSize = vertex.z * 25.0; //more distant points bigger\n"\
+    "  v_depth = vertex.z;\n"\
     "}";
 
-    std::string kFragmentShader = "varying float v_color;\n"\
+    std::string kFragmentShader = "varying float v_depth;\n"\
     "void main() {\n"\
-    "  gl_FragColor = vec4(0.0, v_color * 2.0, v_color * 0.5, 1.0);\n"\
+    "  gl_FragColor = vec4(0.0, v_depth * 0.2, v_depth * 0.05, 1.0);\n"\
     "}";
 
     void onPointCloudAvailableRouter(void *context, const TangoPointCloud *point_cloud) {
@@ -36,9 +38,9 @@ namespace oc {
                 points.clear();
                 for (int i = 0; i < t3dr_depth.num_points; i++) {
                     glm::vec4 v;
-                    v.x = 2.0f * t3dr_depth.points[i][1] *  (swap ? -1 : 1);
+                    v.x = t3dr_depth.points[i][1] *  (swap ? -1 : 1);
                     v.y = t3dr_depth.points[i][0] *  (swap ? -1 : 1);
-                    v.z = t3dr_depth.points[i][2] * 0.01f;
+                    v.z = t3dr_depth.points[i][2];
                     v.w = t3dr_depth.points[i][3];
                     points.push_back(v);
                 }
