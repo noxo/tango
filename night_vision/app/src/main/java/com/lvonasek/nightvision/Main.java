@@ -1,7 +1,9 @@
 package com.lvonasek.nightvision;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ComponentName;
+import android.content.DialogInterface;
 import android.content.ServiceConnection;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
@@ -54,6 +56,7 @@ public class Main extends Activity implements GLSurfaceView.Renderer {
   protected void onResume() {
     super.onResume();
     mGLView.onResume();
+    setType();
 
     if(!mInitialised && !mTangoBinded) {
       TangoInitHelper.bindTangoService(this, mTangoServiceConnection);
@@ -78,5 +81,37 @@ public class Main extends Activity implements GLSurfaceView.Renderer {
   @Override
   public void onSurfaceChanged(GL10 gl, int width, int height) {
     JNI.onGlSurfaceChanged(width, height);
+  }
+
+  private void setType() {
+    JNI.setParams(1, 1.8f, 2.6f, 0.0f);
+
+    String[] resolutions = getResources().getStringArray(R.array.variants);
+    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    builder.setTitle(getString(R.string.variant));
+    builder.setItems(resolutions, new DialogInterface.OnClickListener() {
+      @Override
+      public void onClick(DialogInterface dialog, int which) {
+        switch(which) {
+          //Normal
+          case 0:
+            JNI.setParams(1, 1.0f, 2.0f, 0.0f);
+            break;
+          //Fill screen
+          case 1:
+            JNI.setParams(1, 1.8f, 2.6f, 0.0f);
+            break;
+          //VR for Asus Zenfone AR
+          case 2:
+            JNI.setParams(2, 1.5f, 1.5f, 0.0f);
+            break;
+          //VR for Lenovo Phab 2 Pro
+          case 3:
+            JNI.setParams(2, 1.25f, 1.25f, 0.1f);
+            break;
+        }
+      }
+    });
+    builder.create().show();
   }
 }

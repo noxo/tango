@@ -13,8 +13,9 @@ namespace oc {
     public:
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, bool updown);
         void onPointCloudAvailable(TangoPointCloud *pc);
-        void OnSurfaceChanged(int width, int height);
+        void OnSurfaceChanged(int w, int h);
         void OnDrawFrame();
+        void SetParams(int count, float sx, float sy, float dst);
     private:
         GLSL *shader_program_;
         GLuint attribute_vertices_;
@@ -24,6 +25,8 @@ namespace oc {
         TangoPointCloud* front_cloud_;
         std::vector<glm::vec4> points;
         bool swap;
+        int width, height, viewportCount;
+        float scaleX, scaleY, eyeDistance;
     };
 }
 

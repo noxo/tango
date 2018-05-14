@@ -3,12 +3,13 @@
 
 namespace {
     std::string kVertexShader = "attribute vec4 vertex;\n"\
+    "uniform float u_scaleX;\n"\
+    "uniform float u_scaleY;\n"\
     "varying float v_depth;\n"\
     "void main() {\n"\
-    "  gl_Position = vec4(vertex.x * 2.0, vertex.y, vertex.z * 0.01, 1.0);\n"\
-    "  gl_Position.xy /= vertex.z;     //perspective correction\n"\
-    "  gl_Position.xy *= 1.5;          //bigger picture\n"\
-    "  gl_PointSize = vertex.z * 25.0; //more distant points bigger\n"\
+    "  gl_Position = vec4(vertex.x * u_scaleX, vertex.y * u_scaleY, vertex.z * 0.01, 1.0);\n"\
+    "  gl_Position.xy /= vertex.z;               //perspective correction\n"\
+    "  gl_PointSize = vertex.z * 25.0;           //more distant points bigger\n"\
     "  v_depth = vertex.z;\n"\
     "}";
 
@@ -38,8 +39,8 @@ namespace oc {
                 points.clear();
                 for (int i = 0; i < t3dr_depth.num_points; i++) {
                     glm::vec4 v;
-                    v.x = t3dr_depth.points[i][1] *  (swap ? -1 : 1);
-                    v.y = t3dr_depth.points[i][0] *  (swap ? -1 : 1);
+                    v.x = t3dr_depth.points[i][0] * (swap ? 1 : -1);
+                    v.y = t3dr_depth.points[i][1] * (swap ? -1 : 1);
                     v.z = t3dr_depth.points[i][2];
                     v.w = t3dr_depth.points[i][3];
                     points.push_back(v);
@@ -61,9 +62,10 @@ namespace oc {
         binder_mutex_.unlock();
     }
 
-    void App::OnSurfaceChanged(int width, int height) {
+    void App::OnSurfaceChanged(int w, int h) {
         render_mutex_.lock();
-        glViewport(0, 0, width, height);
+        width = w;
+        height = h;
         shader_program_ = new GLSL(kVertexShader, kFragmentShader);
         attribute_vertices_ = (GLuint) glGetAttribLocation(shader_program_->GetId(), "vertex");
         render_mutex_.unlock();
@@ -71,17 +73,33 @@ namespace oc {
 
     void App::OnDrawFrame() {
         render_mutex_.lock();
+        glViewport(0, 0, width, height);
         glClearColor(0.0f, 0.1f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        if (!points.empty()) {
-            shader_program_->Bind();
-            glEnable(GL_DEPTH_TEST);
-            glEnableVertexAttribArray(attribute_vertices_);
-            glVertexAttribPointer(attribute_vertices_, 4, GL_FLOAT, GL_FALSE, 0, points.data());
-            glDrawArrays(GL_POINTS, 0, points.size());
-            shader_program_->Unbind();
+        for (int i = 0; i < viewportCount; i++)  {
+            int offset = (int)(width / viewportCount * eyeDistance);
+            if (i % 2 == 1)
+                offset = -offset;
+            glViewport(i * width / viewportCount + offset, -abs(offset), width / viewportCount, height);
+            if (!points.empty()) {
+                shader_program_->Bind();
+                shader_program_->UniformFloat("u_scaleX", scaleX);
+                shader_program_->UniformFloat("u_scaleY", scaleY);
+                glEnable(GL_DEPTH_TEST);
+                glEnableVertexAttribArray(attribute_vertices_);
+                glVertexAttribPointer(attribute_vertices_, 4, GL_FLOAT, GL_FALSE, 0, points.data());
+                glDrawArrays(GL_POINTS, 0, points.size());
+                shader_program_->Unbind();
+            }
         }
         render_mutex_.unlock();
+    }
+
+    void App::SetParams(int count, float sx, float sy, float dst) {
+        scaleX = sx;
+        scaleY = sy;
+        eyeDistance = dst;
+        viewportCount = count;
     }
 }
 
@@ -106,6 +124,12 @@ Java_com_lvonasek_nightvision_JNI_onGlSurfaceChanged(
 JNIEXPORT void JNICALL
 Java_com_lvonasek_nightvision_JNI_onGlSurfaceDrawFrame(JNIEnv*, jobject) {
   app.OnDrawFrame();
+}
+
+JNIEXPORT void JNICALL
+Java_com_lvonasek_nightvision_JNI_setParams(
+        JNIEnv*, jobject, jint count, jfloat scaleX, jfloat scaleY, jfloat eyeDistance) {
+    app.SetParams(count, scaleX, scaleY, eyeDistance);
 }
 
 #ifdef __cplusplus

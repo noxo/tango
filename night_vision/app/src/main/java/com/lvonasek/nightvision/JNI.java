@@ -22,4 +22,7 @@ public class JNI
 
   // Main render loop.
   public static native void onGlSurfaceDrawFrame();
+
+  // Set render params
+  public static native void setParams(int eyesCount, float scaleX, float scaleY, float eyeDistance);
 }

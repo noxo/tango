@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Night vision</string>
+    <string name="variant">Select variant of rendering</string>
+
+    <string-array name="variants">
+        <item>Normal</item>
+        <item>Fill screen</item>
+        <item>VR for Asus Zenfone AR</item>
+        <item>VR for Lenovo Phab 2 Pro</item>
+    </string-array>
 </resources>
