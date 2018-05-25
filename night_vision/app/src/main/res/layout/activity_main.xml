@@ -8,4 +8,43 @@
         android:layout_height="fill_parent"
         android:layout_gravity="top"/>
 
+    <LinearLayout
+        android:id="@+id/layout"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:background="#B0000000">
+
+        <Button
+            android:id="@+id/mode_button"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="@string/view_mode" />
+
+        <Button
+            android:id="@+id/near_button"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="@string/points_near" />
+
+        <Button
+            android:id="@+id/far_button"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="@string/points_far" />
+
+        <Button
+            android:id="@+id/color_button"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="@string/view_colors" />
+
+    </LinearLayout>
+
 </RelativeLayout>

@@ -23,6 +23,12 @@ public class JNI
   // Main render loop.
   public static native void onGlSurfaceDrawFrame();
 
+  // Set render colors
+  public static native void setColorParams(float colors);
+
+  // Set render points
+  public static native void setPointParams(float near, float far);
+
   // Set render params
-  public static native void setParams(int eyesCount, float scaleX, float scaleY, float eyeDistance);
+  public static native void setViewParams(int eyesCount, float scaleX, float scaleY, float eyeDistance);
 }

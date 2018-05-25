@@ -5,17 +5,25 @@ namespace {
     std::string kVertexShader = "attribute vec4 vertex;\n"\
     "uniform float u_scaleX;\n"\
     "uniform float u_scaleY;\n"\
+    "uniform float u_far;\n"\
+    "uniform float u_near;\n"\
     "varying float v_depth;\n"\
     "void main() {\n"\
     "  gl_Position = vec4(vertex.x * u_scaleX, vertex.y * u_scaleY, vertex.z * 0.01, 1.0);\n"\
-    "  gl_Position.xy /= vertex.z;               //perspective correction\n"\
-    "  gl_PointSize = vertex.z * 25.0;           //more distant points bigger\n"\
+    "  gl_Position.xy /= vertex.z;\n"\
+    "  gl_PointSize = u_near + vertex.z * (u_far - u_near) * 0.1;\n"\
     "  v_depth = vertex.z;\n"\
     "}";
 
     std::string kFragmentShader = "varying float v_depth;\n"\
+    "uniform float u_colors;\n"\
     "void main() {\n"\
-    "  gl_FragColor = vec4(0.0, v_depth * 0.2, v_depth * 0.05, 1.0);\n"\
+    "if (u_colors < 0.5)\n"\
+    "    gl_FragColor = vec4(0.0, v_depth * 0.15, v_depth * 0.05, 1.0);\n"\
+    "else if (u_colors < 1.5)\n"\
+    "    gl_FragColor = vec4(abs(sin(v_depth * 0.25)), abs(sin(v_depth * 0.5)), abs(sin(v_depth * 1.0)), 1.0);\n"\
+    "else if (u_colors < 2.5)\n"\
+    "    gl_FragColor = vec4(1.0 - 0.25 * v_depth, 1.0 - 0.15 * v_depth, 1.0 - 0.15 * v_depth, 1.0);\n"\
     "}";
 
     void onPointCloudAvailableRouter(void *context, const TangoPointCloud *point_cloud) {
@@ -74,7 +82,6 @@ namespace oc {
     void App::OnDrawFrame() {
         render_mutex_.lock();
         glViewport(0, 0, width, height);
-        glClearColor(0.0f, 0.1f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         for (int i = 0; i < viewportCount; i++)  {
             int offset = (int)(width / viewportCount * eyeDistance);
@@ -83,6 +90,9 @@ namespace oc {
             glViewport(i * width / viewportCount + offset, -abs(offset), width / viewportCount, height);
             if (!points.empty()) {
                 shader_program_->Bind();
+                shader_program_->UniformFloat("u_colors", colors);
+                shader_program_->UniformFloat("u_far", far);
+                shader_program_->UniformFloat("u_near", near);
                 shader_program_->UniformFloat("u_scaleX", scaleX);
                 shader_program_->UniformFloat("u_scaleY", scaleY);
                 glEnable(GL_DEPTH_TEST);
@@ -93,6 +103,16 @@ namespace oc {
             }
         }
         render_mutex_.unlock();
+    }
+
+
+    void App::SetParams(float c) {
+        colors = c;
+    }
+
+    void App::SetParams(float n, float f) {
+        near = n;
+        far = f;
     }
 
     void App::SetParams(int count, float sx, float sy, float dst) {
@@ -127,7 +147,19 @@ Java_com_lvonasek_nightvision_JNI_onGlSurfaceDrawFrame(JNIEnv*, jobject) {
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_nightvision_JNI_setParams(
+Java_com_lvonasek_nightvision_JNI_setColorParams(
+        JNIEnv*, jobject, jfloat colors) {
+    app.SetParams(colors);
+}
+
+JNIEXPORT void JNICALL
+Java_com_lvonasek_nightvision_JNI_setPointParams(
+        JNIEnv*, jobject, jfloat near, jfloat far) {
+    app.SetParams(near, far);
+}
+
+JNIEXPORT void JNICALL
+Java_com_lvonasek_nightvision_JNI_setViewParams(
         JNIEnv*, jobject, jint count, jfloat scaleX, jfloat scaleY, jfloat eyeDistance) {
     app.SetParams(count, scaleX, scaleY, eyeDistance);
 }

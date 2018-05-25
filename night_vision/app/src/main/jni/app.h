@@ -15,6 +15,8 @@ namespace oc {
         void onPointCloudAvailable(TangoPointCloud *pc);
         void OnSurfaceChanged(int w, int h);
         void OnDrawFrame();
+        void SetParams(float c);
+        void SetParams(float n, float f);
         void SetParams(int count, float sx, float sy, float dst);
     private:
         GLSL *shader_program_;
@@ -26,7 +28,7 @@ namespace oc {
         std::vector<glm::vec4> points;
         bool swap;
         int width, height, viewportCount;
-        float scaleX, scaleY, eyeDistance;
+        float colors, near, far, scaleX, scaleY, eyeDistance;
     };
 }
 

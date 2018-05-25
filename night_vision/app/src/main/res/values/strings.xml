@@ -1,12 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Night vision</string>
-    <string name="variant">Select variant of rendering</string>
+    <string name="points_far">Far points</string>
+    <string name="points_near">Near points</string>
+    <string name="view_colors">View colors</string>
+    <string name="view_mode">View mode</string>
 
-    <string-array name="variants">
+    <string-array name="point_size">
+        <item>Small</item>
         <item>Normal</item>
-        <item>Fill screen</item>
-        <item>VR for Asus Zenfone AR</item>
-        <item>VR for Lenovo Phab 2 Pro</item>
+        <item>Big</item>
+    </string-array>
+
+    <string-array name="view_colors">
+        <item>Night vision</item>
+        <item>Spectrum</item>
+        <item>Ghost light</item>
+    </string-array>
+
+    <string-array name="view_modes">
+        <item>Normal</item>
+        <item>Full screen</item>
+        <item>VR</item>
     </string-array>
 </resources>
