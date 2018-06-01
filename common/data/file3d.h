@@ -13,12 +13,13 @@ class File3d {
 public:
     File3d(std::string filename, bool writeAccess);
     ~File3d();
+    static unsigned int CodeColor(glm::ivec3 c);
+    static glm::ivec3 DecodeColor(unsigned int c);
     void ReadModel(int subdivision, std::vector<oc::Mesh>& output);
     void WriteModel(std::vector<Mesh>& model);
 
 private:
     void CleanStr(std::string& str);
-    glm::ivec3 DecodeColor(unsigned int c);
     void ParseOBJ(int subdivision, std::vector<oc::Mesh> &output);
     void ParsePLY(int subdivision, std::vector<Mesh> &output);
     void ReadHeader();

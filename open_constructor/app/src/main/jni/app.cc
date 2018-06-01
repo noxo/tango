@@ -3,6 +3,7 @@
 
 extern int main( int argc , char* argv[] );
 
+#define EXPORT_CALIBRATION
 //#define EXPORT_DEPTHMAP
 #define EXPORT_POINTCLOUD
 
@@ -63,6 +64,14 @@ namespace oc {
     }
 
     void App::StorePointCloud(Tango3DR_PointCloud t3dr_depth) {
+#ifdef EXPORT_CALIBRATION
+        {
+            Tango3DR_CameraCalibration* c = tango.Camera();
+            FILE* file = fopen((tango.Dataset() + "/calibration.txt").c_str(), "w");
+            fprintf(file, "%f %f %f %f", c->cx, c->cy, c->fx, c->fy);
+            fclose(file);
+        };
+#endif
 #ifdef EXPORT_DEPTHMAP
         {
             Tango3DR_ImageBuffer image;

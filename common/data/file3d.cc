@@ -83,6 +83,14 @@ namespace oc {
         }
     }
 
+    unsigned int File3d::CodeColor(glm::ivec3 c) {
+        unsigned int output = 0;
+        output += c.r;
+        output += c.g << 8;
+        output += c.b << 16;
+        return output;
+    }
+
     glm::ivec3 File3d::DecodeColor(unsigned int c) {
         glm::ivec3 output;
         output.r = (c & 0x000000FF);
@@ -291,11 +299,19 @@ namespace oc {
             vertices.push_back(a);
         }
 
+
         //first part
         unsigned long meshIndex = output.size();
         output.push_back(Mesh());
         output[meshIndex].image = new Image(255, 0, 255, 255);
         output[meshIndex].imageOwner = true;
+
+        //special case - do not parse triangles, return just points
+        if (subdivision == -1) {
+            for (glm::vec3& v : vertices)
+                output[meshIndex].vertices.push_back(v);
+            return;
+        }
 
         while(true) {
             if (feof(file))
@@ -306,6 +322,9 @@ namespace oc {
                 output[meshIndex].image = new Image(255, 0, 255, 255);
                 output[meshIndex].imageOwner = true;
             }
+            d = -1;
+            e = -1;
+            f = -1;
             fscanf(file, "%d %d %d %d", &i, &d, &e, &f);
             a = vertices[d];
             b = vertices[e];
