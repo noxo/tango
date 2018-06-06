@@ -149,6 +149,13 @@ public class Service extends android.app.Service
 
   public static synchronized void reset(Context context)
   {
+    try
+    {
+      service.stopService(new Intent(parent, Service.class));
+    } catch(Exception e)
+    {
+      e.printStackTrace();
+    }
     SharedPreferences.Editor e = PreferenceManager.getDefaultSharedPreferences(context).edit();
     e.putInt(SERVICE_RUNNING, SERVICE_NOT_RUNNING);
     e.putString(SERVICE_LINK, "");

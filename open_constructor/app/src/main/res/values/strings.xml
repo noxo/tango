@@ -36,11 +36,6 @@
     <string name="editor_transform_rotate">Rotate</string>
     <string name="editor_transform_scale">Scale</string>
 
-    <!-- Recording !-->
-    <string name="view">Saved. Do you want to continue the recording?</string>
-    <string name="yes">Yes</string>
-    <string name="no">No</string>
-
     <!-- Settings !-->
     <string name="cardboard">External model viewer</string>
     <string name="cardboard_summary">Show in the button right icon to open model in another app</string>
@@ -81,7 +76,6 @@
     <string name="sketchfab_uploading">Uploading the model to Sketchfab…</string>
     <string name="turn_off">You can exit the app without losing data.</string>
     <string name="warning">Warning</string>
-    <string name="warning_reset">Canceling this process causes problem in AR, you will need to restart the device. Continue?</string>
     <string name="working">The app is working, please do not turn off the device or start another AR app.</string>
 
     <!-- Event !-->
