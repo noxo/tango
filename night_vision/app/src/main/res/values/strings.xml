@@ -16,6 +16,7 @@
         <item>Night vision</item>
         <item>Spectrum</item>
         <item>Ghost light</item>
+        <item>IrDA</item>
     </string-array>
 
     <string-array name="view_modes">

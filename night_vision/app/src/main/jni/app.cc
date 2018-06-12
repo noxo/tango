@@ -3,6 +3,7 @@
 
 namespace {
     std::string kVertexShader = "attribute vec4 vertex;\n"\
+    "uniform float u_colors;\n"\
     "uniform float u_scaleX;\n"\
     "uniform float u_scaleY;\n"\
     "uniform float u_far;\n"\
@@ -12,7 +13,7 @@ namespace {
     "  gl_Position = vec4(vertex.x * u_scaleX, vertex.y * u_scaleY, vertex.z * 0.01, 1.0);\n"\
     "  gl_Position.xy /= vertex.z;\n"\
     "  gl_PointSize = u_near + vertex.z * (u_far - u_near) * 0.1;\n"\
-    "  v_depth = vertex.z;\n"\
+    "  v_depth = u_colors < 2.5 ? vertex.z : vertex.w;\n"\
     "}";
 
     std::string kFragmentShader = "varying float v_depth;\n"\
@@ -24,6 +25,8 @@ namespace {
     "    gl_FragColor = vec4(abs(sin(v_depth * 0.25)), abs(sin(v_depth * 0.5)), abs(sin(v_depth * 1.0)), 1.0);\n"\
     "else if (u_colors < 2.5)\n"\
     "    gl_FragColor = vec4(1.0 - 0.25 * v_depth, 1.0 - 0.15 * v_depth, 1.0 - 0.15 * v_depth, 1.0);\n"\
+    "else if (u_colors < 3.5)\n"\
+    "    gl_FragColor = vec4(v_depth, v_depth, v_depth, 1.0);\n"\
     "}";
 
     void onPointCloudAvailableRouter(void *context, const TangoPointCloud *point_cloud) {
