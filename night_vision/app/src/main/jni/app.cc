@@ -8,25 +8,26 @@ namespace {
     "uniform float u_scaleY;\n"\
     "uniform float u_far;\n"\
     "uniform float u_near;\n"\
-    "varying float v_depth;\n"\
+    "varying vec3 v_color;\n"\
     "void main() {\n"\
     "  gl_Position = vec4(vertex.x * u_scaleX, vertex.y * u_scaleY, vertex.z * 0.01, 1.0);\n"\
     "  gl_Position.xy /= vertex.z;\n"\
     "  gl_PointSize = u_near + vertex.z * (u_far - u_near) * 0.1;\n"\
-    "  v_depth = u_colors < 2.5 ? vertex.z : vertex.w;\n"\
+    "  if (u_colors < 0.5)       //night vision\n"\
+    "    v_color = vec3(0.0, vertex.z * 0.15, vertex.z * 0.05);\n"\
+    "  else if (u_colors < 1.5)  //spectrum\n"\
+    "    v_color = vec3(abs(sin(vertex.z * 0.25)), abs(sin(vertex.z * 0.5)), abs(sin(vertex.z)));\n"\
+    "  else if (u_colors < 2.5)  //ghost light\n"\
+    "    v_color = vec3(1.0 - 0.25 * vertex.z, 1.0 - 0.15 * vertex.z, 1.0 - 0.15 * vertex.z);\n"\
+    "  else if (u_colors < 3.5)  //irda\n"\
+    "    v_color = vec3(1.0, 1.0, 1.0) * vertex.w;\n"\
+    "  else if (u_colors < 4.5)  //ir spectrum\n"\
+    "    v_color = vec3(abs(sin(vertex.z)), abs(sin(vertex.z * 0.25)), abs(sin(vertex.z * 0.5))) * vertex.w;\n"\
     "}";
 
-    std::string kFragmentShader = "varying float v_depth;\n"\
-    "uniform float u_colors;\n"\
+    std::string kFragmentShader = "varying vec3 v_color;\n"\
     "void main() {\n"\
-    "if (u_colors < 0.5)\n"\
-    "    gl_FragColor = vec4(0.0, v_depth * 0.15, v_depth * 0.05, 1.0);\n"\
-    "else if (u_colors < 1.5)\n"\
-    "    gl_FragColor = vec4(abs(sin(v_depth * 0.25)), abs(sin(v_depth * 0.5)), abs(sin(v_depth * 1.0)), 1.0);\n"\
-    "else if (u_colors < 2.5)\n"\
-    "    gl_FragColor = vec4(1.0 - 0.25 * v_depth, 1.0 - 0.15 * v_depth, 1.0 - 0.15 * v_depth, 1.0);\n"\
-    "else if (u_colors < 3.5)\n"\
-    "    gl_FragColor = vec4(v_depth, v_depth, v_depth, 1.0);\n"\
+    "    gl_FragColor = vec4(v_color, 1.0);\n"\
     "}";
 
     void onPointCloudAvailableRouter(void *context, const TangoPointCloud *point_cloud) {

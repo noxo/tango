@@ -146,7 +146,7 @@ public class Main extends Activity implements GLSurfaceView.Renderer, View.OnCli
         break;
     }
     JNI.setColorParams(mColor);
-    JNI.setPointParams((float)Math.pow(mNear + 3, 2.0f), (float)Math.pow(mFar + 1, 5.0f));
+    JNI.setPointParams((float)Math.pow(mNear + 4, 2.0f), (float)Math.pow(mFar + 1, 4.0f));
 
     //Set ui text
     mButtonColor.setText(getString(R.string.view_colors) + "\n" + getResources().getStringArray(R.array.view_colors)[mColor]);
