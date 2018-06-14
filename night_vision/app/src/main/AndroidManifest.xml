@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools"
           package="com.lvonasek.nightvision"
-          android:versionCode="60"
-          android:versionName="0.6.0">
+          android:versionCode="70"
+          android:versionName="0.7.0">
 
     <uses-feature android:glEsVersion="0x00030000" android:required="true" />
 

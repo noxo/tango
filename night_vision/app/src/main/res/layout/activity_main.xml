@@ -25,18 +25,11 @@
             android:text="@string/view_mode" />
 
         <Button
-            android:id="@+id/near_button"
+            android:id="@+id/point_button"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="@string/points_near" />
-
-        <Button
-            android:id="@+id/far_button"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:text="@string/points_far" />
+            android:text="@string/points_size" />
 
         <Button
             android:id="@+id/color_button"

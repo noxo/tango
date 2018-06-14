@@ -30,5 +30,5 @@ public class JNI
   public static native void setPointParams(float near, float far);
 
   // Set render params
-  public static native void setViewParams(int eyesCount, float scaleX, float scaleY, float eyeDistance);
+  public static native void setViewParams(int eyesCount, float scaleX, float scaleY, float eyeDistance, float offset);
 }

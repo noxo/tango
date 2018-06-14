@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Night vision</string>
-    <string name="points_far">Far points</string>
-    <string name="points_near">Near points</string>
+    <string name="points_size">Points size</string>
     <string name="view_colors">View colors</string>
     <string name="view_mode">View mode</string>
 

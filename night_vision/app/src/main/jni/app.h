@@ -17,7 +17,7 @@ namespace oc {
         void OnDrawFrame();
         void SetParams(float c);
         void SetParams(float n, float f);
-        void SetParams(int count, float sx, float sy, float dst);
+        void SetParams(int count, float sx, float sy, float dst, float off);
     private:
         GLSL *shader_program_;
         GLuint attribute_vertices_;
@@ -28,7 +28,7 @@ namespace oc {
         std::vector<glm::vec4> points;
         bool swap;
         int width, height, viewportCount;
-        float colors, near, far, scaleX, scaleY, eyeDistance;
+        float colors, near, far, scaleX, scaleY, eyeDistance, offset;
     };
 }
 

@@ -88,10 +88,11 @@ namespace oc {
         glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         for (int i = 0; i < viewportCount; i++)  {
-            int offset = (int)(width / viewportCount * eyeDistance);
+            int offsetX = (int)(width / viewportCount * eyeDistance);
+            int offsetY = (int)(height * offset);
             if (i % 2 == 1)
-                offset = -offset;
-            glViewport(i * width / viewportCount + offset, -abs(offset), width / viewportCount, height);
+                offsetX = -offsetX;
+            glViewport(i * width / viewportCount + offsetX, offsetY, width / viewportCount, height);
             if (!points.empty()) {
                 shader_program_->Bind();
                 shader_program_->UniformFloat("u_colors", colors);
@@ -119,9 +120,10 @@ namespace oc {
         far = f;
     }
 
-    void App::SetParams(int count, float sx, float sy, float dst) {
+    void App::SetParams(int count, float sx, float sy, float dst, float off) {
         scaleX = sx;
         scaleY = sy;
+        offset = off;
         eyeDistance = dst;
         viewportCount = count;
     }
@@ -164,8 +166,8 @@ Java_com_lvonasek_nightvision_JNI_setPointParams(
 
 JNIEXPORT void JNICALL
 Java_com_lvonasek_nightvision_JNI_setViewParams(
-        JNIEnv*, jobject, jint count, jfloat scaleX, jfloat scaleY, jfloat eyeDistance) {
-    app.SetParams(count, scaleX, scaleY, eyeDistance);
+        JNIEnv*, jobject, jint count, jfloat scaleX, jfloat scaleY, jfloat eyeDistance, jfloat offset) {
+    app.SetParams(count, scaleX, scaleY, eyeDistance, offset);
 }
 
 #ifdef __cplusplus

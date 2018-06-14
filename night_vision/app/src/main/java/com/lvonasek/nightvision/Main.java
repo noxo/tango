@@ -21,17 +21,15 @@ public class Main extends Activity implements GLSurfaceView.Renderer, View.OnCli
 
   // Layout
   private Button mButtonColor;
-  private Button mButtonFar;
   private Button mButtonMode;
-  private Button mButtonNear;
+  private Button mButtonPoint;
   private GLSurfaceView mGLView;
   private LinearLayout mLayout;
 
   // Config
   private int mColor;
-  private int mFar;
-  private int mNear;
   private int mMode;
+  private int mPoint;
 
   // Tango Service connection.
   boolean mInitialised = false;
@@ -73,18 +71,15 @@ public class Main extends Activity implements GLSurfaceView.Renderer, View.OnCli
 
     mButtonColor = findViewById(R.id.color_button);
     mButtonColor.setOnClickListener(this);
-    mButtonFar = findViewById(R.id.far_button);
-    mButtonFar.setOnClickListener(this);
+    mButtonPoint = findViewById(R.id.point_button);
+    mButtonPoint.setOnClickListener(this);
     mButtonMode = findViewById(R.id.mode_button);
     mButtonMode.setOnClickListener(this);
-    mButtonNear = findViewById(R.id.near_button);
-    mButtonNear.setOnClickListener(this);
 
     SharedPreferences pref = getPreferences(Context.MODE_PRIVATE);
     mColor = pref.getInt("color", 0);
     mMode = pref.getInt("mode", 1);
-    mNear = pref.getInt("near", 1);
-    mFar = pref.getInt("far", 1);
+    mPoint = pref.getInt("point", 1);
   }
 
   @Override
@@ -123,43 +118,41 @@ public class Main extends Activity implements GLSurfaceView.Renderer, View.OnCli
   {
     //Loop possible configs
     mColor %= getResources().getStringArray(R.array.view_colors).length;
-    mFar %= getResources().getStringArray(R.array.point_size).length;
-    mNear %= getResources().getStringArray(R.array.point_size).length;
     mMode %= getResources().getStringArray(R.array.view_modes).length;
+    mPoint %= getResources().getStringArray(R.array.point_size).length;
 
     //Apply config
+    JNI.setColorParams(mColor);
     switch(mMode) {
       //Normal
       case 0:
-        JNI.setViewParams(1, 1.0f, 2.0f, 0.0f);
+        JNI.setViewParams(1, 1.0f, 2.0f, 0.0f, 0.0f);
         break;
       //Fullscreen
       case 1:
-        JNI.setViewParams(1, 1.8f, 2.6f, 0.0f);
+        JNI.setViewParams(1, 1.8f, 2.6f, 0.0f, 0.0f);
         break;
       //VR
       case 2:
         if (Build.BRAND.toUpperCase().startsWith("ASUS"))
-          JNI.setViewParams(2, 1.5f, 1.5f, 0.0f);
+          JNI.setViewParams(2, 1.15f, 1.25f, 0.0f, 0.15f);
         else
-          JNI.setViewParams(2, 1.25f, 1.25f, 0.1f);
+          JNI.setViewParams(2, 1.0f, 1.0f, 0.1f, 0.15f);
         break;
     }
-    JNI.setColorParams(mColor);
-    JNI.setPointParams((float)Math.pow(mNear + 4, 2.0f), (float)Math.pow(mFar + 1, 4.0f));
+    float size = (mPoint + 0.5f) * 9;
+    JNI.setPointParams(size, size);
 
     //Set ui text
     mButtonColor.setText(getString(R.string.view_colors) + "\n" + getResources().getStringArray(R.array.view_colors)[mColor]);
-    mButtonFar.setText(getString(R.string.points_far) + "\n" + getResources().getStringArray(R.array.point_size)[mFar]);
-    mButtonNear.setText(getString(R.string.points_near) + "\n" + getResources().getStringArray(R.array.point_size)[mNear]);
     mButtonMode.setText(getString(R.string.view_mode) + "\n" + getResources().getStringArray(R.array.view_modes)[mMode]);
+    mButtonPoint.setText(getString(R.string.points_size) + "\n" + getResources().getStringArray(R.array.point_size)[mPoint]);
 
     //Save
     SharedPreferences.Editor e = getPreferences(Context.MODE_PRIVATE).edit();
     e.putInt("color", mColor);
     e.putInt("mode", mMode);
-    e.putInt("near", mNear);
-    e.putInt("far", mFar);
+    e.putInt("point", mPoint);
     e.apply();
   }
 
@@ -176,12 +169,8 @@ public class Main extends Activity implements GLSurfaceView.Renderer, View.OnCli
         mColor++;
         applyConfig();
         break;
-      case R.id.far_button:
-        mFar++;
-        applyConfig();
-        break;
-      case R.id.near_button:
-        mNear++;
+      case R.id.point_button:
+        mPoint++;
         applyConfig();
         break;
       case R.id.mode_button:
