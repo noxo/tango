@@ -70,8 +70,6 @@ namespace oc {
         TangoService tango;
         TangoTexturize texturize;
 
-        Poisson postPoisson;
-
         bool gyro;
         bool landscape;
         bool poisson;

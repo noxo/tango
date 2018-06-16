@@ -417,7 +417,7 @@ namespace oc {
 
         if (poisson) {
             texturize.SetEvent("Poisson reconstruction");
-            postPoisson.Process(filename);
+            Poisson().Process(filename);
             texturize.SetEvent("");
         }
 
