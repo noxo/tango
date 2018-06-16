@@ -22,6 +22,7 @@ LOCAL_SRC_FILES := ../../../../../common/data/file3d.cc \
                    ../../../../../common/gl/camera.cc \
                    ../../../../../common/gl/glsl.cc \
                    ../../../../../common/gl/renderer.cc \
+                   ../../../../../common/postproc/poisson.cc \
                    ../../../../../common/tango/scan.cc \
                    ../../../../../common/tango/service.cc \
                    ../../../../../common/tango/texturize.cc \

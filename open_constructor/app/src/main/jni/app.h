@@ -7,6 +7,7 @@
 
 #include "editor/effector.h"
 #include "editor/selector.h"
+#include "postproc/poisson.h"
 #include "tango/scan.h"
 #include "tango/service.h"
 #include "tango/texturize.h"
@@ -68,6 +69,8 @@ namespace oc {
         TangoScan scan;
         TangoService tango;
         TangoTexturize texturize;
+
+        Poisson postPoisson;
 
         bool gyro;
         bool landscape;

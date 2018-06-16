@@ -1,8 +1,6 @@
 #include <sstream>
 #include "app.h"
 
-extern int main( int argc , char* argv[] );
-
 #define EXPORT_CALIBRATION
 //#define EXPORT_DEPTHMAP
 #define EXPORT_POINTCLOUD
@@ -419,32 +417,7 @@ namespace oc {
 
         if (poisson) {
             texturize.SetEvent("Poisson reconstruction");
-            std::string pointcloud = filename + ".ply";
-
-            //convert to ply
-            {
-                std::vector<Mesh> data;
-                File3d(filename, false).ReadModel(kSubdivisionSize, data);
-                File3d(pointcloud, true).WriteModel(data);
-            }
-
-            //poisson reconstruction
-            LOGI("Running possion reconstruction");
-            std::vector<std::string> argv;
-            argv.push_back("--in");
-            argv.push_back(pointcloud);
-            argv.push_back("--out");
-            argv.push_back(pointcloud);
-            std::vector<const char *> av;
-            av.push_back(0);
-            for (std::vector<std::string>::const_iterator i = argv.begin(); i != argv.end(); ++i)
-                av.push_back(i->c_str());
-            main((int) av.size(), (char **) &av[0]);
-
-            //convert to obj
-            std::vector<Mesh> data;
-            File3d(pointcloud, false).ReadModel(kSubdivisionSize, data);
-            File3d(filename, true).WriteModel(data);
+            postPoisson.Process(filename);
             texturize.SetEvent("");
         }
 
