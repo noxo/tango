@@ -70,7 +70,7 @@ namespace oc {
         glShaderSource(shader_fp, 1, &fs, 0);
 
         /// Alocate buffer for logs
-        const unsigned int BUFFER_SIZE = 512;
+        const unsigned int BUFFER_SIZE = 4096;
         char buffer[BUFFER_SIZE];
         memset(buffer, 0, BUFFER_SIZE);
         GLsizei length = 0;

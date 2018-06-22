@@ -324,6 +324,7 @@ namespace oc {
     void App::Save(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
+        tango.Disconnect();
 
 #ifdef GENERATE_FLOORPLAN
         std::vector<Mesh> layers;
@@ -380,7 +381,7 @@ namespace oc {
             File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
         }
         File3d(filename, true).WriteModel(scene.static_meshes_);
-
+        tango.Disconnect();
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -388,6 +389,7 @@ namespace oc {
     void App::SaveWithTextures(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
+        tango.Disconnect();
         int index = 0;
         std::vector<std::string> names;
         for (Mesh& m : scene.static_meshes_) {
@@ -411,9 +413,10 @@ namespace oc {
         binder_mutex_.unlock();
     }
 
-    void App::Texturize(std::string filename) {
+    void App::Texturize(std::string filename, std::string tangoDataset) {
         binder_mutex_.lock();
         render_mutex_.lock();
+        tango.Disconnect();
 
         if (poisson) {
             texturize.SetEvent("Poisson reconstruction");
@@ -431,7 +434,7 @@ namespace oc {
         //texturize
         scan.Clear();
         tango.Clear();
-        texturize.ApplyFrames(tango.Dataset());
+        texturize.ApplyFrames(tango.Dataset(), tangoDataset);
         texturize.Process(filename);
         texturize.Clear(tango.Dataset());
 
@@ -610,8 +613,8 @@ Java_com_lvonasek_openconstructor_main_JNI_saveWithTextures(JNIEnv* env, jobject
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_main_JNI_texturize(JNIEnv* env, jobject, jstring name) {
-  app.Texturize(jstring2string(env, name));
+Java_com_lvonasek_openconstructor_main_JNI_texturize(JNIEnv* env, jobject, jstring name, jstring tangoDataset) {
+  app.Texturize(jstring2string(env, name), jstring2string(env, tangoDataset));
 }
 
 JNIEXPORT void JNICALL

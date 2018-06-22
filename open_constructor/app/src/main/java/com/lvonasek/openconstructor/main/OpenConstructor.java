@@ -111,11 +111,18 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
             //pause/resume
             final boolean continueScanning = mRes == Integer.MIN_VALUE;
             mPostprocess = mRes == Integer.MAX_VALUE;
+            final File first = new File(getTempPath(), "first.stm");
             File config = new File(getTempPath(), "config.txt");
             if (continueScanning || mPostprocess) {
               m3drRunning = false;
               try
               {
+                if (continueScanning)
+                {
+                  FileOutputStream fos = new FileOutputStream(first.getAbsolutePath());
+                  fos.write("#".getBytes());
+                  fos.close();
+                }
                 Scanner sc = new Scanner(new FileInputStream(config.getAbsolutePath()));
                 mRes = sc.nextInt();
                 res = Double.parseDouble(sc.next());
@@ -131,6 +138,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
               m3drRunning = true;
               deleteRecursive(getTempPath());
               getTempPath().mkdirs();
+              Exporter.extractRawData(getResources(), R.raw.config, getTempPath());
               try
               {
                 FileOutputStream fos = new FileOutputStream(config.getAbsolutePath());
@@ -157,7 +165,18 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
                           mGLView.onPause();
                           finish();
                           JNI.load(obj.getAbsolutePath());
-                          JNI.texturize(obj.getAbsolutePath());
+                          String path = "none";
+                          if (!first.exists()) {
+                            for (File f : getTempPath().listFiles()) {
+                              if (f.isDirectory()) {
+                                String dir = f.getAbsolutePath();
+                                if (!dir.contains("config")) {
+                                  path = dir;
+                                }
+                              }
+                            }
+                          }
+                          JNI.texturize(obj.getAbsolutePath(), path);
                           Service.finish(TEMP_DIRECTORY + "/" + obj.getName());
                         }
                       });

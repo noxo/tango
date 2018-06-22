@@ -3,7 +3,7 @@
           xmlns:tools="http://schemas.android.com/tools"
           package="com.lvonasek.openconstructor"
           android:versionCode="20180606"
-          android:versionName="0.9.5">
+          android:versionName="0.9.6">
 
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.INTERNET" />

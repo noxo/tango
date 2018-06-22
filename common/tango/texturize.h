@@ -10,7 +10,8 @@ namespace oc {
     public:
         TangoTexturize();
         void Add(Tango3DR_ImageBuffer t3dr_image, std::vector<glm::mat4> matrix, std::string dataset);
-        void ApplyFrames(std::string dataset);
+        void ApplyFrames(std::string dataset, std::string tangoDataset);
+        void Callback(int progress);
         void Clear(std::string dataset);
         std::string GetEvent() { return event; }
         std::string GetFileName(int index, std::string dataset, std::string extension);
