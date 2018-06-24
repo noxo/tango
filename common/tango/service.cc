@@ -205,7 +205,7 @@ namespace oc {
             ret = TangoConfig_setBool(config, "config_enable_dataset_recording", true);
             if (ret != TANGO_SUCCESS)
                 std::exit(EXIT_SUCCESS);
-            ret = TangoConfig_setInt32(config, "config_dataset_recording_mode", TANGO_RECORDING_MODE_MOTION_TRACKING);
+            ret = TangoConfig_setInt32(config, "config_dataset_recording_mode", TANGO_RECORDING_MODE_MOTION_TRACKING_AND_FISHEYE);
             if (ret != TANGO_SUCCESS)
                 std::exit(EXIT_SUCCESS);
         }
