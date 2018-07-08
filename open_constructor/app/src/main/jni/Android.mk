@@ -13,7 +13,8 @@ LOCAL_C_INCLUDES := $(PROJECT_ROOT)/third_party/glm/ \
                     $(PROJECT_ROOT)/third_party/poisson/include \
                     $(PROJECT_ROOT)/common/
 
-LOCAL_SRC_FILES := ../../../../../common/data/file3d.cc \
+LOCAL_SRC_FILES := ../../../../../common/data/dataset.cc \
+                   ../../../../../common/data/file3d.cc \
                    ../../../../../common/data/image.cc \
                    ../../../../../common/data/mesh.cc \
                    ../../../../../common/editor/effector.cc \

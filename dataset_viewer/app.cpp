@@ -10,9 +10,9 @@
 **/
 ///----------------------------------------------------------------------------------------
 
+#include <data/dataset.h>
 #include <data/file3d.h>
 #include <GL/freeglut.h>
-#include <sstream>
 
 //shader
 const char* kTextureShader[] = {R"glsl(
@@ -64,7 +64,7 @@ glm::mat4 proj;        ///< Camera projection
 glm::mat4 view;        ///< Camera view
 bool keys[5];          ///< State of keyboard
 glm::ivec2 resolution; ///< Screen resolution
-std::string dataset;   ///< Path to dataset
+oc::Dataset* dataset;  ///< Path to dataset
 float cx, cy, fx, fy;  ///< Calibration
 int poseCount;         ///< Pose count
 int poseIndex;         ///< Pose index
@@ -79,30 +79,6 @@ std::vector<unsigned int> colors;
 #define KEY_LEFT 'a'
 #define KEY_RIGHT 'd'
 #define KEY_NITRO ' '
-
-std::string getFileName(int index, std::string extension) {
-    std::ostringstream ss;
-    ss << index;
-    std::string number = ss.str();
-    while(number.size() < 8)
-        number = "0" + number;
-    return dataset + "/" + number + extension;
-}
-
-glm::mat4 getMatrix(int index) {
-    int count = 0;
-    glm::mat4 mat;
-    std::vector<glm::mat4> output;
-    FILE* file = fopen(getFileName(index, ".txt").c_str(), "r");
-    fscanf(file, "%d\n", &count);
-    for (int i = 0; i < count; i++) {
-        for (int j = 0; j < 4; j++)
-            fscanf(file, "%f %f %f %f\n", &mat[j][0], &mat[j][1], &mat[j][2], &mat[j][3]);
-        output.push_back(mat);
-    }
-    fclose(file);
-    return output[0];
-}
 
 /**
  * @brief display updates display
@@ -244,9 +220,9 @@ void initializeGl()
 
 void loadPointCloud() {
     std::vector<oc::Mesh> mesh;
-    glm::mat4 world2uv = glm::inverse(getMatrix(poseIndex));
-    oc::Image jpg(getFileName(poseIndex, ".jpg"));
-    oc::File3d ply(getFileName(poseIndex, ".ply"), false);
+    glm::mat4 world2uv = glm::inverse(dataset->GetPose(poseIndex)[0]);
+    oc::Image jpg(dataset->GetFileName(poseIndex, ".jpg"));
+    oc::File3d ply(dataset->GetFileName(poseIndex, ".ply"), false);
     ply.ReadModel(-1, mesh);
     for (glm::vec3& v : mesh[0].vertices) {
         glm::vec4 t = world2uv * glm::vec4(v.x, v.z, -v.y, 1.0f);
@@ -328,7 +304,7 @@ void keyboardUp(unsigned char key, int x, int y)
         poseIndex++;
         if (poseIndex >= poseCount)
             poseIndex = 0;
-        glutSetWindowTitle(getFileName(poseIndex, "").c_str());
+        glutSetWindowTitle(dataset->GetFileName(poseIndex, "").c_str());
         loadPointCloud();
     } else if (key == '-') {
         colors.clear();
@@ -336,7 +312,7 @@ void keyboardUp(unsigned char key, int x, int y)
         poseIndex--;
         if (poseIndex < 0)
             poseIndex = poseCount - 1;
-        glutSetWindowTitle(getFileName(poseIndex, "").c_str());
+        glutSetWindowTitle(dataset->GetFileName(poseIndex, "").c_str());
         loadPointCloud();
     }
 }
@@ -392,14 +368,18 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    /// get dataset
+    dataset = new oc::Dataset(argv[1]);
+    dataset->GetCalibration(cx, cy, fx, fy);
+    dataset->GetState(poseCount, resolution.x, resolution.y);
+
     /// init glut
-    dataset = argv[1];
     glutInit(&argc, argv);
     glutInitWindowSize(960,540);
     glutInitContextVersion(3,0);
     glutInitContextProfile(GLUT_CORE_PROFILE);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
-    glutCreateWindow(dataset.c_str());
+    glutCreateWindow(dataset->GetPath().c_str());
     //glutFullScreen();
     initializeGl();
 
@@ -414,7 +394,7 @@ int main(int argc, char** argv)
     /// load model
     if (argc > 2) {
         unsigned int color = oc::File3d::CodeColor(glm::ivec3(0, 128, 0));
-        oc::File3d obj(dataset + "/" + argv[2], false);
+        oc::File3d obj(dataset->GetPath() + "/" + argv[2], false);
         obj.ReadModel(25000, model);
         for (oc::Mesh& m : model) {
             for (unsigned int i = 0; i < m.vertices.size(); i++) {
@@ -422,16 +402,6 @@ int main(int argc, char** argv)
             }
         }
     }
-
-    /// get amount of frames
-    FILE* file = fopen(getFileName(-1, ".txt").c_str(), "r");
-    fscanf(file, "%d", &poseCount);
-    fclose(file);
-
-    /// load calibration
-    file = fopen((dataset + "/calibration.txt").c_str(), "r");
-    fscanf(file, "%f %f %f %f", &cx, &cy, &fx, &fy);
-    fclose(file);
 
     /// load point clouds
     for (poseIndex = poseCount - 1; poseIndex >= 0; poseIndex--)

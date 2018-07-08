@@ -2,6 +2,7 @@
 #define TANGO_TEXTURIZE_H
 
 #include <tango_3d_reconstruction_api.h>
+#include "data/dataset.h"
 #include "gl/opengl.h"
 
 namespace oc {
@@ -9,15 +10,14 @@ namespace oc {
     class TangoTexturize {
     public:
         TangoTexturize();
-        void Add(Tango3DR_ImageBuffer t3dr_image, std::vector<glm::mat4> matrix, std::string dataset);
-        void ApplyFrames(std::string dataset, std::string tangoDataset);
+        void Add(Tango3DR_ImageBuffer t3dr_image, std::vector<glm::mat4> matrix, Dataset dataset);
+        void ApplyFrames(Dataset dataset, std::string tangoDataset);
         void Callback(int progress);
-        void Clear(std::string dataset);
+        void Clear(Dataset dataset);
         std::string GetEvent() { return event; }
-        std::string GetFileName(int index, std::string dataset, std::string extension);
-        Image* GetLatestImage(std::string dataset);
-        int GetLatestIndex(std::string dataset);
-        std::vector<glm::mat4> GetLatestPose(std::string dataset);
+        Image* GetLatestImage(Dataset dataset);
+        int GetLatestIndex(Dataset dataset);
+        std::vector<glm::mat4> GetLatestPose(Dataset dataset);
         bool Init(std::string filename, Tango3DR_CameraCalibration* camera);
         bool Init(Tango3DR_ReconstructionContext context, Tango3DR_CameraCalibration* camera);
         void Process(std::string filename);
@@ -26,7 +26,6 @@ namespace oc {
 
     private:
         void CreateContext(bool finalize, Tango3DR_Mesh* mesh, Tango3DR_CameraCalibration* camera);
-        void UpdatePoses(std::string dataset);
 
         int poses;
         float resolution;

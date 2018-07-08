@@ -65,9 +65,7 @@ namespace oc {
 #ifdef EXPORT_CALIBRATION
         {
             Tango3DR_CameraCalibration* c = tango.Camera();
-            FILE* file = fopen((tango.Dataset() + "/calibration.txt").c_str(), "w");
-            fprintf(file, "%f %f %f %f", c->cx, c->cy, c->fx, c->fy);
-            fclose(file);
+            tango.Dataset().WriteCalibration(c->cx, c->cy, c->fx, c->fy);
         };
 #endif
 #ifdef EXPORT_DEPTHMAP
@@ -75,7 +73,7 @@ namespace oc {
             Tango3DR_ImageBuffer image;
             Tango3DR_ImageBuffer_init(tango.Depth()->width, tango.Depth()->height, TANGO_3DR_HAL_PIXEL_FORMAT_DEPTH16, &image);
             Tango3DR_PointCloudToRectifiedDepthImage(&t3dr_depth, tango.Depth(), &image);
-            Tango3DR_ImageBuffer_saveToPnm(&image, texturize.GetFileName(texturize.GetLatestIndex(tango.Dataset()), tango.Dataset(), ".pnm").c_str());
+            Tango3DR_ImageBuffer_saveToPnm(&image, tango.Dataset().GetFileName(texturize.GetLatestIndex(tango.Dataset()), ".pnm").c_str());
             Tango3DR_ImageBuffer_destroy(&image);
         }
 #endif
@@ -91,7 +89,7 @@ namespace oc {
                 m.vertices.push_back(glm::vec3(v.x, -v.z, v.y));
             }
             pcl.push_back(m);
-            File3d file(texturize.GetFileName(texturize.GetLatestIndex(tango.Dataset()), tango.Dataset(), ".ply").c_str(), true);
+            File3d file(tango.Dataset().GetFileName(texturize.GetLatestIndex(tango.Dataset()), ".ply").c_str(), true);
             file.WriteModel(pcl);
         };
 #endif
