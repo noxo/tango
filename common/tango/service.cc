@@ -4,7 +4,7 @@
 
 namespace oc {
 
-    TangoService::TangoService() : dataset(0),
+    TangoService::TangoService() : dataset(""),
                                    toArea(ZeroPose()), toAreaTemp(ZeroPose()),
                                    toZero(ZeroPose()), toZeroTemp(ZeroPose()) {}
 
@@ -163,9 +163,7 @@ namespace oc {
     }
 
     void TangoService::SetupConfig(std::string datapath) {
-        if (dataset)
-            delete dataset;
-        dataset = new oc::Dataset(datapath);
+        dataset = oc::Dataset(datapath);
         config = TangoService_getConfig(TANGO_CONFIG_DEFAULT);
         if (config == nullptr)
             std::exit(EXIT_SUCCESS);
@@ -201,8 +199,8 @@ namespace oc {
             std::exit(EXIT_SUCCESS);
 
         // Set datasets
-        if (!dataset->GetPath().empty()) {
-            ret = TangoConfig_setString(config, "config_datasets_path", dataset->GetPath().c_str());
+        if (!dataset.GetPath().empty()) {
+            ret = TangoConfig_setString(config, "config_datasets_path", dataset.GetPath().c_str());
             if (ret != TANGO_SUCCESS)
                 std::exit(EXIT_SUCCESS);
             ret = TangoConfig_setBool(config, "config_enable_dataset_recording", true);

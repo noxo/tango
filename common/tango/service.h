@@ -30,7 +30,7 @@ namespace oc {
         static Tango3DR_Pose Extract3DRPose(const glm::mat4 &mat);
 
         std::vector<glm::mat4> Convert(std::vector<TangoMatrixTransformData> m);
-        oc::Dataset Dataset() { return *dataset; }
+        oc::Dataset Dataset() { return dataset; }
         Tango3DR_CameraCalibration* Camera() { return &camera; }
         Tango3DR_CameraCalibration* Depth() { return &depth; }
         Tango3DR_ReconstructionContext Context() { return context; }
@@ -39,7 +39,7 @@ namespace oc {
         std::vector<glm::mat4> ZeroPose();
 
     private:
-        oc::Dataset* dataset;
+        oc::Dataset dataset;
         TangoConfig config;
         Tango3DR_CameraCalibration camera;
         Tango3DR_CameraCalibration depth;
