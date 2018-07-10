@@ -3,6 +3,7 @@
 
 #include <stack>
 #include <vector>
+#include "data/image.h"
 #include "data/mesh.h"
 #include "gl/camera.h"
 #include "gl/glsl.h"
@@ -26,9 +27,16 @@ namespace oc {
          * @brief Init inits renderer
          * @param w is screen width
          * @param h is screen height
-         * @param a is screen aliasing(reducing resolution)
+         * @param rw is RTT width
+         * @param rh is RTT height
          */
-        void Init(int w, int h, float a);
+        void Init(int w, int h, int rw, int rh);
+
+        /**
+         * @brief Gets CPU access to texture
+         * @return RGB Image
+         */
+        Image* ReadRtt();
 
         /**
          * @brief Render renders model into scene
@@ -55,7 +63,8 @@ namespace oc {
     private:
         void Cleanup();
 
-        float aliasing;                       ///< Screen detail
+        int rWidth;                           ///< RTT width
+        int rHeight;                          ///< RTT height
         GLSL* scene;                          ///< Scene shader
         unsigned int* rendertexture;          ///< Texture for color buffer
         unsigned int* fboID;                  ///< Frame buffer object id

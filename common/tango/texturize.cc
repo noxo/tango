@@ -46,10 +46,10 @@ namespace oc {
             std::string loop_closure = tangoDataset + "/../config";
             ret = Tango3DR_AreaDescription_createFromDataset(tangoDataset.c_str(), loop_closure.c_str(), &area_description, callback, 0);
             if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
+                exit(EXIT_SUCCESS);
             ret = Tango3DR_Trajectory_createFromAreaDescription(area_description, &trajectory);
             if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
+                exit(EXIT_SUCCESS);
         }
 
         for (unsigned int i = 0; i < poses; i++) {
@@ -92,7 +92,7 @@ namespace oc {
             }
             ret = Tango3DR_updateTexture(context, &image, &t3dr_image_pose);
             if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
+                exit(EXIT_SUCCESS);
         }
         if (tangoDataset.size() > 10)
             Tango3DR_Trajectory_destroy(trajectory);
@@ -133,13 +133,13 @@ namespace oc {
         Tango3DR_Status ret;
         ret = Tango3DR_Mesh_loadFromObj(filename.c_str(), &mesh);
         if (ret != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS);
 
         //prevent crash on saving empty model
         if (mesh.num_faces == 0) {
             ret = Tango3DR_Mesh_destroy(&mesh);
             if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
+                exit(EXIT_SUCCESS);
             event = "";
             return false;
         }
@@ -148,7 +148,7 @@ namespace oc {
         CreateContext(true, &mesh, camera);
         ret = Tango3DR_Mesh_destroy(&mesh);
         if (ret != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS);
         return true;
     }
 
@@ -158,13 +158,13 @@ namespace oc {
         Tango3DR_Status ret;
         ret = Tango3DR_extractFullMesh(context, &mesh);
         if (ret != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS);
 
         //prevent crash on saving empty model
         if (mesh.num_faces == 0) {
             ret = Tango3DR_Mesh_destroy(&mesh);
             if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
+                exit(EXIT_SUCCESS);
             event = "";
             return false;
         }
@@ -173,7 +173,7 @@ namespace oc {
         CreateContext(false, &mesh, camera);
         ret = Tango3DR_Mesh_destroy(&mesh);
         if (ret != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS);
         return true;
     }
 
@@ -184,21 +184,21 @@ namespace oc {
         Tango3DR_Status ret;
         ret = Tango3DR_getTexturedMesh(context, &mesh);
         if (ret != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS);
 
         //save
         event = "CONVERT";
         ret = Tango3DR_Mesh_saveToObj(&mesh, filename.c_str());
         if (ret != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS);
 
         //cleanup
         ret = Tango3DR_Mesh_destroy(&mesh);
         if (ret != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS);
         ret = Tango3DR_TexturingContext_destroy(context);
         if (ret != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS);
         event = "";
     }
 
@@ -208,20 +208,20 @@ namespace oc {
         Tango3DR_Status ret;
         ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", finalize ? 0.005 : 0.01);
         if (ret != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS);
         ret = Tango3DR_Config_setInt32(textureConfig, "max_num_textures", 4);
         if (ret != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS);
         ret = Tango3DR_Config_setInt32(textureConfig, "mesh_simplification_factor", 1);
         if (ret != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS);
         ret = Tango3DR_Config_setInt32(textureConfig, "texturing_backend", TANGO_3DR_CPU_TEXTURING);
         if (ret != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS);
 
         context = Tango3DR_TexturingContext_create(textureConfig, mesh);
         if (context == nullptr)
-            std::exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS);
         Tango3DR_Config_destroy(textureConfig);
 
         Tango3DR_TexturingContext_setColorCalibration(context, camera);

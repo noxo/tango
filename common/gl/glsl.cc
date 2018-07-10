@@ -2,12 +2,13 @@
 #include "gl/glsl.h"
 #include "gl/opengl.h"
 
+std::string gl_last_error;
 oc::GLSL* gl_last_shader = 0;
 
 namespace oc {
-    GLSL::GLSL(std::string vert, std::string frag) {
+    GLSL::GLSL(std::string vert, std::string frag, std::string extension) {
         /// add header
-        std::string header = "#version 100\nprecision highp float;\n";
+        std::string header = "#version 100\n" + extension + "precision highp float;\n";
         vert = header + vert;
         frag = header + frag;
 
@@ -32,7 +33,8 @@ namespace oc {
 
     void GLSL::Attrib(float* vertices, float* normals, float* coords, unsigned int* colors) {
         /// send attributes to GPU
-        glVertexAttribPointer(attribute_v_vertex, 3, GL_FLOAT, GL_FALSE, 0, vertices);
+        if (attribute_v_vertex != -1)
+          glVertexAttribPointer(attribute_v_vertex, 3, GL_FLOAT, GL_FALSE, 0, vertices);
         if ((attribute_v_normal != -1) && (normals != 0))
           glVertexAttribPointer(attribute_v_normal, 3, GL_FLOAT, GL_FALSE, 0, normals);
         if ((attribute_v_coord != -1) && (coords != 0))
@@ -49,7 +51,8 @@ namespace oc {
         gl_last_shader = this;
 
         /// set attributes
-        glEnableVertexAttribArray(attribute_v_vertex);
+        if (attribute_v_vertex != -1)
+            glEnableVertexAttribArray(attribute_v_vertex);
         if (attribute_v_normal != -1)
             glEnableVertexAttribArray(attribute_v_normal);
         if (attribute_v_coord != -1)
@@ -62,6 +65,10 @@ namespace oc {
         return gl_last_shader;
     }
 
+    std::string GLSL::GetError() {
+        return gl_last_error;
+    }
+
     unsigned int GLSL::InitShader(const char *vs, const char *fs) {
         /// Load shader
         shader_vp = glCreateShader(GL_VERTEX_SHADER);
@@ -70,20 +77,31 @@ namespace oc {
         glShaderSource(shader_fp, 1, &fs, 0);
 
         /// Alocate buffer for logs
-        const unsigned int BUFFER_SIZE = 4096;
+        const unsigned int BUFFER_SIZE = 512;
         char buffer[BUFFER_SIZE];
         memset(buffer, 0, BUFFER_SIZE);
         GLsizei length = 0;
+        std::string error = "GLSL error:";
 
         /// Compile shaders
         glCompileShader(shader_vp);
         glGetShaderInfoLog(shader_vp, BUFFER_SIZE, &length, buffer);
         if (length > 0)
+        {
             LOGI("GLSL compile log: %s\n%s", buffer, vs);
+            error += "\n";
+            error += buffer;
+            error += vs;
+        }
         glCompileShader(shader_fp);
         glGetShaderInfoLog(shader_fp, BUFFER_SIZE, &length, buffer);
         if (length > 0)
+        {
             LOGI("GLSL compile log: %s\n%s", buffer, fs);
+            error += "\n";
+            error += buffer;
+            error += fs;
+        }
 
         /// Link program
         unsigned int shader_id = glCreateProgram();
@@ -92,14 +110,21 @@ namespace oc {
         glLinkProgram(shader_id);
         glGetProgramInfoLog(shader_id, BUFFER_SIZE, &length, buffer);
         if (length > 0)
+        {
             LOGI("GLSL program info log: %s", buffer);
+            error += "\n";
+            error += buffer;
+        }
 
         /// Check shader
         glValidateProgram(shader_id);
         GLint status;
         glGetProgramiv(shader_id, GL_LINK_STATUS, &status);
         if (status == GL_FALSE)
+        {
             LOGI("GLSL error linking");
+            gl_last_error = error;
+        }
         return shader_id;
     }
 

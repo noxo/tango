@@ -923,24 +923,24 @@ EXTERN(void) jpeg_mem_src (j_decompress_ptr cinfo, unsigned char * inbuffer,
 #endif
 
 /* Default parameter setup for compression */
-EXTERN(void) jpeg_set_defaults (j_compress_ptr cinfo);
+EXTERN(void) tjpeg_set_defaults (j_compress_ptr cinfo);
 /* Compression parameter setup aids */
-EXTERN(void) jpeg_set_colorspace (j_compress_ptr cinfo,
+EXTERN(void) tjpeg_set_colorspace (j_compress_ptr cinfo,
                                   J_COLOR_SPACE colorspace);
-EXTERN(void) jpeg_default_colorspace (j_compress_ptr cinfo);
-EXTERN(void) jpeg_set_quality (j_compress_ptr cinfo, int quality,
+EXTERN(void) tjpeg_default_colorspace (j_compress_ptr cinfo);
+EXTERN(void) tjpeg_set_quality (j_compress_ptr cinfo, int quality,
                                boolean force_baseline);
-EXTERN(void) jpeg_set_linear_quality (j_compress_ptr cinfo, int scale_factor,
+EXTERN(void) tjpeg_set_linear_quality (j_compress_ptr cinfo, int scale_factor,
                                       boolean force_baseline);
 #if JPEG_LIB_VERSION >= 70
 EXTERN(void) jpeg_default_qtables (j_compress_ptr cinfo,
                                    boolean force_baseline);
 #endif
-EXTERN(void) jpeg_add_quant_table (j_compress_ptr cinfo, int which_tbl,
+EXTERN(void) tjpeg_add_quant_table (j_compress_ptr cinfo, int which_tbl,
                                    const unsigned int *basic_table,
                                    int scale_factor, boolean force_baseline);
-EXTERN(int) jpeg_quality_scaling (int quality);
-EXTERN(void) jpeg_simple_progression (j_compress_ptr cinfo);
+EXTERN(int) tjpeg_quality_scaling (int quality);
+EXTERN(void) tjpeg_simple_progression (j_compress_ptr cinfo);
 EXTERN(void) jpeg_suppress_tables (j_compress_ptr cinfo, boolean suppress);
 EXTERN(JQUANT_TBL *) jpeg_alloc_quant_table (j_common_ptr cinfo);
 EXTERN(JHUFF_TBL *) jpeg_alloc_huff_table (j_common_ptr cinfo);

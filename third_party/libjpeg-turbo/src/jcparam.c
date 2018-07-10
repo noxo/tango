@@ -24,7 +24,7 @@
  */
 
 GLOBAL(void)
-jpeg_add_quant_table (j_compress_ptr cinfo, int which_tbl,
+tjpeg_add_quant_table (j_compress_ptr cinfo, int which_tbl,
                       const unsigned int *basic_table,
                       int scale_factor, boolean force_baseline)
 /* Define a quantization table equal to the basic_table times
@@ -108,7 +108,7 @@ jpeg_default_qtables (j_compress_ptr cinfo, boolean force_baseline)
 
 
 GLOBAL(void)
-jpeg_set_linear_quality (j_compress_ptr cinfo, int scale_factor,
+tjpeg_set_linear_quality (j_compress_ptr cinfo, int scale_factor,
                          boolean force_baseline)
 /* Set or change the 'quality' (quantization) setting, using default tables
  * and a straight percentage-scaling quality scale.  In most cases it's better
@@ -117,15 +117,15 @@ jpeg_set_linear_quality (j_compress_ptr cinfo, int scale_factor,
  */
 {
   /* Set up two quantization tables using the specified scaling */
-  jpeg_add_quant_table(cinfo, 0, std_luminance_quant_tbl,
+  tjpeg_add_quant_table(cinfo, 0, std_luminance_quant_tbl,
                        scale_factor, force_baseline);
-  jpeg_add_quant_table(cinfo, 1, std_chrominance_quant_tbl,
+  tjpeg_add_quant_table(cinfo, 1, std_chrominance_quant_tbl,
                        scale_factor, force_baseline);
 }
 
 
 GLOBAL(int)
-jpeg_quality_scaling (int quality)
+tjpeg_quality_scaling (int quality)
 /* Convert a user-specified quality rating to a percentage scaling factor
  * for an underlying quantization table, using our recommended scaling curve.
  * The input 'quality' factor should be 0 (terrible) to 100 (very good).
@@ -151,7 +151,7 @@ jpeg_quality_scaling (int quality)
 
 
 GLOBAL(void)
-jpeg_set_quality (j_compress_ptr cinfo, int quality, boolean force_baseline)
+tjpeg_set_quality (j_compress_ptr cinfo, int quality, boolean force_baseline)
 /* Set or change the 'quality' (quantization) setting, using default tables.
  * This is the standard quality-adjusting entry point for typical user
  * interfaces; only those who want detailed control over quantization tables
@@ -159,10 +159,10 @@ jpeg_set_quality (j_compress_ptr cinfo, int quality, boolean force_baseline)
  */
 {
   /* Convert user 0-100 rating to percentage scaling */
-  quality = jpeg_quality_scaling(quality);
+  quality = tjpeg_quality_scaling(quality);
 
   /* Set up standard quality tables */
-  jpeg_set_linear_quality(cinfo, quality, force_baseline);
+  tjpeg_set_linear_quality(cinfo, quality, force_baseline);
 }
 
 
@@ -177,7 +177,7 @@ jpeg_set_quality (j_compress_ptr cinfo, int quality, boolean force_baseline)
  */
 
 GLOBAL(void)
-jpeg_set_defaults (j_compress_ptr cinfo)
+tjpeg_set_defaults (j_compress_ptr cinfo)
 {
   int i;
 
@@ -202,7 +202,7 @@ jpeg_set_defaults (j_compress_ptr cinfo)
 #endif
   cinfo->data_precision = BITS_IN_JSAMPLE;
   /* Set up two quantization tables using default quality of 75 */
-  jpeg_set_quality(cinfo, 75, TRUE);
+  tjpeg_set_quality(cinfo, 75, TRUE);
   /* Set up two Huffman tables */
   std_huff_tables((j_common_ptr) cinfo);
 
@@ -268,7 +268,7 @@ jpeg_set_defaults (j_compress_ptr cinfo)
 
   /* Choose JPEG colorspace based on input space, set defaults accordingly */
 
-  jpeg_default_colorspace(cinfo);
+  tjpeg_default_colorspace(cinfo);
 }
 
 
@@ -277,11 +277,11 @@ jpeg_set_defaults (j_compress_ptr cinfo)
  */
 
 GLOBAL(void)
-jpeg_default_colorspace (j_compress_ptr cinfo)
+tjpeg_default_colorspace (j_compress_ptr cinfo)
 {
   switch (cinfo->in_color_space) {
   case JCS_GRAYSCALE:
-    jpeg_set_colorspace(cinfo, JCS_GRAYSCALE);
+    tjpeg_set_colorspace(cinfo, JCS_GRAYSCALE);
     break;
   case JCS_RGB:
   case JCS_EXT_RGB:
@@ -294,19 +294,19 @@ jpeg_default_colorspace (j_compress_ptr cinfo)
   case JCS_EXT_BGRA:
   case JCS_EXT_ABGR:
   case JCS_EXT_ARGB:
-    jpeg_set_colorspace(cinfo, JCS_YCbCr);
+    tjpeg_set_colorspace(cinfo, JCS_YCbCr);
     break;
   case JCS_YCbCr:
-    jpeg_set_colorspace(cinfo, JCS_YCbCr);
+    tjpeg_set_colorspace(cinfo, JCS_YCbCr);
     break;
   case JCS_CMYK:
-    jpeg_set_colorspace(cinfo, JCS_CMYK); /* By default, no translation */
+    tjpeg_set_colorspace(cinfo, JCS_CMYK); /* By default, no translation */
     break;
   case JCS_YCCK:
-    jpeg_set_colorspace(cinfo, JCS_YCCK);
+    tjpeg_set_colorspace(cinfo, JCS_YCCK);
     break;
   case JCS_UNKNOWN:
-    jpeg_set_colorspace(cinfo, JCS_UNKNOWN);
+    tjpeg_set_colorspace(cinfo, JCS_UNKNOWN);
     break;
   default:
     ERREXIT(cinfo, JERR_BAD_IN_COLORSPACE);
@@ -319,7 +319,7 @@ jpeg_default_colorspace (j_compress_ptr cinfo)
  */
 
 GLOBAL(void)
-jpeg_set_colorspace (j_compress_ptr cinfo, J_COLOR_SPACE colorspace)
+tjpeg_set_colorspace (j_compress_ptr cinfo, J_COLOR_SPACE colorspace)
 {
   jpeg_component_info * compptr;
   int ci;
@@ -465,7 +465,7 @@ fill_dc_scans (jpeg_scan_info * scanptr, int ncomps, int Ah, int Al)
  */
 
 GLOBAL(void)
-jpeg_simple_progression (j_compress_ptr cinfo)
+tjpeg_simple_progression (j_compress_ptr cinfo)
 {
   int ncomps = cinfo->num_components;
   int nscans;

@@ -15,7 +15,7 @@ namespace oc {
         for (std::pair<GridIndex, Tango3DR_Mesh*> p : meshes) {
             ret = Tango3DR_Mesh_destroy(p.second);
             if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
+                exit(EXIT_SUCCESS);
             delete p.second;
         }
         meshes.clear();
@@ -27,7 +27,7 @@ namespace oc {
             if (meshes.find(p.first) != meshes.end()) {
                 ret = Tango3DR_Mesh_destroy(meshes[p.first]);
                 if (ret != TANGO_3DR_SUCCESS)
-                    std::exit(EXIT_SUCCESS);
+                    exit(EXIT_SUCCESS);
                 delete meshes[p.first];
             }
             meshes[p.first] = p.second;
@@ -47,7 +47,7 @@ namespace oc {
             pair.second = new Tango3DR_Mesh();
             ret = Tango3DR_extractMeshSegment(context, t3dr_updated->indices[it], pair.second);
             if (ret != TANGO_3DR_SUCCESS)
-                std::exit(EXIT_SUCCESS);
+                exit(EXIT_SUCCESS);
             output.push_back(pair);
         }
         return output;

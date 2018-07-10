@@ -48,7 +48,7 @@ namespace oc {
     void Scene::SetupViewPort(int w, int h) {
         glViewport(0, 0, w, h);
         renderer = new GLRenderer();
-        renderer->Init(w, h, 1);
+        renderer->Init(w, h, w, h);
     }
 
     void Scene::SetFullScreen(Image *img) {

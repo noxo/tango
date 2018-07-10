@@ -3,12 +3,14 @@
 
 #include <string>
 #include <vector>
+#include "gl/opengl.h"
 
 namespace oc {
 
     class Image {
     public:
         Image(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
+        Image(int w, int h);
         Image(unsigned char* src, int w, int h, int scale);
         Image(std::string filename);
         ~Image();
@@ -16,12 +18,18 @@ namespace oc {
         bool CanBeDeleted() { return instances <= 0; }
         void DelInstance() { instances--; }
         unsigned char* ExtractYUV(unsigned int s);
+
+        void Blur(int size);
         void SetName(std::string value) { name = value; }
         void SetTexture(long value) { texture = value; }
+        void Turn();
         void UpdateTexture();
         void UpdateYUV(unsigned char* src, int w, int h, int scale);
+        void UpsideDown();
         void Write(std::string filename);
 
+        unsigned int GetColor(int x, int y);
+        glm::ivec4 GetColorRGBA(int x, int y, int s = 0);
         int GetWidth() { return width; }
         int GetHeight() { return height; }
         unsigned char* GetData() { return data; }

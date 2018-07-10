@@ -22,7 +22,9 @@ namespace oc {
         void Load(std::vector<oc::Mesh>& input);
         void Process();
         void Render(GLint position_param, GLint uv_param);
+        void RenderSimple(GLint position_param);
         void UpdateVisibility(glm::mat4 mvp, glm::vec4 translate);
+        void Voxelize(Mesh& m);
     private:
         int BasicTest(glm::mat4& mvp, glm::vec4& translate);
         float DistanceToAABB(glm::vec3 p);
@@ -38,6 +40,10 @@ namespace oc {
         GLScene* child[8];
         std::vector<Mesh> models;
         float size;
+
+        Array3d voxels;
+        std::vector<glm::vec3> voxelCoord;
+        std::vector<unsigned int> voxelColor;
     };
 }
 

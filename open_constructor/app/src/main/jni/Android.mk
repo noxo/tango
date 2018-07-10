@@ -13,7 +13,8 @@ LOCAL_C_INCLUDES := $(PROJECT_ROOT)/third_party/glm/ \
                     $(PROJECT_ROOT)/third_party/poisson/include \
                     $(PROJECT_ROOT)/common/
 
-LOCAL_SRC_FILES := ../../../../../common/data/dataset.cc \
+LOCAL_SRC_FILES := ../../../../../common/data/array3d.cc \
+                   ../../../../../common/data/dataset.cc \
                    ../../../../../common/data/file3d.cc \
                    ../../../../../common/data/image.cc \
                    ../../../../../common/data/mesh.cc \
@@ -23,6 +24,7 @@ LOCAL_SRC_FILES := ../../../../../common/data/dataset.cc \
                    ../../../../../common/gl/camera.cc \
                    ../../../../../common/gl/glsl.cc \
                    ../../../../../common/gl/renderer.cc \
+                   ../../../../../common/postproc/medianer.cc \
                    ../../../../../common/postproc/poisson.cc \
                    ../../../../../common/tango/scan.cc \
                    ../../../../../common/tango/service.cc \

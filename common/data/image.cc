@@ -1,7 +1,6 @@
 #include <png.h>
 #include <turbojpeg.h>
 #include "data/image.h"
-#include "gl/opengl.h"
 
 #define JPEG_QUALITY 85
 
@@ -29,8 +28,17 @@ namespace oc {
         data[2] = b;
         data[3] = a;
         char buffer[1024];
-        sprintf(buffer, "%d-%d-%d-%d.png", r, g, b, a);
+        sprintf(buffer, "%d %d %d %d", r, g, b, a);
         name = std::string(buffer);
+        instances = 1;
+        texture = -1;
+    }
+
+    Image::Image(int w, int h) {
+        data = new unsigned char[w * h * 4];
+        width = w;
+        height = h;
+        name = "buffer";
         instances = 1;
         texture = -1;
     }
@@ -115,6 +123,81 @@ namespace oc {
         return output;
     }
 
+    void Image::Blur(int size) {
+        int index;
+        glm::ivec4 color;
+        unsigned char* temp = new unsigned char[width * height * 4];
+        for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++) {
+                color = glm::ivec4(0, 0, 0, 0);
+                for (int i = x - size; i <= x + size; i++)
+                    for (int j = y - size; j <= y + size; j++) {
+                        color += GetColorRGBA(i, j);
+                    }
+                color /= (2 * size + 1) * (2 * size + 1);
+                index = (y * width + x) * 4;
+                temp[index + 0] = (unsigned char)color.r;
+                temp[index + 1] = (unsigned char)color.g;
+                temp[index + 2] = (unsigned char)color.b;
+                temp[index + 3] = (unsigned char)color.a;
+            }
+        delete[] data;
+        data = temp;
+    }
+
+    unsigned int Image::GetColor(int x, int y) {
+        glm::ivec4 color = GetColorRGBA(x, y);
+        unsigned int output = 0xFF000000;
+        output += color.r * 1;
+        output += color.g * 256;
+        output += color.b * 65536;
+        return output;
+    }
+
+    glm::ivec4 Image::GetColorRGBA(int x, int y, int s) {
+        while (x < 0)
+            x += width;
+        while (y < 0)
+            y += height;
+        while (x >= width)
+            x -= width;
+        while (y >= height)
+            y -= height;
+        int index, count = 0;
+        glm::ivec4 output;
+        for (int i = glm::max(0, x - s); i <= glm::min(x + s, width - 1); i++) {
+            for (int j = glm::max(0, y - s); j <= glm::min(y + s, height - 1); j++) {
+                index = (y * width + x) * 4;
+                output.r += data[index + 0];
+                output.g += data[index + 1];
+                output.b += data[index + 2];
+                output.a += data[index + 3];
+                count++;
+            }
+        }
+        output /= count;
+        return output;
+    }
+
+    void Image::Turn() {
+        unsigned char* temp = new unsigned char[width * height * 4];
+        int i = 0;
+        for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++) {
+                int index = (y * width + x) * 4;
+                temp[i++] = data[index + 0];
+                temp[i++] = data[index + 1];
+                temp[i++] = data[index + 2];
+                temp[i++] = data[index + 3];
+            }
+        int w = width;
+        int h = height;
+        delete[] data;
+        data = temp;
+        width = h;
+        height = w;
+    }
+
     void Image::UpdateTexture() {
         image_textureToDelete.push_back(texture);
         texture = -1;
@@ -148,6 +231,21 @@ namespace oc {
                 data[index++] = 255;
             }
         }
+    }
+
+    void Image::UpsideDown() {
+        unsigned char* temp = new unsigned char[width * height * 4];
+        int i = 0;
+        for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++) {
+                int index = ((height - y - 1) * width + x) * 4;
+                temp[i++] = data[index + 0];
+                temp[i++] = data[index + 1];
+                temp[i++] = data[index + 2];
+                temp[i++] = data[index + 3];
+            }
+        delete[] data;
+        data = temp;
     }
 
     void Image::Write(std::string filename) {
@@ -258,7 +356,7 @@ namespace oc {
         //compress data
         long unsigned int size = 0;
         unsigned char* dst = NULL;
-        tjCompress2(jpegC, data, width, 0, height, TJPF_RGBA, &dst, &size, TJSAMP_444, JPEG_QUALITY, TJFLAG_FASTDCT);
+        tjCompress2(jpegC, data, width, 0, height, TJPF_RGBA, &dst, &size, TJSAMP_444, JPEG_QUALITY, TJFLAG_FASTDCT | TJFLAG_BOTTOMUP);
 
         //write data into file
         temp = fopen(filename.c_str(), "wb");

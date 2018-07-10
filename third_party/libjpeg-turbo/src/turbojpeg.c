@@ -216,7 +216,7 @@ static int setCompDefaults(struct jpeg_compress_struct *cinfo,
 	}
 
 	cinfo->input_components=tjPixelSize[pixelFormat];
-	jpeg_set_defaults(cinfo);
+	tjpeg_set_defaults(cinfo);
 
 #ifndef NO_GETENV
 	if((env=getenv("TJ_OPTIMIZE"))!=NULL && strlen(env)>0 && !strcmp(env, "1"))
@@ -241,20 +241,20 @@ static int setCompDefaults(struct jpeg_compress_struct *cinfo,
 
 	if(jpegQual>=0)
 	{
-		jpeg_set_quality(cinfo, jpegQual, TRUE);
+		tjpeg_set_quality(cinfo, jpegQual, TRUE);
 		if(jpegQual>=96 || flags&TJFLAG_ACCURATEDCT) cinfo->dct_method=JDCT_ISLOW;
 		else cinfo->dct_method=JDCT_FASTEST;
 	}
 	if(subsamp==TJSAMP_GRAY)
-		jpeg_set_colorspace(cinfo, JCS_GRAYSCALE);
+		tjpeg_set_colorspace(cinfo, JCS_GRAYSCALE);
 	else if(pixelFormat==TJPF_CMYK)
-		jpeg_set_colorspace(cinfo, JCS_YCCK);
-	else jpeg_set_colorspace(cinfo, JCS_YCbCr);
+		tjpeg_set_colorspace(cinfo, JCS_YCCK);
+	else tjpeg_set_colorspace(cinfo, JCS_YCbCr);
 
 #ifndef NO_GETENV
 	if((env=getenv("TJ_PROGRESSIVE"))!=NULL && strlen(env)>0
 		&& !strcmp(env, "1"))
-		jpeg_simple_progression(cinfo);
+		tjpeg_simple_progression(cinfo);
 #endif
 
 	cinfo->comp_info[0].h_samp_factor=tjMCUWidth[subsamp]/8;

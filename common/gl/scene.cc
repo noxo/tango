@@ -9,7 +9,7 @@ bool comparator(const RenderNode& a, const RenderNode& b) {
     return a.distance < b.distance;
 }
 
-oc::GLScene::GLScene() : size(0) {
+oc::GLScene::GLScene() : size(0), voxels(false) {
     for (int i = 0; i < 8; i++)
         child[i] = 0;
 }
@@ -116,6 +116,13 @@ void oc::GLScene::Render(GLint position_param, GLint uv_param) {
     glDeleteQueries(1, gpuMeasuring);
 }
 
+void oc::GLScene::RenderSimple(GLint position_param) {
+    glEnableVertexAttribArray((GLuint) position_param);
+    glVertexAttribPointer((GLuint) position_param, 3, GL_FLOAT, GL_FALSE, 0, voxelCoord.data());
+    glDrawArrays(GL_TRIANGLES, 0, (GLsizei) voxelCoord.size());
+    glDisableVertexAttribArray((GLuint) position_param);
+}
+
 void oc::GLScene::UpdateVisibility(glm::mat4 mvp, glm::vec4 translate) {
     camera = -translate;
 
@@ -148,6 +155,8 @@ void oc::GLScene::UpdateVisibility(glm::mat4 mvp, glm::vec4 translate) {
  */
 int oc::GLScene::BasicTest(glm::mat4& mvp, glm::vec4& translate) {
     /// Basic Intersection Test
+    glm::vec2 min = glm::vec2(1, 1);
+    glm::vec2 max = -min;
     int x1 = 0; int x2 = 0; int y1 = 0; int y2 = 0; int z1 = 0; int z2 = 0;
     int x1e = 0; int x2e = 0; int y1e = 0; int y2e = 0; int z1e = 0; int z2e = 0;
     for (int i = 0; i < 8; i++) {
@@ -166,6 +175,10 @@ int oc::GLScene::BasicTest(glm::mat4& mvp, glm::vec4& translate) {
         if (vec.y >= -1) { y2++; } else { y2e++; }
         if (vec.z <= 1) { z1++; } else { z1e++; }
         if (vec.z >= 0) { z2++; } else { z2e++; }
+        if (min.x > vec.x) min.x = vec.x;
+        if (min.y > vec.y) min.y = vec.y;
+        if (max.x < vec.x) max.x = vec.x;
+        if (max.y < vec.y) max.y = vec.y;
     }
 
     /// check if AABB is bigger than frustum
@@ -181,6 +194,10 @@ int oc::GLScene::BasicTest(glm::mat4& mvp, glm::vec4& translate) {
         z1 = 8;
         z2 = 8;
     }
+
+    /// check if AABB is big enough
+    if (glm::length(max - min) < 0.03f)
+      return 0;
 
     /// return value
     if (x1 + y1 + x2 + y2 + z1 + z2 == 48) {
@@ -434,4 +451,58 @@ void oc::GLScene::UpdateAABB(bool x, bool y, bool z) {
         aabb[1].z -= size;
     }
     size *= 0.5f;
+}
+
+/**
+ * @brief Voxelize the mesh
+ * @param m is instance of the mesh to voxelize
+ */
+void oc::GLScene::Voxelize(Mesh& m) {
+    double step = 0.1f;
+    double ab, ac, bc;
+    glm::vec3 a, b, c;
+    for (unsigned int i = 0; i < m.vertices.size(); i += 3) {
+        //get vertices
+        a = m.vertices[i + 0];
+        b = m.vertices[i + 1];
+        c = m.vertices[i + 2];
+
+        //find edges
+        ab = glm::length(a - b);
+        ac = glm::length(a - c);
+        bc = glm::length(b - c);
+        std::vector<double> output1;
+        std::vector<double> output2;
+        if ((ab >= ac) && (ab >= bc)) {
+            voxels.Line3D(a.x, a.y, a.z, c.x, c.y, c.z, &output1, step, true);
+            voxels.Line3D(b.x, b.y, b.z, c.x, c.y, c.z, &output2, step, true);
+        } else if ((ac >= ab) && (ac >= bc)) {
+            voxels.Line3D(a.x, a.y, a.z, b.x, b.y, b.z, &output1, step, true);
+            voxels.Line3D(c.x, c.y, c.z, b.x, b.y, b.z, &output2, step, true);
+        } else if ((bc >= ab) && (bc >= ac)) {
+            voxels.Line3D(a.x, a.y, a.z, b.x, b.y, b.z, &output1, step, true);
+            voxels.Line3D(a.x, a.y, a.z, c.x, c.y, c.z, &output2, step, true);
+        }
+
+        //fill
+        if (output1.empty() || output2.empty())
+            continue;
+        unsigned int min = glm::min(output1.size(), output2.size()) / 3 - 1;
+        unsigned int max = glm::max(output1.size(), output2.size()) / 3 - 1;
+        for (unsigned int j = 0; j <= min; j++) {
+            voxels.Line3D(output1[j * 3 + 0], output1[j * 3 + 1], output1[j * 3 + 2],
+                          output2[j * 3 + 0], output2[j * 3 + 1], output2[j * 3 + 2], 0, step, true);
+        }
+        for (unsigned int j = min + 1; j <= max; j++) {
+            if (output1.size() > output2.size())
+                voxels.Line3D(output1[j * 3 + 0], output1[j * 3 + 1], output1[j * 3 + 2],
+                              output2[min * 3 + 0], output2[min * 3 + 1], output2[min * 3 + 2], 0, step, true);
+            else
+                voxels.Line3D(output1[min * 3 + 0], output1[min * 3 + 1], output1[min * 3 + 2],
+                              output2[j * 3 + 0], output2[j * 3 + 1], output2[j * 3 + 2], 0, step, true);
+        }
+    }
+
+    voxels.Unpack(INT_MIN, INT_MIN, INT_MAX, INT_MAX, step, voxelCoord);
+    voxels.Clear();
 }

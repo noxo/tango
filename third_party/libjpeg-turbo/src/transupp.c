@@ -1365,7 +1365,7 @@ jtransform_adjust_parameters (j_decompress_ptr srcinfo,
        * We have to preserve the source's quantization table number, however.
        */
       int sv_quant_tbl_no = dstinfo->comp_info[0].quant_tbl_no;
-      jpeg_set_colorspace(dstinfo, JCS_GRAYSCALE);
+      tjpeg_set_colorspace(dstinfo, JCS_GRAYSCALE);
       dstinfo->comp_info[0].quant_tbl_no = sv_quant_tbl_no;
     } else {
       /* Sorry, can't do it */

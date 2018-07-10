@@ -1,30 +1,5 @@
-///////////////////////////////////////////////////////////////////////////////////
-/// OpenGL Mathematics (glm.g-truc.net)
-///
-/// Copyright (c) 2005 - 2014 G-Truc Creation (www.g-truc.net)
-/// Permission is hereby granted, free of charge, to any person obtaining a copy
-/// of this software and associated documentation files (the "Software"), to deal
-/// in the Software without restriction, including without limitation the rights
-/// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-/// copies of the Software, and to permit persons to whom the Software is
-/// furnished to do so, subject to the following conditions:
-/// 
-/// The above copyright notice and this permission notice shall be included in
-/// all copies or substantial portions of the Software.
-/// 
-/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-/// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-/// THE SOFTWARE.
-///
 /// @ref gtc_random
 /// @file glm/gtc/random.inl
-/// @date 2011-09-19 / 2012-04-07
-/// @author Christophe Riccio
-///////////////////////////////////////////////////////////////////////////////////
 
 #include "../geometric.hpp"
 #include "../exponential.hpp"
@@ -42,48 +17,48 @@ namespace detail
 	};
 
 	template <precision P>
-	struct compute_rand<uint8, P, detail::tvec1>
+	struct compute_rand<uint8, P, tvec1>
 	{
-		GLM_FUNC_QUALIFIER static detail::tvec1<uint8, P> call()
+		GLM_FUNC_QUALIFIER static tvec1<uint8, P> call()
 		{
-			return detail::tvec1<uint8, P>(
-				std::rand()) % std::numeric_limits<uint8>::max();
+			return tvec1<uint8, P>(
+				std::rand() % std::numeric_limits<uint8>::max());
 		}
 	};
 
 	template <precision P>
-	struct compute_rand<uint8, P, detail::tvec2>
+	struct compute_rand<uint8, P, tvec2>
 	{
-		GLM_FUNC_QUALIFIER static detail::tvec2<uint8, P> call()
+		GLM_FUNC_QUALIFIER static tvec2<uint8, P> call()
 		{
-			return detail::tvec2<uint8, P>(
-				std::rand(),
-				std::rand()) % std::numeric_limits<uint8>::max();
+			return tvec2<uint8, P>(
+				std::rand() % std::numeric_limits<uint8>::max(),
+				std::rand() % std::numeric_limits<uint8>::max());
 		}
 	};
 
 	template <precision P>
-	struct compute_rand<uint8, P, detail::tvec3>
+	struct compute_rand<uint8, P, tvec3>
 	{
-		GLM_FUNC_QUALIFIER static detail::tvec3<uint8, P> call()
+		GLM_FUNC_QUALIFIER static tvec3<uint8, P> call()
 		{
-			return detail::tvec3<uint8, P>(
-				std::rand(),
-				std::rand(),
-				std::rand()) % std::numeric_limits<uint8>::max();
+			return tvec3<uint8, P>(
+				std::rand() % std::numeric_limits<uint8>::max(),
+				std::rand() % std::numeric_limits<uint8>::max(),
+				std::rand() % std::numeric_limits<uint8>::max());
 		}
 	};
 
 	template <precision P>
-	struct compute_rand<uint8, P, detail::tvec4>
+	struct compute_rand<uint8, P, tvec4>
 	{
-		GLM_FUNC_QUALIFIER static detail::tvec4<uint8, P> call()
+		GLM_FUNC_QUALIFIER static tvec4<uint8, P> call()
 		{
-			return detail::tvec4<uint8, P>(
-				std::rand(),
-				std::rand(),
-				std::rand(),
-				std::rand()) % std::numeric_limits<uint8>::max();
+			return tvec4<uint8, P>(
+				std::rand() % std::numeric_limits<uint8>::max(),
+				std::rand() % std::numeric_limits<uint8>::max(),
+				std::rand() % std::numeric_limits<uint8>::max(),
+				std::rand() % std::numeric_limits<uint8>::max());
 		}
 	};
 
@@ -179,7 +154,7 @@ namespace detail
 			return (compute_rand<uint32, P, vecType>::call() % (Max + static_cast<uint32>(1) - Min)) + Min;
 		}
 	};
-
+ 
 	template <precision P, template <class, precision> class vecType>
 	struct compute_linearRand<int64, P, vecType>
 	{
@@ -280,46 +255,22 @@ namespace detail
 	};
 }//namespace detail
 
+	template <typename genType>
+	GLM_FUNC_QUALIFIER genType linearRand(genType Min, genType Max)
+	{
+		return detail::compute_linearRand<genType, highp, tvec1>::call(
+			tvec1<genType, highp>(Min),
+			tvec1<genType, highp>(Max)).x;
+	}
+
 	template <typename T, precision P, template <typename, precision> class vecType>
-	GLM_FUNC_QUALIFIER vecType<T, P> linearRand
-	(
-		vecType<T, P> const & Min,
-		vecType<T, P> const & Max
-	)
+	GLM_FUNC_QUALIFIER vecType<T, P> linearRand(vecType<T, P> const & Min, vecType<T, P> const & Max)
 	{
 		return detail::compute_linearRand<T, P, vecType>::call(Min, Max);
 	}
 
-	template <>
-	GLM_FUNC_QUALIFIER float linearRand<float>
-	(
-		float const & Min,
-		float const & Max
-	)
-	{
-		return detail::compute_linearRand<float, highp, detail::tvec1>::call(
-			detail::tvec1<float, highp>(Min),
-			detail::tvec1<float, highp>(Max)).x;
-	}
-
-	template <>
-	GLM_FUNC_QUALIFIER double linearRand<double>
-	(
-		double const & Min,
-		double const & Max
-	)
-	{
-		return detail::compute_linearRand<double, highp, detail::tvec1>::call(
-			detail::tvec1<double, highp>(Min),
-			detail::tvec1<double, highp>(Max)).x;
-	}
-
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType gaussRand
-	(
-		genType const & Mean,
-		genType const & Deviation
-	)
+	GLM_FUNC_QUALIFIER genType gaussRand(genType Mean, genType Deviation)
 	{
 		genType w, x1, x2;
 	
@@ -334,22 +285,23 @@ namespace detail
 		return x2 * Deviation * Deviation * sqrt((genType(-2) * log(w)) / w) + Mean;
 	}
 
-	VECTORIZE_VEC_VEC(gaussRand)
+	template <typename T, precision P, template <typename, precision> class vecType>
+	GLM_FUNC_QUALIFIER vecType<T, P> gaussRand(vecType<T, P> const & Mean, vecType<T, P> const & Deviation)
+	{
+		return detail::functor2<T, P, vecType>::call(gaussRand, Mean, Deviation);
+	}
 
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tvec2<T, defaultp> diskRand
-	(
-		T const & Radius
-	)
+	GLM_FUNC_QUALIFIER tvec2<T, defaultp> diskRand(T Radius)
 	{		
-		detail::tvec2<T, defaultp> Result(T(0));
+		tvec2<T, defaultp> Result(T(0));
 		T LenRadius(T(0));
 		
 		do
 		{
 			Result = linearRand(
-				detail::tvec2<T, defaultp>(-Radius),
-				detail::tvec2<T, defaultp>(Radius));
+				tvec2<T, defaultp>(-Radius),
+				tvec2<T, defaultp>(Radius));
 			LenRadius = length(Result);
 		}
 		while(LenRadius > Radius);
@@ -358,19 +310,16 @@ namespace detail
 	}
 	
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, defaultp> ballRand
-	(
-		T const & Radius
-	)
+	GLM_FUNC_QUALIFIER tvec3<T, defaultp> ballRand(T Radius)
 	{		
-		detail::tvec3<T, defaultp> Result(T(0));
+		tvec3<T, defaultp> Result(T(0));
 		T LenRadius(T(0));
 		
 		do
 		{
 			Result = linearRand(
-				detail::tvec3<T, defaultp>(-Radius),
-				detail::tvec3<T, defaultp>(Radius));
+				tvec3<T, defaultp>(-Radius),
+				tvec3<T, defaultp>(Radius));
 			LenRadius = length(Result);
 		}
 		while(LenRadius > Radius);
@@ -379,20 +328,14 @@ namespace detail
 	}
 	
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tvec2<T, defaultp> circularRand
-	(
-		T const & Radius
-	)
+	GLM_FUNC_QUALIFIER tvec2<T, defaultp> circularRand(T Radius)
 	{
 		T a = linearRand(T(0), T(6.283185307179586476925286766559f));
-		return detail::tvec2<T, defaultp>(cos(a), sin(a)) * Radius;		
+		return tvec2<T, defaultp>(cos(a), sin(a)) * Radius;		
 	}
 	
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, defaultp> sphericalRand
-	(
-		T const & Radius
-	)
+	GLM_FUNC_QUALIFIER tvec3<T, defaultp> sphericalRand(T Radius)
 	{
 		T z = linearRand(T(-1), T(1));
 		T a = linearRand(T(0), T(6.283185307179586476925286766559f));
@@ -402,6 +345,6 @@ namespace detail
 		T x = r * cos(a);
 		T y = r * sin(a);
 	
-		return detail::tvec3<T, defaultp>(x, y, z) * Radius;	
+		return tvec3<T, defaultp>(x, y, z) * Radius;	
 	}
 }//namespace glm

@@ -8,6 +8,7 @@
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 #include <algorithm>
+#include <stdio.h>
 #include <vector>
 #endif
 
@@ -17,10 +18,14 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/quaternion.hpp"
 #include "glm/gtc/type_ptr.hpp"
+#include "glm/gtx/euler_angles.hpp"
 #include "glm/gtx/matrix_decompose.hpp"
+#include "glm/gtx/quaternion.hpp"
 
 #ifdef ANDROID
 #include <android/log.h>
+#include <stdlib.h>
+#include <vector>
 #define LOGI(...) \
   __android_log_print(ANDROID_LOG_INFO, "tango_app", __VA_ARGS__)
 #define LOGE(...) \
@@ -32,5 +37,6 @@
   printf(__VA_ARGS__); printf("\n")
 #endif
 
+enum Pose { COLOR_CAMERA, DEPTH_CAMERA, OPENGL_CAMERA, MAX_CAMERA };
 
 #endif

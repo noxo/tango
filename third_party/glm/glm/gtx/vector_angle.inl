@@ -1,11 +1,5 @@
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// OpenGL Mathematics Copyright (c) 2005 - 2014 G-Truc Creation (www.g-truc.net)
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// Created : 2005-12-30
-// Updated : 2008-09-29
-// Licence : This source is under MIT License
-// File    : glm/gtx/vector_angle.inl
-///////////////////////////////////////////////////////////////////////////////////////////////////
+/// @ref gtx_vector_angle
+/// @file glm/gtx/vector_angle.inl
 
 namespace glm
 {
@@ -35,8 +29,8 @@ namespace glm
 	template <typename T, precision P>
 	GLM_FUNC_QUALIFIER T orientedAngle
 	(
-		detail::tvec2<T, P> const & x,
-		detail::tvec2<T, P> const & y
+		tvec2<T, P> const & x,
+		tvec2<T, P> const & y
 	)
 	{
 		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'orientedAngle' only accept floating-point inputs");
@@ -51,9 +45,9 @@ namespace glm
 	template <typename T, precision P>
 	GLM_FUNC_QUALIFIER T orientedAngle
 	(
-		detail::tvec3<T, P> const & x,
-		detail::tvec3<T, P> const & y,
-		detail::tvec3<T, P> const & ref
+		tvec3<T, P> const & x,
+		tvec3<T, P> const & y,
+		tvec3<T, P> const & ref
 	)
 	{
 		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'orientedAngle' only accept floating-point inputs");

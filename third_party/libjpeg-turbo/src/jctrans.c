@@ -86,11 +86,11 @@ jpeg_copy_critical_parameters (j_decompress_ptr srcinfo,
   dstinfo->min_DCT_v_scaled_size = srcinfo->min_DCT_v_scaled_size;
 #endif
   /* Initialize all parameters to default values */
-  jpeg_set_defaults(dstinfo);
+  tjpeg_set_defaults(dstinfo);
   /* jpeg_set_defaults may choose wrong colorspace, eg YCbCr if input is RGB.
    * Fix it to get the right header markers for the image colorspace.
    */
-  jpeg_set_colorspace(dstinfo, srcinfo->jpeg_color_space);
+  tjpeg_set_colorspace(dstinfo, srcinfo->jpeg_color_space);
   dstinfo->data_precision = srcinfo->data_precision;
   dstinfo->CCIR601_sampling = srcinfo->CCIR601_sampling;
   /* Copy the source's quantization tables. */

@@ -233,13 +233,13 @@ namespace oc {
 
         TangoErrorType ret = TangoService_connectOnPointCloudAvailable(onPointCloudAvailableRouter);
         if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS);
         ret = TangoService_connectOnFrameAvailable(TANGO_CAMERA_COLOR, this, onFrameAvailableRouter);
         if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS);
         ret = TangoService_connectOnTangoEvent(onTangoEventRouter);
         if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS);
 
         binder_mutex_.lock();
         tango.Connect(this);

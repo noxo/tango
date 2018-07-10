@@ -12,8 +12,9 @@ namespace oc {
          * @brief Constructor
          * @param vert is vertex shader code
          * @param frag is fragment shader code
+         * @param extension is additional GLSL extension request
          */
-        GLSL(std::string vert, std::string frag);
+        GLSL(std::string vert, std::string frag, std::string extension = "");
 
         ~GLSL();
 
@@ -32,6 +33,12 @@ namespace oc {
         void Bind();
 
         static GLSL* CurrentShader();
+
+        /**
+         * @brief gets last compile error
+         * @return error as string or empty string
+         */
+        static std::string GetError();
 
         unsigned int GetId() { return id; }
 
