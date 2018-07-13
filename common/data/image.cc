@@ -32,6 +32,7 @@ namespace oc {
         name = std::string(buffer);
         instances = 1;
         texture = -1;
+        additionalData = 0;
     }
 
     Image::Image(int w, int h) {
@@ -41,6 +42,7 @@ namespace oc {
         name = "buffer";
         instances = 1;
         texture = -1;
+        additionalData = 0;
     }
 
     Image::Image(unsigned char* src, int w, int h, int scale) {
@@ -50,6 +52,7 @@ namespace oc {
         name = "photo";
         instances = 1;
         texture = -1;
+        additionalData = 0;
         UpdateYUV(src, w, h, scale);
     }
 
@@ -58,6 +61,7 @@ namespace oc {
         name = filename;
         instances = 1;
         texture = -1;
+        additionalData = 0;
 
         std::string ext = filename.substr(filename.size() - 3, filename.size() - 1);
         if (ext.compare("jpg") == 0)
@@ -87,6 +91,9 @@ namespace oc {
             delete graySrcPlanes[2];
         graySrcPlanes[1] = 0;
         graySrcPlanes[2] = 0;
+        if (additionalData)
+            delete[] additionalData;
+        additionalData = 0;
     }
 
     unsigned char* Image::ExtractYUV(unsigned int s) {
@@ -164,7 +171,7 @@ namespace oc {
         while (y >= height)
             y -= height;
         int index, count = 0;
-        glm::ivec4 output;
+        glm::ivec4 output = glm::ivec4();
         for (int i = glm::max(0, x - s); i <= glm::min(x + s, width - 1); i++) {
             for (int j = glm::max(0, y - s); j <= glm::min(y + s, height - 1); j++) {
                 index = (y * width + x) * 4;
@@ -177,6 +184,12 @@ namespace oc {
         }
         output /= count;
         return output;
+    }
+
+    void Image::InitAditionalData() {
+        if (additionalData)
+            delete[] additionalData;
+        additionalData = new std::vector<glm::vec4>[width * height];
     }
 
     void Image::Turn() {
