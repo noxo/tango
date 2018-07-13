@@ -8,7 +8,6 @@
 #include "data/dataset.h"
 #include "gl/opengl.h"
 
-//#define GENERATE_FLOORPLAN
 
 namespace oc {
     enum Pose { COLOR_CAMERA, DEPTH_CAMERA, OPENGL_CAMERA, MAX_CAMERA };

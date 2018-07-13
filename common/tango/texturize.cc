@@ -4,12 +4,6 @@
 #include "tango/service.h"
 #include "tango/texturize.h"
 
-oc::TangoTexturize* instance;
-void callback(int progress, void*)
-{
-    instance->Callback(progress);
-}
-
 namespace oc {
 
     TangoTexturize::TangoTexturize() : poses(0) {}
@@ -28,7 +22,7 @@ namespace oc {
         dataset.WriteState(++poses, width, height);
     }
 
-    void TangoTexturize::ApplyFrames(Dataset dataset, std::string tangoDataset) {
+    void TangoTexturize::ApplyFrames(Dataset dataset) {
         dataset.GetState(poses, width, height);
         Tango3DR_ImageBuffer image;
         image.width = (uint32_t) width;
@@ -36,21 +30,6 @@ namespace oc {
         image.stride = (uint32_t) width;
         image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
         image.data = new unsigned char[width * height * 3];
-
-        Tango3DR_Trajectory trajectory = nullptr;
-        if (tangoDataset.size() > 10) {
-            SetEvent("TRAJECTORY");
-            instance = this;
-            Tango3DR_Status ret;
-            Tango3DR_AreaDescription area_description;
-            std::string loop_closure = tangoDataset + "/../config";
-            ret = Tango3DR_AreaDescription_createFromDataset(tangoDataset.c_str(), loop_closure.c_str(), &area_description, callback, 0);
-            if (ret != TANGO_3DR_SUCCESS)
-                exit(EXIT_SUCCESS);
-            ret = Tango3DR_Trajectory_createFromAreaDescription(area_description, &trajectory);
-            if (ret != TANGO_3DR_SUCCESS)
-                exit(EXIT_SUCCESS);
-        }
 
         for (unsigned int i = 0; i < poses; i++) {
             std::ostringstream ss;
@@ -67,44 +46,11 @@ namespace oc {
             image.timestamp = timestamp;
             Image::JPG2YUV(dataset.GetFileName(i, ".jpg"), image.data, width, height);
             Tango3DR_Pose t3dr_image_pose = TangoService::Extract3DRPose(output[COLOR_CAMERA]);
-            if (tangoDataset.size() > 10) {
-                //get fixed pose
-                ret = Tango3DR_getPoseAtTime(trajectory, timestamp, &t3dr_image_pose);
-                if (ret == TANGO_3DR_SUCCESS)
-                {
-                    GLCamera pose;
-                    pose.position.x = (float)t3dr_image_pose.translation[0];
-                    pose.position.y = (float)t3dr_image_pose.translation[1];
-                    pose.position.z = (float)t3dr_image_pose.translation[2];
-                    pose.rotation.x = (float)t3dr_image_pose.orientation[0];
-                    pose.rotation.y = (float)t3dr_image_pose.orientation[1];
-                    pose.rotation.z = (float)t3dr_image_pose.orientation[2];
-                    pose.rotation.w = (float)t3dr_image_pose.orientation[3];
-                    glm::mat4 matrix = pose.GetTransformation();
-                    glm::mat4 convert = {
-                            1, 0, 0, 0,
-                            0, 0, -1, 0,
-                            0, 1, 0, 0,
-                            0, 0, 0, 1
-                    };
-                    t3dr_image_pose = TangoService::Extract3DRPose(matrix * convert);
-                }
-            }
             ret = Tango3DR_updateTexture(context, &image, &t3dr_image_pose);
             if (ret != TANGO_3DR_SUCCESS)
                 exit(EXIT_SUCCESS);
         }
-        if (tangoDataset.size() > 10)
-            Tango3DR_Trajectory_destroy(trajectory);
         delete[] image.data;
-    }
-
-    void TangoTexturize::Callback(int progress) {
-        std::ostringstream ss;
-        ss << "TRAJECTORY ";
-        ss << progress;
-        ss << "%";
-        SetEvent(ss.str());
     }
 
     void TangoTexturize::Clear(Dataset dataset) {

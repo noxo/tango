@@ -1,6 +1,5 @@
 package com.lvonasek.openconstructor.main;
 
-import android.content.res.Resources;
 import android.hardware.Camera;
 import android.media.ExifInterface;
 import android.util.Log;
@@ -9,18 +8,15 @@ import com.lvonasek.openconstructor.ui.AbstractActivity;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Scanner;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 public class Exporter
@@ -29,38 +25,6 @@ public class Exporter
   public static final String[] FILE_EXT = {".obj"};
   private static boolean FOCAL_CACHED = false;
   private static float FOCAL_VALUE = 0;
-
-  public static void extractRawData(Resources res, int data, File outputDir)
-  {
-    InputStream in = res.openRawResource(data);
-    try {
-      ZipInputStream zin = new ZipInputStream(in);
-      ZipEntry entry;
-      while ((entry = zin.getNextEntry()) != null) {
-        String name = entry.getName();
-        if( entry.isDirectory() ) {
-          new File(outputDir, name).mkdirs();
-        } else {
-          int s = name.lastIndexOf( File.separatorChar );
-          String dir =  s == -1 ? null : name.substring( 0, s );
-          if( dir != null )
-            new File(outputDir, dir).mkdirs();
-          ByteArrayOutputStream baos = new ByteArrayOutputStream();
-          byte[] buffer = new byte[BUFFER_SIZE];
-          int count;
-          while ((count = zin.read(buffer)) != -1)
-            baos.write(buffer, 0, count);
-          BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(new File(outputDir, name)));
-          out.write(baos.toByteArray());
-          out.close();
-        }
-      }
-      in.close();
-    } catch (Exception e)
-    {
-      e.printStackTrace();
-    }
-  }
 
   public static int getModelType(String filename) {
     for(int i = 0; i < FILE_EXT.length; i++) {

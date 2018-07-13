@@ -1,7 +1,6 @@
 package com.lvonasek.openconstructor.ui;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -19,7 +18,6 @@ import android.widget.TextView;
 
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
-import com.google.atap.tangoservice.Tango;
 import com.lvonasek.openconstructor.R;
 import com.lvonasek.openconstructor.main.Exporter;
 import com.lvonasek.openconstructor.main.OpenConstructor;
@@ -32,7 +30,6 @@ import java.util.Date;
 
 public class FileManager extends AbstractActivity implements View.OnClickListener {
   private ArrayList<Button> buttons;
-  private boolean mDataset = false;
   private ListView mList;
   private AdView mAdView;
   private Button mAdd;
@@ -82,9 +79,7 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
       b.setVisibility(View.GONE);
     mProgress.setVisibility(View.GONE);
     int service = Service.getRunning(this);
-    if (!mDataset) {
-      startActivityForResult(Tango.getRequestPermissionIntent(Tango.PERMISSIONTYPE_DATASET), Tango.TANGO_INTENT_ACTIVITYCODE);
-    } else if (service > Service.SERVICE_NOT_RUNNING) {
+    if (service > Service.SERVICE_NOT_RUNNING) {
       for (Button b : buttons)
         if (b.getId() == R.id.service_cancel)
           b.setVisibility(View.VISIBLE);
@@ -140,16 +135,6 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
     } else {
       setupPermissions();
     }
-  }
-
-  @Override
-  protected void onActivityResult(int requestCode, int resultCode, Intent data)
-  {
-    super.onActivityResult(requestCode, resultCode, data);
-    if(resultCode == Activity.RESULT_OK)
-      mDataset = true;
-    else
-      finish();
   }
 
   public void refreshUI()

@@ -324,52 +324,6 @@ namespace oc {
         render_mutex_.lock();
         tango.Disconnect();
 
-#ifdef GENERATE_FLOORPLAN
-        std::vector<Mesh> layers;
-        unsigned char zero = 0;
-        unsigned char full = 255;
-        for (int i = 0; i < TANGO_3DR_LAYER_COUNT; i++)
-            layers.push_back(Mesh());
-        layers[TANGO_3DR_LAYER_SPACE].image = new Image(zero, zero, full, full);
-        layers[TANGO_3DR_LAYER_WALLS].image = new Image(full, full, full, full);
-        layers[TANGO_3DR_LAYER_FURNITURE].image = new Image(zero, full, zero, full);
-        layers[TANGO_3DR_LAYER_OBSTACLES].image = new Image(full, zero, zero, full);
-        for (int i = 0; i < TANGO_3DR_LAYER_COUNT; i++)
-            layers[i].imageOwner = true;
-
-        glm::vec3 v, l;
-        Tango3DR_PolygonArray polygons;
-        Tango3DR_updateFullFloorplan(tango.Context());
-        Tango3DR_extractFullFloorplan(tango.Context(), &polygons);
-        for (int i = 0; i < polygons.num_polygons; i++) {
-            Tango3DR_Polygon p = polygons.polygons[i];
-            for (int j = 0; j < p.num_vertices; j++) {
-                v.x = p.vertices[j][0];
-                v.z = p.vertices[j][1];
-                if (j != 0) {
-                    layers[p.layer].vertices.push_back(l);
-                    layers[p.layer].vertices.push_back(v);
-                    layers[p.layer].vertices.push_back((l + v) * 0.5f);
-                }
-                l = v;
-            }
-            if (p.closed) {
-                v.x = p.vertices[0][0];
-                v.z = p.vertices[0][1];
-                layers[p.layer].vertices.push_back(l);
-                layers[p.layer].vertices.push_back(v);
-                layers[p.layer].vertices.push_back((l + v) * 0.5f);
-            }
-        }
-        for (int i = 0; i < TANGO_3DR_LAYER_COUNT; i++) {
-            layers[i].image->Write(tango.Dataset() + "/" + layers[i].image->GetName());
-            for (unsigned int j = 0; j < layers[i].vertices.size(); j++)
-                layers[i].indices.push_back(j);
-        }
-        File3d(filename + ".floor.obj", true).WriteModel(layers);
-        Tango3DR_VectorGraphics_destroy(&polygons);
-#endif
-
         if (texturize.Init(tango.Context(), tango.Camera())) {
             texturize.Process(filename);
 
@@ -411,7 +365,7 @@ namespace oc {
         binder_mutex_.unlock();
     }
 
-    void App::Texturize(std::string filename, std::string tangoDataset) {
+    void App::Texturize(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
         tango.Disconnect();
@@ -432,7 +386,7 @@ namespace oc {
         //texturize
         scan.Clear();
         tango.Clear();
-        texturize.ApplyFrames(tango.Dataset(), tangoDataset);
+        texturize.ApplyFrames(tango.Dataset());
         texturize.Process(filename);
         texturize.Clear(tango.Dataset());
 
@@ -611,8 +565,8 @@ Java_com_lvonasek_openconstructor_main_JNI_saveWithTextures(JNIEnv* env, jobject
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_main_JNI_texturize(JNIEnv* env, jobject, jstring name, jstring tangoDataset) {
-  app.Texturize(jstring2string(env, name), jstring2string(env, tangoDataset));
+Java_com_lvonasek_openconstructor_main_JNI_texturize(JNIEnv* env, jobject, jstring name) {
+  app.Texturize(jstring2string(env, name));
 }
 
 JNIEXPORT void JNICALL
