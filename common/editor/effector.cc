@@ -350,7 +350,7 @@ namespace oc {
               "}";
     }
 
-    void Effector::Process(unsigned long &index, int &x1, int &x2, int &y, double &z1, double &z2) {
+    void Effector::Process(unsigned long &index, int &x1, int &x2, int &y, glm::dvec3 &z1, glm::dvec3 &z2) {
         int start = x1 - 2;
         if (start < 0)
             start = 0;

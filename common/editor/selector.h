@@ -20,7 +20,7 @@ public:
     void SelectTriangle(std::vector<Mesh>& mesh, glm::mat4 world2screen, float x, float y);
 
 private:
-    virtual void Process(unsigned long& index, int &x1, int &x2, int &y, double &z1, double &z2);
+    virtual void Process(unsigned long& index, int &x1, int &x2, int &y, glm::dvec3 &z1, glm::dvec3 &z2);
     std::string VertexToKey(glm::vec3& vec);
 
     std::map<std::string, std::map<std::pair<int, int>, bool> > connections;

@@ -21,7 +21,7 @@ private:
     void ApplyGeometryEffect(std::vector<Mesh>& mesh, Effect effect, float value, int axis);
     void PreviewColorEffect(std::string& fs, Effect effect);
     void PreviewGeometryEffect(std::string& vs, Effect effect, int axis);
-    virtual void Process(unsigned long& index, int &x1, int &x2, int &y, double &z1, double &z2);
+    virtual void Process(unsigned long& index, int &x1, int &x2, int &y, glm::dvec3 &z1, glm::dvec3 &z2);
     void RotateVertex(glm::vec3& v, glm::vec3& center, int& axis, float& s, float& c);
 
     glm::vec3 center;

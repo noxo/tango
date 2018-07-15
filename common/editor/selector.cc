@@ -90,7 +90,7 @@ namespace oc {
         SetResolution(w, h);
     }
 
-    void Selector::Process(unsigned long &index, int &x1, int &x2, int &y, double &z1, double &z2) {
+    void Selector::Process(unsigned long &index, int &x1, int &x2, int &y, glm::dvec3 &z1, glm::dvec3 &z2) {
         if (rangeMode) {
             if ((x1 < pointX) && (x1 < pointX2))
                 return;
@@ -105,7 +105,7 @@ namespace oc {
             currentMesh->colors[index + 2] = 0;
         } else if (pointY == y) {
             if ((x1 <= pointX) && (pointX <= x2)) {
-                double z = z1 + (pointX - x1) * (z2 - z1) / (double)(x2 - x1);
+                double z = z1.z + (pointX - x1) * (z2.z - z1.z) / (double)(x2 - x1);
                 if ((z > 0) && (depth > z)) {
                     depth = z;
                     selected = (int) index;

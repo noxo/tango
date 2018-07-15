@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "postproc/medianer.h"
 
 const char* kMedianerShader[] = {R"glsl(
