@@ -5,9 +5,14 @@
 #define DATASET_PATH "dataset"
 
 oc::Medianer* medianer;
+int pose = 0;
 
 void display(void) {
+    medianer->RenderTexture(pose++);
     medianer->RenderPose(5);
+
+    if (pose >= medianer->GetPoseCount())
+        pose = 0;
     glutSwapBuffers();
     glutPostRedisplay();
 }
@@ -22,7 +27,6 @@ int main(int argc, char** argv) {
     glutDisplayFunc(display);
 
     medianer = new oc::Medianer(DATASET_PATH, DATASET_OBJ, true);
-    medianer->RenderTexture();
     glutMainLoop();
     return 0;
 }

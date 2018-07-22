@@ -9,14 +9,19 @@
 
 namespace oc {
 
+    enum Pass { PASS_DEPTH, PASS_TEXTURE, PASS_COUNT };
+
     class Medianer : Rasterizer {
     public:
         Medianer(std::string path, std::string filename, bool renderToFileSupport);
         ~Medianer();
+        int GetPoseCount() { return poseCount; }
         virtual void Process(unsigned long& index, int &x1, int &x2, int &y, glm::dvec3 &z1, glm::dvec3 &z2);
-        void RenderPose(int index);
+        void RenderDiff(int index);
+        void RenderPose(int index, bool diff = false);
         void RenderPose(int index, std::string filename);
         void RenderTexture();
+        void RenderTexture(int index, bool handleDepth = true);
     private:
         GLuint Image2GLTexture(oc::Image* img);
 
@@ -34,8 +39,10 @@ namespace oc {
         double* currentDepth;
         Image* currentImage;
         unsigned int currentMesh;
+        unsigned int currentPass;
         glm::mat4 currentPose;
-        bool writeTexture;
+        unsigned int pixelCount;
+        glm::vec4 pixelSum;
     };
 }
 #endif

@@ -32,7 +32,6 @@ namespace oc {
         name = std::string(buffer);
         instances = 1;
         texture = -1;
-        additionalData = 0;
     }
 
     Image::Image(int w, int h) {
@@ -42,7 +41,6 @@ namespace oc {
         name = "buffer";
         instances = 1;
         texture = -1;
-        additionalData = 0;
     }
 
     Image::Image(unsigned char* src, int w, int h, int scale) {
@@ -52,7 +50,6 @@ namespace oc {
         name = "photo";
         instances = 1;
         texture = -1;
-        additionalData = 0;
         UpdateYUV(src, w, h, scale);
     }
 
@@ -61,7 +58,6 @@ namespace oc {
         name = filename;
         instances = 1;
         texture = -1;
-        additionalData = 0;
 
         std::string ext = filename.substr(filename.size() - 3, filename.size() - 1);
         if (ext.compare("jpg") == 0)
@@ -91,9 +87,6 @@ namespace oc {
             delete graySrcPlanes[2];
         graySrcPlanes[1] = 0;
         graySrcPlanes[2] = 0;
-        if (additionalData)
-            delete[] additionalData;
-        additionalData = 0;
     }
 
     unsigned char* Image::ExtractYUV(unsigned int s) {
@@ -134,13 +127,12 @@ namespace oc {
         int index;
         glm::ivec4 color;
         unsigned char* temp = new unsigned char[width * height * 4];
-        for (int x = 0; x < width; x++)
+        for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 color = glm::ivec4(0, 0, 0, 0);
                 for (int i = x - size; i <= x + size; i++)
-                    for (int j = y - size; j <= y + size; j++) {
+                    for (int j = y - size; j <= y + size; j++)
                         color += GetColorRGBA(i, j);
-                    }
                 color /= (2 * size + 1) * (2 * size + 1);
                 index = (y * width + x) * 4;
                 temp[index + 0] = (unsigned char)color.r;
@@ -148,6 +140,7 @@ namespace oc {
                 temp[index + 2] = (unsigned char)color.b;
                 temp[index + 3] = (unsigned char)color.a;
             }
+        }
         delete[] data;
         data = temp;
     }
@@ -184,12 +177,6 @@ namespace oc {
         }
         output /= count;
         return output;
-    }
-
-    void Image::InitAditionalData() {
-        if (additionalData)
-            delete[] additionalData;
-        additionalData = new std::vector<glm::vec4>[width * height];
     }
 
     void Image::Turn() {

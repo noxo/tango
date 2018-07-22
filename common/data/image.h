@@ -20,8 +20,6 @@ namespace oc {
         unsigned char* ExtractYUV(unsigned int s);
 
         void Blur(int size);
-        std::vector<glm::vec4>* GetAditionalData() { return additionalData; }
-        void InitAditionalData();
         void SetName(std::string value) { name = value; }
         void SetTexture(long value) { texture = value; }
         void Turn();
@@ -54,8 +52,6 @@ namespace oc {
         unsigned char* data;
         std::string name;
         long texture;
-
-        std::vector<glm::vec4>* additionalData;
     };
 }
 
