@@ -153,7 +153,7 @@ namespace oc {
 
     void Medianer::RenderTexture() {
         currentDepth = new double[viewport_width * viewport_height];
-        for (int index = 0; index < poseCount; index++) {
+        for (int index = 0; index <= poseCount; index++) {
             RenderTexture(index, false);
 #ifdef EXPORT_TEXTURE
             for (currentMesh = 0; currentMesh < model.size(); currentMesh++)
