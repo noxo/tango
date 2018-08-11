@@ -29,7 +29,7 @@ namespace oc {
         void Write(std::string filename);
 
         unsigned int GetColor(int x, int y);
-        glm::ivec4 GetColorRGBA(int x, int y, int s = 0);
+        glm::ivec4 GetColorRGBA(int x, int y, int s = 0, bool repeat = true);
         int GetWidth() { return width; }
         int GetHeight() { return height; }
         unsigned char* GetData() { return data; }

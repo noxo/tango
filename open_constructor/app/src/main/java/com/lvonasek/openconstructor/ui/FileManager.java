@@ -214,16 +214,6 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
             return;
           }
         }
-        if (isFirstRun())
-        {
-          if (Build.MANUFACTURER.toUpperCase().startsWith("ASUS"))
-          {
-            AlertDialog alertDialog = new AlertDialog.Builder(this).create();
-            alertDialog.setTitle(getString(R.string.app_name));
-            alertDialog.setMessage(getString(R.string.asus_problem));
-            alertDialog.show();
-          }
-        }
         defaultSettings();
         refreshUI();
         break;
@@ -394,17 +384,5 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
     }
     else
       mAdView.setVisibility(View.GONE);
-  }
-
-
-  public boolean isFirstRun()
-  {
-    String key = "FIRST_RUN_KEY";
-    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-    boolean output = pref.getBoolean(key, true);
-    SharedPreferences.Editor e = pref.edit();
-    e.putBoolean(key, false);
-    e.commit();
-    return output;
   }
 }

@@ -18,7 +18,7 @@ namespace oc {
     class App {
     public:
         App();
-        void StorePointCloud(Tango3DR_PointCloud t3dr_depth);
+        void StoreDataset(Tango3DR_PointCloud t3dr_depth, Tango3DR_ImageBuffer t3dr_image, std::vector<TangoMatrixTransformData> transform);
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin, double dmax,
                                      int noise, bool land, bool sharpPhotos, bool fixHoles, bool clearing,
                                      std::string dataset);

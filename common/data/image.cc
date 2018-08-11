@@ -124,16 +124,23 @@ namespace oc {
     }
 
     void Image::Blur(int size) {
-        int index;
-        glm::ivec4 color;
+        int count, index;
+        glm::ivec4 c, color;
         unsigned char* temp = new unsigned char[width * height * 4];
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 color = glm::ivec4(0, 0, 0, 0);
+                count = 0;
                 for (int i = x - size; i <= x + size; i++)
-                    for (int j = y - size; j <= y + size; j++)
-                        color += GetColorRGBA(i, j);
-                color /= (2 * size + 1) * (2 * size + 1);
+                    for (int j = y - size; j <= y + size; j++) {
+                        c = GetColorRGBA(i, j, 0, false);
+                        if (c.a > 0) {
+                            color += c;
+                            count++;
+                        }
+                    }
+                if (count > 0)
+                    color /= count;
                 index = (y * width + x) * 4;
                 temp[index + 0] = (unsigned char)color.r;
                 temp[index + 1] = (unsigned char)color.g;
@@ -154,15 +161,26 @@ namespace oc {
         return output;
     }
 
-    glm::ivec4 Image::GetColorRGBA(int x, int y, int s) {
-        while (x < 0)
-            x += width;
-        while (y < 0)
-            y += height;
-        while (x >= width)
-            x -= width;
-        while (y >= height)
-            y -= height;
+    glm::ivec4 Image::GetColorRGBA(int x, int y, int s, bool repeat) {
+        if (repeat) {
+            while (x < 0)
+                x += width;
+            while (y < 0)
+                y += height;
+            while (x >= width)
+                x -= width;
+            while (y >= height)
+                y -= height;
+        } else {
+            if (x < 0)
+                x = 0;
+            if (y < 0)
+                y = 0;
+            if (x >= width)
+                x = width - 1;
+            if (y >= height)
+                y = height - 1;
+        }
         int index, count = 0;
         glm::ivec4 output = glm::ivec4();
         for (int i = glm::max(0, x - s); i <= glm::min(x + s, width - 1); i++) {
