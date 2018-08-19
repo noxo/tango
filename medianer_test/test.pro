@@ -5,6 +5,7 @@ LIBS += -lglut \
     -lturbojpeg \
     -lpng \
     -lzip \
+    -lopencv_calib3d \
     -lopencv_core \
     -lopencv_features2d \
     -lopencv_flann \
