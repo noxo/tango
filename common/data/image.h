@@ -20,6 +20,8 @@ namespace oc {
         unsigned char* ExtractYUV(unsigned int s);
 
         void Blur(int size);
+        void Downsize(int scale);
+        void EdgeDetect();
         void SetName(std::string value) { name = value; }
         void SetTexture(long value) { texture = value; }
         void Turn();

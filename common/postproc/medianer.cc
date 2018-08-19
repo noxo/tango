@@ -40,6 +40,8 @@ const char* kMedianerShader[] = {R"glsl(
     })glsl"
 };
 
+#define DOWNSIZE_FRAME 4
+#define DOWNSIZE_TEXTURE 4
 #define EXPORT_TEXTURE
 
 namespace oc {
@@ -49,7 +51,7 @@ namespace oc {
         dataset = new oc::Dataset(path);
         dataset->GetCalibration(cx, cy, fx, fy);
         dataset->GetState(poseCount, width, height);
-        SetResolution(width, height);
+        SetResolution(width / DOWNSIZE_FRAME, height / DOWNSIZE_FRAME);
         cx /= (double)width;
         cy /= (double)height;
         fx /= (double)width;
@@ -57,12 +59,16 @@ namespace oc {
 
         /// init frame rendering
         if (renderToFileSupport)
-            renderer.Init(width, height, width, height);
+            renderer.Init(width / DOWNSIZE_FRAME, height / DOWNSIZE_FRAME, width / DOWNSIZE_FRAME, height / DOWNSIZE_FRAME);
         shader = new oc::GLSL(kMedianerShader[0], kMedianerShader[1]);
 
         /// load model
         File3d obj(dataset->GetPath() + "/" + filename, false);
         obj.ReadModel(25000, model);
+        for (Mesh& m : model) {
+            if (m.image && m.imageOwner)
+                m.image->Downsize(DOWNSIZE_TEXTURE);
+        }
     }
 
     Medianer::~Medianer() {
@@ -170,6 +176,9 @@ namespace oc {
             currentDepth[i] = 9999;
 
         currentImage = new Image(dataset->GetFileName(index, ".jpg"));
+        currentImage->Downsize(DOWNSIZE_FRAME);
+        currentImage->Blur(1);
+        currentImage->EdgeDetect();
         currentPose = glm::inverse(dataset->GetPose(index)[0]);
         for (currentPass = 0; currentPass < PASS_COUNT; currentPass++) {
             for (currentMesh = 0; currentMesh < model.size(); currentMesh++)

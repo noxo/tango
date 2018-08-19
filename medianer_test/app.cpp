@@ -10,9 +10,9 @@ int pose = 0;
 void display(void) {
     medianer->RenderTexture(pose++);
     medianer->RenderPose(5);
-
     if (pose > medianer->GetPoseCount())
         pose = 0;
+
     glutSwapBuffers();
     glutPostRedisplay();
 }

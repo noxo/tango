@@ -152,6 +152,57 @@ namespace oc {
         data = temp;
     }
 
+    void Image::Downsize(int scale) {
+        int w = width / scale;
+        int h = height / scale;
+        unsigned char* temp = new unsigned char[w * h * 4];
+        for (unsigned int x = 0; x < w; x++) {
+            for (unsigned int y = 0; y < h; y++) {
+                unsigned int i = (y * w + x) * 4;
+                unsigned int j = (y * scale * width + x * scale) * 4;
+                for (int k = 0; k < 4; k++)
+                    temp[i + k] = data[j + k];
+            }
+        }
+        delete[] data;
+        data = temp;
+        width = w;
+        height = h;
+    }
+
+    void Image::EdgeDetect() {
+        unsigned char* temp = new unsigned char[width * height * 4];
+        memset(temp, 0, width * height * 4);
+        int kSobelEdgeThreshold = 128 * 6;
+        for (int j = 1; j < height - 1; j++) {
+            for (int i = 1; i < width - 1; i++) {
+                // Neighbour pixels around the pixel at [i, j].
+                glm::ivec4 a00 = GetColorRGBA(i - 1, j - 1);
+                glm::ivec4 a01 = GetColorRGBA(i, j - 1);
+                glm::ivec4 a02 = GetColorRGBA(i + 1, j - 1);
+                glm::ivec4 a10 = GetColorRGBA(i - 1, j);
+                glm::ivec4 a12 = GetColorRGBA(i + 1, j);
+                glm::ivec4 a20 = GetColorRGBA(i - 1, j + 1);
+                glm::ivec4 a21 = GetColorRGBA(i, j + 1);
+                glm::ivec4 a22 = GetColorRGBA(i + 1, j + 1);
+
+                glm::ivec4 x_sum = -a00 - (2 * a10) - a20 + a02 + (2 * a12) + a22;
+                glm::ivec4 y_sum = a00 + (2 * a01) + a02 - a20 - (2 * a21) - a22;
+                x_sum.r *= x_sum.r;
+                x_sum.g *= x_sum.g;
+                x_sum.b *= x_sum.b;
+                y_sum.r *= y_sum.r;
+                y_sum.g *= y_sum.g;
+                y_sum.b *= y_sum.b;
+
+                if (x_sum.r + x_sum.g + x_sum.b + y_sum.r + y_sum.g + y_sum.b > kSobelEdgeThreshold)
+                  temp[(j * width + i) * 4] = 255;
+            }
+        }
+        delete[] data;
+        data = temp;
+    }
+
     unsigned int Image::GetColor(int x, int y) {
         glm::ivec4 color = GetColorRGBA(x, y);
         unsigned int output = 0xFF000000;
