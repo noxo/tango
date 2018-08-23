@@ -70,13 +70,21 @@ namespace oc {
                 img.Downsize(DOWNSIZE_FRAME);
                 img.Blur(1);
                 img.EdgeDetect();
-                img.Write(dataset->GetFileName(i, ".png"));
+                img.Blur(1);
+                img.Write(dataset->GetFileName(i, ".edg"));
             }
         }
+
+        /// init variables
+        currentImage = 0;
+        lastIndex = -1;
+        modification = glm::mat4(1);
     }
 
     Medianer::~Medianer() {
         delete[] currentDepth;
+        if (currentImage)
+            delete currentImage;
         delete dataset;
         delete shader;
     }
@@ -103,17 +111,16 @@ namespace oc {
 
                     //count error
                     if (currentPass == PASS_ERROR) {
-                        i->GetData()[mem + 1] = color.r;
-                        if (i->GetData()[mem + 0] == 255) {
-                            i->GetData()[mem + 1] = 0;
-                            currentError++;
-                        }
+                        i->GetData()[mem + 1] = abs(i->GetData()[mem + 0] - color.r);
+                        if (i->GetData()[mem + 3] > 0)
+                            currentError += i->GetData()[mem + 1];
                         currentCount++;
                     }
 
                     //apply color
                     if (currentPass == PASS_APPLY) {
                         i->GetData()[mem + 0] = color.r;
+                        i->GetData()[mem + 3] = 255;
                     }
                 }
             }
@@ -148,7 +155,7 @@ namespace oc {
         }
     }
 
-    bool Medianer::RenderTexture(int index) {
+    float Medianer::RenderTexture(int index) {
         for (int i = 0; i < viewport_width * viewport_height; i++)
             currentDepth[i] = 9999;
         for (Mesh& m : model) {
@@ -161,22 +168,33 @@ namespace oc {
 
         currentCount = 1;
         currentError = 0;
-        currentImage = new Image(dataset->GetFileName(index, ".png"));
-        currentPose = glm::inverse(dataset->GetPose(index)[0]);
+        if (index != lastIndex) {
+            if (currentImage)
+                delete currentImage;
+            currentImage = new Image(dataset->GetFileName(index, ".edg"));
+            lastIndex = index;
+        }
+        currentPose = modification * glm::inverse(dataset->GetPose(index)[0]);
         for (currentPass = 0; currentPass < PASS_COUNT; currentPass++) {
             if (currentPass == PASS_APPLY) {
-                float error = currentError / (float)currentCount;
-                if (error > 0) {
-                    delete currentImage;
-                    return false;
-                }
+                float error = currentError / (float)currentCount / 255.0f;
+                if (error > 0.125)
+                    return error;
             }
             for (currentMesh = 0; currentMesh < model.size(); currentMesh++)
                 AddUVVertices(model[currentMesh].vertices, model[currentMesh].uv, currentPose,
                               cx - 0.5, cy - 0.5, 2.0 * fx, 2.0 * fy);
         }
-        delete currentImage;
-        return true;
+        return 0;
+    }
+
+    void Medianer::SetModification(glm::vec3 rot, glm::vec3 scl, glm::vec3 trn) {
+        modification = glm::mat4(1);
+        if (fabs(rot.x) > 0.001) modification = glm::rotate(modification, rot.x * (float)M_PI / 20.0f, glm::vec3(1, 0, 0));
+        if (fabs(rot.y) > 0.001) modification = glm::rotate(modification, rot.y * (float)M_PI / 20.0f, glm::vec3(0, 1, 0));
+        if (fabs(rot.z) > 0.001) modification = glm::rotate(modification, rot.z * (float)M_PI / 20.0f, glm::vec3(0, 0, 1));
+        modification = glm::scale(modification, scl);
+        modification = glm::translate(modification, trn);
     }
 
     GLuint Medianer::Image2GLTexture(oc::Image* img) {

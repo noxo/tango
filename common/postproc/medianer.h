@@ -18,7 +18,8 @@ namespace oc {
         int GetPoseCount() { return poseCount; }
         virtual void Process(unsigned long& index, int &x1, int &x2, int &y, glm::dvec3 &z1, glm::dvec3 &z2);
         void RenderPose(int index);
-        bool RenderTexture(int index);
+        float RenderTexture(int index);
+        void SetModification(glm::vec3 rot, glm::vec3 scl, glm::vec3 trn);
     private:
         GLuint Image2GLTexture(Image* img);
 
@@ -39,6 +40,8 @@ namespace oc {
         unsigned int currentMesh;
         unsigned int currentPass;
         glm::mat4 currentPose;
+        long lastIndex;
+        glm::mat4 modification;
     };
 }
 #endif

@@ -64,6 +64,8 @@ namespace oc {
             ReadJPG(filename);
         else if (ext.compare("png") == 0)
             ReadPNG(filename);
+        else if (ext.compare("edg") == 0)
+            ReadPNG(filename);
         else {
             data = new unsigned char[4];
             data[0] = 255;
@@ -173,7 +175,6 @@ namespace oc {
     void Image::EdgeDetect() {
         unsigned char* temp = new unsigned char[width * height * 4];
         memset(temp, 0, width * height * 4);
-        int kSobelEdgeThreshold = 128 * 6;
         for (int j = 1; j < height - 1; j++) {
             for (int i = 1; i < width - 1; i++) {
                 // Neighbour pixels around the pixel at [i, j].
@@ -194,9 +195,10 @@ namespace oc {
                 y_sum.r *= y_sum.r;
                 y_sum.g *= y_sum.g;
                 y_sum.b *= y_sum.b;
-
-                if (x_sum.r + x_sum.g + x_sum.b + y_sum.r + y_sum.g + y_sum.b > kSobelEdgeThreshold)
-                  temp[(j * width + i) * 4] = 255;
+                glm::ivec4 sum = (x_sum + y_sum) / 2;
+                unsigned char v = (sum.r + sum.g + sum.b) / 3;
+                temp[(j * width + i) * 4 + 0] = v;
+                temp[(j * width + i) * 4 + 3] = 255;
             }
         }
         delete[] data;
@@ -322,6 +324,8 @@ namespace oc {
         if (ext.compare("jpg") == 0)
             WriteJPG(filename);
         else if (ext.compare("png") == 0)
+            WritePNG(filename);
+        else if (ext.compare("edg") == 0)
             WritePNG(filename);
         else
             assert(false);
