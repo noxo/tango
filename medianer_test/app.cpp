@@ -3,15 +3,29 @@
 
 #define DATASET_OBJ "1529165036844.obj"
 #define DATASET_PATH "dataset"
+#define DATASET_PREPROCESS false
 
+unsigned int idx = 0;
 oc::Medianer* medianer;
-int pose = 0;
+std::vector<int> noColl;
+std::vector<int> poses;
 
 void display(void) {
-    medianer->RenderTexture(pose++);
+    if (!poses.empty()) {
+        if (medianer->RenderTexture(poses[idx])) {
+            noColl.push_back(poses[idx]);
+            poses.erase(poses.begin() + idx);
+        } else {
+            idx++;
+        }
+        if (idx >= poses.size()) {
+            idx = 0;
+            LOGI("Frames without collision: %d", noColl.size());
+            LOGI("To process: %d", poses.size());
+            LOGI("TODO:frames with collision");
+        }
+    }
     medianer->RenderPose(5);
-    if (pose > medianer->GetPoseCount())
-        pose = 0;
 
     glutSwapBuffers();
     glutPostRedisplay();
@@ -26,7 +40,9 @@ int main(int argc, char** argv) {
     glutCreateWindow("Test");
     glutDisplayFunc(display);
 
-    medianer = new oc::Medianer(DATASET_PATH, DATASET_OBJ, true);
+    medianer = new oc::Medianer(DATASET_PATH, DATASET_OBJ, DATASET_PREPROCESS);
+    for (int i = 0; i <= medianer->GetPoseCount(); i++)
+        poses.push_back(i);
     glutMainLoop();
     return 0;
 }
