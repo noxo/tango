@@ -33,6 +33,9 @@ const char* kMedianerShader[] = {R"glsl(
     })glsl"
 };
 
+#define DOWNSIZE_FRAME 4
+#define DOWNSIZE_TEXTURE 4
+
 namespace oc {
 
     Medianer::Medianer(std::string path, std::string filename) {
@@ -56,15 +59,8 @@ namespace oc {
         for (Mesh& m : model) {
             if (m.image && m.imageOwner) {
                 m.image->Downsize(DOWNSIZE_TEXTURE);
-                memset(m.image->GetData(), 0, m.image->GetWidth() * m.image->GetHeight() * 4);
+                m.image->InitExtraData();
             }
-        }
-
-        /// prepare photos
-        for (unsigned int i = 0; i <= poseCount; i++) {
-            Image img(dataset->GetFileName(i, ".jpg"));
-            img.Downsize(DOWNSIZE_FRAME);
-            img.Write(dataset->GetFileName(i, ".edg"));
         }
 
         /// init variables
@@ -80,10 +76,16 @@ namespace oc {
         delete shader;
     }
 
+    void Medianer::PreparePhoto(int index) {
+        Image img(dataset->GetFileName(index, ".jpg"));
+        img.Downsize(DOWNSIZE_FRAME);
+        img.Write(dataset->GetFileName(index, ".edg"));
+    }
+
     void Medianer::Process(unsigned long& index, int &x1, int &x2, int &y, glm::dvec3 &z1, glm::dvec3 &z2) {
         if ((y >= 0) && (y < viewport_height)) {
-            glm::vec4 color;
-            int mem;
+            glm::ivec4 color;
+            int mem, memV;
             int offset = y * viewport_width;
             Image* i = model[currentMesh].image;
             for (int x = glm::max(x1, 0); x <= glm::min(x2, viewport_width - 1); x++) {
@@ -96,27 +98,48 @@ namespace oc {
                         z.t = 1.0 - z.t;
                         z.s *= i->GetWidth() - 1;
                         z.t *= i->GetHeight() - 1;
-                        mem = (((int)z.t) * i->GetWidth() + (int)z.s) * 4;
+                        memV = (((int)z.t) * i->GetWidth() + (int)z.s);
+                        mem = memV * 4;
                         color = currentImage->GetColorRGBA(x, y, 0);
                     }
 
-                    //count error
-                    if (currentPass == PASS_ERROR) {
-                        int error = 0;
-                        error += std::abs(i->GetData()[mem + 0] - color.r);
-                        error += std::abs(i->GetData()[mem + 1] - color.g);
-                        error += std::abs(i->GetData()[mem + 2] - color.b);
-                        if (i->GetData()[mem + 3] > 0)
-                            currentError += error;
-                        currentCount++;
+                    //summary colors
+                    if (currentPass == PASS_SUMMARY) {
+                        color.a = 1;
+                        i->GetExtraData()[memV] += color;
                     }
 
-                    //apply color
-                    if (currentPass == PASS_APPLY) {
-                        i->GetData()[mem + 0] = color.r;
-                        i->GetData()[mem + 1] = color.g;
-                        i->GetData()[mem + 2] = color.b;
+                    //average colors
+                    if (currentPass == PASS_AVERAGE) {
+                        color = i->GetExtraData()[memV];
+                        color /= color.a;
+                        color.a = 255;
+                        i->GetExtraData()[memV] = color;
+                        if (i->GetData()[mem + 3] == 0) {
+                            i->GetData()[mem + 0] = color.r;
+                            i->GetData()[mem + 1] = color.g;
+                            i->GetData()[mem + 2] = color.b;
+                        }
                         i->GetData()[mem + 3] = 255;
+                    }
+
+                    //repair texture
+                    if (currentPass == PASS_REPAIR) {
+                        glm::ivec4 diff1 = glm::abs(i->GetExtraData()[memV] - color);
+                        glm::ivec4 diff2 = glm::abs(glm::ivec4(i->GetData()[mem + 0], i->GetData()[mem + 1], i->GetData()[mem + 2], 255) - color);
+                        if (diff1.r + diff1.g + diff1.b > diff2.r + diff2.g + diff2.b) {
+                            i->GetData()[mem + 0] = color.r;
+                            i->GetData()[mem + 1] = color.g;
+                            i->GetData()[mem + 2] = color.b;
+                        }
+                    }
+
+                    //render texture into the frame
+                    if (currentPass == PASS_SAVE) {
+                        int index = (y * currentImage->GetWidth() + x) * 4;
+                        currentImage->GetData()[index + 0] = i->GetData()[mem + 0];
+                        currentImage->GetData()[index + 1] = i->GetData()[mem + 1];
+                        currentImage->GetData()[index + 2] = i->GetData()[mem + 2];
                     }
                 }
             }
@@ -151,11 +174,9 @@ namespace oc {
         }
     }
 
-    float Medianer::RenderTexture(int index) {
+    void Medianer::RenderTexture(int index, int mainPass) {
         for (int i = 0; i < viewport_width * viewport_height; i++)
             currentDepth[i] = 9999;
-        currentCount = 1;
-        currentError = 0;
         if (index != lastIndex) {
             if (currentImage)
                 delete currentImage;
@@ -164,16 +185,15 @@ namespace oc {
         }
         currentPose = glm::inverse(dataset->GetPose(index)[0]);
         for (currentPass = 0; currentPass < PASS_COUNT; currentPass++) {
-            if (currentPass == PASS_APPLY) {
-                float error = currentError / (float)currentCount / 255.0f;
-                if (error > 0)
-                    return error;
-            }
+            if (currentPass != PASS_DEPTH)
+                if (currentPass != mainPass)
+                    continue;
             for (currentMesh = 0; currentMesh < model.size(); currentMesh++)
                 AddUVVertices(model[currentMesh].vertices, model[currentMesh].uv, currentPose,
                               cx - 0.5, cy - 0.5, 2.0 * fx, 2.0 * fy);
         }
-        return 0;
+        if (mainPass == PASS_SAVE)
+            currentImage->Write(dataset->GetFileName(index, ".edg"));
     }
 
     GLuint Medianer::Image2GLTexture(oc::Image* img) {

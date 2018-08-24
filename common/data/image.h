@@ -38,6 +38,9 @@ namespace oc {
         std::string GetName() { return name; }
         long GetTexture() { return texture; }
 
+        glm::ivec4* GetExtraData() { return extraData; }
+        void InitExtraData() { extraData = new glm::ivec4[width * height];}
+
         static void JPG2YUV(std::string filename, unsigned char* data, int width, int height);
         static void YUV2JPG(unsigned char* data, int width, int height, std::string filename, bool gray);
         static std::vector<unsigned int> TexturesToDelete();
@@ -52,6 +55,7 @@ namespace oc {
         int width;
         int height;
         unsigned char* data;
+        glm::ivec4* extraData;
         std::string name;
         long texture;
     };

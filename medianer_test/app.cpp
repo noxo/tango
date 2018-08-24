@@ -1,15 +1,19 @@
 #include <postproc/medianer.h>
 #include <GL/freeglut.h>
+#include <unistd.h>
 
 #define DATASET_OBJ "1529165036844.obj"
 #define DATASET_PATH "dataset"
 
 oc::Medianer* medianer;
-std::vector<int> noColl;
-std::vector<int> coll;
+int pose = 0;
 
 void display(void) {
-    medianer->RenderPose(5);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    medianer->RenderPose(pose++);
+    if (pose > medianer->GetPoseCount())
+        pose = 0;
+    sleep(1);
     glutSwapBuffers();
     glutPostRedisplay();
 }
@@ -24,16 +28,11 @@ int main(int argc, char** argv) {
     glutDisplayFunc(display);
 
     medianer = new oc::Medianer(DATASET_PATH, DATASET_OBJ);
-    for (int i = 0; i <= medianer->GetPoseCount(); i++) {
-        if (medianer->RenderTexture(i) > 0) {
-            coll.push_back(i);
-        } else {
-            noColl.push_back(i);
-        }
-    }
-    LOGI("Frames with acceptable collision: %d", noColl.size());
-    LOGI("To process: %d", coll.size());
-    LOGI("TODO:frames with collision");
+    for (int i = 0; i <= medianer->GetPoseCount(); i++)
+        medianer->PreparePhoto(i);
+    for (int pass = oc::PASS_SUMMARY; pass < oc::PASS_COUNT; pass++)
+        for (int i = 0; i <= medianer->GetPoseCount(); i++)
+            medianer->RenderTexture(i, pass);
     glutMainLoop();
     return 0;
 }

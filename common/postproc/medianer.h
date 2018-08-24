@@ -7,21 +7,19 @@
 #include <gl/camera.h>
 #include <gl/glsl.h>
 
-#define DOWNSIZE_FRAME 4
-#define DOWNSIZE_TEXTURE 4
-
 namespace oc {
 
-    enum Pass { PASS_DEPTH, PASS_ERROR, PASS_APPLY, PASS_COUNT };
+    enum Pass { PASS_DEPTH, PASS_SUMMARY, PASS_AVERAGE, PASS_REPAIR, PASS_SAVE, PASS_COUNT };
 
     class Medianer : Rasterizer {
     public:
         Medianer(std::string path, std::string filename);
         ~Medianer();
         int GetPoseCount() { return poseCount; }
+        void PreparePhoto(int index);
         virtual void Process(unsigned long& index, int &x1, int &x2, int &y, glm::dvec3 &z1, glm::dvec3 &z2);
         void RenderPose(int index);
-        float RenderTexture(int index);
+        void RenderTexture(int index, int mainPass);
     private:
         GLuint Image2GLTexture(Image* img);
 
@@ -35,9 +33,7 @@ namespace oc {
         int width, height;     ///< Camera dimension
 
         /// Processing
-        unsigned int currentCount;
         double* currentDepth;
-        unsigned int currentError;
         Image* currentImage;
         unsigned int currentMesh;
         unsigned int currentPass;

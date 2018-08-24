@@ -32,6 +32,7 @@ namespace oc {
         name = std::string(buffer);
         instances = 1;
         texture = -1;
+        extraData = 0;
     }
 
     Image::Image(int w, int h) {
@@ -41,6 +42,7 @@ namespace oc {
         name = "buffer";
         instances = 1;
         texture = -1;
+        extraData = 0;
     }
 
     Image::Image(unsigned char* src, int w, int h, int scale) {
@@ -51,6 +53,7 @@ namespace oc {
         instances = 1;
         texture = -1;
         UpdateYUV(src, w, h, scale);
+        extraData = 0;
     }
 
     Image::Image(std::string filename) {
@@ -73,6 +76,7 @@ namespace oc {
             data[2] = 255;
             data[3] = 255;
         }
+        extraData = 0;
     }
 
     Image::~Image() {
@@ -89,6 +93,8 @@ namespace oc {
             delete graySrcPlanes[2];
         graySrcPlanes[1] = 0;
         graySrcPlanes[2] = 0;
+        if (extraData)
+            delete[] extraData;
     }
 
     unsigned char* Image::ExtractYUV(unsigned int s) {
@@ -320,6 +326,7 @@ namespace oc {
     }
 
     void Image::Write(std::string filename) {
+        LOGI("Writing %s", filename.c_str());
         std::string ext = filename.substr(filename.size() - 3, filename.size() - 1);
         if (ext.compare("jpg") == 0)
             WriteJPG(filename);
