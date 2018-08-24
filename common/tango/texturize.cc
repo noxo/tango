@@ -1,6 +1,7 @@
 #include <sstream>
 #include "data/image.h"
 #include "gl/camera.h"
+#include "postproc/medianer.h"
 #include "tango/service.h"
 #include "tango/texturize.h"
 

@@ -33,12 +33,9 @@ const char* kMedianerShader[] = {R"glsl(
     })glsl"
 };
 
-#define DOWNSIZE_FRAME 4
-#define DOWNSIZE_TEXTURE 4
-
 namespace oc {
 
-    Medianer::Medianer(std::string path, std::string filename, bool preparePhotos) {
+    Medianer::Medianer(std::string path, std::string filename) {
         /// init dataset
         dataset = new oc::Dataset(path);
         dataset->GetCalibration(cx, cy, fx, fy);
@@ -64,21 +61,15 @@ namespace oc {
         }
 
         /// prepare photos
-        if (preparePhotos) {
-            for (unsigned int i = 0; i <= poseCount; i++) {
-                Image img(dataset->GetFileName(i, ".jpg"));
-                img.Downsize(DOWNSIZE_FRAME);
-                img.Blur(1);
-                img.EdgeDetect();
-                img.Blur(1);
-                img.Write(dataset->GetFileName(i, ".edg"));
-            }
+        for (unsigned int i = 0; i <= poseCount; i++) {
+            Image img(dataset->GetFileName(i, ".jpg"));
+            img.Downsize(DOWNSIZE_FRAME);
+            img.Write(dataset->GetFileName(i, ".edg"));
         }
 
         /// init variables
         currentImage = 0;
         lastIndex = -1;
-        modification = glm::mat4(1);
     }
 
     Medianer::~Medianer() {
@@ -111,15 +102,20 @@ namespace oc {
 
                     //count error
                     if (currentPass == PASS_ERROR) {
-                        i->GetData()[mem + 1] = abs(i->GetData()[mem + 0] - color.r);
+                        int error = 0;
+                        error += std::abs(i->GetData()[mem + 0] - color.r);
+                        error += std::abs(i->GetData()[mem + 1] - color.g);
+                        error += std::abs(i->GetData()[mem + 2] - color.b);
                         if (i->GetData()[mem + 3] > 0)
-                            currentError += i->GetData()[mem + 1];
+                            currentError += error;
                         currentCount++;
                     }
 
                     //apply color
                     if (currentPass == PASS_APPLY) {
                         i->GetData()[mem + 0] = color.r;
+                        i->GetData()[mem + 1] = color.g;
+                        i->GetData()[mem + 2] = color.b;
                         i->GetData()[mem + 3] = 255;
                     }
                 }
@@ -158,14 +154,6 @@ namespace oc {
     float Medianer::RenderTexture(int index) {
         for (int i = 0; i < viewport_width * viewport_height; i++)
             currentDepth[i] = 9999;
-        for (Mesh& m : model) {
-            if (m.image && m.imageOwner) {
-                for (unsigned int i = 1; i < m.image->GetWidth() * m.image->GetHeight() * 4; i += 4) {
-                    m.image->GetData()[i] = 0;
-                }
-            }
-        }
-
         currentCount = 1;
         currentError = 0;
         if (index != lastIndex) {
@@ -174,11 +162,11 @@ namespace oc {
             currentImage = new Image(dataset->GetFileName(index, ".edg"));
             lastIndex = index;
         }
-        currentPose = modification * glm::inverse(dataset->GetPose(index)[0]);
+        currentPose = glm::inverse(dataset->GetPose(index)[0]);
         for (currentPass = 0; currentPass < PASS_COUNT; currentPass++) {
             if (currentPass == PASS_APPLY) {
                 float error = currentError / (float)currentCount / 255.0f;
-                if (error > 0.125)
+                if (error > 0)
                     return error;
             }
             for (currentMesh = 0; currentMesh < model.size(); currentMesh++)
@@ -186,15 +174,6 @@ namespace oc {
                               cx - 0.5, cy - 0.5, 2.0 * fx, 2.0 * fy);
         }
         return 0;
-    }
-
-    void Medianer::SetModification(glm::vec3 rot, glm::vec3 scl, glm::vec3 trn) {
-        modification = glm::mat4(1);
-        if (fabs(rot.x) > 0.001) modification = glm::rotate(modification, rot.x * (float)M_PI / 20.0f, glm::vec3(1, 0, 0));
-        if (fabs(rot.y) > 0.001) modification = glm::rotate(modification, rot.y * (float)M_PI / 20.0f, glm::vec3(0, 1, 0));
-        if (fabs(rot.z) > 0.001) modification = glm::rotate(modification, rot.z * (float)M_PI / 20.0f, glm::vec3(0, 0, 1));
-        modification = glm::scale(modification, scl);
-        modification = glm::translate(modification, trn);
     }
 
     GLuint Medianer::Image2GLTexture(oc::Image* img) {

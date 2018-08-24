@@ -17,7 +17,6 @@ SOURCES += \
 ../common/editor/rasterizer.cc \
 ../common/gl/camera.cc \
 ../common/gl/glsl.cc \
-../common/gl/renderer.cc \
 ../common/postproc/medianer.cc \
 app.cpp
 HEADERS += \
