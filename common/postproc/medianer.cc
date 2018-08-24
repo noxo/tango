@@ -33,9 +33,6 @@ const char* kMedianerShader[] = {R"glsl(
     })glsl"
 };
 
-#define DOWNSIZE_FRAME 4
-#define DOWNSIZE_TEXTURE 4
-
 namespace oc {
 
     Medianer::Medianer(std::string path, std::string filename) {
@@ -43,7 +40,7 @@ namespace oc {
         dataset = new oc::Dataset(path);
         dataset->GetCalibration(cx, cy, fx, fy);
         dataset->GetState(poseCount, width, height);
-        SetResolution(width / DOWNSIZE_FRAME, height / DOWNSIZE_FRAME);
+        SetResolution(width, height);
         currentDepth = new double[viewport_width * viewport_height];
         cx /= (double)width;
         cy /= (double)height;
@@ -54,14 +51,11 @@ namespace oc {
         shader = new oc::GLSL(kMedianerShader[0], kMedianerShader[1]);
 
         /// load model
-        File3d obj(dataset->GetPath() + "/" + filename, false);
+        File3d obj(filename, false);
         obj.ReadModel(25000, model);
-        for (Mesh& m : model) {
-            if (m.image && m.imageOwner) {
-                m.image->Downsize(DOWNSIZE_TEXTURE);
+        for (Mesh& m : model)
+            if (m.image && m.imageOwner)
                 m.image->InitExtraData();
-            }
-        }
 
         /// init variables
         currentImage = 0;
@@ -74,12 +68,6 @@ namespace oc {
             delete currentImage;
         delete dataset;
         delete shader;
-    }
-
-    void Medianer::PreparePhoto(int index) {
-        Image img(dataset->GetFileName(index, ".jpg"));
-        img.Downsize(DOWNSIZE_FRAME);
-        img.Write(dataset->GetFileName(index, ".edg"));
     }
 
     void Medianer::Process(unsigned long& index, int &x1, int &x2, int &y, glm::dvec3 &z1, glm::dvec3 &z2) {
@@ -180,7 +168,7 @@ namespace oc {
         if (index != lastIndex) {
             if (currentImage)
                 delete currentImage;
-            currentImage = new Image(dataset->GetFileName(index, ".edg"));
+            currentImage = new Image(dataset->GetFileName(index, ".jpg"));
             lastIndex = index;
         }
         currentPose = glm::inverse(dataset->GetPose(index)[0]);
@@ -192,8 +180,10 @@ namespace oc {
                 AddUVVertices(model[currentMesh].vertices, model[currentMesh].uv, currentPose,
                               cx - 0.5, cy - 0.5, 2.0 * fx, 2.0 * fy);
         }
-        if (mainPass == PASS_SAVE)
-            currentImage->Write(dataset->GetFileName(index, ".edg"));
+        if (mainPass == PASS_SAVE) {
+            currentImage->UpsideDown();
+            currentImage->Write(dataset->GetFileName(index, ".jpg"));
+        }
     }
 
     GLuint Medianer::Image2GLTexture(oc::Image* img) {

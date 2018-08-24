@@ -67,8 +67,6 @@ namespace oc {
             ReadJPG(filename);
         else if (ext.compare("png") == 0)
             ReadPNG(filename);
-        else if (ext.compare("edg") == 0)
-            ReadPNG(filename);
         else {
             data = new unsigned char[4];
             data[0] = 255;
@@ -331,8 +329,6 @@ namespace oc {
         if (ext.compare("jpg") == 0)
             WriteJPG(filename);
         else if (ext.compare("png") == 0)
-            WritePNG(filename);
-        else if (ext.compare("edg") == 0)
             WritePNG(filename);
         else
             assert(false);

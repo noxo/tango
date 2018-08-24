@@ -2,7 +2,7 @@
 #include <GL/freeglut.h>
 #include <unistd.h>
 
-#define DATASET_OBJ "1529165036844.obj"
+#define DATASET_OBJ "dataset/1529165036844.obj"
 #define DATASET_PATH "dataset"
 
 oc::Medianer* medianer;
@@ -28,9 +28,7 @@ int main(int argc, char** argv) {
     glutDisplayFunc(display);
 
     medianer = new oc::Medianer(DATASET_PATH, DATASET_OBJ);
-    for (int i = 0; i <= medianer->GetPoseCount(); i++)
-        medianer->PreparePhoto(i);
-    for (int pass = oc::PASS_SUMMARY; pass < oc::PASS_COUNT; pass++)
+    for (int pass = oc::PASS_SUMMARY; pass < oc::PASS_SAVE; pass++)
         for (int i = 0; i <= medianer->GetPoseCount(); i++)
             medianer->RenderTexture(i, pass);
     glutMainLoop();

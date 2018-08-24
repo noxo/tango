@@ -406,7 +406,7 @@ namespace oc {
         //texturize
         scan.Clear();
         tango.Clear();
-        texturize.ApplyFrames(tango.Dataset());
+        texturize.ApplyFrames(tango.Dataset(), filename);
         texturize.Process(filename);
         texturize.Clear(tango.Dataset());
 

@@ -16,14 +16,14 @@ namespace oc {
         //save frame
         width = t3dr_image.width;
         height = t3dr_image.height;
-        Image::YUV2JPG(t3dr_image.data, t3dr_image.width, t3dr_image.height, dataset.GetFileName(poses, ".jpg"), false);
+        Image::YUV2JPG(t3dr_image.data, width, height, dataset.GetFileName(poses, ".jpg"), false);
 
         //save transform
         dataset.WritePose(poses, matrix, t3dr_image.timestamp);
         dataset.WriteState(++poses, width, height);
     }
 
-    void TangoTexturize::ApplyFrames(Dataset dataset) {
+    void TangoTexturize::ApplyFrames(Dataset dataset, std::string filename) {
         dataset.GetState(poses, width, height);
         Tango3DR_ImageBuffer image;
         image.width = (uint32_t) width;
@@ -32,25 +32,32 @@ namespace oc {
         image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
         image.data = new unsigned char[width * height * 3];
 
-        for (unsigned int i = 0; i < poses; i++) {
-            std::ostringstream ss;
-            ss << "IMAGE ";
-            ss << i + 1;
-            ss << "/";
-            ss << poses;
-            event = ss.str();
+        Medianer medianer(dataset.GetPath(), filename);
+        for (int pass = PASS_SUMMARY; pass <= PASS_COUNT; pass++)
+            for (int i = 0; i < poses; i++) {
+                std::ostringstream ss;
+                ss << "IMAGE ";
+                ss << pass;
+                ss << "/";
+                ss << PASS_COUNT;
+                ss << " - ";
+                ss << i + 1;
+                ss << "/";
+                ss << poses;
+                event = ss.str();
 
-            double timestamp = dataset.GetPoseTime(i);
-            std::vector<glm::mat4> output = dataset.GetPose(i);
+                if (pass == PASS_COUNT) {
+                    std::vector<glm::mat4> output = dataset.GetPose(i);
+                    image.timestamp = dataset.GetPoseTime(i);
+                    Image::JPG2YUV(dataset.GetFileName(i, ".jpg"), image.data, width, height);
+                    Tango3DR_Pose t3dr_image_pose = TangoService::Extract3DRPose(output[COLOR_CAMERA]);
+                    if (Tango3DR_updateTexture(context, &image, &t3dr_image_pose) != TANGO_3DR_SUCCESS)
+                        exit(EXIT_SUCCESS);
+                } else {
+                    medianer.RenderTexture(i, pass);
+                }
+            }
 
-            Tango3DR_Status ret;
-            image.timestamp = timestamp;
-            Image::JPG2YUV(dataset.GetFileName(i, ".jpg"), image.data, width, height);
-            Tango3DR_Pose t3dr_image_pose = TangoService::Extract3DRPose(output[COLOR_CAMERA]);
-            ret = Tango3DR_updateTexture(context, &image, &t3dr_image_pose);
-            if (ret != TANGO_3DR_SUCCESS)
-                exit(EXIT_SUCCESS);
-        }
         delete[] image.data;
     }
 

@@ -16,7 +16,6 @@ namespace oc {
         Medianer(std::string path, std::string filename);
         ~Medianer();
         int GetPoseCount() { return poseCount; }
-        void PreparePhoto(int index);
         virtual void Process(unsigned long& index, int &x1, int &x2, int &y, glm::dvec3 &z1, glm::dvec3 &z2);
         void RenderPose(int index);
         void RenderTexture(int index, int mainPass);
