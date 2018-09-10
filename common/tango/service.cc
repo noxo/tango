@@ -198,6 +198,19 @@ namespace oc {
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
+        // Set datasets
+        if (!dataset.GetPath().empty()) {
+            ret = TangoConfig_setString(config, "config_datasets_path", dataset.GetPath().c_str());
+            if (ret != TANGO_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+            ret = TangoConfig_setBool(config, "config_enable_dataset_recording", true);
+            if (ret != TANGO_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+            ret = TangoConfig_setInt32(config, "config_dataset_recording_mode", TANGO_RECORDING_MODE_MOTION_TRACKING_AND_FISHEYE);
+            if (ret != TANGO_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+        }
+
         if (pointcloud == nullptr) {
             int32_t max_point_cloud_elements;
             ret = TangoConfig_getInt32(config, "max_point_cloud_elements", &max_point_cloud_elements);

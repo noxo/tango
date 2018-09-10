@@ -86,6 +86,7 @@
     <string name="event_merge">Merging results</string>
     <string name="event_process">Processing model</string>
     <string name="event_simplify">Simplifying mesh</string>
+    <string name="event_trajectory">Pose correction</string>
     <string name="event_unwrap">Unwrapping model</string>
 
     <string-array name="file_operations">

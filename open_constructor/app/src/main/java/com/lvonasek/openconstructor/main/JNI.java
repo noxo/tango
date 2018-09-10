@@ -48,7 +48,7 @@ public class JNI
   public static native void saveWithTextures(String name);
 
   // Texturize 3D model
-  public static native void texturize(String name);
+  public static native void texturize(String name, String tangoDataset);
 
   // Set view on 3D view
   public static native void setView(float pitch, float yaw, float x, float y, float z, boolean gyro);
@@ -93,6 +93,7 @@ public class JNI
     event = event.replace("MERGE", r.getString(R.string.event_merge));
     event = event.replace("PROCESS", r.getString(R.string.event_process));
     event = event.replace("SIMPLIFY", r.getString(R.string.event_simplify));
+    event = event.replace("TRAJECTORY", r.getString(R.string.event_trajectory));
     event = event.replace("UNWRAP", r.getString(R.string.event_unwrap));
     return event;
   }

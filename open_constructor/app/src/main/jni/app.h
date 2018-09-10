@@ -34,7 +34,7 @@ namespace oc {
         void Load(std::string filename);
         void Save(std::string filename);
         void SaveWithTextures(std::string filename);
-        void Texturize(std::string filename);
+        void Texturize(std::string filename, std::string tangoDataset);
 
         bool AnimFinished();
         float GetFloorLevel(float x, float y, float z);

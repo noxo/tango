@@ -385,7 +385,7 @@ namespace oc {
         binder_mutex_.unlock();
     }
 
-    void App::Texturize(std::string filename) {
+    void App::Texturize(std::string filename, std::string tangoDataset) {
         binder_mutex_.lock();
         render_mutex_.lock();
         tango.Disconnect();
@@ -406,7 +406,7 @@ namespace oc {
         //texturize
         scan.Clear();
         tango.Clear();
-        texturize.ApplyFrames(tango.Dataset(), filename);
+        texturize.ApplyFrames(tango.Dataset(), filename, tangoDataset);
         texturize.Process(filename);
         texturize.Clear(tango.Dataset());
 
@@ -585,8 +585,8 @@ Java_com_lvonasek_openconstructor_main_JNI_saveWithTextures(JNIEnv* env, jobject
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_main_JNI_texturize(JNIEnv* env, jobject, jstring name) {
-  app.Texturize(jstring2string(env, name));
+Java_com_lvonasek_openconstructor_main_JNI_texturize(JNIEnv* env, jobject, jstring name, jstring tangoDataset) {
+  app.Texturize(jstring2string(env, name), jstring2string(env, tangoDataset));
 }
 
 JNIEXPORT void JNICALL
