@@ -36,6 +36,7 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
   private Button mSettings;
   private ProgressBar mProgress;
   private TextView mText;
+  private boolean mFirst = true;
   private static final int PERMISSIONS_CODE = 1987;
 
   @Override
@@ -132,8 +133,12 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         findViewById(R.id.service_continue).setVisibility(View.GONE);
       else if (service == Service.SERVICE_POSTPROCESS)
         finishScanning();
-    } else {
-      setupPermissions();
+    } else if (mFirst) {
+      mFirst = false;
+      Intent permissionIntent = new Intent();
+      permissionIntent.setClassName("com.google.tango", "com.google.atap.tango.RequestPermissionActivity");
+      permissionIntent.putExtra("PERMISSIONTYPE", "ADF_LOAD_SAVE_PERMISSION");
+      startActivityForResult(permissionIntent, PERMISSIONS_CODE);
     }
   }
 
@@ -176,8 +181,7 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
     String[] permissions = {
             Manifest.permission.CAMERA,
             Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            "com.google.tango.permission.DATASETS"
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
     };
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       boolean ok = true;
@@ -223,10 +227,21 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
   }
 
   @Override
+  protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    if (requestCode == PERMISSIONS_CODE) {
+      if (resultCode == RESULT_OK) {
+        setupPermissions();
+      } else {
+        finish();
+      }
+    }
+  }
+
+  @Override
   public void onClick(View v)
   {
     int service = Service.getRunning(this);
-    Intent intent = new Intent(FileManager.this, OpenConstructor.class);
+    final Intent intent = new Intent(FileManager.this, OpenConstructor.class);
     switch (v.getId()) {
       case R.id.add_button:
         startScanning();
@@ -249,8 +264,13 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         else if (Math.abs(service) == Service.SERVICE_SAVE)
         {
           showProgress();
-          intent.putExtra(AbstractActivity.RESOLUTION_KEY, Integer.MAX_VALUE);
-          startActivity(intent);
+          exportADF(new Runnable() {
+            @Override
+            public void run() {
+              intent.putExtra(AbstractActivity.RESOLUTION_KEY, Integer.MAX_VALUE);
+              startActivity(intent);
+            }
+          });
         }
         break;
       case R.id.service_cancel:

@@ -4,9 +4,7 @@
 
 namespace oc {
 
-    TangoService::TangoService() : dataset(""),
-                                   toArea(ZeroPose()), toAreaTemp(ZeroPose()),
-                                   toZero(ZeroPose()), toZeroTemp(ZeroPose()) {}
+    TangoService::TangoService() : dataset("") {}
 
     TangoService::~TangoService() {
         if (config != nullptr) {
@@ -21,11 +19,6 @@ namespace oc {
             Tango3DR_ReconstructionContext_destroy(context);
             context = nullptr;
         }
-    }
-
-    void TangoService::ApplyTransform() {
-        toArea = toAreaTemp;
-        toZero = toZeroTemp;
     }
 
     void TangoService::Clear() {
@@ -73,7 +66,8 @@ namespace oc {
     }
 
     void TangoService::Disconnect() {
-        TangoConfig_free(config);
+        if (config)
+            TangoConfig_free(config);
         config = nullptr;
         TangoService_disconnect();
     }
@@ -168,6 +162,17 @@ namespace oc {
         if (config == nullptr)
             std::exit(EXIT_SUCCESS);
 
+        //load ADF
+        FILE* file = fopen((datapath + "/uuid.txt").c_str(), "r");
+        if (file) {
+            TangoUUID uuid;
+            fscanf(file, "%s", uuid);
+            fclose(file);
+            int ret = TangoConfig_setString(config, "config_load_area_description_UUID", uuid);
+            if (ret != TANGO_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+        }
+
         // Set auto-recovery for motion tracking as requested by the user.
         int ret = TangoConfig_setBool(config, "config_enable_auto_recovery", true);
         if (ret != TANGO_SUCCESS)
@@ -179,12 +184,12 @@ namespace oc {
             std::exit(EXIT_SUCCESS);
 
         // Disable learning.
-        ret = TangoConfig_setBool(config, "config_enable_learning_mode", false);
+        ret = TangoConfig_setBool(config, "config_enable_learning_mode", true);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
         // Enable drift correction.
-        ret = TangoConfig_setBool(config, "config_enable_drift_correction", true);
+        ret = TangoConfig_setBool(config, "config_enable_drift_correction", false);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
@@ -198,19 +203,6 @@ namespace oc {
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
-        // Set datasets
-        if (!dataset.GetPath().empty()) {
-            ret = TangoConfig_setString(config, "config_datasets_path", dataset.GetPath().c_str());
-            if (ret != TANGO_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-            ret = TangoConfig_setBool(config, "config_enable_dataset_recording", true);
-            if (ret != TANGO_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-            ret = TangoConfig_setInt32(config, "config_dataset_recording_mode", TANGO_RECORDING_MODE_MOTION_TRACKING_AND_FISHEYE);
-            if (ret != TANGO_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-        }
-
         if (pointcloud == nullptr) {
             int32_t max_point_cloud_elements;
             ret = TangoConfig_getInt32(config, "max_point_cloud_elements", &max_point_cloud_elements);
@@ -221,11 +213,6 @@ namespace oc {
             if (ret != TANGO_SUCCESS)
                 std::exit(EXIT_SUCCESS);
         }
-    }
-
-    void TangoService::SetupTransform(std::vector<glm::mat4> area, std::vector<glm::mat4> zero) {
-        toAreaTemp = area;
-        toZeroTemp = zero;
     }
 
     std::vector<TangoMatrixTransformData> TangoService::Pose(double timestamp, bool land) {
@@ -261,28 +248,7 @@ namespace oc {
     std::vector<glm::mat4> TangoService::Convert(std::vector<TangoMatrixTransformData> m) {
         std::vector<glm::mat4> output;
         for (int i = 0; i < m.size(); i++)
-            output.push_back(toArea[i] * toZero[i] * glm::make_mat4(m[i].matrix));
-        return output;
-    }
-
-    void TangoService::SavePointCloud(std::string filename) {
-        //save complete model to obj
-        Tango3DR_Mesh mesh;
-        Tango3DR_Status ret = Tango3DR_extractFullMesh(context, &mesh);
-        if (ret != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-        ret = Tango3DR_Mesh_saveToObj(&mesh, filename.c_str());
-        if (ret != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-        ret = Tango3DR_Mesh_destroy(&mesh);
-        if (ret != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-    }
-
-    std::vector<glm::mat4> TangoService::ZeroPose() {
-        std::vector<glm::mat4> output;
-        for (int i = 0; i < MAX_CAMERA; i++)
-            output.push_back(glm::mat4(1));
+            output.push_back(glm::make_mat4(m[i].matrix));
         return output;
     }
 }

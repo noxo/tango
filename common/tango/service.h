@@ -10,20 +10,16 @@
 
 
 namespace oc {
-    enum Pose { COLOR_CAMERA, DEPTH_CAMERA, OPENGL_CAMERA, MAX_CAMERA };
-
     class TangoService {
     public:
         TangoService();
         ~TangoService();
-        void ApplyTransform();
         void Clear();
         void Connect(void* app);
         void Disconnect();
         void SavePointCloud(std::string filename);
         void SetupConfig(std::string datapath);
         void Setup3DR(double res, double dmin, double dmax, int noise, bool clearing);
-        void SetupTransform(std::vector<glm::mat4> area, std::vector<glm::mat4> zero);
 
         static void DecomposeMatrix(const glm::mat4& matrix, glm::vec3* translation, glm::quat* rotation, glm::vec3* scale);
         static Tango3DR_Pose Extract3DRPose(const glm::mat4 &mat);
@@ -35,7 +31,6 @@ namespace oc {
         Tango3DR_ReconstructionContext Context() { return context; }
         TangoSupportPointCloudManager* Pointcloud() { return pointcloud; }
         std::vector<TangoMatrixTransformData> Pose(double timestamp, bool land);
-        std::vector<glm::mat4> ZeroPose();
 
     private:
         oc::Dataset dataset;
@@ -44,8 +39,6 @@ namespace oc {
         Tango3DR_CameraCalibration depth;
         Tango3DR_ReconstructionContext context;
         TangoSupportPointCloudManager* pointcloud;
-        std::vector<glm::mat4> toArea, toAreaTemp;
-        std::vector<glm::mat4> toZero, toZeroTemp;
 
         bool clearing_;
         double res_;

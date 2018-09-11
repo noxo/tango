@@ -1,6 +1,8 @@
 #include <sstream>
 #include "app.h"
 
+//#define EXPORT_DEPTHMAP
+
 namespace {
     const int kSubdivisionSize = 20000;
 
@@ -24,25 +26,32 @@ namespace oc {
 
     void App::onTangoEvent(const TangoEvent *event) {
         event_mutex_.lock();
-        if (strcmp(event->event_key, "ColorOverExposed") == 0)
+        if (t3dr_is_running_)
         {
-            event_ = "TOO_BRIGHT";
+            if (strcmp(event->event_key, "ColorOverExposed") == 0)
+            {
+                event_ = "TOO_BRIGHT";
+            }
+            if (strcmp(event->event_key, "FisheyeOverExposed") == 0)
+            {
+                event_ = "TOO_BRIGHT";
+            }
+            if (strcmp(event->event_key, "ColorUnderExposed") == 0)
+            {
+                event_ = "TOO_DARK";
+            }
+            if (strcmp(event->event_key, "FisheyeUnderExposed") == 0)
+            {
+                event_ = "TOO_DARK";
+            }
+            if (strcmp(event->event_key, "TooFewFeaturesTracked") == 0)
+            {
+                event_ = "FEW_FEATURES";
+            }
         }
-        if (strcmp(event->event_key, "FisheyeOverExposed") == 0)
+        if (strcmp(event->event_key, "AreaDescriptionSaveProgress") == 0)
         {
-            event_ = "TOO_BRIGHT";
-        }
-        if (strcmp(event->event_key, "ColorUnderExposed") == 0)
-        {
-            event_ = "TOO_DARK";
-        }
-        if (strcmp(event->event_key, "FisheyeUnderExposed") == 0)
-        {
-            event_ = "TOO_DARK";
-        }
-        if (strcmp(event->event_key, "TooFewFeaturesTracked") == 0)
-        {
-            event_ = "FEW_FEATURES";
+            event_ = "AREADESCRIPTION";
         }
         event_mutex_.unlock();
     }
@@ -59,7 +68,7 @@ namespace oc {
 
     void App::StoreDataset(Tango3DR_PointCloud t3dr_depth, Tango3DR_ImageBuffer t3dr_image, std::vector<TangoMatrixTransformData> transform) {
         //export color camera frame and pose
-        texturize.Add(t3dr_image, tango.Convert(transform), tango.Dataset());
+        texturize.Add(t3dr_image, tango.Convert(transform), tango.Dataset(), t3dr_depth.timestamp);
 
         //export calibration
         Tango3DR_CameraCalibration* c = tango.Camera();
@@ -68,12 +77,8 @@ namespace oc {
         //export point cloud
         std::vector<Mesh> pcl;
         Mesh m;
-        glm::vec4 v;
         for (int i = 0; i < t3dr_depth.num_points; i++) {
-            v = glm::vec4 (t3dr_depth.points[i][0], t3dr_depth.points[i][1], t3dr_depth.points[i][2], 1);
-            v = point_cloud_matrix_ * v;
-            v /= fabs(v.w);
-            m.vertices.push_back(glm::vec3(v.x, -v.z, v.y));
+            m.vertices.push_back(glm::vec3(t3dr_depth.points[i][0], t3dr_depth.points[i][1], t3dr_depth.points[i][2]));
         }
         pcl.push_back(m);
         File3d* file;
@@ -81,7 +86,7 @@ namespace oc {
         file->WriteModel(pcl);
         delete file;
 
-        //export depth map
+#ifdef EXPORT_DEPTHMAP
         bool compact = true;
         int w = compact ? t3dr_image.width / 10 : t3dr_image.width;
         int h = compact ? t3dr_image.height / 10 : t3dr_image.height;
@@ -114,6 +119,7 @@ namespace oc {
         }
         png.Blur(compact ? 1 : 4);
         png.Write(tango.Dataset().GetFileName(poseIndex, ".png"));
+#endif
     }
 
     void App::onPointCloudAvailable(TangoPointCloud *pc) {
@@ -132,7 +138,7 @@ namespace oc {
     }
 
     void App::onFrameAvailable(TangoCameraId id, const TangoImageBuffer *im) {
-        if (id != TANGO_CAMERA_COLOR || (!t3dr_is_running_ && !scene.IsFullScreenActive()))
+        if (id != TANGO_CAMERA_COLOR || (!t3dr_is_running_ ))
             return;
 
         std::vector<TangoMatrixTransformData> transform = tango.Pose(im->timestamp, 0);
@@ -140,7 +146,7 @@ namespace oc {
             return;
 
         binder_mutex_.lock();
-        if (!point_cloud_available_ && !scene.IsFullScreenActive()) {
+        if (!point_cloud_available_) {
             binder_mutex_.unlock();
             return;
         }
@@ -152,34 +158,6 @@ namespace oc {
         t3dr_image.timestamp = im->timestamp;
         t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(im->format);
         t3dr_image.data = im->data;
-
-        if (scene.IsFullScreenActive()) {
-            Image* img = new Image(t3dr_image.data, t3dr_image.width, t3dr_image.height, 1);
-            render_mutex_.lock();
-            scene.SetPreview(img);
-            float match = 100.0f * (float)scene.CountMatching();
-            char res[8];
-            sprintf(res, "%.1f", match);
-            event_mutex_.lock();
-            event_ = "Matching: current=" + std::string(res) + "%";
-            sprintf(res, "%.1f", best_match);
-            event_ += " best=" + std::string(res) + "%";
-            if (best_match < match) {
-                best_match = match;
-                std::vector<glm::mat4> toZero = tango.Convert(transform);
-                for (unsigned int i = 0; i < toZero.size(); i++)
-                    toZero[i] = glm::inverse(toZero[i]);
-                tango.SetupTransform(texturize.GetLatestPose(tango.Dataset()), toZero);
-            }
-            if (best_match > 75)
-                event_ += "\nPress the record icon to continue";
-            else
-                event_ += "\nFind position matching this photo";
-            event_mutex_.unlock();
-            render_mutex_.unlock();
-            binder_mutex_.unlock();
-            return;
-        }
 
         Tango3DR_Pose t3dr_image_pose = TangoService::Extract3DRPose(tango.Convert(transform)[COLOR_CAMERA]);
         if (sharp) {
@@ -288,11 +266,13 @@ namespace oc {
             scene.renderer->camera.scale    = glm::vec3(1, 1, 1);
         } else {
             std::vector<TangoMatrixTransformData> transform = tango.Pose(0, landscape);
-            glm::mat4 matrix = tango.Convert(transform)[OPENGL_CAMERA];
-            scene.renderer->camera.SetTransformation(matrix);
-            scene.UpdateFrustum(scene.renderer->camera.position, movez);
-            glm::vec4 move = scene.renderer->camera.GetTransformation() * glm::vec4(0, 0, movez, 0);
-            scene.renderer->camera.position += glm::vec3(move.x, move.y, move.z);
+            if (transform[OPENGL_CAMERA].status_code == TANGO_POSE_VALID) {
+                glm::mat4 matrix = tango.Convert(transform)[OPENGL_CAMERA];
+                scene.renderer->camera.SetTransformation(matrix);
+                scene.UpdateFrustum(scene.renderer->camera.position, movez);
+                glm::vec4 move = scene.renderer->camera.GetTransformation() * glm::vec4(0, 0, movez, 0);
+                scene.renderer->camera.position += glm::vec3(move.x, move.y, move.z);
+            }
         }
         //render
         scene.Render(gyro);
@@ -307,13 +287,6 @@ namespace oc {
     void App::OnToggleButtonClicked(bool t3dr_is_running) {
         binder_mutex_.lock();
         t3dr_is_running_ = t3dr_is_running;
-        if (t3dr_is_running && scene.IsFullScreenActive()) {
-            render_mutex_.lock();
-            scene.SetFullScreen(0);
-            scene.SetPreview(0);
-            tango.ApplyTransform();
-            render_mutex_.unlock();
-        }
         binder_mutex_.unlock();
     }
 
@@ -342,6 +315,13 @@ namespace oc {
     void App::Save(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
+
+        //save area
+        TangoUUID uuid;
+        TangoService_saveAreaDescription(&uuid);
+        FILE* file = fopen((tango.Dataset().GetPath() + "/uuid.txt").c_str(), "w");
+        fprintf(file, "%s", uuid);
+        fclose(file);
         tango.Disconnect();
 
         if (texturize.Init(tango.Context(), tango.Camera())) {
@@ -353,7 +333,6 @@ namespace oc {
             File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
         }
         File3d(filename, true).WriteModel(scene.static_meshes_);
-        tango.Disconnect();
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -385,13 +364,67 @@ namespace oc {
         binder_mutex_.unlock();
     }
 
-    void App::Texturize(std::string filename, std::string tangoDataset) {
+    void App::Texturize(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
         tango.Disconnect();
 
+        texturize.GenerateTrajectory(tango.Dataset().GetPath());
+        if (texturize.GetTrajectory()) {
+            scan.Clear();
+            tango.Clear();
+            for (unsigned int i = 0; i < scene.static_meshes_.size(); i++)
+                scene.static_meshes_[i].Destroy();
+            scene.static_meshes_.clear();
+
+            int count, width, height;
+            tango.Dataset().GetState(count, width, height);
+            Tango3DR_ImageBuffer image;
+            image.width = (uint32_t) width;
+            image.height = (uint32_t) height;
+            image.stride = (uint32_t) width;
+            image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
+            image.data = new unsigned char[width * height * 3];
+            memset(image.data, 0, width * height * 3);
+            for (int i = 0; i < count; i++) {
+                std::ostringstream ss;
+                ss << "RECONSTRUCTION ";
+                ss << 100 * i / count;
+                ss << "%";
+                texturize.SetEvent(ss.str());
+
+                std::vector<Mesh> pcl;
+                File3d ply(tango.Dataset().GetFileName(i, ".ply"), false);
+                ply.ReadModel(-1, pcl);
+
+                Tango3DR_Status ret;
+                Tango3DR_GridIndexArray t3dr_updated;
+                Tango3DR_Pose t3dr_depth_pose = texturize.GetPose(tango.Dataset(), i, tango.Dataset().GetPoseTime(i, DEPTH_CAMERA), false);
+                Tango3DR_Pose t3dr_image_pose = texturize.GetPose(tango.Dataset(), i, tango.Dataset().GetPoseTime(i, COLOR_CAMERA), true);
+                Tango3DR_PointCloud t3dr_depth;
+                Tango3DR_PointCloud_init(pcl[0].vertices.size(), &t3dr_depth);
+                for (int j = 0; j < pcl[0].vertices.size(); j++) {
+                    t3dr_depth.points[j][0] = pcl[0].vertices[j].x;
+                    t3dr_depth.points[j][1] = pcl[0].vertices[j].y;
+                    t3dr_depth.points[j][2] = pcl[0].vertices[j].z;
+                    t3dr_depth.points[j][3] = 1.0;
+                }
+                ret = Tango3DR_updateFromPointCloud(tango.Context(), &t3dr_depth, &t3dr_depth_pose,
+                                                    &image, &t3dr_image_pose, &t3dr_updated);
+                if (ret == TANGO_3DR_SUCCESS) {
+                    Tango3DR_GridIndexArray_destroy(&t3dr_updated);
+                }
+                Tango3DR_PointCloud_destroy(&t3dr_depth);
+            }
+            render_mutex_.unlock();
+            binder_mutex_.unlock();
+            Save(filename);
+            binder_mutex_.lock();
+            render_mutex_.lock();
+        }
+
         if (poisson) {
-            texturize.SetEvent("Poisson reconstruction");
+            texturize.SetEvent("POISSON");
             Poisson().Process(filename);
             texturize.SetEvent("");
         }
@@ -406,7 +439,7 @@ namespace oc {
         //texturize
         scan.Clear();
         tango.Clear();
-        texturize.ApplyFrames(tango.Dataset(), filename, tangoDataset);
+        texturize.ApplyFrames(tango.Dataset());
         texturize.Process(filename);
         texturize.Clear(tango.Dataset());
 
@@ -507,11 +540,6 @@ namespace oc {
         scene.uniformPitch = pitch;
     }
 
-    void App::OnResumeScanning() {
-        best_match = 0;
-        scene.SetFullScreen(texturize.GetLatestImage(tango.Dataset()));
-    }
-
     bool App::AnimFinished() {
         render_mutex_.lock();
         bool output = (fabs(lastPitch - pitch) < 0.01f) && (fabs(lastYaw - yaw) < 0.01f);
@@ -565,11 +593,6 @@ Java_com_lvonasek_openconstructor_main_JNI_onClearButtonClicked(JNIEnv*, jobject
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_main_JNI_onResumeScanning(JNIEnv*, jobject) {
-    app.OnResumeScanning();
-}
-
-JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_main_JNI_load(JNIEnv* env, jobject, jstring name) {
   app.Load(jstring2string(env, name));
 }
@@ -585,8 +608,8 @@ Java_com_lvonasek_openconstructor_main_JNI_saveWithTextures(JNIEnv* env, jobject
 }
 
 JNIEXPORT void JNICALL
-Java_com_lvonasek_openconstructor_main_JNI_texturize(JNIEnv* env, jobject, jstring name, jstring tangoDataset) {
-  app.Texturize(jstring2string(env, name), jstring2string(env, tangoDataset));
+Java_com_lvonasek_openconstructor_main_JNI_texturize(JNIEnv* env, jobject, jstring name) {
+  app.Texturize(jstring2string(env, name));
 }
 
 JNIEXPORT void JNICALL

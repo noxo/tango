@@ -23,7 +23,6 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
-
 import com.lvonasek.openconstructor.ui.AbstractActivity;
 import com.lvonasek.openconstructor.ui.Service;
 import com.lvonasek.openconstructor.R;
@@ -112,17 +111,10 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
             final boolean continueScanning = mRes == Integer.MIN_VALUE;
             mPostprocess = mRes == Integer.MAX_VALUE;
             File config = new File(getTempPath(), "config.txt");
-            final File first = new File(getTempPath(), "first.stm");
             if (continueScanning || mPostprocess) {
               m3drRunning = false;
               try
               {
-                if (continueScanning)
-                {
-                  FileOutputStream fos = new FileOutputStream(first.getAbsolutePath());
-                  fos.write("#".getBytes());
-                  fos.close();
-                }
                 Scanner sc = new Scanner(new FileInputStream(config.getAbsolutePath()));
                 mRes = sc.nextInt();
                 res = Double.parseDouble(sc.next());
@@ -138,7 +130,6 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
               m3drRunning = true;
               deleteRecursive(getTempPath());
               getTempPath().mkdirs();
-              Exporter.extractRawData(getResources(), R.raw.config, getTempPath());
               try
               {
                 FileOutputStream fos = new FileOutputStream(config.getAbsolutePath());
@@ -165,7 +156,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
                           mGLView.onPause();
                           finish();
                           JNI.load(obj.getAbsolutePath());
-                          JNI.texturize(obj.getAbsolutePath(), getDataset(!first.exists()));
+                          JNI.texturize(obj.getAbsolutePath());
                           Service.finish(TEMP_DIRECTORY + "/" + obj.getName());
                         }
                       });
@@ -173,7 +164,6 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
               if (continueScanning)
               {
                 JNI.load(obj.getAbsolutePath());
-                JNI.onResumeScanning();
               }
               OpenConstructor.this.runOnUiThread(new Runnable()
               {
@@ -394,9 +384,9 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
   protected void onPause() {
     super.onPause();
     if (!mPostprocess) {
-      if (mTangoBinded)
+      if (mTangoBinded) {
         save();
-      else
+      } else
         System.exit(0);
     }
   }
@@ -415,22 +405,6 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
       e.printStackTrace();
     }
     return true;
-  }
-
-  private String getDataset(boolean first)
-  {
-    String path = "none";
-    if (first) {
-      for (File f : getTempPath().listFiles()) {
-        if (f.isDirectory()) {
-          String dir = f.getAbsolutePath();
-          if (!dir.contains("config")) {
-            path = dir;
-          }
-        }
-      }
-    }
-    return path;
   }
 
   private float getMoveFactor()

@@ -1,18 +1,26 @@
 package com.lvonasek.openconstructor.ui;
 
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.net.Uri;
 import android.os.Environment;
+import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.WindowManager;
 
+import com.google.atap.tangoservice.Tango;
+import com.google.atap.tangoservice.TangoConfig;
 import com.lvonasek.openconstructor.R;
+import com.lvonasek.openconstructor.main.TangoInitHelper;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.util.Scanner;
 
 public abstract class AbstractActivity extends Activity
 {
@@ -23,6 +31,7 @@ public abstract class AbstractActivity extends Activity
   protected static final String URL_KEY = "URL2OPEN";
   protected static final String USER_AGENT = "Mozilla/5.0 Google";
   public static final String TAG = "tango_app";
+  private Tango mTango = null;
 
   protected void defaultSettings()
   {
@@ -97,6 +106,54 @@ public abstract class AbstractActivity extends Activity
 
     if (fileOrDirectory.delete())
       Log.d(TAG, fileOrDirectory + " deleted");
+  }
+
+  public void exportADF(final Runnable onFinish) {
+    try {
+      //get UUID
+      FileInputStream fis = new FileInputStream(new File(getTempPath(), "uuid.txt").getAbsolutePath());
+      Scanner sc = new Scanner(fis);
+      final String uuid = sc.nextLine();
+      sc.close();
+      fis.close();
+
+      //get ADF path
+      final File adf = new File(getTempPath(), uuid);
+      if (adf.exists())
+        adf.delete();
+
+      //export ADF
+      if (mTango != null)
+        mTango.disconnect();
+      mTango = new Tango(AbstractActivity.this, new Runnable() {
+        @Override
+        public void run() {
+          TangoInitHelper.bindTangoService(AbstractActivity.this, new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+              mTango.exportAreaDescriptionFile(uuid, getTempPath().getAbsolutePath());
+              while (!adf.exists()) {
+                try {
+                  Thread.sleep(50);
+                } catch (Exception e) {
+                  e.printStackTrace();
+                }
+              }
+              mTango.disconnect();
+              if (adf.exists())
+                onFinish.run();
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName componentName) {
+            }
+          });
+          mTango.connect(mTango.getConfig(TangoConfig.CONFIG_TYPE_DEFAULT));
+        }
+      });
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
   public Uri filename2Uri(String filename) {

@@ -22,8 +22,8 @@
         <CheckBoxPreference
             android:defaultValue="false"
             android:key="@string/pref_poisson"
-            android:summary="@string/possion_reconstruction_summary"
-            android:title="@string/possion_reconstruction">
+            android:summary="@string/poisson_reconstruction_summary"
+            android:title="@string/poisson_reconstruction">
         </CheckBoxPreference>
 
         <CheckBoxPreference

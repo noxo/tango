@@ -35,9 +35,6 @@ public class JNI
   // Called when the clear button is clicked
   public static native void onClearButtonClicked();
 
-  // Resume scanning
-  public static native void onResumeScanning();
-
   // Load 3D model from file
   public static native void load(String name);
 
@@ -48,7 +45,7 @@ public class JNI
   public static native void saveWithTextures(String name);
 
   // Texturize 3D model
-  public static native void texturize(String name, String tangoDataset);
+  public static native void texturize(String name);
 
   // Set view on 3D view
   public static native void setView(float pitch, float yaw, float x, float y, float z, boolean gyro);
@@ -91,7 +88,9 @@ public class JNI
     event = event.replace("CONVERT", r.getString(R.string.event_convert));
     event = event.replace("IMAGE", r.getString(R.string.event_image));
     event = event.replace("MERGE", r.getString(R.string.event_merge));
+    event = event.replace("POISSON", r.getString(R.string.poisson_reconstruction));
     event = event.replace("PROCESS", r.getString(R.string.event_process));
+    event = event.replace("RECONSTRUCTION", r.getString(R.string.event_reconstruction));
     event = event.replace("SIMPLIFY", r.getString(R.string.event_simplify));
     event = event.replace("TRAJECTORY", r.getString(R.string.event_trajectory));
     event = event.replace("UNWRAP", r.getString(R.string.event_unwrap));

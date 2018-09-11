@@ -36,7 +36,7 @@ namespace oc {
         return output;
     }
 
-    double Dataset::GetPoseTime(int index) {
+    double Dataset::GetPoseTime(int index, Pose pose) {
         int count = 0;
         glm::mat4 mat;
         double timestamp;
@@ -46,7 +46,8 @@ namespace oc {
             for (int j = 0; j < 4; j++)
                 fscanf(file, "%f %f %f %f\n", &mat[j][0], &mat[j][1], &mat[j][2], &mat[j][3]);
         }
-        fscanf(file, "%lf\n", &timestamp);
+        for (int i = 0; i <= pose; i++)
+            fscanf(file, "%lf\n", &timestamp);
         fclose(file);
         return timestamp;
     }
@@ -65,14 +66,15 @@ namespace oc {
         fclose(file);
     }
 
-    void Dataset::WritePose(int index, std::vector<glm::mat4> pose, double timestamp) {
+    void Dataset::WritePose(int index, std::vector<glm::mat4> pose, double imageTimestamp, double depthTimestamp) {
         FILE* file = fopen(GetFileName(index, ".txt").c_str(), "w");
         fprintf(file, "%d\n", (int) pose.size());
         for (int k = 0; k < pose.size(); k++)
             for (int i = 0; i < 4; i++)
                 fprintf(file, "%f %f %f %f\n", pose[k][i][0], pose[k][i][1],
                                                pose[k][i][2], pose[k][i][3]);
-        fprintf(file, "%lf\n", timestamp);
+        fprintf(file, "%lf\n", imageTimestamp);
+        fprintf(file, "%lf\n", depthTimestamp);
         fclose(file);
     }
 
