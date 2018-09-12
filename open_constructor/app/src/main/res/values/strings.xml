@@ -78,11 +78,12 @@
     <string name="working">The app is working, please do not turn off the device or start another AR app.</string>
 
     <!-- Event !-->
+    <string name="event_areadescription">Saving area description</string>
     <string name="event_bright">Too bright for scanning</string>
     <string name="event_dark">Too dark for scanning</string>
     <string name="event_features">Motion tracking reported issues</string>
     <string name="event_convert">Converting data</string>
-    <string name="event_image">Processing image</string>
+    <string name="event_image">Processing images</string>
     <string name="event_merge">Merging results</string>
     <string name="event_process">Processing model</string>
     <string name="event_reconstruction">Model correction</string>

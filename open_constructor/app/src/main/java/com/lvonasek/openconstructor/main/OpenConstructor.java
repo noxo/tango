@@ -141,10 +141,11 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
               }
             }
 
+            mMoveZ = 10;
             String t = getTempPath().getAbsolutePath();
             JNI.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, sharp, holes, clear, t);
             JNI.onToggleButtonClicked(m3drRunning);
-            JNI.setView(0, 0, 0, 0, 0, true);
+            JNI.setView(0, 0, 0, 0, mMoveZ, true);
             final File obj = new File(getPath(), Service.getLink(OpenConstructor.this));
             if (mPostprocess) {
               Service.process(getString(R.string.postprocessing), Service.SERVICE_POSTPROCESS,

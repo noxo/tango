@@ -139,6 +139,8 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
       permissionIntent.setClassName("com.google.tango", "com.google.atap.tango.RequestPermissionActivity");
       permissionIntent.putExtra("PERMISSIONTYPE", "ADF_LOAD_SAVE_PERMISSION");
       startActivityForResult(permissionIntent, PERMISSIONS_CODE);
+    } else if (Service.getRunning(this) == Service.SERVICE_NOT_RUNNING) {
+      cleanADF();
     }
   }
 
@@ -288,7 +290,7 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
     builder.setItems(resolutions, new DialogInterface.OnClickListener()
     {
       @Override
-      public void onClick(DialogInterface dialog, int which)
+      public void onClick(DialogInterface dialog, final int which)
       {
         showProgress();
         Intent intent = new Intent(FileManager.this, OpenConstructor.class);

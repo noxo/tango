@@ -138,7 +138,7 @@ namespace oc {
     }
 
     void App::onFrameAvailable(TangoCameraId id, const TangoImageBuffer *im) {
-        if (id != TANGO_CAMERA_COLOR || (!t3dr_is_running_ ))
+        if ((id != TANGO_CAMERA_COLOR) || !t3dr_is_running_)
             return;
 
         std::vector<TangoMatrixTransformData> transform = tango.Pose(im->timestamp, 0);
@@ -266,13 +266,13 @@ namespace oc {
             scene.renderer->camera.scale    = glm::vec3(1, 1, 1);
         } else {
             std::vector<TangoMatrixTransformData> transform = tango.Pose(0, landscape);
-            if (transform[OPENGL_CAMERA].status_code == TANGO_POSE_VALID) {
-                glm::mat4 matrix = tango.Convert(transform)[OPENGL_CAMERA];
-                scene.renderer->camera.SetTransformation(matrix);
-                scene.UpdateFrustum(scene.renderer->camera.position, movez);
-                glm::vec4 move = scene.renderer->camera.GetTransformation() * glm::vec4(0, 0, movez, 0);
-                scene.renderer->camera.position += glm::vec3(move.x, move.y, move.z);
-            }
+            glm::mat4 matrix = tango.Convert(transform)[OPENGL_CAMERA];
+            if (transform[OPENGL_CAMERA].status_code != TANGO_POSE_VALID)
+                matrix = glm::mat4(1);
+            scene.renderer->camera.SetTransformation(matrix);
+            scene.UpdateFrustum(scene.renderer->camera.position, movez);
+            glm::vec4 move = scene.renderer->camera.GetTransformation() * glm::vec4(0, 0, movez, 0);
+            scene.renderer->camera.position += glm::vec3(move.x, move.y, move.z);
         }
         //render
         scene.Render(gyro);
@@ -316,16 +316,20 @@ namespace oc {
         binder_mutex_.lock();
         render_mutex_.lock();
 
-        //save area
-        TangoUUID uuid;
-        TangoService_saveAreaDescription(&uuid);
-        FILE* file = fopen((tango.Dataset().GetPath() + "/uuid.txt").c_str(), "w");
-        fprintf(file, "%s", uuid);
-        fclose(file);
-        tango.Disconnect();
-
         if (texturize.Init(tango.Context(), tango.Camera())) {
             texturize.Process(filename);
+
+            //save area
+            TangoUUID uuid;
+            if (TangoService_saveAreaDescription(&uuid) == TANGO_SUCCESS) {
+                FILE *file = fopen((tango.Dataset().GetPath() + "/uuid.txt").c_str(), "w");
+                fprintf(file, "%s", uuid);
+                fclose(file);
+                file = fopen("/data/data/com.lvonasek.openconstructor/files/todelete", "a");
+                fprintf(file, "%s\n", uuid);
+                fclose(file);
+            }
+            tango.Disconnect();
 
             //merge with previous OBJ
             scan.Clear();

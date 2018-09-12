@@ -120,16 +120,6 @@ namespace oc {
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
-#ifdef GENERATE_FLOORPLAN
-        t3dr_err = Tango3DR_Config_setBool(t3dr_config, "use_floorplan", true);
-        if (t3dr_err != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-
-        t3dr_err = Tango3DR_Config_setDouble(t3dr_config, "floorplan_max_error", 0.3);
-        if (t3dr_err != TANGO_3DR_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-#endif
-
         t3dr_err = Tango3DR_Config_setBool(t3dr_config, "use_space_clearing", clearing);
         if (t3dr_err != TANGO_3DR_SUCCESS)
             std::exit(EXIT_SUCCESS);
@@ -171,6 +161,16 @@ namespace oc {
             int ret = TangoConfig_setString(config, "config_load_area_description_UUID", uuid);
             if (ret != TANGO_SUCCESS)
                 std::exit(EXIT_SUCCESS);
+
+            // Disable learning.
+            ret = TangoConfig_setBool(config, "config_enable_learning_mode", false);
+            if (ret != TANGO_SUCCESS)
+                std::exit(EXIT_SUCCESS);
+        } else {
+            // Enable learning.
+            int ret = TangoConfig_setBool(config, "config_enable_learning_mode", true);
+            if (ret != TANGO_SUCCESS)
+                std::exit(EXIT_SUCCESS);
         }
 
         // Set auto-recovery for motion tracking as requested by the user.
@@ -183,12 +183,7 @@ namespace oc {
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
-        // Disable learning.
-        ret = TangoConfig_setBool(config, "config_enable_learning_mode", true);
-        if (ret != TANGO_SUCCESS)
-            std::exit(EXIT_SUCCESS);
-
-        // Enable drift correction.
+        // Disable drift correction.
         ret = TangoConfig_setBool(config, "config_enable_drift_correction", false);
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
@@ -248,7 +243,7 @@ namespace oc {
     std::vector<glm::mat4> TangoService::Convert(std::vector<TangoMatrixTransformData> m) {
         std::vector<glm::mat4> output;
         for (int i = 0; i < m.size(); i++)
-            output.push_back(glm::make_mat4(m[i].matrix));
+            output.push_back(glm::mat4(1) * glm::make_mat4(m[i].matrix));
         return output;
     }
 }

@@ -82,6 +82,7 @@ public class JNI
   public static String getEvent(Resources r)
   {
     String event = new String(getEvent());
+    event = event.replace("AREADESCRIPTION", r.getString(R.string.event_areadescription));
     event = event.replace("TOO_BRIGHT", r.getString(R.string.event_bright));
     event = event.replace("TOO_DARK", r.getString(R.string.event_dark));
     event = event.replace("FEW_FEATURES", r.getString(R.string.event_features));

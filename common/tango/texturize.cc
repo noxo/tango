@@ -45,8 +45,8 @@ namespace oc {
             event = ss.str();
 
             image.timestamp = dataset.GetPoseTime(i, COLOR_CAMERA);
-            if (!IsPoseCorrected(image.timestamp))
-                continue;
+            //if (!IsPoseCorrected(image.timestamp))
+              //  continue;
             Image::JPG2YUV(dataset.GetFileName(i, ".jpg"), image.data, width, height);
             Tango3DR_Pose t3dr_image_pose = GetPose(dataset, i, image.timestamp, true);
             if (Tango3DR_updateTexture(context, &image, &t3dr_image_pose) != TANGO_3DR_SUCCESS)
