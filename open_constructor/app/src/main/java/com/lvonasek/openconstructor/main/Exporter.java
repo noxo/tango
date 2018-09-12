@@ -30,6 +30,38 @@ public class Exporter
   private static boolean FOCAL_CACHED = false;
   private static float FOCAL_VALUE = 0;
 
+  public static void extractRawData(Resources res, int data, File outputDir)
+  {
+    InputStream in = res.openRawResource(data);
+    try {
+      ZipInputStream zin = new ZipInputStream(in);
+      ZipEntry entry;
+      while ((entry = zin.getNextEntry()) != null) {
+        String name = entry.getName();
+        if( entry.isDirectory() ) {
+          new File(outputDir, name).mkdirs();
+        } else {
+          int s = name.lastIndexOf( File.separatorChar );
+          String dir =  s == -1 ? null : name.substring( 0, s );
+          if( dir != null )
+            new File(outputDir, dir).mkdirs();
+          ByteArrayOutputStream baos = new ByteArrayOutputStream();
+          byte[] buffer = new byte[BUFFER_SIZE];
+          int count;
+          while ((count = zin.read(buffer)) != -1)
+            baos.write(buffer, 0, count);
+          BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(new File(outputDir, name)));
+          out.write(baos.toByteArray());
+          out.close();
+        }
+      }
+      in.close();
+    } catch (Exception e)
+    {
+      e.printStackTrace();
+    }
+  }
+
   public static int getModelType(String filename) {
     for(int i = 0; i < FILE_EXT.length; i++) {
       int begin = filename.length() - FILE_EXT[i].length();

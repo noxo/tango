@@ -35,6 +35,9 @@ public class JNI
   // Called when the clear button is clicked
   public static native void onClearButtonClicked();
 
+  // Add dataset for texturing
+  public static native void addDataset(String name);
+
   // Load 3D model from file
   public static native void load(String name);
 

@@ -30,6 +30,7 @@ namespace oc {
         void OnToggleButtonClicked(bool t3dr_is_running);
         void OnClearButtonClicked();
 
+        void AddDataset(std::string name) { texturize.Add(name); }
         void Load(std::string filename);
         void Save(std::string filename);
         void SaveWithTextures(std::string filename);

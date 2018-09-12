@@ -154,54 +154,6 @@ public abstract class AbstractActivity extends Activity
     });
   }
 
-  public void exportADF(final Runnable onFinish) {
-    try {
-      //get UUID
-      FileInputStream fis = new FileInputStream(new File(getTempPath(), "uuid.txt").getAbsolutePath());
-      Scanner sc = new Scanner(fis);
-      final String uuid = sc.nextLine();
-      sc.close();
-      fis.close();
-
-      //get ADF path
-      final File adf = new File(getTempPath(), uuid);
-      if (adf.exists())
-        adf.delete();
-
-      //export ADF
-      if (mTango != null)
-        mTango.disconnect();
-      mTango = new Tango(AbstractActivity.this, new Runnable() {
-        @Override
-        public void run() {
-          TangoInitHelper.bindTangoService(AbstractActivity.this, new ServiceConnection() {
-            @Override
-            public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-              mTango.exportAreaDescriptionFile(uuid, getTempPath().getAbsolutePath());
-              while (!adf.exists()) {
-                try {
-                  Thread.sleep(50);
-                } catch (Exception e) {
-                  e.printStackTrace();
-                }
-              }
-              mTango.disconnect();
-              if (adf.exists())
-                onFinish.run();
-            }
-
-            @Override
-            public void onServiceDisconnected(ComponentName componentName) {
-            }
-          });
-          mTango.connect(mTango.getConfig(TangoConfig.CONFIG_TYPE_DEFAULT));
-        }
-      });
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-  }
-
   public Uri filename2Uri(String filename) {
     if(filename == null)
       return null;

@@ -373,8 +373,7 @@ namespace oc {
         render_mutex_.lock();
         tango.Disconnect();
 
-        texturize.GenerateTrajectory(tango.Dataset().GetPath());
-        if (texturize.GetTrajectory()) {
+        if (texturize.GenerateTrajectory()) {
             scan.Clear();
             tango.Clear();
             for (unsigned int i = 0; i < scene.static_meshes_.size(); i++)
@@ -594,6 +593,11 @@ Java_com_lvonasek_openconstructor_main_JNI_onToggleButtonClicked(
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_main_JNI_onClearButtonClicked(JNIEnv*, jobject) {
     app.OnClearButtonClicked();
+}
+
+JNIEXPORT void JNICALL
+Java_com_lvonasek_openconstructor_main_JNI_addDataset(JNIEnv *env, jclass type, jstring name) {
+    app.AddDataset(jstring2string(env, name));
 }
 
 JNIEXPORT void JNICALL

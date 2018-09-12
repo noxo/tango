@@ -18,6 +18,7 @@ import android.widget.TextView;
 
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
+import com.google.atap.tangoservice.Tango;
 import com.lvonasek.openconstructor.R;
 import com.lvonasek.openconstructor.main.Exporter;
 import com.lvonasek.openconstructor.main.OpenConstructor;
@@ -135,10 +136,7 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         finishScanning();
     } else if (mFirst) {
       mFirst = false;
-      Intent permissionIntent = new Intent();
-      permissionIntent.setClassName("com.google.tango", "com.google.atap.tango.RequestPermissionActivity");
-      permissionIntent.putExtra("PERMISSIONTYPE", "ADF_LOAD_SAVE_PERMISSION");
-      startActivityForResult(permissionIntent, PERMISSIONS_CODE);
+      setupPermissions();
     } else if (Service.getRunning(this) == Service.SERVICE_NOT_RUNNING) {
       cleanADF();
     }
@@ -183,7 +181,8 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
     String[] permissions = {
             Manifest.permission.CAMERA,
             Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Tango.ANDROID_PERMISSION_DATASET
     };
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       boolean ok = true;
@@ -229,17 +228,6 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
   }
 
   @Override
-  protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-    if (requestCode == PERMISSIONS_CODE) {
-      if (resultCode == RESULT_OK) {
-        setupPermissions();
-      } else {
-        finish();
-      }
-    }
-  }
-
-  @Override
   public void onClick(View v)
   {
     int service = Service.getRunning(this);
@@ -266,13 +254,8 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         else if (Math.abs(service) == Service.SERVICE_SAVE)
         {
           showProgress();
-          exportADF(new Runnable() {
-            @Override
-            public void run() {
-              intent.putExtra(AbstractActivity.RESOLUTION_KEY, Integer.MAX_VALUE);
-              startActivity(intent);
-            }
-          });
+          intent.putExtra(AbstractActivity.RESOLUTION_KEY, Integer.MAX_VALUE);
+          startActivity(intent);
         }
         break;
       case R.id.service_cancel:

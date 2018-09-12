@@ -45,18 +45,10 @@ namespace oc {
             event = ss.str();
 
             image.timestamp = dataset.GetPoseTime(i, COLOR_CAMERA);
-            //if (!IsPoseCorrected(image.timestamp))
-              //  continue;
             Image::JPG2YUV(dataset.GetFileName(i, ".jpg"), image.data, width, height);
             Tango3DR_Pose t3dr_image_pose = GetPose(dataset, i, image.timestamp, true);
             if (Tango3DR_updateTexture(context, &image, &t3dr_image_pose) != TANGO_3DR_SUCCESS)
                 exit(EXIT_SUCCESS);
-        }
-        if (trajectory)
-        {
-            Tango3DR_Trajectory_destroy(*trajectory);
-            delete trajectory;
-            trajectory = 0;
         }
 
         delete[] image.data;
@@ -75,19 +67,16 @@ namespace oc {
         dataset.WriteState(poses, width, height);
     }
 
-    void TangoTexturize::GenerateTrajectory(std::string tangoDataset) {
-        trajectory = new Tango3DR_Trajectory();
-        if (tangoDataset.size() > 10) {
-            SetEvent("TRAJECTORY");
-            FILE* file = fopen((tangoDataset + "/uuid.txt").c_str(), "r");
-            TangoUUID uuid;
-            fscanf(file, "%s", uuid);
-            fclose(file);
-            std::string adf = tangoDataset + "/" + uuid;
-            instanceTexturize = this;
-            Tango3DR_Status ret;
+    bool TangoTexturize::GenerateTrajectory() {
+        Tango3DR_Trajectory* trajectory = new Tango3DR_Trajectory();
+
+        instanceTexturize = this;
+        Tango3DR_Status ret;
+        for (std::string dataset : datasets) {
             Tango3DR_AreaDescription area_description;
-            ret = Tango3DR_AreaDescription_loadFromAdf(adf.c_str(), &area_description);
+            ret = Tango3DR_AreaDescription_createFromDataset(dataset.c_str(),
+                                                             (dataset + "/../config").c_str(),
+                                                             &area_description, callbackTexturize, 0);
             if (ret != TANGO_3DR_SUCCESS)
                 exit(EXIT_SUCCESS);
             ret = Tango3DR_Trajectory_createFromAreaDescription(area_description, trajectory);
@@ -102,7 +91,9 @@ namespace oc {
             ret = Tango3DR_AreaDescription_destroy(area_description);
             if (ret != TANGO_3DR_SUCCESS)
                 exit(EXIT_SUCCESS);
+            trajectories.push_back(trajectory);
         }
+        return !datasets.empty();
     }
 
     Image* TangoTexturize::GetLatestImage(Dataset dataset) {
@@ -122,9 +113,10 @@ namespace oc {
 
     Tango3DR_Pose TangoTexturize::GetPose(Dataset dataset, int index, double timestamp, bool camera) {
         Tango3DR_Pose output;
-        if (trajectory)
-        {
-            if (Tango3DR_getPoseAtTime(*trajectory, timestamp, &output) == TANGO_3DR_SUCCESS)
+        for (Tango3DR_Trajectory* trajectory : trajectories) {
+            Tango3DR_Status ret = Tango3DR_getPoseAtTime(*trajectory, timestamp, &output);
+            LOGI("Pose not found trajectory: %d at %lf", ret, timestamp);
+            if (ret == TANGO_3DR_SUCCESS)
             {
                 GLCamera pose;
                 pose.position.x = (float)output.translation[0];
@@ -198,18 +190,6 @@ namespace oc {
         if (ret != TANGO_3DR_SUCCESS)
             exit(EXIT_SUCCESS);
         return true;
-    }
-
-    bool TangoTexturize::IsPoseCorrected(double timestamp) {
-        Tango3DR_Pose output;
-        if (trajectory)
-        {
-            if (Tango3DR_getPoseAtTime(*trajectory, timestamp, &output) == TANGO_3DR_SUCCESS)
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     void TangoTexturize::Process(std::string filename) {
