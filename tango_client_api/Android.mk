@@ -10,7 +10,7 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := tango_client_api
-LOCAL_EXPORT_LDLIBS := -L$(LOCAL_PATH)/lib/armeabi-v7a -ltango_client_api
+LOCAL_EXPORT_LDLIBS := -L$(LOCAL_PATH)/lib/arm64-v8a -ltango_client_api
 
 LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/include
 LOCAL_SRC_FILES := lib/libtango_client_stub.a

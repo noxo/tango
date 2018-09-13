@@ -46,7 +46,7 @@ namespace oc {
 
             image.timestamp = dataset.GetPoseTime(i, COLOR_CAMERA);
             Image::JPG2YUV(dataset.GetFileName(i, ".jpg"), image.data, width, height);
-            Tango3DR_Pose t3dr_image_pose = GetPose(dataset, i, image.timestamp, true);
+            Tango3DR_Pose t3dr_image_pose = TangoService::Extract3DRPose(dataset.GetPose(i)[COLOR_CAMERA]);
             if (Tango3DR_updateTexture(context, &image, &t3dr_image_pose) != TANGO_3DR_SUCCESS)
                 exit(EXIT_SUCCESS);
         }
@@ -67,79 +67,9 @@ namespace oc {
         dataset.WriteState(poses, width, height);
     }
 
-    bool TangoTexturize::GenerateTrajectory() {
-        Tango3DR_Trajectory* trajectory = new Tango3DR_Trajectory();
-
-        instanceTexturize = this;
-        Tango3DR_Status ret;
-        for (std::string dataset : datasets) {
-            Tango3DR_AreaDescription area_description;
-            ret = Tango3DR_AreaDescription_createFromDataset(dataset.c_str(),
-                                                             (dataset + "/../config").c_str(),
-                                                             &area_description, callbackTexturize, 0);
-            if (ret != TANGO_3DR_SUCCESS)
-                exit(EXIT_SUCCESS);
-            ret = Tango3DR_Trajectory_createFromAreaDescription(area_description, trajectory);
-            if (ret != TANGO_3DR_SUCCESS)
-                exit(EXIT_SUCCESS);
-
-            double start = 0, end = 0;
-            if (Tango3DR_Trajectory_getEarliestTime(*trajectory, &start) == TANGO_3DR_SUCCESS)
-                if (Tango3DR_Trajectory_getLatestTime(*trajectory, &end) == TANGO_3DR_SUCCESS)
-                    LOGI("Found trajectory %.2lf-%.2lf", start, end);
-
-            ret = Tango3DR_AreaDescription_destroy(area_description);
-            if (ret != TANGO_3DR_SUCCESS)
-                exit(EXIT_SUCCESS);
-            trajectories.push_back(trajectory);
-        }
-        return !datasets.empty();
-    }
-
-    Image* TangoTexturize::GetLatestImage(Dataset dataset) {
-        dataset.GetState(poses, width, height);
-        return new Image(dataset.GetFileName(poses - 1, ".jpg"));
-    }
-
     int TangoTexturize::GetLatestIndex(Dataset dataset) {
         dataset.GetState(poses, width, height);
         return poses - 1;
-    }
-
-    std::vector<glm::mat4> TangoTexturize::GetLatestPose(Dataset dataset) {
-        dataset.GetState(poses, width, height);
-        return dataset.GetPose(poses - 1);
-    }
-
-    Tango3DR_Pose TangoTexturize::GetPose(Dataset dataset, int index, double timestamp, bool camera) {
-        Tango3DR_Pose output;
-        for (Tango3DR_Trajectory* trajectory : trajectories) {
-            Tango3DR_Status ret = Tango3DR_getPoseAtTime(*trajectory, timestamp, &output);
-            LOGI("Pose not found trajectory: %d at %lf", ret, timestamp);
-            if (ret == TANGO_3DR_SUCCESS)
-            {
-                GLCamera pose;
-                pose.position.x = (float)output.translation[0];
-                pose.position.y = (float)output.translation[1];
-                pose.position.z = (float)output.translation[2];
-                pose.rotation.x = (float)output.orientation[0];
-                pose.rotation.y = (float)output.orientation[1];
-                pose.rotation.z = (float)output.orientation[2];
-                pose.rotation.w = (float)output.orientation[3];
-                glm::mat4 matrix = pose.GetTransformation();
-                glm::mat4 convert = {
-                        1, 0, 0, 0,
-                        0, 0, -1, 0,
-                        0, 1, 0, 0,
-                        0, 0, 0, 1
-                };
-                if (camera)
-                    return TangoService::Extract3DRPose(matrix * convert);
-                else
-                    return TangoService::Extract3DRPose(matrix);
-            }
-        }
-        return TangoService::Extract3DRPose(dataset.GetPose(index)[camera ? COLOR_CAMERA : DEPTH_CAMERA]);
     }
 
     bool TangoTexturize::Init(std::string filename, Tango3DR_CameraCalibration* camera) {

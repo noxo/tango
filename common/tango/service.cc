@@ -155,7 +155,7 @@ namespace oc {
         //load ADF
         FILE* file = fopen((datapath + "/uuid.txt").c_str(), "r");
         if (file) {
-            TangoUUID uuid;
+            TangoUUID uuid = "";
             fscanf(file, "%s", uuid);
             fclose(file);
             int ret = TangoConfig_setString(config, "config_load_area_description_UUID", uuid);
@@ -198,19 +198,6 @@ namespace oc {
         if (ret != TANGO_SUCCESS)
             std::exit(EXIT_SUCCESS);
 
-        // Set datasets
-        if (!datapath.empty()) {
-            ret = TangoConfig_setString(config, "config_datasets_path", datapath.c_str());
-            if (ret != TANGO_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-            ret = TangoConfig_setBool(config, "config_enable_dataset_recording", true);
-            if (ret != TANGO_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-            ret = TangoConfig_setInt32(config, "config_dataset_recording_mode", TANGO_RECORDING_MODE_MOTION_TRACKING_AND_FISHEYE);
-            if (ret != TANGO_SUCCESS)
-                std::exit(EXIT_SUCCESS);
-        }
-
         if (pointcloud == nullptr) {
             int32_t max_point_cloud_elements;
             ret = TangoConfig_getInt32(config, "max_point_cloud_elements", &max_point_cloud_elements);
@@ -223,37 +210,37 @@ namespace oc {
         }
     }
 
-    std::vector<TangoMatrixTransformData> TangoService::Pose(double timestamp, bool land) {
+    std::vector<TangoSupport_MatrixTransformData> TangoService::Pose(double timestamp, bool land) {
         //init objects
-        std::vector<TangoMatrixTransformData> output;
-        TangoMatrixTransformData matrix_transform;
+        std::vector<TangoSupport_MatrixTransformData> output;
+        TangoSupport_MatrixTransformData matrix_transform;
 
         //get color camera transform
         TangoSupport_getMatrixTransformAtTime(
                 timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION,
                 TANGO_COORDINATE_FRAME_CAMERA_COLOR, TANGO_SUPPORT_ENGINE_OPENGL,
-                TANGO_SUPPORT_ENGINE_TANGO, ROTATION_0, &matrix_transform);
+                TANGO_SUPPORT_ENGINE_TANGO, TANGO_SUPPORT_ROTATION_0, &matrix_transform);
         output.push_back(matrix_transform);
 
         //get depth camera transform
         TangoSupport_getMatrixTransformAtTime(
                 timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION,
                 TANGO_COORDINATE_FRAME_CAMERA_DEPTH, TANGO_SUPPORT_ENGINE_OPENGL,
-                TANGO_SUPPORT_ENGINE_TANGO, ROTATION_0, &matrix_transform);
+                TANGO_SUPPORT_ENGINE_TANGO, TANGO_SUPPORT_ROTATION_0, &matrix_transform);
         output.push_back(matrix_transform);
 
         //get OpenGL camera transform
         TangoSupport_getMatrixTransformAtTime(
                 timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION, TANGO_COORDINATE_FRAME_DEVICE,
                 TANGO_SUPPORT_ENGINE_OPENGL, TANGO_SUPPORT_ENGINE_OPENGL,
-                land ? ROTATION_90 : ROTATION_0, &matrix_transform);
+                land ? TANGO_SUPPORT_ROTATION_90 : TANGO_SUPPORT_ROTATION_0, &matrix_transform);
         output.push_back(matrix_transform);
 
         assert(output.size() == MAX_CAMERA);
         return output;
     }
 
-    std::vector<glm::mat4> TangoService::Convert(std::vector<TangoMatrixTransformData> m) {
+    std::vector<glm::mat4> TangoService::Convert(std::vector<TangoSupport_MatrixTransformData> m) {
         std::vector<glm::mat4> output;
         for (int i = 0; i < m.size(); i++)
             output.push_back(glm::mat4(1) * glm::make_mat4(m[i].matrix));

@@ -18,7 +18,7 @@ namespace oc {
     class App {
     public:
         App();
-        void StoreDataset(Tango3DR_PointCloud t3dr_depth, Tango3DR_ImageBuffer t3dr_image, std::vector<TangoMatrixTransformData> transform);
+        void StoreDataset(Tango3DR_PointCloud t3dr_depth, Tango3DR_ImageBuffer t3dr_image, std::vector<TangoSupport_MatrixTransformData> transform);
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin, double dmax,
                                      int noise, bool land, bool sharpPhotos, bool fixHoles, bool clearing,
                                      std::string dataset);
@@ -30,7 +30,6 @@ namespace oc {
         void OnToggleButtonClicked(bool t3dr_is_running);
         void OnClearButtonClicked();
 
-        void AddDataset(std::string name) { texturize.Add(name); }
         void Load(std::string filename);
         void Save(std::string filename);
         void SaveWithTextures(std::string filename);

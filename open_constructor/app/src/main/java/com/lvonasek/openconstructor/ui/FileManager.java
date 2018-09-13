@@ -136,7 +136,10 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         finishScanning();
     } else if (mFirst) {
       mFirst = false;
-      setupPermissions();
+      Intent permissionIntent = new Intent();
+      permissionIntent.setClassName("com.google.tango", "com.google.atap.tango.RequestPermissionActivity");
+      permissionIntent.putExtra("PERMISSIONTYPE", "ADF_LOAD_SAVE_PERMISSION");
+      startActivityForResult(permissionIntent, PERMISSIONS_CODE);
     } else if (Service.getRunning(this) == Service.SERVICE_NOT_RUNNING) {
       cleanADF();
     }
@@ -177,12 +180,22 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
     }).start();
   }
 
+  @Override
+  protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    if (requestCode == PERMISSIONS_CODE) {
+      if (resultCode == RESULT_OK) {
+        setupPermissions();
+      } else {
+        finish();
+      }
+    }
+  }
+
   protected void setupPermissions() {
     String[] permissions = {
             Manifest.permission.CAMERA,
             Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Tango.ANDROID_PERMISSION_DATASET
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
     };
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       boolean ok = true;

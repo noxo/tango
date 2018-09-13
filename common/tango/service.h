@@ -3,7 +3,7 @@
 
 #include <tango_3d_reconstruction_api.h>
 #include <tango_client_api.h>
-#include <tango_support_api.h>
+#include <tango_support.h>
 #include <vector>
 #include "data/dataset.h"
 #include "gl/opengl.h"
@@ -24,13 +24,13 @@ namespace oc {
         static void DecomposeMatrix(const glm::mat4& matrix, glm::vec3* translation, glm::quat* rotation, glm::vec3* scale);
         static Tango3DR_Pose Extract3DRPose(const glm::mat4 &mat);
 
-        std::vector<glm::mat4> Convert(std::vector<TangoMatrixTransformData> m);
+        std::vector<glm::mat4> Convert(std::vector<TangoSupport_MatrixTransformData> m);
         oc::Dataset Dataset() { return dataset; }
         Tango3DR_CameraCalibration* Camera() { return &camera; }
         Tango3DR_CameraCalibration* Depth() { return &depth; }
         Tango3DR_ReconstructionContext Context() { return context; }
-        TangoSupportPointCloudManager* Pointcloud() { return pointcloud; }
-        std::vector<TangoMatrixTransformData> Pose(double timestamp, bool land);
+        TangoSupport_PointCloudManager* Pointcloud() { return pointcloud; }
+        std::vector<TangoSupport_MatrixTransformData> Pose(double timestamp, bool land);
 
     private:
         oc::Dataset dataset;
@@ -38,7 +38,7 @@ namespace oc {
         Tango3DR_CameraCalibration camera;
         Tango3DR_CameraCalibration depth;
         Tango3DR_ReconstructionContext context;
-        TangoSupportPointCloudManager* pointcloud;
+        TangoSupport_PointCloudManager* pointcloud;
 
         bool clearing_;
         double res_;

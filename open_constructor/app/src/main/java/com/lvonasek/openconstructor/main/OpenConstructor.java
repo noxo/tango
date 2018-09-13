@@ -157,9 +157,6 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
                         {
                           mGLView.onPause();
                           finish();
-                          for (String s : getDatasets()) {
-                            JNI.addDataset(s);
-                          }
                           JNI.load(obj.getAbsolutePath());
                           JNI.texturize(obj.getAbsolutePath());
                           Service.finish(TEMP_DIRECTORY + "/" + obj.getName());
@@ -714,19 +711,5 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
         e.printStackTrace();
       }
     }
-  }
-
-  private ArrayList<String> getDatasets()
-  {
-    ArrayList<String> datasets = new ArrayList<>();
-    for (File f : getTempPath().listFiles()) {
-      if (f.isDirectory()) {
-        String dir = f.getAbsolutePath();
-        if (!dir.contains("config")) {
-          datasets.add(dir);
-        }
-      }
-    }
-    return datasets;
   }
 }

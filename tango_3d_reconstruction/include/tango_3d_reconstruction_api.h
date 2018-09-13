@@ -349,8 +349,7 @@ typedef enum {
   TANGO_3DR_LAYER_SPACE = 0,
   TANGO_3DR_LAYER_WALLS,
   TANGO_3DR_LAYER_FURNITURE,
-  TANGO_3DR_LAYER_OBSTACLES,
-  TANGO_3DR_LAYER_COUNT
+  TANGO_3DR_LAYER_OBSTACLES
 } Tango3DR_FloorplanLayer;
 
 /// Struct representing a single 2D polyline or polygon.
