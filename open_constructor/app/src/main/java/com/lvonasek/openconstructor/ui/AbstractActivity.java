@@ -143,11 +143,11 @@ public abstract class AbstractActivity extends Activity
               }
             }
             mTango.disconnect();
+            mTango = null;
           }
 
           @Override
-          public void onServiceDisconnected(ComponentName componentName) {
-          }
+          public void onServiceDisconnected(ComponentName componentName) { }
         });
         mTango.connect(mTango.getConfig(TangoConfig.CONFIG_TYPE_DEFAULT));
       }

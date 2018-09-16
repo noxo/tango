@@ -308,7 +308,7 @@ namespace oc {
 
         //special case - do not parse triangles, return just points
         if (subdivision == -1) {
-            for (glm::vec3& v : vertices)
+            for (glm::vec3 v : vertices)
                 output[meshIndex].vertices.push_back(v);
             return;
         }

@@ -1,7 +1,7 @@
 #include <sstream>
 #include "app.h"
 
-#define EXPORT_DEPTHMAP
+//#define EXPORT_DEPTHMAP
 
 namespace {
     const int kSubdivisionSize = 20000;
@@ -66,7 +66,9 @@ namespace oc {
         return output;
     }
 
-    void App::StoreDataset(Tango3DR_PointCloud t3dr_depth, Tango3DR_ImageBuffer t3dr_image, std::vector<TangoSupport_MatrixTransformData> transform) {
+    void App::StoreDataset(Tango3DR_PointCloud t3dr_depth, Tango3DR_ImageBuffer t3dr_image,
+                           Tango3DR_Pose t3dr_depth_pose, Tango3DR_Pose t3dr_image_pose,
+                           std::vector<TangoSupport_MatrixTransformData> transform) {
         //export color camera frame and pose
         texturize.Add(t3dr_image, tango.Convert(transform), tango.Dataset(), t3dr_depth.timestamp);
 
@@ -74,6 +76,19 @@ namespace oc {
         Tango3DR_CameraCalibration* c = tango.Camera();
         tango.Dataset().WriteCalibration(c->cx, c->cy, c->fx, c->fy);
 
+        //export point cloud
+        FILE* file = fopen(tango.Dataset().GetFileName(texturize.GetLatestIndex(tango.Dataset()), ".pcl").c_str(), "w");
+        fprintf(file, "%lf %lf %lf %lf %lf %lf %lf\n", t3dr_depth_pose.translation[0], t3dr_depth_pose.translation[1], t3dr_depth_pose.translation[2],
+                t3dr_depth_pose.orientation[0], t3dr_depth_pose.orientation[1], t3dr_depth_pose.orientation[2], t3dr_depth_pose.orientation[3]);
+        fprintf(file, "%lf %lf %lf %lf %lf %lf %lf\n", t3dr_image_pose.translation[0], t3dr_image_pose.translation[1], t3dr_image_pose.translation[2],
+                t3dr_image_pose.orientation[0], t3dr_image_pose.orientation[1], t3dr_image_pose.orientation[2], t3dr_image_pose.orientation[3]);
+        fprintf(file, "%d\n", t3dr_depth.num_points);
+        for (int i = 0; i < t3dr_depth.num_points; i++) {
+            fprintf(file, "%f %f %f %f\n", t3dr_depth.points[i][0], t3dr_depth.points[i][1], t3dr_depth.points[i][2], t3dr_depth.points[i][3]);
+        }
+        fclose(file);
+
+#ifdef EXPORT_DEPTHMAP
         bool compact = true;
         int w = compact ? t3dr_image.width / 10 : t3dr_image.width;
         int h = compact ? t3dr_image.height / 10 : t3dr_image.height;
@@ -107,7 +122,6 @@ namespace oc {
             }
         }
         png.Blur(compact ? 1 : 4);
-#ifdef EXPORT_DEPTHMAP
         png.Write(tango.Dataset().GetFileName(poseIndex, ".png"));
 #endif
     }
@@ -185,7 +199,7 @@ namespace oc {
             return;
         }
 
-        StoreDataset(t3dr_depth, t3dr_image, transform);
+        StoreDataset(t3dr_depth, t3dr_image, t3dr_depth_pose, t3dr_image_pose, transform);
         std::vector<std::pair<GridIndex, Tango3DR_Mesh*> > added;
         added = scan.Process(tango.Context(), &t3dr_updated);
         render_mutex_.lock();
@@ -218,6 +232,10 @@ namespace oc {
         TangoService_setBinder(env, binder);
         tango.SetupConfig(dataset);
         texturize.SetResolution((float) res);
+
+        FILE* file = fopen((tango.Dataset().GetPath() + "/session.txt").c_str(), "a");
+        fprintf(file, "%d\n", texturize.GetLatestIndex(tango.Dataset()) + 1);
+        fclose(file);
 
         TangoErrorType ret = TangoService_connectOnPointCloudAvailable(onPointCloudAvailableRouter);
         if (ret != TANGO_SUCCESS)
@@ -334,7 +352,7 @@ namespace oc {
     void App::SaveWithTextures(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
-        tango.Disconnect();
+
         int index = 0;
         std::vector<std::string> names;
         for (Mesh& m : scene.static_meshes_) {
@@ -363,6 +381,82 @@ namespace oc {
         render_mutex_.lock();
         tango.Disconnect();
 
+        //clear scene
+        scan.Clear();
+        tango.Clear();
+        for (unsigned int i = 0; i < scene.static_meshes_.size(); i++)
+            scene.static_meshes_[i].Destroy();
+        scene.static_meshes_.clear();
+
+        //prepare image cache
+        int count, width, height;
+        tango.Dataset().GetState(count, width, height);
+        Tango3DR_ImageBuffer t3dr_image;
+        t3dr_image.width = (uint32_t) width;
+        t3dr_image.height = (uint32_t) height;
+        t3dr_image.stride = (uint32_t) width;
+        t3dr_image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
+        t3dr_image.data = new unsigned char[width * height * 3];
+
+        //get all sessions
+        int session = 0;
+        std::vector<int> sessions;
+        {
+            FILE* file = fopen((tango.Dataset().GetPath() + "/session.txt").c_str(), "r");
+            while (!feof(file)) {
+                fscanf(file, "%d\n", &session);
+                sessions.push_back(session);
+            }
+            fclose(file);
+        }
+
+        //TODO:fix poses
+
+        //mesh reconstruction
+        for (int k = 1; k < sessions.size(); k++) {
+            for (int i = sessions[k - 1]; i < sessions[k]; i++) {
+                std::ostringstream ss;
+                ss << "RECONSTRUCTION ";
+                ss << 100 * i / count;
+                ss << "%";
+                texturize.SetEvent(ss.str());
+
+                int size = 0;
+                Tango3DR_Pose t3dr_depth_pose, t3dr_image_pose;
+                FILE* file = fopen(tango.Dataset().GetFileName(i, ".pcl").c_str(), "r");
+                fscanf(file, "%lf %lf %lf %lf %lf %lf %lf\n", &t3dr_depth_pose.translation[0], &t3dr_depth_pose.translation[1], &t3dr_depth_pose.translation[2],
+                        &t3dr_depth_pose.orientation[0], &t3dr_depth_pose.orientation[1], &t3dr_depth_pose.orientation[2], &t3dr_depth_pose.orientation[3]);
+                fscanf(file, "%lf %lf %lf %lf %lf %lf %lf\n", &t3dr_image_pose.translation[0], &t3dr_image_pose.translation[1], &t3dr_image_pose.translation[2],
+                        &t3dr_image_pose.orientation[0], &t3dr_image_pose.orientation[1], &t3dr_image_pose.orientation[2], &t3dr_image_pose.orientation[3]);
+                fscanf(file, "%d\n", &size);
+                Tango3DR_PointCloud t3dr_depth;
+                Tango3DR_PointCloud_init(size, &t3dr_depth);
+                for (int j = 0; j < t3dr_depth.num_points; j++) {
+                    fscanf(file, "%f %f %f %f\n", &t3dr_depth.points[j][0], &t3dr_depth.points[j][1], &t3dr_depth.points[j][2], &t3dr_depth.points[j][3]);
+                }
+                fclose(file);
+
+                Tango3DR_Status ret;
+                Tango3DR_GridIndexArray t3dr_updated;
+                t3dr_depth.timestamp = tango.Dataset().GetPoseTime(i, DEPTH_CAMERA);
+                t3dr_image.timestamp = tango.Dataset().GetPoseTime(i, COLOR_CAMERA);
+                Image::JPG2YUV(tango.Dataset().GetFileName(i, ".jpg"), t3dr_image.data, width, height);
+                ret = Tango3DR_updateFromPointCloud(tango.Context(), &t3dr_depth, &t3dr_depth_pose,
+                                                    &t3dr_image, &t3dr_image_pose, &t3dr_updated);
+                if (ret == TANGO_3DR_SUCCESS) {
+                    Tango3DR_GridIndexArray_destroy(&t3dr_updated);
+                }
+                Tango3DR_PointCloud_destroy(&t3dr_depth);
+            }
+            render_mutex_.unlock();
+            binder_mutex_.unlock();
+            Save(filename);
+            binder_mutex_.lock();
+            render_mutex_.lock();
+        }
+        delete[] t3dr_image.data;
+
+        //poisson reconstruction
         if (poisson) {
             texturize.SetEvent("POISSON");
             Poisson().Process(filename);
