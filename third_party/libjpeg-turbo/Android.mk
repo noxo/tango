@@ -3,26 +3,12 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := libjpeg-turbo
 
-#LOCAL_ARM_NEON := true
-#LOCAL_CFLAGS += -D__ARM_HAVE_NEON
 LOCAL_ASMFLAGS += -DELF
 
-#LOCAL_SRC_FILES += \
-	src/simd/jsimd_arm.c \
-	src/simd/jsimd_arm_neon.S \
-	
-LOCAL_SRC_FILES += \
-	src/jsimd_none.c \
-
-
 ifneq ($(filter $(TARGET_ARCH_ABI), armeabi-v7a armeabi-v7a-hard),)
-LOCAL_CFLAGS += \
-	-DSIZEOF_SIZE_T=4 \
-
+LOCAL_CFLAGS += -DSIZEOF_SIZE_T=4
 else ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
-LOCAL_CFLAGS += \
-	-DSIZEOF_SIZE_T=8 \
-
+LOCAL_CFLAGS += -DSIZEOF_SIZE_T=8
 endif
 
 # libjpeg_la_SOURCES from Makefile.am
@@ -79,17 +65,16 @@ LOCAL_SRC_FILES += \
 	src/turbojpeg.c \
 	src/transupp.c \
 	src/jdatadst-tj.c \
-	src/jdatasrc-tj.c
+	src/jdatasrc-tj.c \
+	src/jsimd_none.c
 
 LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/include \
-
-LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/src/simd \
-	$(LOCAL_PATH)/src \
+	$(LOCAL_PATH)/src
 
 LOCAL_EXPORT_C_INCLUDES := \
-	$(LOCAL_PATH)/src \
+	$(LOCAL_PATH)/src
 
 LOCAL_CFLAGS += \
 	-DBUILD="20141110" \
@@ -118,6 +103,6 @@ LOCAL_CFLAGS += \
 	-DMEM_SRCDST_SUPPORTED=1 \
 	-DNEED_SYS_TYPES_H=1 \
 	-DSTDC_HEADERS=1 \
-	-DWITH_SIMD=1 \
+	-DWITH_SIMD=1
 
 include $(BUILD_STATIC_LIBRARY)
