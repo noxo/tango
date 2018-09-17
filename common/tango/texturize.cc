@@ -67,9 +67,36 @@ namespace oc {
         dataset.WriteState(poses, width, height);
     }
 
-    int TangoTexturize::GetLatestIndex(Dataset dataset) {
-        dataset.GetState(poses, width, height);
-        return poses - 1;
+    Tango3DR_Trajectory TangoTexturize::GetTrajectory(Dataset dataset) {
+        SetEvent("TRAJECTORY");
+        instanceTexturize = this;
+        Tango3DR_Status ret;
+
+        //stop dataset recording
+        TangoConfig config = TangoService_getConfig(TANGO_CONFIG_RUNTIME);
+        TangoConfig_setInt32(config, "config_runtime_recording_control", TANGO_RUNTIME_RECORDING_STOP);
+        TangoService_setRuntimeConfig(config);
+
+        //get area description
+        TangoUUID uuid;
+        std::string tangoDataset = dataset.GetPath() + "/";
+        TangoService_Experimental_getCurrentDatasetUUID(&uuid);
+        LOGI("XXX=%s", uuid);
+        tangoDataset += uuid;
+        Tango3DR_AreaDescription area_description;
+        std::string loop_closure = dataset.GetPath() + "/config";
+        ret = Tango3DR_AreaDescription_createFromDataset(tangoDataset.c_str(), loop_closure.c_str(),
+                                                         &area_description, callbackTexturize, 0);
+        if (ret != TANGO_3DR_SUCCESS)
+            exit(EXIT_SUCCESS);
+
+        //get trajectory
+        Tango3DR_Trajectory trajectory;
+        ret = Tango3DR_Trajectory_createFromAreaDescription(area_description, &trajectory);
+        if (ret != TANGO_3DR_SUCCESS)
+            exit(EXIT_SUCCESS);
+        TangoService_Experimental_deleteDataset(uuid);
+        return trajectory;
     }
 
     bool TangoTexturize::Init(std::string filename, Tango3DR_CameraCalibration* camera) {
@@ -158,6 +185,9 @@ namespace oc {
         if (ret != TANGO_3DR_SUCCESS)
             exit(EXIT_SUCCESS);
         ret = Tango3DR_Config_setInt32(textureConfig, "mesh_simplification_factor", 1);
+        if (ret != TANGO_3DR_SUCCESS)
+            exit(EXIT_SUCCESS);
+        ret = Tango3DR_Config_setInt32(textureConfig, "texture_size", 4096);
         if (ret != TANGO_3DR_SUCCESS)
             exit(EXIT_SUCCESS);
         ret = Tango3DR_Config_setInt32(textureConfig, "texturing_backend", TANGO_3DR_CPU_TEXTURING);

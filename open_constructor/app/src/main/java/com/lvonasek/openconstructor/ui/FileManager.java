@@ -18,7 +18,6 @@ import android.widget.TextView;
 
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
-import com.google.atap.tangoservice.Tango;
 import com.lvonasek.openconstructor.R;
 import com.lvonasek.openconstructor.main.Exporter;
 import com.lvonasek.openconstructor.main.OpenConstructor;
@@ -135,13 +134,10 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
       else if (service == Service.SERVICE_POSTPROCESS)
         finishScanning();
     } else if (mFirst) {
-      mFirst = false;
       Intent permissionIntent = new Intent();
       permissionIntent.setClassName("com.google.tango", "com.google.atap.tango.RequestPermissionActivity");
       permissionIntent.putExtra("PERMISSIONTYPE", "ADF_LOAD_SAVE_PERMISSION");
       startActivityForResult(permissionIntent, PERMISSIONS_CODE);
-    } else if (Service.getRunning(this) == Service.SERVICE_NOT_RUNNING) {
-      cleanADF();
     }
   }
 
@@ -184,6 +180,7 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     if (requestCode == PERMISSIONS_CODE) {
       if (resultCode == RESULT_OK) {
+        mFirst = false;
         setupPermissions();
       } else {
         finish();
@@ -195,7 +192,8 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
     String[] permissions = {
             Manifest.permission.CAMERA,
             Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            "com.google.tango.permission.DATASETS"
     };
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       boolean ok = true;

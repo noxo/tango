@@ -6,6 +6,21 @@ namespace oc {
         dataset = path;
     }
 
+    bool Dataset::AddSession() {
+        int count, width, height;
+        GetState(count, width, height);
+        FILE* file = fopen((GetPath() + "/session.txt").c_str(), "a");
+        fprintf(file, "%d\n", count);
+        fclose(file);
+        return count == 0;
+    }
+
+    void Dataset::ClearSessions() {
+        FILE* file = fopen((GetPath() + "/session.txt").c_str(), "w");
+        fprintf(file, "0\n");
+        fclose(file);
+    }
+
     void Dataset::GetCalibration(float &cx, float &cy, float &fx, float &fy) {
         FILE* file = fopen((dataset + "/calibration.txt").c_str(), "r");
         fscanf(file, "%f %f %f %f", &cx, &cy, &fx, &fy);
@@ -52,11 +67,27 @@ namespace oc {
         return timestamp;
     }
 
+    std::vector<int> Dataset::GetSessions() {
+        int session = 0;
+        std::vector<int> sessions;
+        {
+            FILE* file = fopen((GetPath() + "/session.txt").c_str(), "r");
+            while (!feof(file)) {
+                fscanf(file, "%d\n", &session);
+                sessions.push_back(session);
+            }
+            fclose(file);
+        }
+        return sessions;
+    }
+
     void Dataset::GetState(int &count, int &width, int &height) {
-        FILE* file = fopen(GetFileName(-1, ".txt").c_str(), "r");
+        FILE* file = fopen((dataset + "/state.txt").c_str(), "r");
         if (file) {
             fscanf(file, "%d %d %d\n", &count, &width, &height);
             fclose(file);
+        } else {
+            count = 0;
         }
     }
 
@@ -79,7 +110,7 @@ namespace oc {
     }
 
     void Dataset::WriteState(int count, int width, int height) {
-        FILE* file = fopen(GetFileName(-1, ".txt").c_str(), "w");
+        FILE* file = fopen((dataset + "/state.txt").c_str(), "w");
         fprintf(file, "%d %d %d\n", count, width, height);
         fclose(file);
     }

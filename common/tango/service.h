@@ -17,7 +17,6 @@ namespace oc {
         void Clear();
         void Connect(void* app);
         void Disconnect();
-        void SavePointCloud(std::string filename);
         void SetupConfig(std::string datapath);
         void Setup3DR(double res, double dmin, double dmax, int noise, bool clearing);
 

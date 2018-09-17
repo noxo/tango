@@ -1,27 +1,18 @@
 package com.lvonasek.openconstructor.ui;
 
 import android.app.Activity;
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.net.Uri;
 import android.os.Environment;
-import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.WindowManager;
 
-import com.google.atap.tangoservice.Tango;
-import com.google.atap.tangoservice.TangoConfig;
 import com.lvonasek.openconstructor.R;
-import com.lvonasek.openconstructor.main.TangoInitHelper;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.util.ArrayList;
-import java.util.Scanner;
 
 public abstract class AbstractActivity extends Activity
 {
@@ -32,7 +23,6 @@ public abstract class AbstractActivity extends Activity
   protected static final String URL_KEY = "URL2OPEN";
   protected static final String USER_AGENT = "Mozilla/5.0 Google";
   public static final String TAG = "tango_app";
-  private Tango mTango = null;
 
   protected void defaultSettings()
   {
@@ -107,51 +97,6 @@ public abstract class AbstractActivity extends Activity
 
     if (fileOrDirectory.delete())
       Log.d(TAG, fileOrDirectory + " deleted");
-  }
-  public void cleanADF() {
-    final ArrayList<String> uuids = new ArrayList<>();
-    File file = new File("/data/data/com.lvonasek.openconstructor/files/todelete");
-    if (file.exists()) {
-      try {
-        FileInputStream fis = new FileInputStream(file.getAbsolutePath());
-        Scanner sc = new Scanner(fis);
-        while (sc.hasNext()) {
-          uuids.add(sc.nextLine());
-        }
-        sc.close();
-        fis.close();
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-      file.delete();
-    } else {
-      return;
-    }
-
-    //export ADF
-    if (mTango != null)
-      mTango.disconnect();
-    mTango = new Tango(AbstractActivity.this, new Runnable() {
-      @Override
-      public void run() {
-        TangoInitHelper.bindTangoService(AbstractActivity.this, new ServiceConnection() {
-          @Override
-          public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-            for (String uuid : mTango.listAreaDescriptions()) {
-              if (uuids.contains(uuid)) {
-                mTango.deleteAreaDescription(uuid);
-              }
-            }
-            mTango.disconnect();
-            mTango = null;
-          }
-
-          @Override
-          public void onServiceDisconnected(ComponentName componentName) { }
-        });
-        mTango.connect(mTango.getConfig(TangoConfig.CONFIG_TYPE_DEFAULT));
-      }
-    });
   }
 
   public Uri filename2Uri(String filename) {

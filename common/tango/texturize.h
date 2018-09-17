@@ -15,7 +15,7 @@ namespace oc {
         void Callback(int progress);
         void Clear(Dataset dataset);
         std::string GetEvent() { return event; }
-        int GetLatestIndex(Dataset dataset);
+        Tango3DR_Trajectory GetTrajectory(Dataset dataset);
         bool Init(std::string filename, Tango3DR_CameraCalibration* camera);
         bool Init(Tango3DR_ReconstructionContext context, Tango3DR_CameraCalibration* camera);
         void Process(std::string filename);

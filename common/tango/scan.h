@@ -4,6 +4,7 @@
 #include <tango_3d_reconstruction_api.h>
 #include <unordered_map>
 #include <vector>
+#include "data/dataset.h"
 #include "data/mesh.h"
 
 namespace oc {
@@ -30,10 +31,16 @@ namespace oc {
     class TangoScan {
     public:
         void Clear();
+        void CorrectPoses(Dataset dataset, Tango3DR_Trajectory trajectory);
         std::unordered_map<GridIndex, Tango3DR_Mesh*, GridIndexHasher> Data() { return meshes; }
         void Merge(std::vector<std::pair<GridIndex, Tango3DR_Mesh*> > added);
         std::vector<std::pair<GridIndex, Tango3DR_Mesh*> > Process(Tango3DR_ReconstructionContext context,
                                                                    Tango3DR_GridIndexArray *t3dr_updated);
+
+        Tango3DR_PointCloud LoadPointCloud(Dataset dataset, int index);
+        Tango3DR_Pose LoadPose(Dataset dataset, int index, int pose);
+        void SavePointCloud(Dataset dataset, int index, Tango3DR_PointCloud t3dr_depth);
+        void SavePose(Dataset dataset, int index, Tango3DR_Pose t3dr_depth_pose, Tango3DR_Pose t3dr_image_pose);
 
     private:
         std::unordered_map<GridIndex, Tango3DR_Mesh*, GridIndexHasher> meshes;
