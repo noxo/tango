@@ -567,9 +567,12 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
         finish();
         long timestamp = System.currentTimeMillis();
         final File obj = new File(getTempPath(), timestamp + Exporter.FILE_EXT[0]);
-        JNI.save(obj.getAbsolutePath());
-        //Exporter.patchPath(getTempPath());
-        Service.finish(TEMP_DIRECTORY + "/" + obj.getName());
+        if (JNI.save(obj.getAbsolutePath()))
+          Service.finish(TEMP_DIRECTORY + "/" + obj.getName());
+        else {
+          Service.reset(OpenConstructor.this);
+          System.exit(0);
+        }
       }
     });
   }

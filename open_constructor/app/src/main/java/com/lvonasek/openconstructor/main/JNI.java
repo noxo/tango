@@ -43,7 +43,7 @@ public class JNI
   public static native void load(String name);
 
   // Save current 3D model
-  public static native void save(String name);
+  public static native boolean save(String name);
 
   // Save current 3D model with textures (editor usage)
   public static native void saveWithTextures(String name);

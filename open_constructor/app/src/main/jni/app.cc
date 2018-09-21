@@ -327,7 +327,7 @@ namespace oc {
         binder_mutex_.unlock();
     }
 
-    void App::Save(std::string filename, bool poseCorrection) {
+    bool App::Save(std::string filename, bool poseCorrection) {
         binder_mutex_.lock();
         render_mutex_.lock();
 
@@ -359,8 +359,12 @@ namespace oc {
             File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
         }
         File3d(filename, true).WriteModel(scene.static_meshes_);
+        int count = 0;
+        for (Mesh& m : scene.static_meshes_)
+            count += m.vertices.size();
         render_mutex_.unlock();
         binder_mutex_.unlock();
+        return count != 0;
     }
 
     void App::SaveWithTextures(std::string filename) {
@@ -622,9 +626,9 @@ Java_com_lvonasek_openconstructor_main_JNI_load(JNIEnv* env, jobject, jstring na
   app.Load(jstring2string(env, name));
 }
 
-JNIEXPORT void JNICALL
+JNIEXPORT jboolean JNICALL
 Java_com_lvonasek_openconstructor_main_JNI_save(JNIEnv* env, jobject, jstring name) {
-    app.Save(jstring2string(env, name));
+    return app.Save(jstring2string(env, name));
 }
 
 JNIEXPORT void JNICALL
