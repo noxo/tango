@@ -100,6 +100,8 @@ namespace oc {
                 return;
             if ((y > pointY) && (y > pointY2))
                 return;
+            if ((z1.z < 0) || (z2.z < 0))
+                return;
             currentMesh->colors[index + 0] = 0;
             currentMesh->colors[index + 1] = 0;
             currentMesh->colors[index + 2] = 0;
