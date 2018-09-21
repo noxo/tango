@@ -51,7 +51,7 @@ namespace oc {
         return output;
     }
 
-    double Dataset::GetPoseTime(int index, Pose pose) {
+    double Dataset::GetPoseTime(int index, int pose) {
         int count = 0;
         glm::mat4 mat;
         double timestamp;

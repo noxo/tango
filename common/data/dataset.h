@@ -18,7 +18,7 @@ namespace oc {
         std::string GetFileName(int index, std::string extension);
         std::string GetPath() { return dataset; }
         std::vector<glm::mat4> GetPose(int index);
-        double GetPoseTime(int index, Pose pose);
+        double GetPoseTime(int index, int pose);
         std::vector<int> GetSessions();
         void GetState(int& count, int& width, int& height);
         void WriteCalibration(double cx, double cy, double fx, double fy);

@@ -1,6 +1,7 @@
 #include <sstream>
 #include "data/image.h"
 #include "gl/camera.h"
+#include "tango/scan.h"
 #include "tango/service.h"
 #include "tango/texturize.h"
 
@@ -46,7 +47,7 @@ namespace oc {
 
             image.timestamp = dataset.GetPoseTime(i, COLOR_CAMERA);
             Image::JPG2YUV(dataset.GetFileName(i, ".jpg"), image.data, width, height);
-            Tango3DR_Pose t3dr_image_pose = TangoService::Extract3DRPose(dataset.GetPose(i)[COLOR_CAMERA]);
+            Tango3DR_Pose t3dr_image_pose = TangoScan::LoadPose(dataset, i, COLOR_CAMERA);
             if (Tango3DR_updateTexture(context, &image, &t3dr_image_pose) != TANGO_3DR_SUCCESS)
                 exit(EXIT_SUCCESS);
         }
@@ -81,7 +82,6 @@ namespace oc {
         TangoUUID uuid;
         std::string tangoDataset = dataset.GetPath() + "/";
         TangoService_Experimental_getCurrentDatasetUUID(&uuid);
-        LOGI("XXX=%s", uuid);
         tangoDataset += uuid;
         Tango3DR_AreaDescription area_description;
         std::string loop_closure = dataset.GetPath() + "/config";

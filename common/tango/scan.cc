@@ -1,4 +1,6 @@
 #include "tango/scan.h"
+#include <glm/gtx/quaternion.hpp>
+#include <tango_support.h>
 
 namespace oc {
 
@@ -17,24 +19,40 @@ namespace oc {
         meshes.clear();
     }
 
+    glm::dmat4 TangoScan::Convert(Tango3DR_Pose pose) {
+        glm::dquat rotation;
+        rotation.x = pose.orientation[0];
+        rotation.y = pose.orientation[1];
+        rotation.z = pose.orientation[2];
+        rotation.w = pose.orientation[3];
+        glm::dmat4 output = glm::mat4_cast(rotation);
+        output[3][0] = pose.translation[0];
+        output[3][1] = pose.translation[1];
+        output[3][2] = pose.translation[2];
+        return output;
+    }
+
+    Tango3DR_Pose TangoScan::Convert(glm::dmat4 pose) {
+        Tango3DR_Pose output;
+        glm::dquat rotation = glm::quat_cast(pose);
+        output.translation[0] = pose[3][0];
+        output.translation[1] = pose[3][1];
+        output.translation[2] = pose[3][2];
+        output.orientation[0] = rotation[0];
+        output.orientation[1] = rotation[1];
+        output.orientation[2] = rotation[2];
+        output.orientation[3] = rotation[3];
+        return output;
+    }
+
     void TangoScan::CorrectPoses(Dataset dataset, Tango3DR_Trajectory trajectory) {
         int count, width, height;
         dataset.GetState(count, width, height);
         std::vector<int> sessions = dataset.GetSessions();
         for (int i = sessions[sessions.size() - 1]; i < count; i++) {
-            Tango3DR_Pose image_pose;
-            if (Tango3DR_getPoseAtTime(trajectory, dataset.GetPoseTime(i, COLOR_CAMERA), &image_pose) != TANGO_3DR_SUCCESS) {
-                exit(EXIT_SUCCESS);
-            }
-            Tango3DR_Pose depth_pose;
-            if (Tango3DR_getPoseAtTime(trajectory, dataset.GetPoseTime(i, DEPTH_CAMERA), &depth_pose) != TANGO_3DR_SUCCESS) {
-                exit(EXIT_SUCCESS);
-            }
-
-            Tango3DR_Pose t3dr_depth_pose = LoadPose(dataset, i, DEPTH_CAMERA);
-            Tango3DR_Pose t3dr_image_pose = LoadPose(dataset, i, COLOR_CAMERA);
-
-            //TODO:convert corrected poses
+            Tango3DR_Pose t3dr_image_pose = GetPose(trajectory, dataset, i, COLOR_CAMERA);
+            Tango3DR_Pose t3dr_depth_pose = GetPose(trajectory, dataset, i, DEPTH_CAMERA);
+            //TODO:ADF coordinate system
             SavePose(dataset, i, t3dr_depth_pose, t3dr_image_pose);
         }
     }
@@ -71,6 +89,32 @@ namespace oc {
         return output;
     }
 
+    Tango3DR_Pose TangoScan::GetPose(Tango3DR_Trajectory trajectory, Dataset dataset, int index, int pose) {
+        Tango3DR_Pose t3dr_pose;
+        if (Tango3DR_getPoseAtTime(trajectory, dataset.GetPoseTime(index, pose), &t3dr_pose) != TANGO_3DR_SUCCESS)
+            exit(EXIT_SUCCESS);
+        glm::dquat quat;
+        quat.x = t3dr_pose.orientation[0];
+        quat.y = t3dr_pose.orientation[2];
+        quat.z = -t3dr_pose.orientation[1];
+        quat.w = t3dr_pose.orientation[3];
+        if (pose == COLOR_CAMERA) {
+            quat = glm::rotate(quat, glm::radians(180.0), glm::dvec3(0, 0, 1));
+            quat = glm::rotate(quat, glm::radians(270.0), glm::dvec3(1, 0, 0));
+        } else if (pose == DEPTH_CAMERA) {
+            quat = glm::rotate(quat, glm::radians(90.0), glm::dvec3(1, 0, 0));
+        }
+
+        Tango3DR_Pose t3dr_fixed_pose;
+        t3dr_fixed_pose.orientation[0] = quat.x;
+        t3dr_fixed_pose.orientation[1] = quat.y;
+        t3dr_fixed_pose.orientation[2] = quat.z;
+        t3dr_fixed_pose.orientation[3] = quat.w;
+        t3dr_fixed_pose.translation[0] = t3dr_pose.translation[0];
+        t3dr_fixed_pose.translation[1] = t3dr_pose.translation[2];
+        t3dr_fixed_pose.translation[2] = -t3dr_pose.translation[1];
+        return t3dr_fixed_pose;
+    }
 
     Tango3DR_PointCloud TangoScan::LoadPointCloud(Dataset dataset, int index) {
         int size = 0;
