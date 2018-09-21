@@ -48,10 +48,18 @@ namespace oc {
         int count, width, height;
         dataset.GetState(count, width, height);
         std::vector<int> sessions = dataset.GetSessions();
-        for (int i = sessions[sessions.size() - 1]; i < count; i++) {
+        int firstPose = sessions[sessions.size() - 1];
+        glm::dmat4 trImage = Convert(LoadPose(dataset, firstPose, COLOR_CAMERA));
+        glm::dmat4 trDepth = Convert(LoadPose(dataset, firstPose, DEPTH_CAMERA));
+        trImage = trImage * glm::inverse(Convert(GetPose(trajectory, dataset, firstPose, COLOR_CAMERA)));
+        trDepth = trDepth * glm::inverse(Convert(GetPose(trajectory, dataset, firstPose, DEPTH_CAMERA)));
+
+        //correct poses
+        for (int i = firstPose; i < count; i++) {
             Tango3DR_Pose t3dr_image_pose = GetPose(trajectory, dataset, i, COLOR_CAMERA);
             Tango3DR_Pose t3dr_depth_pose = GetPose(trajectory, dataset, i, DEPTH_CAMERA);
-            //TODO:ADF coordinate system
+            t3dr_image_pose = Convert(trImage * Convert(t3dr_image_pose));
+            t3dr_depth_pose = Convert(trDepth * Convert(t3dr_depth_pose));
             SavePose(dataset, i, t3dr_depth_pose, t3dr_image_pose);
         }
     }
