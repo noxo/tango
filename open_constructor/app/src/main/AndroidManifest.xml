@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools"
           package="com.lvonasek.openconstructor"
-          android:versionCode="20180811"
-          android:versionName="0.9.8">
+          android:versionCode="20180921"
+          android:versionName="1.0.0">
 
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.INTERNET" />
