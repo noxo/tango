@@ -1,6 +1,5 @@
 #include "tango/scan.h"
 #include <glm/gtx/quaternion.hpp>
-#include <tango_support.h>
 
 namespace oc {
 

@@ -68,7 +68,7 @@ namespace oc {
 
     void App::StoreDataset(Tango3DR_PointCloud t3dr_depth, Tango3DR_ImageBuffer t3dr_image,
                            Tango3DR_Pose t3dr_depth_pose, Tango3DR_Pose t3dr_image_pose,
-                           std::vector<TangoSupport_MatrixTransformData> transform) {
+                           std::vector<TangoMatrixTransformData> transform) {
         //export color camera frame and pose
         texturize.Add(t3dr_image, tango.Convert(transform), tango.Dataset(), t3dr_depth.timestamp);
 
@@ -126,7 +126,7 @@ namespace oc {
         if (!t3dr_is_running_)
             return;
 
-        std::vector<TangoSupport_MatrixTransformData> transform = tango.Pose(pc->timestamp, 0);
+        std::vector<TangoMatrixTransformData> transform = tango.Pose(pc->timestamp, 0);
         if (transform[DEPTH_CAMERA].status_code != TANGO_POSE_VALID)
             return;
 
@@ -141,7 +141,7 @@ namespace oc {
         if ((id != TANGO_CAMERA_COLOR) || !t3dr_is_running_)
             return;
 
-        std::vector<TangoSupport_MatrixTransformData> transform = tango.Pose(im->timestamp, 0);
+        std::vector<TangoMatrixTransformData> transform = tango.Pose(im->timestamp, 0);
         if (transform[COLOR_CAMERA].status_code != TANGO_POSE_VALID)
             return;
 
@@ -279,7 +279,7 @@ namespace oc {
             scene.renderer->camera.rotation = glm::quat(glm::vec3(lastYaw, lastPitch, 0));
             scene.renderer->camera.scale    = glm::vec3(1, 1, 1);
         } else {
-            std::vector<TangoSupport_MatrixTransformData> transform = tango.Pose(0, landscape);
+            std::vector<TangoMatrixTransformData> transform = tango.Pose(0, landscape);
             glm::mat4 matrix = tango.Convert(transform)[OPENGL_CAMERA];
             if (transform[OPENGL_CAMERA].status_code != TANGO_POSE_VALID)
                 matrix = glm::mat4(1);
@@ -350,8 +350,8 @@ namespace oc {
                 Tango3DR_Trajectory trajectory = texturize.GetTrajectory(tango.Dataset());
                 scan.CorrectPoses(tango.Dataset(), trajectory);
                 Tango3DR_Trajectory_destroy(trajectory);
+                tango.Disconnect();
             }
-            tango.Disconnect();
 
             //merge with previous OBJ
             scan.Clear();

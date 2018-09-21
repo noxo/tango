@@ -223,37 +223,37 @@ namespace oc {
         }
     }
 
-    std::vector<TangoSupport_MatrixTransformData> TangoService::Pose(double timestamp, bool land) {
+    std::vector<TangoMatrixTransformData> TangoService::Pose(double timestamp, bool land) {
         //init objects
-        std::vector<TangoSupport_MatrixTransformData> output;
-        TangoSupport_MatrixTransformData matrix_transform;
+        std::vector<TangoMatrixTransformData> output;
+        TangoMatrixTransformData matrix_transform;
 
         //get color camera transform
         TangoSupport_getMatrixTransformAtTime(
                 timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION,
                 TANGO_COORDINATE_FRAME_CAMERA_COLOR, TANGO_SUPPORT_ENGINE_OPENGL,
-                TANGO_SUPPORT_ENGINE_TANGO, TANGO_SUPPORT_ROTATION_0, &matrix_transform);
+                TANGO_SUPPORT_ENGINE_TANGO, ROTATION_0, &matrix_transform);
         output.push_back(matrix_transform);
 
         //get depth camera transform
         TangoSupport_getMatrixTransformAtTime(
                 timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION,
                 TANGO_COORDINATE_FRAME_CAMERA_DEPTH, TANGO_SUPPORT_ENGINE_OPENGL,
-                TANGO_SUPPORT_ENGINE_TANGO, TANGO_SUPPORT_ROTATION_0, &matrix_transform);
+                TANGO_SUPPORT_ENGINE_TANGO, ROTATION_0, &matrix_transform);
         output.push_back(matrix_transform);
 
         //get OpenGL camera transform
         TangoSupport_getMatrixTransformAtTime(
                 timestamp, TANGO_COORDINATE_FRAME_AREA_DESCRIPTION, TANGO_COORDINATE_FRAME_DEVICE,
                 TANGO_SUPPORT_ENGINE_OPENGL, TANGO_SUPPORT_ENGINE_OPENGL,
-                land ? TANGO_SUPPORT_ROTATION_90 : TANGO_SUPPORT_ROTATION_0, &matrix_transform);
+                land ? ROTATION_90 : ROTATION_0, &matrix_transform);
         output.push_back(matrix_transform);
 
         assert(output.size() == MAX_CAMERA);
         return output;
     }
 
-    std::vector<glm::mat4> TangoService::Convert(std::vector<TangoSupport_MatrixTransformData> m) {
+    std::vector<glm::mat4> TangoService::Convert(std::vector<TangoMatrixTransformData> m) {
         std::vector<glm::mat4> output;
         for (int i = 0; i < m.size(); i++)
             output.push_back(glm::mat4(1) * glm::make_mat4(m[i].matrix));
