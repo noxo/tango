@@ -3,6 +3,7 @@
 
 #include <set>
 #include <vector>
+#include "data/array3d.h"
 #include "data/file3d.h"
 
 struct RenderNode {

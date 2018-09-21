@@ -36,12 +36,10 @@
     <string name="editor_transform_scale">Scale</string>
 
     <!-- Settings !-->
-    <string name="cardboard">External model viewer</string>
-    <string name="cardboard_summary">Show in the button right icon to open model in another app</string>
     <string name="landscape">Landscape mode</string>
     <string name="landscape_summary">Using the application in landscape is better on tablets</string>
     <string name="poisson_reconstruction">Poisson reconstruction</string>
-    <string name="poisson_reconstruction_summary">Enable postprocessing algorithm to fix holes in model geometry, note that this algorithm does not work well with open spaces and it can make postprocessing longer</string>
+    <string name="poisson_reconstruction_summary">Enable postprocessing algorithm to fix holes in model geometry, note that this algorithm does not work well with open spaces and it can make postprocessing longer\nWarning! This function is using a lot of memory and can cause crash when a lot of geometry was captured.</string>
     <string name="realtime_noise_filter">Realtime noise filter</string>
     <string name="realtime_noise_filter_summary">A noise filter can improve the quality a lot but it makes capturing slower</string>
     <string name="sharp_photos_only">Use sharp photos only</string>

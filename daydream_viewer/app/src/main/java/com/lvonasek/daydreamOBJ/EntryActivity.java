@@ -87,7 +87,7 @@ public class EntryActivity extends Activity {
         SelectorView.active = true;
         filename = "";
       }
-      daydream.create(this).launchInVr(new Intent(this, MainActivity.class));
+      daydream.create(this).launchInVr(new Intent(this, VRActivity.class));
       finish();
     }
   }

@@ -12,6 +12,10 @@ import com.lvonasek.openconstructor.R;
 public class JNI
 {
   static {
+    LoadLibrary();
+  }
+
+  public static void LoadLibrary() {
     if (!TangoInitHelper.loadTangoSharedLibrary())
       Log.e("JNI", "ERROR! Unable to load libtango_client_api.so!");
     System.loadLibrary("openconstructor");

@@ -18,7 +18,6 @@ public class Settings extends PreferenceActivity implements Preference.OnPrefere
       setTheme(android.R.style.Theme_Material_NoActionBar_Fullscreen);
     addPreferencesFromResource(R.xml.settings);
     findPreference(getString(R.string.pref_landscape)).setOnPreferenceChangeListener(this);
-    findPreference(getString(R.string.pref_cardboard)).setOnPreferenceChangeListener(this);
   }
 
   @Override

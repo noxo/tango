@@ -105,17 +105,9 @@ void Renderer::Update()
   cur_position = 0.95f * cur_position + 0.05f * dst_position;
 }
 
-std::string jstring2string(JNIEnv* env, jstring name)
-{
-  const char *s = env->GetStringUTFChars(name,NULL);
-  std::string str( s );
-  env->ReleaseStringUTFChars(name,s);
-  return str;
-}
-
 #define JNI_METHOD(return_type, method_name) \
   JNIEXPORT return_type JNICALL              \
-      Java_com_lvonasek_daydreamOBJ_MainActivity_##method_name
+      Java_com_lvonasek_daydreamOBJ_VRActivity_##method_name
 
 extern "C" {
 
@@ -123,7 +115,10 @@ Renderer renderer;
 
 JNI_METHOD(void, nativeLoadModel)
 (JNIEnv *env, jobject, jstring filename) {
-  renderer.Load(jstring2string(env, filename));
+  const char *s = env->GetStringUTFChars(filename,NULL);
+  std::string str( s );
+  env->ReleaseStringUTFChars(filename,s);
+  renderer.Load(str);
 }
 
 JNI_METHOD(void, nativeInitializeGl)

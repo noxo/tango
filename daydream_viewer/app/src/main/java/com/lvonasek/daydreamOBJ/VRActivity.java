@@ -15,7 +15,7 @@ import com.google.vr.sdk.controller.ControllerManager;
 
 import javax.microedition.khronos.egl.EGLConfig;
 
-public class MainActivity extends GvrActivity implements GvrView.StereoRenderer, Runnable
+public class VRActivity extends GvrActivity implements GvrView.StereoRenderer, Runnable
 {
   private ControllerManager controllerManager;
 

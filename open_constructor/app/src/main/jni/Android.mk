@@ -24,10 +24,12 @@ LOCAL_SRC_FILES := ../../../../../common/data/array3d.cc \
                    ../../../../../common/gl/camera.cc \
                    ../../../../../common/gl/glsl.cc \
                    ../../../../../common/gl/renderer.cc \
+                   ../../../../../common/gl/scene.cc \
                    ../../../../../common/postproc/poisson.cc \
                    ../../../../../common/tango/scan.cc \
                    ../../../../../common/tango/service.cc \
                    ../../../../../common/tango/texturize.cc \
+                   ../../../../../daydream_viewer/app/src/main/jni/renderer.cc \
                    app.cc \
                    scene.cc
 

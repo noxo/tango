@@ -12,6 +12,7 @@ import android.graphics.Point;
 import android.net.Uri;
 import android.opengl.GLSurfaceView;
 import android.os.BatteryManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
@@ -23,6 +24,9 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
+
+import com.lvonasek.daydreamOBJ.CardboardActivity;
+import com.lvonasek.daydreamOBJ.DaydreamActivity;
 import com.lvonasek.openconstructor.ui.AbstractActivity;
 import com.lvonasek.openconstructor.ui.Service;
 import com.lvonasek.openconstructor.R;
@@ -459,20 +463,21 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
         mEditor.init(mEditorAction, mEditorMsg, mEditorSeek, mProgress, OpenConstructor.this);
       }
     });
-    if (isCardboardEnabled(this)) {
-      mCardboardButton.setVisibility(View.VISIBLE);
-      mCardboardButton.setOnClickListener(new View.OnClickListener()
+    mCardboardButton.setVisibility(View.VISIBLE);
+    mCardboardButton.setOnClickListener(new View.OnClickListener()
+    {
+      @Override
+      public void onClick(View view)
       {
-        @Override
-        public void onClick(View view)
-        {
-          Intent i = new Intent(Intent.ACTION_VIEW);
-          i.setDataAndType(Uri.parse("file://" + filename), "text/plain");
-          startActivity(i);
-          System.exit(0);
-        }
-      });
-    }
+        Intent i;
+        if (Build.MANUFACTURER.toUpperCase().startsWith("ASUS"))
+          i = new Intent(OpenConstructor.this, DaydreamActivity.class);
+        else
+          i = new Intent(OpenConstructor.this, CardboardActivity.class);
+        i.setDataAndType(Uri.parse(filename), "text/plain");
+        startActivity(i);
+      }
+    });
     mThumbnailButton.setVisibility(View.VISIBLE);
     mThumbnailButton.setOnClickListener(new View.OnClickListener()
     {

@@ -27,20 +27,12 @@ public abstract class AbstractActivity extends Activity
   protected void defaultSettings()
   {
     SharedPreferences.Editor e = PreferenceManager.getDefaultSharedPreferences(this).edit();
-    e.putBoolean(getString(R.string.pref_cardboard), isCardboardEnabled(this));
     e.putBoolean(getString(R.string.pref_landscape), isLandscape(this));
     e.putBoolean(getString(R.string.pref_noisefilter), isNoiseFilterOn(this));
     e.putBoolean(getString(R.string.pref_poisson), isPoissonReconstructionOn(this));
     e.putBoolean(getString(R.string.pref_sharpphotos), isSharpPhotosOn(this));
     e.putBoolean(getString(R.string.pref_spaceclearing), isSpaceClearingOn(this));
     e.apply();
-  }
-
-  public static boolean isCardboardEnabled(Context context)
-  {
-    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
-    String key = context.getString(R.string.pref_cardboard);
-    return pref.getBoolean(key, false);
   }
 
   public static boolean isLandscape(Context context) {

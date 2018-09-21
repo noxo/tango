@@ -12,7 +12,8 @@ LOCAL_C_INCLUDES += $(PROJECT_ROOT)/third_party/glm/ \
                     $(PROJECT_ROOT)/third_party/libpng/include/ \
                     $(PROJECT_ROOT)/common/
 
-LOCAL_SRC_FILES := ../../../../../common/data/file3d.cc \
+LOCAL_SRC_FILES := ../../../../../common/data/array3d.cc \
+                   ../../../../../common/data/file3d.cc \
                    ../../../../../common/data/image.cc \
                    ../../../../../common/data/mesh.cc \
                    ../../../../../common/editor/effector.cc \
