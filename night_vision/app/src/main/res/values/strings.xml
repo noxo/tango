@@ -1,15 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Night vision</string>
-    <string name="points_size">Points size</string>
     <string name="view_colors">View colors</string>
     <string name="view_mode">View mode</string>
-
-    <string-array name="point_size">
-        <item>Small</item>
-        <item>Normal</item>
-        <item>Big</item>
-    </string-array>
 
     <string-array name="view_colors">
         <item>Night vision</item>
@@ -21,7 +14,7 @@
 
     <string-array name="view_modes">
         <item>Normal</item>
-        <item>Full screen</item>
+        <item>Stretched</item>
         <item>VR</item>
     </string-array>
 </resources>
