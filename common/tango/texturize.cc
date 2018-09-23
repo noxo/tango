@@ -195,13 +195,13 @@ namespace oc {
         ret = Tango3DR_Config_setDouble(textureConfig, "min_resolution", finalize ? 0.005 : 0.01);
         if (ret != TANGO_3DR_SUCCESS)
             exit(EXIT_SUCCESS);
-        ret = Tango3DR_Config_setInt32(textureConfig, "max_num_textures", 4);
+        ret = Tango3DR_Config_setInt32(textureConfig, "max_num_textures", 8);
         if (ret != TANGO_3DR_SUCCESS)
             exit(EXIT_SUCCESS);
         ret = Tango3DR_Config_setInt32(textureConfig, "mesh_simplification_factor", 1);
         if (ret != TANGO_3DR_SUCCESS)
             exit(EXIT_SUCCESS);
-        ret = Tango3DR_Config_setInt32(textureConfig, "texture_size", 4096);
+        ret = Tango3DR_Config_setInt32(textureConfig, "texture_size", 2048);
         if (ret != TANGO_3DR_SUCCESS)
             exit(EXIT_SUCCESS);
         ret = Tango3DR_Config_setInt32(textureConfig, "texturing_backend", TANGO_3DR_CPU_TEXTURING);
