@@ -174,6 +174,20 @@ namespace oc {
         event = "";
     }
 
+    bool TangoTexturize::Test(Tango3DR_ReconstructionContext context, Tango3DR_CameraCalibration* camera) {
+        Tango3DR_Mesh mesh;
+        Tango3DR_Status ret;
+        ret = Tango3DR_extractFullMesh(context, &mesh);
+        if (ret != TANGO_3DR_SUCCESS)
+            exit(EXIT_SUCCESS);
+        bool notempty = mesh.num_faces != 0;
+
+        ret = Tango3DR_Mesh_destroy(&mesh);
+        if (ret != TANGO_3DR_SUCCESS)
+            exit(EXIT_SUCCESS);
+        return notempty;
+    }
+
     void TangoTexturize::CreateContext(bool finalize, Tango3DR_Mesh* mesh, Tango3DR_CameraCalibration* camera) {
         event = "SIMPLIFY";
         Tango3DR_Config textureConfig = Tango3DR_Config_create(TANGO_3DR_CONFIG_TEXTURING);

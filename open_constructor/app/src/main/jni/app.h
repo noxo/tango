@@ -33,7 +33,7 @@ namespace oc {
         void OnClearButtonClicked();
 
         void Load(std::string filename);
-        bool Save(std::string filename, bool poseCorrection = true);
+        bool Save(std::string filename);
         void SaveWithTextures(std::string filename);
         void Texturize(std::string filename);
 

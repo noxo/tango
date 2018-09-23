@@ -327,12 +327,11 @@ namespace oc {
         binder_mutex_.unlock();
     }
 
-    bool App::Save(std::string filename, bool poseCorrection) {
+    bool App::Save(std::string filename) {
         binder_mutex_.lock();
         render_mutex_.lock();
 
-        if (texturize.Init(tango.Context(), tango.Camera())) {
-            texturize.Process(filename);
+        if (texturize.Test(tango.Context(), tango.Camera())) {
 
             //save area
             TangoUUID uuid;
@@ -346,17 +345,61 @@ namespace oc {
             }
 
             //pose correction
-            if (poseCorrection) {
-                Tango3DR_Trajectory trajectory = texturize.GetTrajectory(tango.Dataset());
-                scan.CorrectPoses(tango.Dataset(), trajectory);
-                Tango3DR_Trajectory_destroy(trajectory);
-                tango.Disconnect();
-            }
+            Tango3DR_Trajectory trajectory = texturize.GetTrajectory(tango.Dataset());
+            scan.CorrectPoses(tango.Dataset(), trajectory);
+            Tango3DR_Trajectory_destroy(trajectory);
+            tango.Disconnect();
 
-            //merge with previous OBJ
+            //clear scene
             scan.Clear();
             tango.Clear();
-            File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
+            texturize.SetEvent("RECONSTRUCTION");
+
+            //prepare image cache
+            int count, width, height;
+            tango.Dataset().GetState(count, width, height);
+            Tango3DR_ImageBuffer t3dr_image;
+            t3dr_image.width = (uint32_t) width;
+            t3dr_image.height = (uint32_t) height;
+            t3dr_image.stride = (uint32_t) width;
+            t3dr_image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
+            t3dr_image.data = new unsigned char[width * height * 3];
+
+            //mesh reconstruction
+            std::vector<int> sessions = tango.Dataset().GetSessions();
+            int offset = sessions[sessions.size() - 1];
+            for (int i = offset; i < count; i++) {
+                std::ostringstream ss;
+                ss << "RECONSTRUCTION ";
+                ss << 100 * (i - offset) / (count - offset);
+                ss << "%";
+                texturize.SetEvent(ss.str());
+
+                Tango3DR_Pose t3dr_depth_pose = scan.LoadPose(tango.Dataset(), i, DEPTH_CAMERA);
+                Tango3DR_Pose t3dr_image_pose = scan.LoadPose(tango.Dataset(), i, COLOR_CAMERA);
+                Tango3DR_PointCloud t3dr_depth = scan.LoadPointCloud(tango.Dataset(), i);
+
+                Tango3DR_Status ret;
+                Tango3DR_GridIndexArray t3dr_updated;
+                t3dr_depth.timestamp = tango.Dataset().GetPoseTime(i, DEPTH_CAMERA);
+                t3dr_image.timestamp = tango.Dataset().GetPoseTime(i, COLOR_CAMERA);
+                Image::JPG2YUV(tango.Dataset().GetFileName(i, ".jpg"), t3dr_image.data, width, height);
+                ret = Tango3DR_updateFromPointCloud(tango.Context(), &t3dr_depth, &t3dr_depth_pose,
+                                                    &t3dr_image, &t3dr_image_pose, &t3dr_updated);
+                if (ret == TANGO_3DR_SUCCESS) {
+                    Tango3DR_GridIndexArray_destroy(&t3dr_updated);
+                }
+                Tango3DR_PointCloud_destroy(&t3dr_depth);
+            }
+
+            //save mesh
+            if (texturize.Init(tango.Context(), tango.Camera())) {
+                texturize.Process(filename);
+                scan.Clear();
+                tango.Clear();
+                File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
+            }
+            delete[] t3dr_image.data;
         }
         File3d(filename, true).WriteModel(scene.static_meshes_);
         int count = 0;
@@ -398,58 +441,6 @@ namespace oc {
         binder_mutex_.lock();
         render_mutex_.lock();
         tango.Disconnect();
-
-        //clear scene
-        scan.Clear();
-        tango.Clear();
-        texturize.SetEvent("RECONSTRUCTION");
-        for (unsigned int i = 0; i < scene.static_meshes_.size(); i++)
-            scene.static_meshes_[i].Destroy();
-        scene.static_meshes_.clear();
-
-        //prepare image cache
-        int count, width, height;
-        tango.Dataset().GetState(count, width, height);
-        Tango3DR_ImageBuffer t3dr_image;
-        t3dr_image.width = (uint32_t) width;
-        t3dr_image.height = (uint32_t) height;
-        t3dr_image.stride = (uint32_t) width;
-        t3dr_image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
-        t3dr_image.data = new unsigned char[width * height * 3];
-
-        //mesh reconstruction
-        std::vector<int> sessions = tango.Dataset().GetSessions();
-        for (int k = 1; k < sessions.size(); k++) {
-            for (int i = sessions[k - 1]; i < sessions[k]; i++) {
-                std::ostringstream ss;
-                ss << "RECONSTRUCTION ";
-                ss << 100 * i / count;
-                ss << "%";
-                texturize.SetEvent(ss.str());
-
-                Tango3DR_Pose t3dr_depth_pose = scan.LoadPose(tango.Dataset(), i, DEPTH_CAMERA);
-                Tango3DR_Pose t3dr_image_pose = scan.LoadPose(tango.Dataset(), i, COLOR_CAMERA);
-                Tango3DR_PointCloud t3dr_depth = scan.LoadPointCloud(tango.Dataset(), i);
-
-                Tango3DR_Status ret;
-                Tango3DR_GridIndexArray t3dr_updated;
-                t3dr_depth.timestamp = tango.Dataset().GetPoseTime(i, DEPTH_CAMERA);
-                t3dr_image.timestamp = tango.Dataset().GetPoseTime(i, COLOR_CAMERA);
-                Image::JPG2YUV(tango.Dataset().GetFileName(i, ".jpg"), t3dr_image.data, width, height);
-                ret = Tango3DR_updateFromPointCloud(tango.Context(), &t3dr_depth, &t3dr_depth_pose,
-                                                    &t3dr_image, &t3dr_image_pose, &t3dr_updated);
-                if (ret == TANGO_3DR_SUCCESS) {
-                    Tango3DR_GridIndexArray_destroy(&t3dr_updated);
-                }
-                Tango3DR_PointCloud_destroy(&t3dr_depth);
-            }
-            render_mutex_.unlock();
-            binder_mutex_.unlock();
-            Save(filename, false);
-            binder_mutex_.lock();
-            render_mutex_.lock();
-        }
-        delete[] t3dr_image.data;
 
         //poisson reconstruction
         if (poisson) {

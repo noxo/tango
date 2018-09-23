@@ -21,6 +21,7 @@ namespace oc {
         void Process(std::string filename);
         void SetEvent(std::string value) { event = value; }
         void SetResolution(float value) { resolution = value; }
+        bool Test(Tango3DR_ReconstructionContext context, Tango3DR_CameraCalibration* camera);
 
     private:
         void CreateContext(bool finalize, Tango3DR_Mesh* mesh, Tango3DR_CameraCalibration* camera);
