@@ -23,7 +23,7 @@ namespace oc {
                           std::vector<TangoMatrixTransformData> transform);
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin, double dmax,
                                      int noise, bool land, bool sharpPhotos, bool fixHoles, bool clearing,
-                                     std::string dataset);
+                                     bool correct, std::string dataset);
         void onPointCloudAvailable(TangoPointCloud *pc);
         void onFrameAvailable(TangoCameraId id, const TangoImageBuffer *im);
         void onTangoEvent(const TangoEvent *event);
@@ -70,6 +70,7 @@ namespace oc {
         TangoService tango;
         TangoTexturize texturize;
 
+        bool correction;
         bool gyro;
         bool landscape;
         bool poisson;

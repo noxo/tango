@@ -220,7 +220,8 @@ namespace oc {
 
     void App::OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin,
                                       double dmax, int noise, bool land, bool sharpPhotos,
-                                      bool fixHoles, bool clearing, std::string dataset) {
+                                      bool fixHoles, bool clearing, bool correct, std::string dataset) {
+        correction = correct;
         landscape = land;
         poisson = fixHoles;
         sharp = sharpPhotos;
@@ -344,52 +345,60 @@ namespace oc {
                 fclose(file);
             }
 
-            //pose correction
-            Tango3DR_Trajectory trajectory = texturize.GetTrajectory(tango.Dataset());
-            scan.CorrectPoses(tango.Dataset(), trajectory);
-            Tango3DR_Trajectory_destroy(trajectory);
-            tango.Disconnect();
+            if (correction) {
+                //pose correction
+                Tango3DR_Trajectory trajectory = texturize.GetTrajectory(tango.Dataset());
+                scan.CorrectPoses(tango.Dataset(), trajectory);
+                Tango3DR_Trajectory_destroy(trajectory);
+                tango.Disconnect();
 
-            //clear scene
-            scan.Clear();
-            tango.Clear();
-            texturize.SetEvent("RECONSTRUCTION");
+                //clear scene
+                scan.Clear();
+                tango.Clear();
+                texturize.SetEvent("RECONSTRUCTION");
 
-            //prepare image cache
-            int count, width, height;
-            tango.Dataset().GetState(count, width, height);
-            Tango3DR_ImageBuffer t3dr_image;
-            t3dr_image.width = (uint32_t) width;
-            t3dr_image.height = (uint32_t) height;
-            t3dr_image.stride = (uint32_t) width;
-            t3dr_image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
-            t3dr_image.data = new unsigned char[width * height * 3];
+                //prepare image cache
+                int count, width, height;
+                tango.Dataset().GetState(count, width, height);
+                Tango3DR_ImageBuffer t3dr_image;
+                t3dr_image.width = (uint32_t) width;
+                t3dr_image.height = (uint32_t) height;
+                t3dr_image.stride = (uint32_t) width;
+                t3dr_image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
+                t3dr_image.data = new unsigned char[width * height * 3];
 
-            //mesh reconstruction
-            std::vector<int> sessions = tango.Dataset().GetSessions();
-            int offset = sessions[sessions.size() - 1];
-            for (int i = offset; i < count; i++) {
-                std::ostringstream ss;
-                ss << "RECONSTRUCTION ";
-                ss << 100 * (i - offset) / (count - offset);
-                ss << "%";
-                texturize.SetEvent(ss.str());
+                //mesh reconstruction
+                std::vector<int> sessions = tango.Dataset().GetSessions();
+                int offset = sessions[sessions.size() - 1];
+                for (int i = offset; i < count; i++) {
+                    std::ostringstream ss;
+                    ss << "RECONSTRUCTION ";
+                    ss << 100 * (i - offset) / (count - offset);
+                    ss << "%";
+                    texturize.SetEvent(ss.str());
 
-                Tango3DR_Pose t3dr_depth_pose = scan.LoadPose(tango.Dataset(), i, DEPTH_CAMERA);
-                Tango3DR_Pose t3dr_image_pose = scan.LoadPose(tango.Dataset(), i, COLOR_CAMERA);
-                Tango3DR_PointCloud t3dr_depth = scan.LoadPointCloud(tango.Dataset(), i);
+                    Tango3DR_Pose t3dr_depth_pose = scan.LoadPose(tango.Dataset(), i,
+                                                                  DEPTH_CAMERA);
+                    Tango3DR_Pose t3dr_image_pose = scan.LoadPose(tango.Dataset(), i,
+                                                                  COLOR_CAMERA);
+                    Tango3DR_PointCloud t3dr_depth = scan.LoadPointCloud(tango.Dataset(), i);
 
-                Tango3DR_Status ret;
-                Tango3DR_GridIndexArray t3dr_updated;
-                t3dr_depth.timestamp = tango.Dataset().GetPoseTime(i, DEPTH_CAMERA);
-                t3dr_image.timestamp = tango.Dataset().GetPoseTime(i, COLOR_CAMERA);
-                Image::JPG2YUV(tango.Dataset().GetFileName(i, ".jpg"), t3dr_image.data, width, height);
-                ret = Tango3DR_updateFromPointCloud(tango.Context(), &t3dr_depth, &t3dr_depth_pose,
-                                                    &t3dr_image, &t3dr_image_pose, &t3dr_updated);
-                if (ret == TANGO_3DR_SUCCESS) {
-                    Tango3DR_GridIndexArray_destroy(&t3dr_updated);
+                    Tango3DR_Status ret;
+                    Tango3DR_GridIndexArray t3dr_updated;
+                    t3dr_depth.timestamp = tango.Dataset().GetPoseTime(i, DEPTH_CAMERA);
+                    t3dr_image.timestamp = tango.Dataset().GetPoseTime(i, COLOR_CAMERA);
+                    Image::JPG2YUV(tango.Dataset().GetFileName(i, ".jpg"), t3dr_image.data,
+                                   width, height);
+                    ret = Tango3DR_updateFromPointCloud(tango.Context(), &t3dr_depth,
+                                                        &t3dr_depth_pose,
+                                                        &t3dr_image, &t3dr_image_pose,
+                                                        &t3dr_updated);
+                    if (ret == TANGO_3DR_SUCCESS) {
+                        Tango3DR_GridIndexArray_destroy(&t3dr_updated);
+                    }
+                    Tango3DR_PointCloud_destroy(&t3dr_depth);
                 }
-                Tango3DR_PointCloud_destroy(&t3dr_depth);
+                delete[] t3dr_image.data;
             }
 
             //save mesh
@@ -399,7 +408,6 @@ namespace oc {
                 tango.Clear();
                 File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
             }
-            delete[] t3dr_image.data;
         }
         File3d(filename, true).WriteModel(scene.static_meshes_);
         int count = 0;
@@ -586,8 +594,8 @@ extern "C" {
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_main_JNI_onTangoServiceConnected(JNIEnv* env, jobject,
           jobject iBinder, jdouble res, jdouble dmin, jdouble dmax, jint noise, jboolean land,
-          jboolean sharp, jboolean fixholes, jboolean clearing, jstring d) {
-  app.OnTangoServiceConnected(env, iBinder, res, dmin, dmax, noise, land, sharp, fixholes, clearing, jstring2string(env, d));
+          jboolean sharp, jboolean fixholes, jboolean clearing, jboolean correction, jstring d) {
+  app.OnTangoServiceConnected(env, iBinder, res, dmin, dmax, noise, land, sharp, fixholes, clearing, correction, jstring2string(env, d));
 }
 
 JNIEXPORT void JNICALL

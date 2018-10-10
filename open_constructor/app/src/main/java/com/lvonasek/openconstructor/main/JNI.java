@@ -24,7 +24,8 @@ public class JNI
   // Called when the Tango service is connected successfully.
   public static native void onTangoServiceConnected(IBinder binder, double res, double dmin,
                                                     double dmax, int noise, boolean land,
-                                                    boolean sharp, boolean fixHoles, boolean clearing,
+                                                    boolean sharp, boolean fixHoles,
+                                                    boolean clearing, boolean correction,
                                                     String temp);
 
   // Setup the view port width and height.

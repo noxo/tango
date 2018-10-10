@@ -21,6 +21,13 @@
 
         <CheckBoxPreference
             android:defaultValue="false"
+            android:key="@string/pref_correction"
+            android:summary="@string/pose_correction_summary"
+            android:title="@string/pose_correction">
+        </CheckBoxPreference>
+
+        <CheckBoxPreference
+            android:defaultValue="false"
             android:key="@string/pref_noisefilter"
             android:summary="@string/realtime_noise_filter_summary"
             android:title="@string/realtime_noise_filter">

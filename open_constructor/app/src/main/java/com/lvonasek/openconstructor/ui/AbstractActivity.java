@@ -27,6 +27,7 @@ public abstract class AbstractActivity extends Activity
   protected void defaultSettings()
   {
     SharedPreferences.Editor e = PreferenceManager.getDefaultSharedPreferences(this).edit();
+    e.putBoolean(getString(R.string.pref_correction), isPoseCorrectionOn(this));
     e.putBoolean(getString(R.string.pref_landscape), isLandscape(this));
     e.putBoolean(getString(R.string.pref_noisefilter), isNoiseFilterOn(this));
     e.putBoolean(getString(R.string.pref_poisson), isPoissonReconstructionOn(this));
@@ -45,6 +46,13 @@ public abstract class AbstractActivity extends Activity
   {
     SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
     String key = context.getString(R.string.pref_noisefilter);
+    return pref.getBoolean(key, false);
+  }
+
+  public static boolean isPoseCorrectionOn(Context context)
+  {
+    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
+    String key = context.getString(R.string.pref_correction);
     return pref.getBoolean(key, false);
   }
 
