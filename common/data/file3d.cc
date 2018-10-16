@@ -14,7 +14,9 @@ namespace oc {
         }
 
         std::string ext = filename.substr(filename.size() - 3, filename.size() - 1);
-        if (ext.compare("ply") == 0)
+        if (ext.compare("pcl") == 0)
+            type = PCL;
+        else if (ext.compare("ply") == 0)
             type = PLY;
         else if (ext.compare("obj") == 0)
             type = OBJ;
@@ -34,11 +36,13 @@ namespace oc {
     void File3d::ReadModel(int subdivision, std::vector<Mesh>& output) {
         assert(!writeMode);
         ReadHeader();
-        if (type == PLY) {
+        if (type == PCL)
+            ParsePCL(subdivision, output);
+        else if (type == PLY)
             ParsePLY(subdivision, output);
-        } else if (type == OBJ) {
+        else if (type == OBJ)
             ParseOBJ(subdivision, output);
-        } else
+        else
             assert(false);
     }
 
@@ -283,6 +287,19 @@ namespace oc {
         std::deque<glm::vec2>().swap(uvs);
     }
 
+    void File3d::ParsePCL(int subdivision, std::vector<Mesh> &output) {
+        assert(!writeMode);
+        glm::vec3 a;
+        float w;
+        //load vertices
+        Mesh m;
+        for (unsigned int i = 0; i < vertexCount; i++) {
+            fscanf(file, "%f %f %f %f\n", &a.x, &a.y, &a.z, &w);
+            m.vertices.push_back(a);
+        }
+        output.push_back(m);
+    }
+
     void File3d::ParsePLY(int subdivision, std::vector<Mesh> &output) {
         assert(!writeMode);
         glm::vec3 a, b, c, n;
@@ -381,7 +398,9 @@ namespace oc {
 
     void File3d::ReadHeader() {
         char buffer[1024];
-        if (type == PLY) {
+        if (type == PCL) {
+            fscanf(file, "%d\n", &vertexCount);
+        } else if (type == PLY) {
             while (true) {
                 if (!fgets(buffer, 1024, file))
                     break;

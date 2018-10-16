@@ -7,7 +7,7 @@
 #include "data/mesh.h"
 
 namespace oc {
-    enum TYPE{OBJ, PLY};
+    enum TYPE{OBJ, PCL, PLY};
 
 class File3d {
 public:
@@ -21,6 +21,7 @@ public:
 private:
     void CleanStr(std::string& str);
     void ParseOBJ(int subdivision, std::vector<oc::Mesh> &output);
+    void ParsePCL(int subdivision, std::vector<Mesh> &output);
     void ParsePLY(int subdivision, std::vector<Mesh> &output);
     void ReadHeader();
     unsigned int ScanDec(char *line, int offset);
