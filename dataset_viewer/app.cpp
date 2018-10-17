@@ -83,6 +83,19 @@ std::vector<unsigned int> indices;
 #define KEY_RIGHT 'd'
 #define KEY_NITRO ' '
 
+glm::mat4 convertToMat(double* translation, double* orientation) {
+    glm::quat rotation;
+    rotation.x = orientation[0];
+    rotation.y = orientation[1];
+    rotation.z = orientation[2];
+    rotation.w = orientation[3];
+    glm::mat4 output = glm::mat4_cast(rotation);
+    output[3][0] = translation[0];
+    output[3][1] = translation[1];
+    output[3][2] = translation[2];
+    return output;
+}
+
 /**
  * @brief display updates display
  */
@@ -227,14 +240,24 @@ void initializeGl()
 }
 
 void loadPointCloud() {
+    //get depth sensor pose
+    double translation[3];
+    double orientation[4];
+    dataset->GetPose(poseIndex, DEPTH_CAMERA, translation, orientation);
+    glm::mat4 sensor2world = convertToMat(translation, orientation);
+
+    //get camera pose
+    dataset->GetPose(poseIndex, COLOR_CAMERA, translation, orientation);
+    glm::mat4 world2uv = glm::inverse(convertToMat(translation, orientation));
+
+    //get raw pointcloud
     std::vector<oc::Mesh> mesh;
-    glm::mat4 sensor2world = dataset->GetPose(poseIndex)[1];
-    glm::mat4 world2uv = glm::inverse(dataset->GetPose(poseIndex)[0]);
     oc::Image jpg(dataset->GetFileName(poseIndex, ".jpg"));
     oc::File3d pcl(dataset->GetFileName(poseIndex, ".pcl"), false);
     pcl.ReadModel(-1, mesh);
 
-    int mapScale = 10;
+    //process pointcloud
+    int mapScale = 12;
     int stride = jpg.GetWidth() / mapScale;
     int height = jpg.GetHeight() / mapScale;
     int map[stride * height];
@@ -253,7 +276,7 @@ void loadPointCloud() {
         int x = (int)(t.x * jpg.GetWidth());
         int y = (int)(t.y * jpg.GetHeight());
         int index = (y * jpg.GetWidth() + x) * 4;
-        if ((index > 0) && (index < jpg.GetWidth() * jpg.GetHeight() * 4 + 4)) {
+        if ((x >= 0) && (x < jpg.GetWidth()) && (y >= 0) && (y < jpg.GetHeight())) {
             map[((int)(y / mapScale)) * stride + (int)(x / mapScale)] = points.size();
             glm::ivec3 color;
             color.r = jpg.GetData()[index + 0];

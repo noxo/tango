@@ -36,31 +36,24 @@ namespace oc {
         return dataset + "/" + number + extension;
     }
 
-    std::vector<glm::mat4> Dataset::GetPose(int index) {
+    void Dataset::GetPose(int index, int pose, double* translation, double* orientation) {
         int count = 0;
         glm::mat4 mat;
         std::vector<glm::mat4> output;
-        FILE* file = fopen(GetFileName(index, ".txt").c_str(), "r");
-        fscanf(file, "%d\n", &count);
-        for (int i = 0; i < count; i++) {
-            for (int j = 0; j < 4; j++)
-                fscanf(file, "%f %f %f %f\n", &mat[j][0], &mat[j][1], &mat[j][2], &mat[j][3]);
-            output.push_back(mat);
+        FILE* file = fopen(GetFileName(index, ".pos").c_str(), "r");
+        for (int i = 0; i <= pose; i++) {
+            fscanf(file, "%lf %lf %lf %lf %lf %lf %lf\n", &translation[0], &translation[1], &translation[2],
+                   &orientation[0], &orientation[1], &orientation[2], &orientation[3]);
         }
         fclose(file);
-        return output;
     }
 
     double Dataset::GetPoseTime(int index, int pose) {
-        int count = 0;
-        glm::mat4 mat;
         double timestamp;
-        FILE* file = fopen(GetFileName(index, ".txt").c_str(), "r");
-        fscanf(file, "%d\n", &count);
-        for (int i = 0; i < count; i++) {
-            for (int j = 0; j < 4; j++)
-                fscanf(file, "%f %f %f %f\n", &mat[j][0], &mat[j][1], &mat[j][2], &mat[j][3]);
-        }
+        FILE* file = fopen(GetFileName(index, ".pos").c_str(), "r");
+        for (int i = 0; i < 2; i++)
+            fscanf(file, "%lf %lf %lf %lf %lf %lf %lf\n", &timestamp, &timestamp, &timestamp,
+                   &timestamp, &timestamp, &timestamp, &timestamp);
         for (int i = 0; i <= pose; i++)
             fscanf(file, "%lf\n", &timestamp);
         fclose(file);
@@ -97,13 +90,17 @@ namespace oc {
         fclose(file);
     }
 
-    void Dataset::WritePose(int index, std::vector<glm::mat4> pose, double imageTimestamp, double depthTimestamp) {
-        FILE* file = fopen(GetFileName(index, ".txt").c_str(), "w");
-        fprintf(file, "%d\n", (int) pose.size());
-        for (int k = 0; k < pose.size(); k++)
-            for (int i = 0; i < 4; i++)
-                fprintf(file, "%f %f %f %f\n", pose[k][i][0], pose[k][i][1],
-                                               pose[k][i][2], pose[k][i][3]);
+    void Dataset::WritePose(int index, double* imageTranslation, double* imageOrientation,
+                            double* depthTranslation, double* depthOrientation,
+                            double imageTimestamp, double depthTimestamp) {
+        FILE* file = fopen(GetFileName(index, ".pos").c_str(), "w");
+        fprintf(file, "%lf %lf %lf %lf %lf %lf %lf\n",
+                imageTranslation[0], imageTranslation[1], imageTranslation[2],
+                imageOrientation[0], imageOrientation[1], imageOrientation[2], imageOrientation[3]);
+        fprintf(file, "%lf %lf %lf %lf %lf %lf %lf\n",
+                depthTranslation[0], depthTranslation[1], depthTranslation[2],
+                depthOrientation[0], depthOrientation[1], depthOrientation[2], depthOrientation[3]);
+
         fprintf(file, "%lf\n", imageTimestamp);
         fprintf(file, "%lf\n", depthTimestamp);
         fclose(file);

@@ -67,10 +67,13 @@ namespace oc {
     }
 
     void App::StoreDataset(Tango3DR_PointCloud t3dr_depth, Tango3DR_ImageBuffer t3dr_image,
-                           Tango3DR_Pose t3dr_depth_pose, Tango3DR_Pose t3dr_image_pose,
-                           std::vector<TangoMatrixTransformData> transform) {
+                               Tango3DR_Pose t3dr_depth_pose, Tango3DR_Pose t3dr_image_pose) {
+
         //export color camera frame and pose
-        texturize.Add(t3dr_image, tango.Convert(transform), tango.Dataset(), t3dr_depth.timestamp);
+        int pose = texturize.Add(t3dr_image, tango.Dataset());
+        tango.Dataset().WritePose(pose, t3dr_image_pose.translation, t3dr_image_pose.orientation,
+                                  t3dr_depth_pose.translation, t3dr_depth_pose.orientation,
+                                  t3dr_image.timestamp, t3dr_depth.timestamp);
 
         //export calibration
         Tango3DR_CameraCalibration* c = tango.Camera();
@@ -82,7 +85,6 @@ namespace oc {
         poseIndex = count - 1;
 
         //export point cloud
-        scan.SavePose(tango.Dataset(), poseIndex, t3dr_depth_pose, t3dr_image_pose);
         scan.SavePointCloud(tango.Dataset(), poseIndex, t3dr_depth);
 
 #ifdef EXPORT_DEPTHMAP
@@ -195,7 +197,7 @@ namespace oc {
             return;
         }
 
-        StoreDataset(t3dr_depth, t3dr_image, t3dr_depth_pose, t3dr_image_pose, transform);
+        StoreDataset(t3dr_depth, t3dr_image, t3dr_depth_pose, t3dr_image_pose);
         std::vector<std::pair<GridIndex, Tango3DR_Mesh*> > added;
         added = scan.Process(tango.Context(), &t3dr_updated);
         render_mutex_.lock();
@@ -220,7 +222,8 @@ namespace oc {
 
     void App::OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin,
                                       double dmax, int noise, bool land, bool sharpPhotos,
-                                      bool fixHoles, bool clearing, bool correct, std::string dataset) {
+                                      bool fixHoles, bool clearing, bool correct, bool asus,
+                                      std::string dataset) {
         correction = correct;
         landscape = land;
         poisson = fixHoles;
@@ -242,6 +245,7 @@ namespace oc {
             exit(EXIT_SUCCESS);
 
         binder_mutex_.lock();
+        scan.SetBuggyDevice(asus);
         tango.Connect(this);
         tango.Setup3DR(res, dmin, dmax, noise, clearing);
 
@@ -377,10 +381,9 @@ namespace oc {
                     ss << "%";
                     texturize.SetEvent(ss.str());
 
-                    Tango3DR_Pose t3dr_depth_pose = scan.LoadPose(tango.Dataset(), i,
-                                                                  DEPTH_CAMERA);
-                    Tango3DR_Pose t3dr_image_pose = scan.LoadPose(tango.Dataset(), i,
-                                                                  COLOR_CAMERA);
+                    Tango3DR_Pose t3dr_depth_pose, t3dr_image_pose;
+                    tango.Dataset().GetPose(i, DEPTH_CAMERA, t3dr_depth_pose.translation, t3dr_depth_pose.orientation);
+                    tango.Dataset().GetPose(i, COLOR_CAMERA, t3dr_image_pose.translation, t3dr_image_pose.orientation);
                     Tango3DR_PointCloud t3dr_depth = scan.LoadPointCloud(tango.Dataset(), i);
 
                     Tango3DR_Status ret;
@@ -594,8 +597,10 @@ extern "C" {
 JNIEXPORT void JNICALL
 Java_com_lvonasek_openconstructor_main_JNI_onTangoServiceConnected(JNIEnv* env, jobject,
           jobject iBinder, jdouble res, jdouble dmin, jdouble dmax, jint noise, jboolean land,
-          jboolean sharp, jboolean fixholes, jboolean clearing, jboolean correction, jstring d) {
-  app.OnTangoServiceConnected(env, iBinder, res, dmin, dmax, noise, land, sharp, fixholes, clearing, correction, jstring2string(env, d));
+          jboolean sharp, jboolean fixholes, jboolean clearing, jboolean correction, jboolean asus,
+                                                                   jstring d) {
+  app.OnTangoServiceConnected(env, iBinder, res, dmin, dmax, noise, land, sharp, fixholes, clearing,
+                              correction, asus, jstring2string(env, d));
 }
 
 JNIEXPORT void JNICALL

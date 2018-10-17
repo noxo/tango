@@ -103,6 +103,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
             boolean pose  = isPoseCorrectionOn(OpenConstructor.this);
             boolean sharp = isSharpPhotosOn(OpenConstructor.this);
             boolean land  = isLandscape(OpenConstructor.this);
+            boolean asus  = Build.MANUFACTURER.toUpperCase().contains("ASUS");;
 
             if (android.os.Build.DEVICE.toLowerCase().startsWith("yellowstone"))
               land = !land;
@@ -149,7 +150,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
 
             mMoveZ = 10;
             String t = getTempPath().getAbsolutePath();
-            JNI.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, sharp, holes, clear, pose, t);
+            JNI.onTangoServiceConnected(srv, res, dmin, dmax, noise, land, sharp, holes, clear, pose, asus, t);
             JNI.onToggleButtonClicked(m3drRunning);
             JNI.setView(0, 0, 0, 0, mMoveZ, true);
             final File obj = new File(getPath(), Service.getLink(OpenConstructor.this));

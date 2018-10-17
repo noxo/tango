@@ -3,6 +3,8 @@
 
 namespace oc {
 
+    bool TangoScan::buggyDevice = false;
+
     bool GridIndex::operator==(const GridIndex &o) const {
         return indices[0] == o.indices[0] && indices[1] == o.indices[1] && indices[2] == o.indices[2];
     }
@@ -49,8 +51,11 @@ namespace oc {
         dataset.GetState(count, width, height);
         std::vector<int> sessions = dataset.GetSessions();
         int firstPose = sessions[sessions.size() - 1];
-        glm::dmat4 trImage = Convert(LoadPose(dataset, firstPose, COLOR_CAMERA));
-        glm::dmat4 trDepth = Convert(LoadPose(dataset, firstPose, DEPTH_CAMERA));
+        Tango3DR_Pose color, depth;
+        dataset.GetPose(firstPose, COLOR_CAMERA, color.translation, color.orientation);
+        dataset.GetPose(firstPose, DEPTH_CAMERA, depth.translation, depth.orientation);
+        glm::dmat4 trImage = Convert(color);
+        glm::dmat4 trDepth = Convert(depth);
         trImage = trImage * glm::inverse(Convert(GetPose(trajectory, dataset, firstPose, COLOR_CAMERA)));
         trDepth = trDepth * glm::inverse(Convert(GetPose(trajectory, dataset, firstPose, DEPTH_CAMERA)));
 
@@ -60,7 +65,10 @@ namespace oc {
             Tango3DR_Pose t3dr_depth_pose = GetPose(trajectory, dataset, i, DEPTH_CAMERA);
             t3dr_image_pose = Convert(trImage * Convert(t3dr_image_pose));
             t3dr_depth_pose = Convert(trDepth * Convert(t3dr_depth_pose));
-            SavePose(dataset, i, t3dr_depth_pose, t3dr_image_pose);
+            dataset.WritePose(i, t3dr_image_pose.translation, t3dr_image_pose.orientation,
+                              t3dr_depth_pose.translation, t3dr_depth_pose.orientation,
+                              dataset.GetPoseTime(i, COLOR_CAMERA),
+                              dataset.GetPoseTime(i, DEPTH_CAMERA));
         }
     }
 
@@ -103,7 +111,7 @@ namespace oc {
         glm::dquat quat;
         quat.x = t3dr_pose.orientation[0];
         quat.y = t3dr_pose.orientation[2];
-        quat.z = -t3dr_pose.orientation[1];
+        quat.z =-t3dr_pose.orientation[1];
         quat.w = t3dr_pose.orientation[3];
         if (pose == COLOR_CAMERA) {
             quat = glm::rotate(quat, glm::radians(180.0), glm::dvec3(0, 0, 1));
@@ -136,33 +144,12 @@ namespace oc {
         return t3dr_depth;
     }
 
-
-    Tango3DR_Pose TangoScan::LoadPose(Dataset dataset, int index, int pose) {
-        Tango3DR_Pose t3dr_pose = Tango3DR_Pose();
-        FILE* file = fopen(dataset.GetFileName(index, ".pos").c_str(), "r");
-        for (int i = 0; i <= pose; i++) {
-            fscanf(file, "%lf %lf %lf %lf %lf %lf %lf\n", &t3dr_pose.translation[0], &t3dr_pose.translation[1], &t3dr_pose.translation[2],
-                   &t3dr_pose.orientation[0], &t3dr_pose.orientation[1], &t3dr_pose.orientation[2], &t3dr_pose.orientation[3]);
-        }
-        fclose(file);
-        return t3dr_pose;
-    }
-
     void TangoScan::SavePointCloud(Dataset dataset, int index, Tango3DR_PointCloud t3dr_depth) {
         FILE* file = fopen(dataset.GetFileName(index, ".pcl").c_str(), "w");
         fprintf(file, "%d\n", t3dr_depth.num_points);
         for (int i = 0; i < t3dr_depth.num_points; i++) {
             fprintf(file, "%f %f %f %f\n", t3dr_depth.points[i][0], t3dr_depth.points[i][1], t3dr_depth.points[i][2], t3dr_depth.points[i][3]);
         }
-        fclose(file);
-    }
-
-    void TangoScan::SavePose(Dataset dataset, int index, Tango3DR_Pose t3dr_depth_pose, Tango3DR_Pose t3dr_image_pose) {
-        FILE* file = fopen(dataset.GetFileName(index, ".pos").c_str(), "w");
-        fprintf(file, "%lf %lf %lf %lf %lf %lf %lf\n", t3dr_image_pose.translation[0], t3dr_image_pose.translation[1], t3dr_image_pose.translation[2],
-                t3dr_image_pose.orientation[0], t3dr_image_pose.orientation[1], t3dr_image_pose.orientation[2], t3dr_image_pose.orientation[3]);
-        fprintf(file, "%lf %lf %lf %lf %lf %lf %lf\n", t3dr_depth_pose.translation[0], t3dr_depth_pose.translation[1], t3dr_depth_pose.translation[2],
-                t3dr_depth_pose.orientation[0], t3dr_depth_pose.orientation[1], t3dr_depth_pose.orientation[2], t3dr_depth_pose.orientation[3]);
         fclose(file);
     }
 }

@@ -10,7 +10,7 @@ namespace oc {
     class TangoTexturize {
     public:
         TangoTexturize();
-        void Add(Tango3DR_ImageBuffer t3dr_image, std::vector<glm::mat4> matrix, Dataset dataset, double depthTimestamp);
+        int Add(Tango3DR_ImageBuffer t3dr_image, Dataset dataset);
         void ApplyFrames(Dataset dataset);
         void Callback(int progress);
         void Clear(Dataset dataset);

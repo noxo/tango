@@ -1,7 +1,6 @@
 #include <sstream>
 #include "data/image.h"
 #include "gl/camera.h"
-#include "tango/scan.h"
 #include "tango/service.h"
 #include "tango/texturize.h"
 
@@ -15,18 +14,17 @@ namespace oc {
 
     TangoTexturize::TangoTexturize() : poses(0) {}
 
-    void TangoTexturize::Add(Tango3DR_ImageBuffer t3dr_image, std::vector<glm::mat4> matrix, Dataset dataset, double depthTimestamp) {
+    int TangoTexturize::Add(Tango3DR_ImageBuffer t3dr_image, Dataset dataset) {
         if (poses == 0)
             dataset.GetState(poses, width, height);
+        int output = poses;
 
         //save frame
         width = t3dr_image.width;
         height = t3dr_image.height;
         Image::YUV2JPG(t3dr_image.data, width, height, dataset.GetFileName(poses, ".jpg"), false);
-
-        //save transform
-        dataset.WritePose(poses, matrix, t3dr_image.timestamp, depthTimestamp);
         dataset.WriteState(++poses, width, height);
+        return output;
     }
 
     void TangoTexturize::ApplyFrames(Dataset dataset) {
@@ -47,7 +45,8 @@ namespace oc {
 
             image.timestamp = dataset.GetPoseTime(i, COLOR_CAMERA);
             Image::JPG2YUV(dataset.GetFileName(i, ".jpg"), image.data, width, height);
-            Tango3DR_Pose t3dr_image_pose = TangoScan::LoadPose(dataset, i, COLOR_CAMERA);
+            Tango3DR_Pose t3dr_image_pose;
+            dataset.GetPose(i, COLOR_CAMERA, t3dr_image_pose.translation, t3dr_image_pose.orientation);
             if (Tango3DR_updateTexture(context, &image, &t3dr_image_pose) != TANGO_3DR_SUCCESS)
                 exit(EXIT_SUCCESS);
         }

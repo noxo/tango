@@ -26,7 +26,7 @@ public class JNI
                                                     double dmax, int noise, boolean land,
                                                     boolean sharp, boolean fixHoles,
                                                     boolean clearing, boolean correction,
-                                                    String temp);
+                                                    boolean asus, String temp);
 
   // Setup the view port width and height.
   public static native void onGlSurfaceChanged(int width, int height);

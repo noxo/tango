@@ -17,12 +17,14 @@ namespace oc {
         void GetCalibration(float& cx, float& cy, float& fx, float& fy);
         std::string GetFileName(int index, std::string extension);
         std::string GetPath() { return dataset; }
-        std::vector<glm::mat4> GetPose(int index);
+        void GetPose(int index, int pose, double* translation, double* orientation);
         double GetPoseTime(int index, int pose);
         std::vector<int> GetSessions();
         void GetState(int& count, int& width, int& height);
         void WriteCalibration(double cx, double cy, double fx, double fy);
-        void WritePose(int index, std::vector<glm::mat4> pose, double imageTimestamp, double depthTimestamp);
+        void WritePose(int index, double* imageTranslation, double* imageOrientation,
+                       double* depthTranslation, double* depthOrientation,
+                       double imageTimestamp, double depthTimestamp);
         void WriteState(int count, int width, int height);
     private:
         std::string dataset;
