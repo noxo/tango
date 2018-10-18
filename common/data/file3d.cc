@@ -296,6 +296,7 @@ namespace oc {
         for (unsigned int i = 0; i < vertexCount; i++) {
             fscanf(file, "%f %f %f %f\n", &a.x, &a.y, &a.z, &w);
             m.vertices.push_back(a);
+            m.colors.push_back(256 * (int)(w * 255));
         }
         output.push_back(m);
     }

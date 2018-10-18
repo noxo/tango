@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools"
           package="com.lvonasek.openconstructor"
-          android:versionCode="20181017"
+          android:versionCode="20181018"
           android:versionName="1.0.2">
 
     <uses-permission android:name="android.permission.CAMERA" />

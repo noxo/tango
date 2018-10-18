@@ -14,6 +14,7 @@
 #include <data/file3d.h>
 #include <GL/freeglut.h>
 
+//#define INFRA_CAMERA //not working with MAKE_SURFACE!!!
 #define MAKE_SURFACE
 
 //shader
@@ -105,6 +106,7 @@ void display(void)
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glViewport(0, 0, resolution.x, resolution.y);
+    glEnable(GL_DEPTH_TEST);
 
     /// set view
     float aspect = resolution.x / (float)resolution.y;
@@ -263,9 +265,15 @@ void loadPointCloud() {
     int map[stride * height];
     for (int i = 0; i < stride * height; i++)
         map[i] = -1;
-    for (glm::vec3& v : mesh[0].vertices) {
+    for (unsigned int i = 0; i < mesh[0].vertices.size(); i++) {
+        glm::vec3 v = mesh[0].vertices[i];
         glm::vec4 w = sensor2world * glm::vec4(v, 1.0f);
         w /= glm::abs(w.w);
+#ifdef INFRA_CAMERA
+        colors.push_back(mesh[0].colors[i]);
+        points.push_back(glm::vec3(w.x, w.y, w.z));
+        continue;
+#endif
         glm::vec4 t = world2uv * glm::vec4(w.x, w.y, w.z, 1.0f);
         t.x /= glm::abs(t.z * t.w);
         t.y /= glm::abs(t.z * t.w);
@@ -463,7 +471,7 @@ int main(int argc, char** argv)
     glutInitWindowSize(960,540);
     glutInitContextVersion(3,0);
     glutInitContextProfile(GLUT_CORE_PROFILE);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutCreateWindow(dataset->GetPath().c_str());
     //glutFullScreen();
     initializeGl();
@@ -489,8 +497,7 @@ int main(int argc, char** argv)
     }
 
     /// load point clouds
-    poseIndex = 0;
-    //for (poseIndex = poseCount - 1; poseIndex >= 0; poseIndex--)
+    for (poseIndex = poseCount - 1; poseIndex >= 0; poseIndex--)
         loadPointCloud();
 
     /// init camera

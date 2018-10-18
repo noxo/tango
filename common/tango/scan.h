@@ -40,12 +40,12 @@ namespace oc {
                                                                    Tango3DR_GridIndexArray *t3dr_updated);
         void SetBuggyDevice(bool on) { buggyDevice = on; }
 
-        static Tango3DR_Pose GetPose(Tango3DR_Trajectory trajectory, Dataset dataset, int index, int pose);
-        static Tango3DR_PointCloud LoadPointCloud(Dataset dataset, int index);
-        static void SavePointCloud(Dataset dataset, int index, Tango3DR_PointCloud t3dr_depth);
+        Tango3DR_Pose GetPose(Tango3DR_Trajectory trajectory, Dataset dataset, int index, int pose);
+        Tango3DR_PointCloud LoadPointCloud(Dataset dataset, int index);
+        void SavePointCloud(Dataset dataset, int index, Tango3DR_PointCloud t3dr_depth);
 
     private:
-        static bool buggyDevice;
+        bool buggyDevice;
         std::unordered_map<GridIndex, Tango3DR_Mesh*, GridIndexHasher> meshes;
     };
 }

@@ -3,8 +3,6 @@
 
 namespace oc {
 
-    bool TangoScan::buggyDevice = false;
-
     bool GridIndex::operator==(const GridIndex &o) const {
         return indices[0] == o.indices[0] && indices[1] == o.indices[1] && indices[2] == o.indices[2];
     }
@@ -116,10 +114,13 @@ namespace oc {
         if (pose == COLOR_CAMERA) {
             quat = glm::rotate(quat, glm::radians(180.0), glm::dvec3(0, 0, 1));
             quat = glm::rotate(quat, glm::radians(270.0), glm::dvec3(1, 0, 0));
+            if (buggyDevice) {
+                quat.x *= -1.0;
+                quat.y *= -1.0;
+            }
         } else if (pose == DEPTH_CAMERA) {
             quat = glm::rotate(quat, glm::radians(90.0), glm::dvec3(1, 0, 0));
         }
-
         Tango3DR_Pose t3dr_fixed_pose;
         t3dr_fixed_pose.orientation[0] = quat.x;
         t3dr_fixed_pose.orientation[1] = quat.y;
@@ -128,6 +129,15 @@ namespace oc {
         t3dr_fixed_pose.translation[0] = t3dr_pose.translation[0];
         t3dr_fixed_pose.translation[1] = t3dr_pose.translation[2];
         t3dr_fixed_pose.translation[2] = -t3dr_pose.translation[1];
+        if (buggyDevice) {
+            if (pose == COLOR_CAMERA) {
+                t3dr_fixed_pose.translation[0] *= -1.0;
+                t3dr_fixed_pose.translation[1] *= -1.0;
+            }
+            glm::dmat4 temp = Convert(t3dr_fixed_pose);
+            temp = glm::rotate(temp, glm::radians(90.0), glm::dvec3(0, 0, 1));
+            t3dr_fixed_pose = Convert(temp);
+        }
         return t3dr_fixed_pose;
     }
 
