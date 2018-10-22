@@ -3,17 +3,105 @@
 
 //#define EXPORT_DEPTHMAP
 
+oc::App *appInstance = 0;
+
 namespace {
     const int kSubdivisionSize = 20000;
+
+    void* process(void*) {
+
+        //check if pose is vlaid
+        std::vector<TangoMatrixTransformData> transform = appInstance->tango.Pose(appInstance->t3dr_image.timestamp, 0);
+        if (transform[COLOR_CAMERA].status_code != TANGO_POSE_VALID) {
+            pthread_detach(appInstance->threadId);
+            appInstance->binder_mutex_.unlock();
+            return 0;
+        }
+
+        //check if point cloud is valid and capturing is enabled
+        if (!appInstance->point_cloud_available_ || !appInstance->t3dr_is_running_) {
+            pthread_detach(appInstance->threadId);
+            appInstance->binder_mutex_.unlock();
+            return 0;
+        }
+
+        //sharp photos filtering
+        Tango3DR_Pose t3dr_image_pose = oc::TangoService::Extract3DRPose(appInstance->tango.Convert(transform)[COLOR_CAMERA]);
+        if (appInstance->sharp) {
+            glm::vec3 pos = glm::vec3((float) t3dr_image_pose.translation[0],
+                                      (float) t3dr_image_pose.translation[1],
+                                      (float) t3dr_image_pose.translation[2]);
+            glm::quat rot = glm::quat((float) t3dr_image_pose.orientation[0],
+                                      (float) t3dr_image_pose.orientation[1],
+                                      (float) t3dr_image_pose.orientation[2],
+                                      (float) t3dr_image_pose.orientation[3]);
+            float value = oc::GLCamera::Diff(pos, appInstance->image_position, rot, appInstance->image_rotation);
+            float diff = value > appInstance->last_diff ? value : 0.95f * appInstance->last_diff + 0.05f * value;
+            appInstance->last_diff = diff;
+            appInstance->image_position = pos;
+            appInstance->image_rotation = rot;
+            if (diff > 1) {
+                pthread_detach(appInstance->threadId);
+                appInstance->binder_mutex_.unlock();
+                return 0;
+            }
+        }
+
+        //get point cloud
+        Tango3DR_PointCloud t3dr_depth;
+        TangoSupport_getLatestPointCloud(appInstance->tango.Pointcloud(), &appInstance->front_cloud_);
+        t3dr_depth.timestamp = appInstance->front_cloud_->timestamp;
+        t3dr_depth.num_points = appInstance->front_cloud_->num_points;
+        t3dr_depth.points = appInstance->front_cloud_->points;
+
+        //update 3DR
+        Tango3DR_Pose t3dr_depth_pose = oc::TangoService::Extract3DRPose(appInstance->point_cloud_matrix_);
+        Tango3DR_GridIndexArray t3dr_updated;
+        Tango3DR_Status ret;
+        ret = Tango3DR_updateFromPointCloud(appInstance->tango.Context(), &t3dr_depth, &t3dr_depth_pose,
+                                            &appInstance->t3dr_image, &t3dr_image_pose, &t3dr_updated);
+        if (ret != TANGO_3DR_SUCCESS) {
+            pthread_detach(appInstance->threadId);
+            appInstance->binder_mutex_.unlock();
+            return 0;
+        }
+
+        //update dataset and update GL scene
+        appInstance->StoreDataset(t3dr_depth, t3dr_depth_pose, t3dr_image_pose);
+        std::vector<std::pair<oc::GridIndex, Tango3DR_Mesh*> > added;
+        added = appInstance->scan.Process(appInstance->tango.Context(), &t3dr_updated);
+        appInstance->render_mutex_.lock();
+        appInstance->scan.Merge(added);
+        appInstance->render_mutex_.unlock();
+
+        //cleanup and finish
+        Tango3DR_GridIndexArray_destroy(&t3dr_updated);
+        appInstance->point_cloud_available_ = false;
+        pthread_detach(appInstance->threadId);
+        appInstance->binder_mutex_.unlock();
+        return 0;
+    }
+
+    void onFrameAvailableRouter(void *context, TangoCameraId id, const TangoImageBuffer *im) {
+        if (id != TANGO_CAMERA_COLOR)
+            return;
+
+        appInstance = static_cast<oc::App *>(context);
+        if (appInstance->binder_mutex_.try_lock()) {
+            appInstance->t3dr_image.width = im->width;
+            appInstance->t3dr_image.height = im->height;
+            appInstance->t3dr_image.stride = im->stride;
+            appInstance->t3dr_image.timestamp = im->timestamp;
+            appInstance->t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(im->format);
+            appInstance->t3dr_image.data = im->data;
+            struct thread_info *tinfo = 0;
+            pthread_create(&appInstance->threadId, NULL, process, tinfo);
+        }
+    }
 
     void onPointCloudAvailableRouter(void *context, const TangoPointCloud *point_cloud) {
         oc::App *app = static_cast<oc::App *>(context);
         app->onPointCloudAvailable((TangoPointCloud*)point_cloud);
-    }
-
-    void onFrameAvailableRouter(void *context, TangoCameraId id, const TangoImageBuffer *buffer) {
-        oc::App *app = static_cast<oc::App *>(context);
-        app->onFrameAvailable(id, buffer);
     }
 
     void onTangoEventRouter(void *context, const TangoEvent *event) {
@@ -66,8 +154,7 @@ namespace oc {
         return output;
     }
 
-    void App::StoreDataset(Tango3DR_PointCloud t3dr_depth, Tango3DR_ImageBuffer t3dr_image,
-                               Tango3DR_Pose t3dr_depth_pose, Tango3DR_Pose t3dr_image_pose) {
+    void App::StoreDataset(Tango3DR_PointCloud t3dr_depth, Tango3DR_Pose t3dr_depth_pose, Tango3DR_Pose t3dr_image_pose) {
 
         //export color camera frame and pose
         int pose = texturize.Add(t3dr_image, tango.Dataset());
@@ -136,76 +223,6 @@ namespace oc {
         point_cloud_matrix_ = tango.Convert(transform)[DEPTH_CAMERA];
         TangoSupport_updatePointCloud(tango.Pointcloud(), pc);
         point_cloud_available_ = true;
-        binder_mutex_.unlock();
-    }
-
-    void App::onFrameAvailable(TangoCameraId id, const TangoImageBuffer *im) {
-        if ((id != TANGO_CAMERA_COLOR) || !t3dr_is_running_)
-            return;
-
-        std::vector<TangoMatrixTransformData> transform = tango.Pose(im->timestamp, 0);
-        if (transform[COLOR_CAMERA].status_code != TANGO_POSE_VALID)
-            return;
-
-        binder_mutex_.lock();
-        if (!point_cloud_available_) {
-            binder_mutex_.unlock();
-            return;
-        }
-
-        Tango3DR_ImageBuffer t3dr_image;
-        t3dr_image.width = im->width;
-        t3dr_image.height = im->height;
-        t3dr_image.stride = im->stride;
-        t3dr_image.timestamp = im->timestamp;
-        t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(im->format);
-        t3dr_image.data = im->data;
-
-        Tango3DR_Pose t3dr_image_pose = TangoService::Extract3DRPose(tango.Convert(transform)[COLOR_CAMERA]);
-        if (sharp) {
-            glm::vec3 pos = glm::vec3((float) t3dr_image_pose.translation[0],
-                                      (float) t3dr_image_pose.translation[1],
-                                      (float) t3dr_image_pose.translation[2]);
-            glm::quat rot = glm::quat((float) t3dr_image_pose.orientation[0],
-                                      (float) t3dr_image_pose.orientation[1],
-                                      (float) t3dr_image_pose.orientation[2],
-                                      (float) t3dr_image_pose.orientation[3]);
-            float value = GLCamera::Diff(pos, image_position, rot, image_rotation);
-            float diff = value > last_diff ? value : 0.95f * last_diff + 0.05f * value;
-            last_diff = diff;
-            image_position = pos;
-            image_rotation = rot;
-            if (diff > 1) {
-                binder_mutex_.unlock();
-                return;
-            }
-        }
-
-        Tango3DR_PointCloud t3dr_depth;
-        TangoSupport_getLatestPointCloud(tango.Pointcloud(), &front_cloud_);
-        t3dr_depth.timestamp = front_cloud_->timestamp;
-        t3dr_depth.num_points = front_cloud_->num_points;
-        t3dr_depth.points = front_cloud_->points;
-
-        Tango3DR_Pose t3dr_depth_pose = TangoService::Extract3DRPose(point_cloud_matrix_);
-        Tango3DR_GridIndexArray t3dr_updated;
-        Tango3DR_Status ret;
-        ret = Tango3DR_updateFromPointCloud(tango.Context(), &t3dr_depth, &t3dr_depth_pose,
-                                            &t3dr_image, &t3dr_image_pose, &t3dr_updated);
-        if (ret != TANGO_3DR_SUCCESS) {
-            binder_mutex_.unlock();
-            return;
-        }
-
-        StoreDataset(t3dr_depth, t3dr_image, t3dr_depth_pose, t3dr_image_pose);
-        std::vector<std::pair<GridIndex, Tango3DR_Mesh*> > added;
-        added = scan.Process(tango.Context(), &t3dr_updated);
-        render_mutex_.lock();
-        scan.Merge(added);
-        render_mutex_.unlock();
-
-        Tango3DR_GridIndexArray_destroy(&t3dr_updated);
-        point_cloud_available_ = false;
         binder_mutex_.unlock();
     }
 
@@ -364,12 +381,12 @@ namespace oc {
                 //prepare image cache
                 int count, width, height;
                 tango.Dataset().GetState(count, width, height);
-                Tango3DR_ImageBuffer t3dr_image;
-                t3dr_image.width = (uint32_t) width;
-                t3dr_image.height = (uint32_t) height;
-                t3dr_image.stride = (uint32_t) width;
-                t3dr_image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
-                t3dr_image.data = new unsigned char[width * height * 3];
+                Tango3DR_ImageBuffer image;
+                image.width = (uint32_t) width;
+                image.height = (uint32_t) height;
+                image.stride = (uint32_t) width;
+                image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
+                image.data = new unsigned char[width * height * 3];
 
                 //mesh reconstruction
                 std::vector<int> sessions = tango.Dataset().GetSessions();
@@ -389,19 +406,19 @@ namespace oc {
                     Tango3DR_Status ret;
                     Tango3DR_GridIndexArray t3dr_updated;
                     t3dr_depth.timestamp = tango.Dataset().GetPoseTime(i, DEPTH_CAMERA);
-                    t3dr_image.timestamp = tango.Dataset().GetPoseTime(i, COLOR_CAMERA);
-                    Image::JPG2YUV(tango.Dataset().GetFileName(i, ".jpg"), t3dr_image.data,
+                    image.timestamp = tango.Dataset().GetPoseTime(i, COLOR_CAMERA);
+                    Image::JPG2YUV(tango.Dataset().GetFileName(i, ".jpg"), image.data,
                                    width, height);
                     ret = Tango3DR_updateFromPointCloud(tango.Context(), &t3dr_depth,
                                                         &t3dr_depth_pose,
-                                                        &t3dr_image, &t3dr_image_pose,
+                                                        &image, &t3dr_image_pose,
                                                         &t3dr_updated);
                     if (ret == TANGO_3DR_SUCCESS) {
                         Tango3DR_GridIndexArray_destroy(&t3dr_updated);
                     }
                     Tango3DR_PointCloud_destroy(&t3dr_depth);
                 }
-                delete[] t3dr_image.data;
+                delete[] image.data;
             }
 
             //save mesh

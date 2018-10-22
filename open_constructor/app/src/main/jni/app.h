@@ -18,13 +18,11 @@ namespace oc {
     class App {
     public:
         App();
-        void StoreDataset(Tango3DR_PointCloud t3dr_depth, Tango3DR_ImageBuffer t3dr_image,
-                                  Tango3DR_Pose t3dr_depth_pose, Tango3DR_Pose t3dr_image_pose);
+        void StoreDataset(Tango3DR_PointCloud t3dr_depth, Tango3DR_Pose t3dr_depth_pose, Tango3DR_Pose t3dr_image_pose);
         void OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin, double dmax,
                                      int noise, bool land, bool sharpPhotos, bool fixHoles, bool clearing,
                                      bool correct, bool asus, std::string dataset);
         void onPointCloudAvailable(TangoPointCloud *pc);
-        void onFrameAvailable(TangoCameraId id, const TangoImageBuffer *im);
         void onTangoEvent(const TangoEvent *event);
         void OnSurfaceChanged(int width, int height);
         void OnDrawFrame();
@@ -49,11 +47,11 @@ namespace oc {
         void MultSelection(bool increase);
         void RectSelection(float x1, float y1, float x2, float y2);
 
-    private:
         float last_diff;
         bool t3dr_is_running_;
         bool point_cloud_available_;
         TangoPointCloud* front_cloud_;
+        Tango3DR_ImageBuffer t3dr_image;
         glm::mat4 point_cloud_matrix_;
         glm::vec3 image_position;
         glm::quat image_rotation;
@@ -61,6 +59,7 @@ namespace oc {
         std::mutex render_mutex_;
         std::mutex event_mutex_;
         std::string event_;
+        pthread_t threadId;
 
         Effector editor;
         Scene scene;
