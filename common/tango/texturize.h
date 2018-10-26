@@ -14,6 +14,7 @@ namespace oc {
         void ApplyFrames(Dataset dataset);
         void Callback(int progress);
         void Clear(Dataset dataset);
+        void DeleteLast(Dataset dataset);
         std::string GetEvent() { return event; }
         Tango3DR_Trajectory GetTrajectory(Dataset dataset);
         bool Init(std::string filename, Tango3DR_CameraCalibration* camera);

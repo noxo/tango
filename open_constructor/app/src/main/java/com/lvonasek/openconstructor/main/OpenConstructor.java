@@ -53,6 +53,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
   private String mToLoad, mOpenedFile;
   private boolean m3drRunning = false;
   private boolean mViewMode = false;
+  private boolean mPhotoMode = false;
   private boolean mPostprocess = false;
   private boolean mRunning = false;
 
@@ -133,7 +134,7 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
                 e.printStackTrace();
               }
             } else {
-              m3drRunning = true;
+              m3drRunning = !mPhotoMode;
               deleteRecursive(getTempPath());
               getTempPath().mkdirs();
               Exporter.extractRawData(getResources(), R.raw.config, getTempPath());
@@ -315,6 +316,11 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
     }
     else
       mRes = getIntent().getIntExtra(RESOLUTION_KEY, 3);
+    mPhotoMode = mRes == 6;
+    if (mPhotoMode) {
+      findViewById(R.id.toggle_button).setBackgroundResource(R.drawable.ic_capture);
+      findViewById(R.id.clear_button).setBackgroundResource(R.drawable.ic_undo);
+    }
     mProgress.setVisibility(View.VISIBLE);
   }
 
@@ -322,11 +328,12 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
   public void onClick(View v) {
     switch (v.getId()) {
     case R.id.toggle_button:
-      m3drRunning = !m3drRunning;
+      if (!mPhotoMode)
+        m3drRunning = !m3drRunning;
       mGLView.queueEvent(new Runnable() {
           @Override
           public void run() {
-            JNI.onToggleButtonClicked(m3drRunning);
+            JNI.onToggleButtonClicked(m3drRunning || mPhotoMode);
           }
         });
       break;
@@ -342,7 +349,8 @@ public class OpenConstructor extends AbstractActivity implements View.OnClickLis
       finish();
       break;
     }
-    mToggleButton.setBackgroundResource(m3drRunning ? R.drawable.ic_pause : R.drawable.ic_record);
+    if (!mPhotoMode)
+      mToggleButton.setBackgroundResource(m3drRunning ? R.drawable.ic_pause : R.drawable.ic_record);
   }
 
   @Override

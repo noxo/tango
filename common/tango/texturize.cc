@@ -67,6 +67,13 @@ namespace oc {
         dataset.WriteState(poses, width, height);
     }
 
+    void TangoTexturize::DeleteLast(Dataset dataset) {
+        dataset.GetState(poses, width, height);
+        if (poses > 0)
+            poses--;
+        dataset.WriteState(poses, width, height);
+    }
+
     Tango3DR_Trajectory TangoTexturize::GetTrajectory(Dataset dataset) {
         SetEvent("TRAJECTORY");
         instanceTexturize = this;

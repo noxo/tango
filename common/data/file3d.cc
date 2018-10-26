@@ -67,7 +67,10 @@ namespace oc {
                     if (model[i].vertices.empty())
                         continue;
                     if (type == OBJ) {
-                        fprintf(file, "usemtl %d\n", fileToIndex[model[i].image->GetName()]);
+                        if (model[i].image)
+                            fprintf(file, "usemtl %d\n", fileToIndex[model[i].image->GetName()]);
+                        else
+                            fprintf(file, "g %d\n", i);
                     }
                     WriteFaces(model[i], offset);
                     offset += model[i].vertices.size();
@@ -538,7 +541,7 @@ namespace oc {
                 fprintf(mtl, "d 1.000000\n");
                 fprintf(mtl, "illum 2\n");
                 //write texture name
-                std::string name = model[i].image->GetName();
+                std::string name = model[i].image ? model[i].image->GetName() : "";
                 fileToIndex[name] = i;
 
 

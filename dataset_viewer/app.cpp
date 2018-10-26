@@ -77,6 +77,7 @@ std::vector<oc::Mesh> model;
 std::vector<glm::vec3> points;
 std::vector<unsigned int> colors;
 std::vector<unsigned int> indices;
+std::vector<float> depth;
 
 #define KEY_UP 'w'
 #define KEY_DOWN 's'
@@ -271,6 +272,7 @@ void loadPointCloud() {
         w /= glm::abs(w.w);
 #ifdef INFRA_CAMERA
         colors.push_back(mesh[0].colors[i]);
+        depth.push_back(v.z);
         points.push_back(glm::vec3(w.x, w.y, w.z));
         continue;
 #endif
@@ -291,11 +293,12 @@ void loadPointCloud() {
             color.g = jpg.GetData()[index + 1];
             color.b = jpg.GetData()[index + 2];
             colors.push_back(oc::File3d::CodeColor(color));
+            depth.push_back(v.z);
             points.push_back(glm::vec3(w.x, w.y, w.z));
         }
     }
 #ifdef MAKE_SURFACE
-    float minDst = 0.25f;
+    float aspect = 0.075f;
     int margin = 4;
     for (int x = 1 + margin; x < stride - margin; x++) {
         for (int y = 1 + margin; y < height - margin; y++) {
@@ -304,25 +307,25 @@ void loadPointCloud() {
             int c = map[y * stride + x - 1];
             int d = map[y * stride + x];
             if ((a >= 0) && (b >= 0) && (c >= 0) && (a != b) && (b != c) && (c != a)) {
-                float dst = 0;
-                dst += glm::length(points[a] - points[b]);
-                dst += glm::length(points[b] - points[c]);
-                dst += glm::length(points[c] - points[a]);
-                if (dst < minDst) {
-                    indices.push_back(a);
-                    indices.push_back(b);
+                float avrg = aspect * (depth[c] + depth[b] + depth[a]) / 3.0f;
+                float len1 = fabs(depth[a] - depth[b]);
+                float len2 = fabs(depth[a] - depth[c]);
+                float len3 = fabs(depth[b] - depth[c]);
+                if ((len1 < avrg) && (len2 < avrg) && (len3 < avrg)) {
                     indices.push_back(c);
+                    indices.push_back(b);
+                    indices.push_back(a);
                 }
             }
             if ((d >= 0) && (b >= 0) && (c >= 0) && (d != b) && (b != c) && (c != d)) {
-                float dst = 0;
-                dst += glm::length(points[d] - points[b]);
-                dst += glm::length(points[b] - points[c]);
-                dst += glm::length(points[c] - points[d]);
-                if (dst < minDst) {
-                    indices.push_back(d);
-                    indices.push_back(c);
+                float avrg = aspect * (depth[b] + depth[c] + depth[d]) / 3.0f;
+                float len1 = fabs(depth[d] - depth[b]);
+                float len2 = fabs(depth[d] - depth[c]);
+                float len3 = fabs(depth[b] - depth[c]);
+                if ((len1 < avrg) && (len2 < avrg) && (len3 < avrg)) {
                     indices.push_back(b);
+                    indices.push_back(c);
+                    indices.push_back(d);
                 }
             }
         }
@@ -389,6 +392,7 @@ void keyboardUp(unsigned char key, int x, int y)
         if (!shift) {
             indices.clear();
             colors.clear();
+            depth.clear();
             points.clear();
         }
         poseIndex++;
@@ -400,6 +404,7 @@ void keyboardUp(unsigned char key, int x, int y)
         if (!shift) {
             indices.clear();
             colors.clear();
+            depth.clear();
             points.clear();
         }
         poseIndex--;

@@ -105,5 +105,6 @@
         <item>3 cm - big room</item>
         <item>4 cm - interior</item>
         <item>5 cm - exterior</item>
+        <item>vector - photo mode</item>
     </string-array>
 </resources>

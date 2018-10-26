@@ -1,3 +1,6 @@
+#include <glm/glm.hpp>
+#include <map>
+#include <string>
 #include "data/mesh.h"
 
 namespace oc {
@@ -12,6 +15,54 @@ namespace oc {
                 image = 0;
             }
         }
+    }
+
+    void Mesh::GenerateNormals() {
+        //init variables
+        char buffer[32];
+        std::string key;
+        std::map<std::string, glm::vec3> vertexNormal;
+        glm::vec3 a, b, c, n;
+
+        //calculate vertex normals
+        for (unsigned int i = 0; i < vertices.size(); i += 3) {
+            a = vertices[i + 0];
+            b = vertices[i + 1];
+            c = vertices[i + 2];
+            n = glm::normalize(glm::cross(a - b, a - c));
+            sprintf(buffer, "%.3f,%.3f,%.3f", a.x, a.y, a.z);
+            key = std::string(buffer);
+            if (vertexNormal.find(key) == vertexNormal.end())
+                vertexNormal[key] = n;
+            else
+                vertexNormal[key] += n;
+            sprintf(buffer, "%.3f,%.3f,%.3f", b.x, b.y, b.z);
+            key = std::string(buffer);
+            if (vertexNormal.find(key) == vertexNormal.end())
+                vertexNormal[key] = n;
+            else
+                vertexNormal[key] += n;
+            sprintf(buffer, "%.3f,%.3f,%.3f", c.x, c.y, c.z);
+            key = std::string(buffer);
+            if (vertexNormal.find(key) == vertexNormal.end())
+                vertexNormal[key] = n;
+            else
+                vertexNormal[key] += n;
+        }
+
+        //apply vertex normals
+        normals.clear();
+        for (unsigned int i = 0; i < vertices.size(); i++) {
+            a = vertices[i];
+            sprintf(buffer, "%.3f,%.3f,%.3f", a.x, a.y, a.z);
+            key = std::string(buffer);
+            n = glm::normalize(vertexNormal[key]);
+            if (std::isnan(n.x) || std::isnan(n.y) || std::isnan(n.z))
+                normals.push_back(glm::vec3(0));
+            else
+                    normals.push_back(n);
+        }
+        std::map<std::string, glm::vec3>().swap(vertexNormal);
     }
 
     float Mesh::GetFloorLevel(glm::vec3 pos) {

@@ -71,6 +71,7 @@ namespace oc {
         bool correction;
         bool gyro;
         bool landscape;
+        bool photomode;
         bool poisson;
         bool sharp;
         float movex, lastMovex;

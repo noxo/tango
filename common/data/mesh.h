@@ -16,6 +16,7 @@ namespace oc {
 
         Mesh();
         void Destroy();
+        void GenerateNormals();
         float GetFloorLevel(glm::vec3 pos);
     private:
         bool IsInAABB(glm::vec3& p, glm::vec3& min, glm::vec3& max);

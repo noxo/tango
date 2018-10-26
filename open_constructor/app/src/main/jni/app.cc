@@ -8,6 +8,19 @@ oc::App *appInstance = 0;
 namespace {
     const int kSubdivisionSize = 20000;
 
+    glm::mat4 convertToMat(double* translation, double* orientation) {
+        glm::quat rotation;
+        rotation.x = orientation[0];
+        rotation.y = orientation[1];
+        rotation.z = orientation[2];
+        rotation.w = orientation[3];
+        glm::mat4 output = glm::mat4_cast(rotation);
+        output[3][0] = translation[0];
+        output[3][1] = translation[1];
+        output[3][2] = translation[2];
+        return output;
+    }
+
     void* process(void*) {
 
         //check if pose is vlaid
@@ -49,34 +62,146 @@ namespace {
 
         //get point cloud
         Tango3DR_PointCloud t3dr_depth;
+        Tango3DR_Pose t3dr_depth_pose = oc::TangoService::Extract3DRPose(appInstance->point_cloud_matrix_);
         TangoSupport_getLatestPointCloud(appInstance->tango.Pointcloud(), &appInstance->front_cloud_);
         t3dr_depth.timestamp = appInstance->front_cloud_->timestamp;
         t3dr_depth.num_points = appInstance->front_cloud_->num_points;
         t3dr_depth.points = appInstance->front_cloud_->points;
 
-        //update 3DR
-        Tango3DR_Pose t3dr_depth_pose = oc::TangoService::Extract3DRPose(appInstance->point_cloud_matrix_);
-        Tango3DR_GridIndexArray t3dr_updated;
-        Tango3DR_Status ret;
-        ret = Tango3DR_updateFromPointCloud(appInstance->tango.Context(), &t3dr_depth, &t3dr_depth_pose,
-                                            &appInstance->t3dr_image, &t3dr_image_pose, &t3dr_updated);
-        if (ret != TANGO_3DR_SUCCESS) {
-            pthread_detach(appInstance->threadId);
-            appInstance->binder_mutex_.unlock();
-            return 0;
+        if (appInstance->photomode) {
+            appInstance->StoreDataset(t3dr_depth, t3dr_depth_pose, t3dr_image_pose);
+
+            //get depth sensor pose
+            int count, w, h;
+            float cx, cy, fx, fy;
+            appInstance->tango.Dataset().GetCalibration(cx, cy, fx, fy);
+            appInstance->tango.Dataset().GetState(count, w, h);
+            int poseIndex = count - 1;
+            double translation[3];
+            double orientation[4];
+            appInstance->tango.Dataset().GetPose(poseIndex, DEPTH_CAMERA, translation, orientation);
+            glm::mat4 sensor2world = convertToMat(translation, orientation);
+
+            //get camera pose
+            appInstance->tango.Dataset().GetPose(poseIndex, COLOR_CAMERA, translation, orientation);
+            glm::mat4 world2uv = glm::inverse(convertToMat(translation, orientation));
+
+            //get raw pointcloud
+            std::vector<oc::Mesh> mesh;
+            oc::Image jpg(appInstance->tango.Dataset().GetFileName(poseIndex, ".jpg"));
+            oc::File3d pcl(appInstance->tango.Dataset().GetFileName(poseIndex, ".pcl"), false);
+            pcl.ReadModel(-1, mesh);
+
+            //process pointcloud
+            int mapScale = 12;
+            int stride = jpg.GetWidth() / mapScale;
+            int height = jpg.GetHeight() / mapScale;
+            int map[stride * height];
+            for (int i = 0; i < stride * height; i++)
+                map[i] = -1;
+            std::vector<glm::vec3> points;
+            std::vector<float> depth;
+            std::vector<unsigned int> colors;
+            for (unsigned int i = 0; i < mesh[0].vertices.size(); i++) {
+                glm::vec3 v = mesh[0].vertices[i];
+                if (fabs(v.z) > 2)
+                    continue;
+                glm::vec4 w = sensor2world * glm::vec4(v, 1.0f);
+                w /= glm::abs(w.w);
+                glm::vec4 t = world2uv * glm::vec4(w.x, w.y, w.z, 1.0f);
+                t.x /= glm::abs(t.z * t.w);
+                t.y /= glm::abs(t.z * t.w);
+                t.x *= fx / (float)jpg.GetWidth();
+                t.y *= fy / (float)jpg.GetHeight();
+                t.x += cx / (float)jpg.GetWidth();
+                t.y += cy / (float)jpg.GetHeight();
+                int x = (int)(t.x * jpg.GetWidth());
+                int y = (int)(t.y * jpg.GetHeight());
+                int index = (y * jpg.GetWidth() + x) * 4;
+                if ((x >= 0) && (x < jpg.GetWidth()) && (y >= 0) && (y < jpg.GetHeight())) {
+                    map[((int)(y / mapScale)) * stride + (int)(x / mapScale)] = points.size();
+                    glm::ivec3 color;
+                    color.r = jpg.GetData()[index + 0];
+                    color.g = jpg.GetData()[index + 1];
+                    color.b = jpg.GetData()[index + 2];
+                    colors.push_back(oc::File3d::CodeColor(color));
+                    depth.push_back(v.z);
+                    points.push_back(glm::vec3(w.x, w.y, w.z));
+                }
+            }
+
+            //generate geometry
+            float aspect = 0.075f;
+            int margin = 4;
+            oc::Mesh m;
+            for (int x = 1 + margin; x < stride - margin; x++) {
+                for (int y = 1 + margin; y < height - margin; y++) {
+                    int a = map[(y - 1) * stride + x - 1];
+                    int b = map[(y - 1) * stride + x];
+                    int c = map[y * stride + x - 1];
+                    int d = map[y * stride + x];
+                    if ((a >= 0) && (b >= 0) && (c >= 0) && (a != b) && (b != c) && (c != a)) {
+                        float avrg = aspect * (depth[c] + depth[b] + depth[a]) / 3.0f;
+                        float len1 = fabs(depth[a] - depth[b]);
+                        float len2 = fabs(depth[a] - depth[c]);
+                        float len3 = fabs(depth[b] - depth[c]);
+                        if ((len1 < avrg) && (len2 < avrg) && (len3 < avrg)) {
+                            m.vertices.push_back(points[c]);
+                            m.vertices.push_back(points[b]);
+                            m.vertices.push_back(points[a]);
+                            m.colors.push_back(colors[c]);
+                            m.colors.push_back(colors[b]);
+                            m.colors.push_back(colors[a]);
+                        }
+                    }
+                    if ((d >= 0) && (b >= 0) && (c >= 0) && (d != b) && (b != c) && (c != d)) {
+                        float avrg = aspect * (depth[b] + depth[c] + depth[d]) / 3.0f;
+                        float len1 = fabs(depth[d] - depth[b]);
+                        float len2 = fabs(depth[d] - depth[c]);
+                        float len3 = fabs(depth[b] - depth[c]);
+                        if ((len1 < avrg) && (len2 < avrg) && (len3 < avrg)) {
+                            m.vertices.push_back(points[b]);
+                            m.vertices.push_back(points[c]);
+                            m.vertices.push_back(points[d]);
+                            m.colors.push_back(colors[b]);
+                            m.colors.push_back(colors[c]);
+                            m.colors.push_back(colors[d]);
+                        }
+                    }
+                }
+            }
+
+            //merge
+            appInstance->render_mutex_.lock();
+            appInstance->scene.static_meshes_.push_back(m);
+            appInstance->render_mutex_.unlock();
+        } else {
+
+            //update 3DR
+            Tango3DR_GridIndexArray t3dr_updated;
+            Tango3DR_Status ret;
+            ret = Tango3DR_updateFromPointCloud(appInstance->tango.Context(), &t3dr_depth, &t3dr_depth_pose,
+                                                &appInstance->t3dr_image, &t3dr_image_pose, &t3dr_updated);
+            if (ret != TANGO_3DR_SUCCESS) {
+                pthread_detach(appInstance->threadId);
+                appInstance->binder_mutex_.unlock();
+                return 0;
+            }
+
+            //update dataset and update GL scene
+            appInstance->StoreDataset(t3dr_depth, t3dr_depth_pose, t3dr_image_pose);
+            std::vector<std::pair<oc::GridIndex, Tango3DR_Mesh*> > added;
+            added = appInstance->scan.Process(appInstance->tango.Context(), &t3dr_updated);
+            Tango3DR_GridIndexArray_destroy(&t3dr_updated);
+            appInstance->render_mutex_.lock();
+            appInstance->scan.Merge(added);
+            appInstance->render_mutex_.unlock();
         }
 
-        //update dataset and update GL scene
-        appInstance->StoreDataset(t3dr_depth, t3dr_depth_pose, t3dr_image_pose);
-        std::vector<std::pair<oc::GridIndex, Tango3DR_Mesh*> > added;
-        added = appInstance->scan.Process(appInstance->tango.Context(), &t3dr_updated);
-        appInstance->render_mutex_.lock();
-        appInstance->scan.Merge(added);
-        appInstance->render_mutex_.unlock();
-
         //cleanup and finish
-        Tango3DR_GridIndexArray_destroy(&t3dr_updated);
         appInstance->point_cloud_available_ = false;
+        if (appInstance->photomode)
+            appInstance->t3dr_is_running_ = false;
         pthread_detach(appInstance->threadId);
         appInstance->binder_mutex_.unlock();
         return 0;
@@ -212,9 +337,6 @@ namespace oc {
     }
 
     void App::onPointCloudAvailable(TangoPointCloud *pc) {
-        if (!t3dr_is_running_)
-            return;
-
         std::vector<TangoMatrixTransformData> transform = tango.Pose(pc->timestamp, 0);
         if (transform[DEPTH_CAMERA].status_code != TANGO_POSE_VALID)
             return;
@@ -243,6 +365,7 @@ namespace oc {
                                       std::string dataset) {
         correction = correct;
         landscape = land;
+        photomode = res > 0.055;
         poisson = fixHoles;
         sharp = sharpPhotos;
 
@@ -329,13 +452,20 @@ namespace oc {
     void App::OnClearButtonClicked() {
         binder_mutex_.lock();
         render_mutex_.lock();
-        scan.Clear();
-        tango.Clear();
-        texturize.Clear(tango.Dataset());
-        tango.Dataset().ClearSessions();
-        for (unsigned int i = 0; i < scene.static_meshes_.size(); i++)
-            scene.static_meshes_[i].Destroy();
-        scene.static_meshes_.clear();
+        if (photomode) {
+            if (!scene.static_meshes_.empty()) {
+                scene.static_meshes_.erase(scene.static_meshes_.begin() + scene.static_meshes_.size() - 1);
+                texturize.DeleteLast(tango.Dataset());
+            }
+        } else {
+            scan.Clear();
+            tango.Clear();
+            texturize.Clear(tango.Dataset());
+            tango.Dataset().ClearSessions();
+            for (unsigned int i = 0; i < scene.static_meshes_.size(); i++)
+                scene.static_meshes_[i].Destroy();
+            scene.static_meshes_.clear();
+        }
         render_mutex_.unlock();
         binder_mutex_.unlock();
     }
@@ -366,7 +496,7 @@ namespace oc {
                 fclose(file);
             }
 
-            if (correction) {
+            if (correction && !photomode) {
                 //pose correction
                 Tango3DR_Trajectory trajectory = texturize.GetTrajectory(tango.Dataset());
                 scan.CorrectPoses(tango.Dataset(), trajectory);
@@ -428,6 +558,10 @@ namespace oc {
                 tango.Clear();
                 File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
             }
+        }
+        if (photomode) {
+            for (Mesh& m : scene.static_meshes_)
+                m.GenerateNormals();
         }
         File3d(filename, true).WriteModel(scene.static_meshes_);
         int count = 0;
