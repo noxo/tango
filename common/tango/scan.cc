@@ -104,8 +104,10 @@ namespace oc {
 
     Tango3DR_Pose TangoScan::GetPose(Tango3DR_Trajectory trajectory, Dataset dataset, int index, int pose) {
         Tango3DR_Pose t3dr_pose;
-        if (Tango3DR_getPoseAtTime(trajectory, dataset.GetPoseTime(index, pose), &t3dr_pose) != TANGO_3DR_SUCCESS)
-            exit(EXIT_SUCCESS);
+        if (Tango3DR_getPoseAtTime(trajectory, dataset.GetPoseTime(index, pose), &t3dr_pose) != TANGO_3DR_SUCCESS) {
+            dataset.GetPose(index, pose, t3dr_pose.translation, t3dr_pose.orientation);
+            return t3dr_pose;
+        }
         glm::dquat quat;
         quat.x = t3dr_pose.orientation[0];
         quat.y = t3dr_pose.orientation[2];

@@ -81,6 +81,7 @@
     <string name="event_areadescription">Saving area description</string>
     <string name="event_bright">Too bright for scanning</string>
     <string name="event_dark">Too dark for scanning</string>
+    <string name="event_fisheye">Exporting fisheye data</string>
     <string name="event_features">Motion tracking reported issues</string>
     <string name="event_convert">Converting data</string>
     <string name="event_image">Processing images</string>

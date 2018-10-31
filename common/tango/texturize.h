@@ -21,6 +21,7 @@ namespace oc {
         bool Init(Tango3DR_ReconstructionContext context, Tango3DR_CameraCalibration* camera);
         void Process(std::string filename);
         void SetEvent(std::string value) { event = value; }
+        void SetProgress(std::string value) { progressMsg = value; }
         void SetResolution(float value) { resolution = value; }
         bool Test(Tango3DR_ReconstructionContext context, Tango3DR_CameraCalibration* camera);
 
@@ -30,6 +31,7 @@ namespace oc {
         int poses;
         float resolution;
         std::string event;
+        std::string progressMsg;
         Tango3DR_TexturingContext context;
         int width, height;
     };

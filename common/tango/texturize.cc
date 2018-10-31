@@ -56,7 +56,8 @@ namespace oc {
 
     void TangoTexturize::Callback(int progress) {
         std::ostringstream ss;
-        ss << "TRAJECTORY ";
+        ss << progressMsg.c_str();
+        ss << " ";
         ss << progress;
         ss << "%";
         SetEvent(ss.str());
@@ -76,6 +77,7 @@ namespace oc {
 
     Tango3DR_Trajectory TangoTexturize::GetTrajectory(Dataset dataset) {
         SetEvent("TRAJECTORY");
+        SetProgress("TRAJECTORY");
         instanceTexturize = this;
         Tango3DR_Status ret;
 
@@ -99,6 +101,13 @@ namespace oc {
         //get trajectory
         Tango3DR_Trajectory trajectory;
         ret = Tango3DR_Trajectory_createFromAreaDescription(area_description, &trajectory);
+        if (ret != TANGO_3DR_SUCCESS)
+            exit(EXIT_SUCCESS);
+
+        SetEvent("FISHEYE");
+        SetProgress("FISHEYE");
+        ret = Tango3DR_extractRawDataFromDataset(tangoDataset.c_str(), dataset.GetPath().c_str(),
+                callbackTexturize, 0);
         if (ret != TANGO_3DR_SUCCESS)
             exit(EXIT_SUCCESS);
         TangoService_Experimental_deleteDataset(uuid);

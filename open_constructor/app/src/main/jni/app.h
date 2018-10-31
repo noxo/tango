@@ -74,6 +74,7 @@ namespace oc {
         bool photomode;
         bool poisson;
         bool sharp;
+        bool running;
         float movex, lastMovex;
         float movey, lastMovey;
         float movez, lastMovez;

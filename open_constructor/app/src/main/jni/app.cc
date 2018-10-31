@@ -212,13 +212,23 @@ namespace {
             return;
 
         appInstance = static_cast<oc::App *>(context);
+        if (!appInstance->running)
+            return;
+
         if (appInstance->binder_mutex_.try_lock()) {
+            //copy metadata
             appInstance->t3dr_image.width = im->width;
             appInstance->t3dr_image.height = im->height;
             appInstance->t3dr_image.stride = im->stride;
             appInstance->t3dr_image.timestamp = im->timestamp;
-            appInstance->t3dr_image.format = static_cast<Tango3DR_ImageFormatType>(im->format);
-            appInstance->t3dr_image.data = im->data;
+
+            //copy image data
+            unsigned int size = im->width * im->height * 3 / 2;
+            if (!appInstance->t3dr_image.data)
+                appInstance->t3dr_image.data = new uint8_t[size];
+            memcpy(appInstance->t3dr_image.data, im->data, size);
+
+            //start processing
             struct thread_info *tinfo = 0;
             pthread_create(&appInstance->threadId, NULL, process, tinfo);
         }
@@ -232,6 +242,25 @@ namespace {
     void onTangoEventRouter(void *context, const TangoEvent *event) {
         oc::App *app = static_cast<oc::App *>(context);
         app->onTangoEvent(event);
+    }
+
+    std::vector<std::string> separateByComma(std::string text) {
+        std::vector<std::string> items;
+        std::string temp;
+        for(unsigned int i = 0; i < text.size(); i++)
+        {
+            char c = text[i];
+            if(c == ',')
+            {
+                items.push_back(temp);
+                temp.clear();
+            }
+            else
+                temp.push_back(c);
+        }
+        if(!temp.empty())
+            items.push_back(temp);
+        return items;
     }
 }
 
@@ -337,6 +366,8 @@ namespace oc {
     }
 
     void App::onPointCloudAvailable(TangoPointCloud *pc) {
+        if (!running)
+            return;
         std::vector<TangoMatrixTransformData> transform = tango.Pose(pc->timestamp, 0);
         if (transform[DEPTH_CAMERA].status_code != TANGO_POSE_VALID)
             return;
@@ -357,7 +388,11 @@ namespace oc {
                   lastMovez(0),
                   lastPitch(0),
                   lastYaw(0),
-                  point_cloud_available_(false) {}
+                  point_cloud_available_(false),
+                  running(true) {
+        t3dr_image.data = 0;
+        t3dr_image.format = TANGO_3DR_HAL_PIXEL_FORMAT_YCrCb_420_SP;
+    }
 
     void App::OnTangoServiceConnected(JNIEnv *env, jobject binder, double res, double dmin,
                                       double dmax, int noise, bool land, bool sharpPhotos,
@@ -390,15 +425,11 @@ namespace oc {
         tango.Setup3DR(res, dmin, dmax, noise, clearing);
 
         if (newScan) {
-            TangoUUID uuid;
-            FILE* file = fopen("/data/data/com.lvonasek.openconstructor/files/todelete", "r");
-            if (file) {
-                while (!feof(file)) {
-                    fscanf(file, "%s\n", uuid);
-                    TangoService_deleteAreaDescription(uuid);
-                }
-                fclose(file);
-                remove("/data/data/com.lvonasek.openconstructor/files/todelete");
+            char* uuids = 0;
+            TangoService_getAreaDescriptionUUIDList(&uuids);
+            for (std::string uuid : separateByComma(uuids)) {
+                LOGI("Deleting area: %s", uuid.c_str());
+                TangoService_deleteAreaDescription(uuid.c_str());
             }
         }
         binder_mutex_.unlock();
@@ -480,6 +511,9 @@ namespace oc {
     }
 
     bool App::Save(std::string filename) {
+        running = false;
+        OnToggleButtonClicked(false);
+
         binder_mutex_.lock();
         render_mutex_.lock();
 
@@ -487,12 +521,10 @@ namespace oc {
 
             //save area
             TangoUUID uuid;
+            texturize.SetEvent("AREADESCRIPTION");
             if (TangoService_saveAreaDescription(&uuid) == TANGO_SUCCESS) {
                 FILE *file = fopen((tango.Dataset().GetPath() + "/uuid.txt").c_str(), "w");
                 fprintf(file, "%s", uuid);
-                fclose(file);
-                file = fopen("/data/data/com.lvonasek.openconstructor/files/todelete", "a");
-                fprintf(file, "%s\n", uuid);
                 fclose(file);
             }
 
@@ -559,6 +591,7 @@ namespace oc {
                 File3d(filename, false).ReadModel(kSubdivisionSize, scene.static_meshes_);
             }
         }
+        texturize.SetEvent("MERGE");
         if (photomode) {
             for (Mesh& m : scene.static_meshes_)
                 m.GenerateNormals();

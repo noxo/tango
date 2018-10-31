@@ -14,7 +14,7 @@
 #include <data/file3d.h>
 #include <GL/freeglut.h>
 
-//#define INFRA_CAMERA //not working with MAKE_SURFACE!!!
+//#define INFRA_CAMERA
 #define MAKE_SURFACE
 
 //shader
@@ -270,11 +270,13 @@ void loadPointCloud() {
         glm::vec3 v = mesh[0].vertices[i];
         glm::vec4 w = sensor2world * glm::vec4(v, 1.0f);
         w /= glm::abs(w.w);
+#ifndef MAKE_SURFACE
 #ifdef INFRA_CAMERA
         colors.push_back(mesh[0].colors[i]);
         depth.push_back(v.z);
         points.push_back(glm::vec3(w.x, w.y, w.z));
         continue;
+#endif
 #endif
         glm::vec4 t = world2uv * glm::vec4(w.x, w.y, w.z, 1.0f);
         t.x /= glm::abs(t.z * t.w);
@@ -288,11 +290,15 @@ void loadPointCloud() {
         int index = (y * jpg.GetWidth() + x) * 4;
         if ((x >= 0) && (x < jpg.GetWidth()) && (y >= 0) && (y < jpg.GetHeight())) {
             map[((int)(y / mapScale)) * stride + (int)(x / mapScale)] = points.size();
+#ifdef INFRA_CAMERA
+            colors.push_back(mesh[0].colors[i]);
+#else
             glm::ivec3 color;
             color.r = jpg.GetData()[index + 0];
             color.g = jpg.GetData()[index + 1];
             color.b = jpg.GetData()[index + 2];
             colors.push_back(oc::File3d::CodeColor(color));
+#endif
             depth.push_back(v.z);
             points.push_back(glm::vec3(w.x, w.y, w.z));
         }

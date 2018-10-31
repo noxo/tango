@@ -92,6 +92,7 @@ public class JNI
     event = event.replace("TOO_DARK", r.getString(R.string.event_dark));
     event = event.replace("FEW_FEATURES", r.getString(R.string.event_features));
     event = event.replace("CONVERT", r.getString(R.string.event_convert));
+    event = event.replace("FISHEYE", r.getString(R.string.event_fisheye));
     event = event.replace("IMAGE", r.getString(R.string.event_image));
     event = event.replace("MERGE", r.getString(R.string.event_merge));
     event = event.replace("POISSON", r.getString(R.string.poisson_reconstruction));
