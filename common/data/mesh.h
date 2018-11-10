@@ -18,6 +18,8 @@ namespace oc {
         void Destroy();
         void GenerateNormals();
         float GetFloorLevel(glm::vec3 pos);
+        void Normals2Color();
+        void Reindex();
     private:
         bool IsInAABB(glm::vec3& p, glm::vec3& min, glm::vec3& max);
         void UpdateAABB(glm::vec3& p, glm::vec3& min, glm::vec3& max);

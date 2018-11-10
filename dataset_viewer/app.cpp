@@ -16,6 +16,7 @@
 
 //#define INFRA_CAMERA
 #define MAKE_SURFACE
+#define SHOW_NORMALS // needs MAKE_SURFACE to be active
 
 //shader
 const char* kTextureShader[] = {R"glsl(
@@ -74,10 +75,7 @@ int poseIndex;         ///< Pose index
 
 //render data
 std::vector<oc::Mesh> model;
-std::vector<glm::vec3> points;
-std::vector<unsigned int> colors;
-std::vector<unsigned int> indices;
-std::vector<float> depth;
+std::vector<oc::Mesh> points;
 
 #define KEY_UP 'w'
 #define KEY_DOWN 's'
@@ -126,16 +124,18 @@ void display(void)
 
     /// render point cloud
     glPointSize(3);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glEnableVertexAttribArray((GLuint) model_position_param_);
     glEnableVertexAttribArray((GLuint) model_colors_param_);
-    glVertexAttribPointer((GLuint) model_position_param_, 3, GL_FLOAT, GL_FALSE, 0, points.data());;
-    glVertexAttribPointer((GLuint) model_colors_param_, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, colors.data());
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    for (oc::Mesh& m : points) {
+        glVertexAttribPointer((GLuint) model_position_param_, 3, GL_FLOAT, GL_FALSE, 0, m.vertices.data());;
+        glVertexAttribPointer((GLuint) model_colors_param_, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, m.colors.data());
 #ifdef MAKE_SURFACE
-    glDrawElements(GL_TRIANGLES, (GLsizei) indices.size(), GL_UNSIGNED_INT, indices.data());
+        glDrawArrays(GL_TRIANGLES, 0, (GLsizei) m.vertices.size());
 #else
-    glDrawArrays(GL_POINTS, 0, (GLsizei) points.size());
+        glDrawArrays(GL_POINTS, 0, (GLsizei) m.vertices.size());
 #endif
+    }
 
     /// render model
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -242,6 +242,46 @@ void initializeGl()
   model_translatez_param_ = glGetUniformLocation(model_program_, "u_Z");
 }
 
+bool isSurface(float* depth, int a, int b, int c) {
+    float aspect = 0.075f;
+    if ((a >= 0) && (b >= 0) && (c >= 0) && (a != b) && (b != c) && (c != a)) {
+        float avrg = aspect * (depth[c] + depth[b] + depth[a]) / 3.0f;
+        float len1 = fabs(depth[a] - depth[b]);
+        float len2 = fabs(depth[a] - depth[c]);
+        float len3 = fabs(depth[b] - depth[c]);
+        if ((len1 < avrg) && (len2 < avrg) && (len3 < avrg)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void makeSurface(oc::Mesh& data, int* map, float* depth, int stride, int height) {
+    for (int x = 1; x < stride; x++) {
+        for (int y = 1; y < height; y++) {
+            int a = map[(y - 1) * stride + x - 1];
+            int b = map[(y - 1) * stride + x];
+            int c = map[y * stride + x - 1];
+            int d = map[y * stride + x];
+            if (isSurface(depth, a, b, c)) {
+                data.indices.push_back(c);
+                data.indices.push_back(b);
+                data.indices.push_back(a);
+            }
+            if (isSurface(depth, b, c, d)) {
+                data.indices.push_back(b);
+                data.indices.push_back(c);
+                data.indices.push_back(d);
+            }
+        }
+    }
+    data.Reindex();
+}
+
+void transformPointCloud() {
+
+}
+
 void loadPointCloud() {
     //get depth sensor pose
     double translation[3];
@@ -260,21 +300,26 @@ void loadPointCloud() {
     pcl.ReadModel(-1, mesh);
 
     //process pointcloud
+    oc::Mesh data;
     int mapScale = 12;
+    std::vector<float> depth;
     int stride = jpg.GetWidth() / mapScale;
     int height = jpg.GetHeight() / mapScale;
     int map[stride * height];
-    for (int i = 0; i < stride * height; i++)
+    glm::vec3 vecmap[stride * height];
+    for (int i = 0; i < stride * height; i++) {
         map[i] = -1;
+        vecmap[i] = glm::vec3(-1);
+    }
     for (unsigned int i = 0; i < mesh[0].vertices.size(); i++) {
         glm::vec3 v = mesh[0].vertices[i];
         glm::vec4 w = sensor2world * glm::vec4(v, 1.0f);
         w /= glm::abs(w.w);
 #ifndef MAKE_SURFACE
 #ifdef INFRA_CAMERA
-        colors.push_back(mesh[0].colors[i]);
+        data.colors.push_back(mesh[0].colors[i]);
+        data.vertices.push_back(glm::vec3(w.x, w.y, w.z));
         depth.push_back(v.z);
-        points.push_back(glm::vec3(w.x, w.y, w.z));
         continue;
 #endif
 #endif
@@ -289,54 +334,31 @@ void loadPointCloud() {
         int y = (int)(t.y * jpg.GetHeight());
         int index = (y * jpg.GetWidth() + x) * 4;
         if ((x >= 0) && (x < jpg.GetWidth()) && (y >= 0) && (y < jpg.GetHeight())) {
-            map[((int)(y / mapScale)) * stride + (int)(x / mapScale)] = points.size();
+            map[((int)(y / mapScale)) * stride + (int)(x / mapScale)] = data.vertices.size();
+            vecmap[((int)(y / mapScale)) * stride + (int)(x / mapScale)] = v;
 #ifdef INFRA_CAMERA
-            colors.push_back(mesh[0].colors[i]);
+            data.colors.push_back(mesh[0].colors[i]);
 #else
             glm::ivec3 color;
             color.r = jpg.GetData()[index + 0];
             color.g = jpg.GetData()[index + 1];
             color.b = jpg.GetData()[index + 2];
-            colors.push_back(oc::File3d::CodeColor(color));
+            data.colors.push_back(oc::File3d::CodeColor(color));
 #endif
             depth.push_back(v.z);
-            points.push_back(glm::vec3(w.x, w.y, w.z));
+            data.vertices.push_back(glm::vec3(w.x, w.y, w.z));
         }
     }
+
 #ifdef MAKE_SURFACE
-    float aspect = 0.075f;
-    int margin = 4;
-    for (int x = 1 + margin; x < stride - margin; x++) {
-        for (int y = 1 + margin; y < height - margin; y++) {
-            int a = map[(y - 1) * stride + x - 1];
-            int b = map[(y - 1) * stride + x];
-            int c = map[y * stride + x - 1];
-            int d = map[y * stride + x];
-            if ((a >= 0) && (b >= 0) && (c >= 0) && (a != b) && (b != c) && (c != a)) {
-                float avrg = aspect * (depth[c] + depth[b] + depth[a]) / 3.0f;
-                float len1 = fabs(depth[a] - depth[b]);
-                float len2 = fabs(depth[a] - depth[c]);
-                float len3 = fabs(depth[b] - depth[c]);
-                if ((len1 < avrg) && (len2 < avrg) && (len3 < avrg)) {
-                    indices.push_back(c);
-                    indices.push_back(b);
-                    indices.push_back(a);
-                }
-            }
-            if ((d >= 0) && (b >= 0) && (c >= 0) && (d != b) && (b != c) && (c != d)) {
-                float avrg = aspect * (depth[b] + depth[c] + depth[d]) / 3.0f;
-                float len1 = fabs(depth[d] - depth[b]);
-                float len2 = fabs(depth[d] - depth[c]);
-                float len3 = fabs(depth[b] - depth[c]);
-                if ((len1 < avrg) && (len2 < avrg) && (len3 < avrg)) {
-                    indices.push_back(b);
-                    indices.push_back(c);
-                    indices.push_back(d);
-                }
-            }
-        }
-    }
+    makeSurface(data, map, depth.data(), stride, height);
+
+#ifdef SHOW_NORMALS
+    data.GenerateNormals();
+    data.Normals2Color();
 #endif
+#endif
+    points.push_back(data);
 }
 
 /**
@@ -396,9 +418,6 @@ void keyboardUp(unsigned char key, int x, int y)
 
     if (key == 'q') {
         if (!shift) {
-            indices.clear();
-            colors.clear();
-            depth.clear();
             points.clear();
         }
         poseIndex++;
@@ -408,9 +427,6 @@ void keyboardUp(unsigned char key, int x, int y)
         loadPointCloud();
     } else if (key == 'e') {
         if (!shift) {
-            indices.clear();
-            colors.clear();
-            depth.clear();
             points.clear();
         }
         poseIndex--;

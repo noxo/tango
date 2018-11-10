@@ -60,7 +60,7 @@ namespace oc {
             if (std::isnan(n.x) || std::isnan(n.y) || std::isnan(n.z))
                 normals.push_back(glm::vec3(0));
             else
-                    normals.push_back(n);
+                normals.push_back(n);
         }
         std::map<std::string, glm::vec3>().swap(vertexNormal);
     }
@@ -105,6 +105,44 @@ namespace oc {
                 output = value;
         }
         return (float) (output / 3.0);
+    }
+
+    void Mesh::Normals2Color() {
+        colors.resize(normals.size());
+        for (unsigned int i = 0; i < normals.size(); i++)
+        {
+            int color = 0;
+            color += glm::clamp((int)(normals[i].x * 127 + 128), 0, 255);
+            color += glm::clamp((int)(normals[i].y * 127 + 128), 0, 255) << 8;
+            color += glm::clamp((int)(normals[i].z * 127 + 128), 0, 255) << 16;
+            colors[i] = color;
+        }
+    }
+
+    void Mesh::Reindex() {
+        Mesh temp;
+        temp.vertices = vertices;
+        temp.normals = normals;
+        temp.colors = colors;
+        temp.indices = indices;
+        temp.uv = uv;
+
+        vertices.clear();
+        normals.clear();
+        colors.clear();
+        indices.clear();
+        uv.clear();
+
+        for (unsigned int& i : temp.indices) {
+            if (!temp.vertices.empty())
+                vertices.push_back(temp.vertices[i]);
+            if (!temp.normals.empty())
+                normals.push_back(temp.normals[i]);
+            if (!temp.colors.empty())
+                colors.push_back(temp.colors[i]);
+            if (!temp.uv.empty())
+                uv.push_back(temp.uv[i]);
+        }
     }
 
     bool Mesh::IsInAABB(glm::vec3 &p, glm::vec3 &min, glm::vec3 &max) {

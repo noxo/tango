@@ -92,9 +92,9 @@ namespace oc {
 
     unsigned int File3d::CodeColor(glm::ivec3 c) {
         unsigned int output = 0;
-        output += c.r;
-        output += c.g << 8;
-        output += c.b << 16;
+        output += glm::clamp(c.r, 0, 255);
+        output += glm::clamp(c.g, 0, 255) << 8;
+        output += glm::clamp(c.b, 0, 255) << 16;
         return output;
     }
 
