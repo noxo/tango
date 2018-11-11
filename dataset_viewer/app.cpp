@@ -17,6 +17,7 @@
 //#define INFRA_CAMERA
 #define MAKE_SURFACE
 #define SHOW_NORMALS // needs MAKE_SURFACE to be active
+#define SMOOTH_SURFACE // needs MAKE_SURFACE to be active
 
 //shader
 const char* kTextureShader[] = {R"glsl(
@@ -257,8 +258,13 @@ bool isSurface(float* depth, int a, int b, int c) {
 }
 
 void makeSurface(oc::Mesh& data, int* map, float* depth, int stride, int height) {
-    for (int x = 1; x < stride; x++) {
-        for (int y = 1; y < height; y++) {
+#ifdef SMOOTH_SURFACE
+    int margin = 4;
+#else
+    int margin = 0;
+#endif
+    for (int x = 1 + margin; x < stride - margin; x++) {
+        for (int y = 1 + margin; y < height - margin; y++) {
             int a = map[(y - 1) * stride + x - 1];
             int b = map[(y - 1) * stride + x];
             int c = map[y * stride + x - 1];
@@ -275,11 +281,66 @@ void makeSurface(oc::Mesh& data, int* map, float* depth, int stride, int height)
             }
         }
     }
-    data.Reindex();
 }
 
-void transformPointCloud() {
+void smoothSurface(oc::Mesh& data, int* map, glm::vec3* vecmap, float* depth, int stride, int height,
+                   glm::mat4 sensor2world, int iterations) {
 
+    for (int it = 0; it < iterations; it++) {
+        //create distance map
+        float dstmap[stride * height];
+        for (int i = 0; i < stride * height; i++)
+            dstmap[i] = -1;
+        for (int x = 1; x < stride - 1; x++) {
+            for (int y = 1; y < height - 1; y++) {
+                if (map[y * stride + x] < 0)
+                    continue;
+
+                //count average and add value into distance map
+                int count = 0;
+                float distance = 0;
+                for (int i = x; i <= x + 1; i++) {
+                    for (int j = y; j <= y + 1; j++) {
+                        int a = map[(j - 1) * stride + i - 1];
+                        int b = map[(j - 1) * stride + i];
+                        int c = map[j * stride + i - 1];
+                        int d = map[j * stride + i];
+                        if (isSurface(depth, a, b, c) && isSurface(depth, b, c, d)) {
+                            for (int k = i - 1; k <= i; k++) {
+                                for (int l = j - 1; l <= j; l++) {
+                                    if (map[l * stride + k] >= 0) {
+                                        distance += vecmap[l * stride + k].z;
+                                        count++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if (count > 0) {
+                    dstmap[y * stride + x] = distance / (float)count;
+                }
+            }
+        }
+
+        //apply distance map to vector map
+        for (int i = 0; i < stride * height; i++)
+            if (dstmap[i] >= 0)
+                vecmap[i].z = dstmap[i];
+    }
+
+    //apply vector map to geometry
+    for (int x = 0; x < stride; x++) {
+        for (int y = 0; y < height; y++) {
+            int index = map[y * stride + x];
+            if (index >= 0) {
+                glm::vec3 v = vecmap[y * stride + x];
+                glm::vec4 w = sensor2world * glm::vec4(v, 1.0f);
+                w /= glm::abs(w.w);
+                data.vertices[index] = glm::vec3(w.x, w.y, w.z);
+            }
+        }
+    }
 }
 
 void loadPointCloud() {
@@ -316,12 +377,12 @@ void loadPointCloud() {
         glm::vec4 w = sensor2world * glm::vec4(v, 1.0f);
         w /= glm::abs(w.w);
 #ifndef MAKE_SURFACE
-#ifdef INFRA_CAMERA
+  #ifdef INFRA_CAMERA
         data.colors.push_back(mesh[0].colors[i]);
         data.vertices.push_back(glm::vec3(w.x, w.y, w.z));
         depth.push_back(v.z);
         continue;
-#endif
+  #endif
 #endif
         glm::vec4 t = world2uv * glm::vec4(w.x, w.y, w.z, 1.0f);
         t.x /= glm::abs(t.z * t.w);
@@ -334,8 +395,6 @@ void loadPointCloud() {
         int y = (int)(t.y * jpg.GetHeight());
         int index = (y * jpg.GetWidth() + x) * 4;
         if ((x >= 0) && (x < jpg.GetWidth()) && (y >= 0) && (y < jpg.GetHeight())) {
-            map[((int)(y / mapScale)) * stride + (int)(x / mapScale)] = data.vertices.size();
-            vecmap[((int)(y / mapScale)) * stride + (int)(x / mapScale)] = v;
 #ifdef INFRA_CAMERA
             data.colors.push_back(mesh[0].colors[i]);
 #else
@@ -345,6 +404,10 @@ void loadPointCloud() {
             color.b = jpg.GetData()[index + 2];
             data.colors.push_back(oc::File3d::CodeColor(color));
 #endif
+            int index = ((int)(y / mapScale)) * stride + (int)(x / mapScale);
+            map[index] = data.vertices.size();
+            vecmap[index] = v;
+
             depth.push_back(v.z);
             data.vertices.push_back(glm::vec3(w.x, w.y, w.z));
         }
@@ -352,11 +415,16 @@ void loadPointCloud() {
 
 #ifdef MAKE_SURFACE
     makeSurface(data, map, depth.data(), stride, height);
+  #ifdef SMOOTH_SURFACE
+    smoothSurface(data, map, vecmap, depth.data(), stride, height, sensor2world, 3);
+  #endif
 
-#ifdef SHOW_NORMALS
+    data.Reindex();
+
+  #ifdef SHOW_NORMALS
     data.GenerateNormals();
     data.Normals2Color();
-#endif
+  #endif
 #endif
     points.push_back(data);
 }
