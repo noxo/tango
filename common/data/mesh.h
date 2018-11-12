@@ -1,7 +1,6 @@
 #ifndef DATA_MESH_H
 #define DATA_MESH_H
 
-#include <mutex>
 #include "data/image.h"
 #include "gl/opengl.h"
 
