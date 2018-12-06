@@ -4,14 +4,15 @@
 namespace oc {
 
     Depthmap::Depthmap(Image& jpg, std::vector<glm::vec3>& pointcloud, glm::mat4 sensor2world,
-                       glm::mat4 world2uv, float cx, float cy, float fx, float fy,
-                       int* map, glm::vec3* vecmap, int mapScale) {
+                       glm::mat4 world2uv, float cx, float cy, float fx, float fy, int mapScale) {
 
+        lastMargin = 0;
+        matrix = sensor2world;
         stride = jpg.GetWidth() / mapScale;
         height = jpg.GetHeight() / mapScale;
         for (int i = 0; i < stride * height; i++) {
-            map[i] = -1;
-            vecmap[i] = glm::vec3(-1);
+            map.push_back(-1);
+            vecmap.push_back(glm::vec3(-1));
         }
         for (glm::vec3& v : pointcloud) {
             glm::vec4 w = sensor2world * glm::vec4(v, 1.0f);
@@ -42,7 +43,47 @@ namespace oc {
         }
     }
 
-    void Depthmap::MakeSurface(int margin, int* map) {
+    bool Depthmap::Join(int x1, int y1, int x2, int y2) {
+        if (x2 >= stride)
+            return false;
+        if (y2 >= height)
+            return false;
+
+        int a = map[y1 * stride + x1];
+        int b = map[y1 * stride + x2];
+        int c = map[y2 * stride + x1];
+        int d = map[y2 * stride + x2];
+        if ((a < 0) || (b < 0) || (c < 0) || (d < 0))
+            return false;
+
+        for (int x = x1; x <= x2; x++) {
+            for (int y = y1; y <= y2; y++) {
+                if (map[y * stride + x] < 0)
+                    return false;
+                map[y * stride + x] = -1;
+            }
+        }
+
+        int xm = (x1 + x2) / 2;
+        for (int x = x1; x <= x2; x++) {
+            map[y1 * stride + x] = x < xm ? a : b;
+            map[y2 * stride + x] = x < xm ? c : d;
+        }
+        int ym = (y1 + y2) / 2;
+        for (int y = y1; y <= y2; y++) {
+            map[y * stride + x1] = y < ym ? a : c;
+            map[y * stride + x2] = y < ym ? b : d;
+        }
+
+        unsigned int size = indices.size();
+        indices.clear();
+        rects.push_back({a, b, c, d});
+        MakeSurface(lastMargin);
+        return size == indices.size() + (x2 - x1 + 1) * (y2 - y1 + 1) * 6 - 24;
+    }
+
+    void Depthmap::MakeSurface(int margin) {
+        lastMargin = margin;
         for (int x = 1 + margin; x < stride - margin; x++) {
             for (int y = 1 + margin; y < height - margin; y++) {
                 int a = map[(y - 1) * stride + x - 1];
@@ -61,9 +102,17 @@ namespace oc {
                 }
             }
         }
+        for (Rect r : rects) {
+            indices.push_back(r.c);
+            indices.push_back(r.b);
+            indices.push_back(r.a);
+            indices.push_back(r.b);
+            indices.push_back(r.c);
+            indices.push_back(r.d);
+        }
     }
 
-    void Depthmap::SmoothSurface(int iterations, int* map, glm::vec3* vecmap, glm::mat4 sensor2world) {
+    void Depthmap::SmoothSurface(int iterations) {
 
         for (int it = 0; it < iterations; it++) {
             //create distance map
@@ -114,7 +163,7 @@ namespace oc {
                 int index = map[y * stride + x];
                 if (index >= 0) {
                     glm::vec3 v = vecmap[y * stride + x];
-                    glm::vec4 w = sensor2world * glm::vec4(v, 1.0f);
+                    glm::vec4 w = matrix * glm::vec4(v, 1.0f);
                     w /= glm::abs(w.w);
                     vertices[index] = glm::vec3(w.x, w.y, w.z);
                 }

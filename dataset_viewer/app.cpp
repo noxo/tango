@@ -120,7 +120,6 @@ void display(void)
     glUniformMatrix4fv(model_modelview_projection_param_, 1, GL_FALSE, glm::value_ptr(proj * view));
 
     /// render point cloud
-    glPointSize(3);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glEnableVertexAttribArray((GLuint) model_position_param_);
     glEnableVertexAttribArray((GLuint) model_colors_param_);
@@ -252,17 +251,19 @@ void loadPointCloud() {
     oc::File3d pcl(dataset->GetFileName(poseIndex, ".pcl"), false);
     pcl.ReadModel(-1, mesh);
 
-    //prepare caches
-    int mapScale = 12;
-    int stride = jpg.GetWidth() / mapScale;
-    int height = jpg.GetHeight() / mapScale;
-    int map[stride * height];
-    glm::vec3 vecmap[stride * height];
+    //create depth map
+    oc::Depthmap data(jpg, mesh[0].vertices, sensor2world, world2uv, cx, cy, fx, fy, 12);
+    data.MakeSurface(4);
+    data.SmoothSurface(3);
 
-    //create pointcloud
-    oc::Depthmap data(jpg, mesh[0].vertices, sensor2world, world2uv, cx, cy, fx, fy, map, vecmap, mapScale);
-    data.MakeSurface(4, map);
-    data.SmoothSurface(3, map, vecmap, sensor2world);
+    //make depth map lowpoly
+    /*int s = 8;
+    for (int x = 0; x < data.GetWidth(); x += s) {
+        for (int y = 0; y < data.GetHeight(); y += s) {
+            data.Join(x, y, x + s, y + s);
+        }
+    }*/
+
     data.Reindex();
     data.GenerateNormals();
     data.Normals2Color();
