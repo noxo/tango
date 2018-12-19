@@ -63,6 +63,7 @@
 
     <!-- Service !-->
     <string name="action_continue">Continue scanning</string>
+    <string name="action_export">Export ADF</string>
     <string name="action_show_result">Show result</string>
     <string name="action_finish">Finish</string>
     <string name="action_cancel">Cancel operation</string>

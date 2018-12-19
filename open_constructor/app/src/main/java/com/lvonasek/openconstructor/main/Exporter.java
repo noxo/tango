@@ -95,6 +95,8 @@ public class Exporter
   {
     HashSet<String> files = new HashSet<>();
     ArrayList<String> output = new ArrayList<>();
+    if (new File(file.getAbsolutePath() + ".adf").exists())
+      output.add(file.getName() + ".adf");
     String mtlLib = getMtlResource(file.getAbsolutePath());
     if (mtlLib != null) {
       output.add(mtlLib);

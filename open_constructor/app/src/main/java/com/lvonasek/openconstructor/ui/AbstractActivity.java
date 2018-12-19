@@ -13,6 +13,8 @@ import android.view.WindowManager;
 import com.lvonasek.openconstructor.R;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.util.Scanner;
 
 public abstract class AbstractActivity extends Activity
 {
@@ -134,5 +136,14 @@ public abstract class AbstractActivity extends Activity
     if (dir.mkdir())
       Log.d(TAG, "Directory " + dir + " created");
     return dir;
+  }
+
+  public static String getUUID() throws Exception {
+    FileInputStream fis = new FileInputStream(new File(getTempPath(), "uuid.txt"));
+    Scanner sc = new Scanner(fis);
+    String uuid = sc.nextLine();
+    sc.close();
+    fis.close();
+    return uuid;
   }
 }

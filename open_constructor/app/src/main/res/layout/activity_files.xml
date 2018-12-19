@@ -54,6 +54,12 @@
                 android:id="@+id/service_continue" />
 
             <Button
+                android:text="@string/action_export"
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                android:id="@+id/service_export" />
+
+            <Button
                 android:text="@string/action_show_result"
                 android:layout_width="200dp"
                 android:layout_height="wrap_content"

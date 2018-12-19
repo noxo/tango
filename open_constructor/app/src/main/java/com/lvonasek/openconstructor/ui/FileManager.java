@@ -57,6 +57,7 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
     buttons.add((Button) findViewById(R.id.service_show_result));
     buttons.add((Button) findViewById(R.id.service_finish));
     buttons.add((Button) findViewById(R.id.service_cancel));
+    buttons.add((Button) findViewById(R.id.service_export));
     for (Button b : buttons)
       b.setOnClickListener(this);
     mAdd.setOnClickListener(this);
@@ -129,8 +130,10 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
       int text = paused ? R.string.paused : R.string.finished;
       mText.setText(getString(text) + "\n" + getString(R.string.turn_off));
       service = Math.abs(Service.getRunning(this));
-      if (service == Service.SERVICE_SKETCHFAB)
+      if (service == Service.SERVICE_SKETCHFAB) {
         findViewById(R.id.service_continue).setVisibility(View.GONE);
+        findViewById(R.id.service_export).setVisibility(View.GONE);
+      }
       else if (service == Service.SERVICE_POSTPROCESS)
         finishScanning();
     } else if (mFirst) {
@@ -255,6 +258,22 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         intent.putExtra(AbstractActivity.RESOLUTION_KEY, Integer.MIN_VALUE);
         startActivity(intent);
         break;
+      case R.id.service_export:
+        showProgress();
+        try {
+          Intent exportIntent = new Intent();
+          exportIntent.setClassName("com.google.tango", "com.google.atap.tango.RequestImportExportActivity");
+          if (exportIntent.resolveActivity(getPackageManager()) == null) {
+            exportIntent = new Intent();
+            exportIntent.setClassName("com.projecttango.tango", "com.google.atap.tango.RequestImportExportActivity");
+          }
+          exportIntent.putExtra("SOURCE_UUID", getUUID());
+          exportIntent.putExtra("DESTINATION_FILE", getTempPath().getAbsolutePath());
+          startActivityForResult(exportIntent, 1129);
+        } catch(Exception e) {
+          e.printStackTrace();
+        }
+        break;
       case R.id.service_show_result:
         showProgress();
         startActivity(Service.getIntent(this));
@@ -330,6 +349,16 @@ public class FileManager extends AbstractActivity implements View.OnClickListene
         File file2save = new File(getPath(), filename + Exporter.FILE_EXT[0]);
         if (obj.renameTo(file2save))
           Log.d(TAG, "Obj file " + file2save.toString() + " saved.");
+
+        //move ADF into new folder
+        try {
+          File adf = new File(getTempPath(), getUUID());
+          if (adf.exists())
+            if (adf.renameTo(new File(file2save.getAbsolutePath() + ".adf")))
+              Log.d(TAG, "ADF file for " + file2save.toString() + " saved.");
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
 
         //finish
         deleteRecursive(getTempPath());
