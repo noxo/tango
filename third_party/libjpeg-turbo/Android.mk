@@ -1,4 +1,4 @@
-LOCAL_PATH := $(abspath $(call my-dir))
+LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE := libjpeg-turbo
