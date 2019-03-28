@@ -1,7 +1,6 @@
 *.DS_Store
 *.idea
 *.iml
-*.apk
 *.ap_
 *bin/
 *.class
