@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 25
-    buildToolsVersion '25.0.0'
+    buildToolsVersion '28.0.3'
 
     defaultConfig {
         minSdkVersion 19
@@ -28,7 +28,6 @@ android {
 }
 
 dependencies {
-    apply from: '../../version.gradle'
-    compile "com.google.tango:sdk-base:${release_version}"
-    compile "cz.msebera.android:httpclient:4.4.1.2"
+    implementation 'cz.msebera.android:httpclient:4.4.1.2'
+    implementation project(':sdk-base-1.55')
 }
